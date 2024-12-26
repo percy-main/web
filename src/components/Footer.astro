@@ -1,0 +1,39 @@
+---
+import Logo from "./Logo.astro";
+import Social from "./Social.astro";
+---
+
+<footer class="footer bg-[#F1F1F1]">
+  <div class="container">
+    <div class="gx-5 row pb-10 pt-[52px]">
+      <div class="col-12 mt-12 md:col-6 lg:col-3">
+        <Logo />
+      </div>
+      <div class="col-12 mt-12 md:col-6 lg:col-3">
+        <h6>Socials</h6>
+
+        <Social />
+      </div>
+      <div class="col-12 mt-12 md:col-6 lg:col-3">
+        <h6>Contact</h6>
+        <ul>
+          <li class="mb-2">
+            <a
+              class="mb-2 hover:text-primary"
+              href="mailto:trustees@percymain.org">Email</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="container max-w-[1440px]">
+    <div
+      class="footer-copyright mx-auto border-t border-border pb-10 pt-7 text-center"
+    >
+      <p class="content text-text">
+        Copyright 2024 Percy Main Cricket and Sports Club
+      </p>
+    </div>
+  </div>
+</footer>

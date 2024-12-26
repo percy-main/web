@@ -1,0 +1,117 @@
+---
+import "./Base.css";
+import { AstroFont } from "astro-font";
+import { Image } from "astro:assets";
+import { ClientRouter } from "astro:transitions";
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
+
+// font families
+const pf = "Poppins:wght@400;500;600;700";
+const sf = "Merriweather:wght@700;900";
+
+const fontPrimary = pf
+  .replace(/\+/g, " ")
+  .replace(/:[ital,]*[ital@]*[wght@]*[0-9,;]+/gi, "");
+
+const fontSecondary = sf
+  .replace(/\+/g, " ")
+  .replace(/:[ital,]*[ital@]*[wght@]*[0-9,;]+/gi, "");
+
+export interface Props {
+  title?: string;
+  author?: string;
+  description?: string;
+  image?: string;
+  canonical?: string;
+}
+
+const DEFAULT_TITLE = "Percy Main Cricket and Sports Club";
+
+const { title = DEFAULT_TITLE, description, image, author } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="shortcut icon" href="/images/favicon.ico" />
+    <meta name="msapplication-TileColor" content="#000000" />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: light)"
+      content="#fff"
+    />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#000"
+    />
+    <meta name="generator" content={Astro.generator} />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+    <ClientRouter />
+
+    <AstroFont
+      config={[
+        {
+          src: [],
+          preload: false,
+          display: "swap",
+          name: fontPrimary!,
+          fallback: "sans-serif",
+          cssVariable: "font-primary",
+          googleFontsURL: `https://fonts.googleapis.com/css2?family=${pf}&display=swap`,
+        },
+        {
+          src: [],
+          preload: false,
+          display: "swap",
+          name: fontSecondary!,
+          fallback: "sans-serif",
+          cssVariable: "font-secondary",
+          googleFontsURL: `https://fonts.googleapis.com/css2?family=${sf}&display=swap`,
+        },
+      ]}
+    />
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=5"
+    />
+
+    <meta name="description" content={description} />
+    <meta name="author" content={author} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:url"
+      content={`config.site.base_url}/${Astro.url.pathname.replace("/", "")}`}
+    />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta property="og:image" content={image} />
+    <meta name="twitter:image" content={image} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <title>
+      {title}
+    </title>
+  </head>
+  <body>
+    <Header />
+    <main id="main-content" class="lg">
+      <section class="section banner relative">
+        <div class="container">
+          <div class="row items-center">
+            <div class="lg:col-6">
+              <h1 class="banner-title">{title}</h1>
+            </div>
+          </div>
+        </div>
+      </section>
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>
