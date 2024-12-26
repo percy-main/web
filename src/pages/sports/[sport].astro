@@ -2,6 +2,7 @@
 import { getCollection } from "astro:content";
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
 import Base from "../../layouts/Base.astro";
+import { RichText } from "../../components/RichText";
 
 export async function getStaticPaths() {
   const pages = await getCollection("sport");
@@ -14,7 +15,6 @@ export async function getStaticPaths() {
 const { page } = Astro.props;
 ---
 
-<Base
-  title={page.data.title}
-  set:html={documentToHtmlString(page.data.content)}
-/>
+<Base title={page.data.title}>
+  <RichText document={page.data.content} />
+</Base>

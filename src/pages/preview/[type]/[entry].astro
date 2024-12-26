@@ -1,11 +1,11 @@
 ---
 export const prerender = false;
 
-import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
 import Base from "../../../layouts/Base.astro";
 import { CDN_SPACE_ID, CDN_TOKEN } from "astro:env/server";
 import * as contentful from "contentful";
 import type { Page } from "../../../content.config";
+import { RichText } from "../../../components/RichText";
 
 const client = contentful.createClient({
   space: CDN_SPACE_ID,
@@ -19,7 +19,6 @@ const response = await client.getEntry<contentful.EntrySkeletonType<Page>>(
 );
 ---
 
-<Base
-  title={response.fields.title}
-  set:html={documentToHtmlString(response.fields.content as any)}
-/>
+<Base title={response.fields.title}>
+  <RichText document={response.fields.content} />
+</Base>
