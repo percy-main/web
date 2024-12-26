@@ -26,9 +26,7 @@ export interface Props {
   canonical?: string;
 }
 
-const DEFAULT_TITLE = "Percy Main Cricket and Sports Club";
-
-const { title = DEFAULT_TITLE, description, image, author } = Astro.props;
+const { title, description, image, author } = Astro.props;
 ---
 
 <!doctype html>
@@ -98,18 +96,12 @@ const { title = DEFAULT_TITLE, description, image, author } = Astro.props;
       {title}
     </title>
   </head>
-  <body>
+  <body
+    class="min-h-svh bg-body bg-[url('/images/body-bg.svg')] bg-repeat font-primary font-normal leading-relaxed text-text"
+  >
     <Header />
-    <main id="main-content" class="lg">
-      <section class="section banner relative">
-        <div class="container">
-          <div class="row items-center">
-            <div class="lg:col-6">
-              <h1 class="banner-title">{title}</h1>
-            </div>
-          </div>
-        </div>
-      </section>
+    <main class="lg p-2 container">
+      {title && <h2>{title}</h2>}
       <slot />
     </main>
     <Footer />

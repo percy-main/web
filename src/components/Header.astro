@@ -1,55 +1,55 @@
 ---
+import { getCollection } from "astro:content";
 import "./Header.css";
 import Logo from "./Logo.astro";
 const { pathname } = Astro.url;
 
-const menu = [
+const sports = await getCollection("sport");
+const sportMenu = sports.map((sport) => ({
+  name: sport.data.title,
+  url: `/sports/${sport.data.slug}`,
+}));
+
+const pages = await getCollection("page");
+const pagesMenu = pages.map((page) => ({
+  name: page.data.title,
+  url: `/${page.data.slug}`,
+}));
+
+type MenuItem = {
+  name: string;
+  url: string;
+  children?: Array<Omit<MenuItem, "children">>;
+};
+
+const menu: MenuItem[] = [
   {
     name: "Home",
     url: "/",
   },
-  {
-    name: "About",
-    url: "/about",
-  },
-  {
-    name: "Blog",
-    url: "/blog",
-  },
+  ...pagesMenu,
   {
     name: "Sports",
     url: "",
-    children: [
-      {
-        name: "Cricket",
-        url: "/cricket",
-      },
-
-      {
-        name: "Football",
-        url: "/football",
-      },
-    ],
-  },
-  {
-    name: "Contact",
-    url: "/contact",
+    children: sportMenu,
   },
 ];
 ---
 
-<header class="header">
-  <nav class="navbar container">
-    <!-- logo -->
+<header
+  class="sticky top-0 z-50 bg-white py-6 transition-all duration-300 lg:bg-transparent"
+>
+  <nav class="relative flex flex-wrap items-center justify-between container">
     <div class="order-0">
       <Logo />
     </div>
-    <!-- navbar toggler -->
-    <input id="nav-toggle" type="checkbox" class="hidden" />
+
+    <h1 class="text-h3 hidden lg:block">Percy Main Cricket and Sports Club</h1>
+
+    <input id="nav-toggle" type="checkbox" class="hidden peer" />
     <label
-      id="show-button"
       for="nav-toggle"
-      class="order-2 flex cursor-pointer items-center lg:order-1 lg:hidden"
+      class="order-2 flex cursor-pointer items-center lg:order-1 lg:hidden peer-checked:hidden"
     >
       <svg class="h-6 fill-current" viewBox="0 0 20 20">
         <title>Menu Open</title>
@@ -57,9 +57,8 @@ const menu = [
       </svg>
     </label>
     <label
-      id="hide-button"
       for="nav-toggle"
-      class="order-2 hidden cursor-pointer items-center lg:order-1"
+      class="order-2 hidden cursor-pointer items-center lg:order-1 peer-checked:flex peer-checked:lg:hidden"
     >
       <svg class="h-6 fill-current" viewBox="0 0 20 20">
         <title>Menu Close</title>
@@ -68,41 +67,37 @@ const menu = [
           transform="rotate(45 10 10)"></polygon>
       </svg>
     </label>
-    <!-- /navbar toggler -->
 
     <ul
-      id="nav-menu"
-      class="navbar-nav order-3 hidden w-full lg:order-1 lg:flex lg:w-auto lg:space-x-2"
+      class="text-center lg:text-left order-3 hidden w-full lg:order-1 lg:flex lg:w-auto lg:space-x-2 peer-checked:block peer-checked:lg:flex"
     >
       {
         menu.map((item) => (
           <>
             {Array.isArray(item.children) ? (
-              <li class="nav-item nav-dropdown group relative cursor-pointer  dropdown-button">
-                <span
-                  class={`nav-link inline-flex items-center ${
-                    item.children?.map(({ url }) => url).includes(pathname) ||
-                    item.children
-                      ?.map(({ url }) => `${url}/`)
-                      .includes(pathname)
-                      ? "active"
-                      : ""
-                  }`}
-                >
+              <li class="mr-0 group relative cursor-pointer dropdown-button">
+                <div class="flex p-3 py-2 text-[15px] text-dark transition hover:text-primary md:px-2 items-center justify-center">
                   {item.name}
                   <svg class="h-4 w-4 fill-current" viewBox="0 0 20 20">
                     <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
                   </svg>
-                </span>
+                </div>
+                {item.children
+                  ?.map(({ url }) => `${url}/`)
+                  .includes(pathname) && (
+                  <div class="left-2 right-2 h-0.5 bg-gradient-to-tl from-green-400 to-blue-400">
+                    {" "}
+                  </div>
+                )}
                 <ul
                   id="dropdown"
-                  class="nav-dropdown-list mx-auto hidden duration-300 lg:invisible lg:absolute lg:block lg:h-auto lg:w-[13.5rem] lg:opacity-0 lg:group-hover:visible lg:group-hover:opacity-100"
+                  class="mr-0-list mx-auto hidden duration-300 lg:invisible lg:absolute lg:block lg:h-auto lg:w-[13.5rem] lg:opacity-0 lg:group-hover:visible lg:group-hover:opacity-100"
                 >
                   {item.children?.map((child) => (
-                    <li class="nav-dropdown-item">
+                    <li class="mr-0-item">
                       <a
                         href={child.url}
-                        class={`nav-dropdown-link block ${
+                        class={`mr-0-link block ${
                           (pathname === `${child.url}/` ||
                             pathname === child.url) &&
                           "text-primary"
@@ -115,16 +110,16 @@ const menu = [
                 </ul>
               </li>
             ) : (
-              <li class="nav-item">
+              <li>
                 <a
                   href={item.url}
-                  class={`nav-link inline-block lg:block ${
-                    (pathname === `${item.url}/` || pathname === item.url) &&
-                    "active"
-                  }`}
+                  class="p-3 py-2 text-[15px] text-dark transition hover:text-primary md:px-2 inline-block lg:block"
                 >
                   {item.name}
                 </a>
+                {(pathname === `${item.url}/` || pathname === item.url) && (
+                  <div class="left-2 right-2 h-0.5 bg-gradient-to-tl from-green-400 to-blue-400" />
+                )}
               </li>
             )}
           </>
@@ -149,9 +144,9 @@ const menu = [
     const header = document.querySelector(".header");
     window.addEventListener("scroll", () => {
       if (window.scrollY > 0) {
-        header.classList.add("header-sticky");
+        header.classList.add("bg-white", "shadow");
       } else {
-        header.classList.remove("header-sticky");
+        header.classList.remove("bg-white", "shadow");
       }
     });
   });

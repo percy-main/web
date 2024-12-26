@@ -1,0 +1,20 @@
+---
+import { getCollection } from "astro:content";
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
+import Base from "../../layouts/Base.astro";
+
+export async function getStaticPaths() {
+  const pages = await getCollection("sport");
+  return pages.map((page) => ({
+    params: { sport: page.data.title.toLowerCase() },
+    props: { page },
+  }));
+}
+
+const { page } = Astro.props;
+---
+
+<Base
+  title={page.data.title}
+  set:html={documentToHtmlString(page.data.content)}
+/>

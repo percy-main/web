@@ -52,6 +52,7 @@ if (theme.fonts.font_family.secondary) {
 module.exports = {
   content: ["./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}"],
   darkMode: "class",
+  mode: "jit",
   theme: {
     screens: {
       sm: "540px",

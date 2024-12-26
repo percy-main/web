@@ -1,0 +1,26 @@
+---
+import { CDN_SPACE_ID, CDN_TOKEN } from "astro:env/server";
+import * as contentful from "contentful";
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
+import type { EntrySkeletonType } from "contentful";
+import Base from "../layouts/Base.astro";
+
+type Props = {
+  entryId: string;
+};
+const { entryId } = Astro.props;
+
+const client = contentful.createClient({
+  space: CDN_SPACE_ID,
+  accessToken: CDN_TOKEN,
+});
+
+const response =
+  await client.getEntry<
+    EntrySkeletonType<{ title: string; content: Document }>
+  >(entryId);
+---
+
+<Base title={response.fields.title}>
+  <div set:html={documentToHtmlString(response.fields.content)} />
+</Base>
