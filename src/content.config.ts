@@ -22,6 +22,7 @@ const sport = defineCollection({
     >({
       content_type: "page",
       "metadata.tags.sys.id[all]": ["sport"],
+      include: 10,
     });
 
     return response.items.map((item) => ({
