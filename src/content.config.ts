@@ -13,7 +13,7 @@ const pageSchema = z.object({
   slug: z.string(),
 });
 
-type Page = z.TypeOf<typeof pageSchema>;
+export type Page = z.TypeOf<typeof pageSchema>;
 
 const sport = defineCollection({
   loader: async () => {
