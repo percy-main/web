@@ -1,15 +1,12 @@
-import type { FC } from "react";
+import type { FC, ReactNode } from "react";
 
 import {
   documentToReactComponents,
   type Options,
+  type RenderNode,
 } from "@contentful/rich-text-react-renderer";
 import { BLOCKS, INLINES } from "@contentful/rich-text-types";
 import { Image } from "astro:assets";
-
-// Create a bespoke renderOptions object to target BLOCKS.EMBEDDED_ENTRY (linked block entries e.g. code blocks)
-// INLINES.EMBEDDED_ENTRY (linked inline entries e.g. a reference to another blog post)
-// and BLOCKS.EMBEDDED_ASSET (linked assets e.g. images)
 
 const renderOptions: Options = {
   renderNode: {
@@ -65,8 +62,17 @@ const renderOptions: Options = {
   },
 };
 
+type Components<T> = {
+  [K in keyof T]: T[K] extends (a: infer Node, b: ReactNode) => ReactNode
+    ?
+        | FC<{ node: Node }>
+        | { contentType: string; component: FC<{ node: Node }> }
+    : never;
+};
+
 type Props = {
   document: any;
+  components?: Components<RenderNode>;
 };
 
 export const RichText: FC<Props> = ({ document }) => {

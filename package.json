@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "contentful": "set -a && source .env && set +a && cf-content-types-generator -s $CDN_SPACE_ID  -t $CDN_CMA_TOKEN -o src/__generated__ -Xrg"
   },
   "dependencies": {
     "@astrojs/netlify": "^6.0.1",
@@ -21,7 +22,9 @@
     "@types/react-dom": "^19.0.2",
     "astro": "^5.1.1",
     "astro-font": "^0.1.81",
+    "cf-content-types-generator": "^2.15.5",
     "contentful": "^11.3.4",
+    "date-fns": "^4.1.0",
     "postcss": "^8.4.49",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

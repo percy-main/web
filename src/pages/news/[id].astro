@@ -1,0 +1,25 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import { RichText } from "../../components/RichText";
+
+export async function getStaticPaths() {
+  const pages = await getCollection("news");
+  return pages.map((article) => ({
+    params: { id: article.id },
+    props: { article },
+  }));
+}
+
+const { article } = Astro.props;
+---
+
+<Base title={article.data.title}>
+  <div>
+    <h2>{article.data.title}</h2>
+    <p class="text-gray-500 text-sm pb-4">
+      Published on {article.data.when}
+    </p>
+  </div>
+  <RichText document={article.data.content} />
+</Base>
