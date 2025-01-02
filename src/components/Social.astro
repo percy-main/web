@@ -1,10 +1,10 @@
 ---
+import "./social.css";
 import { IoLocation, IoLogoFacebook, IoLogoLinkedin } from "react-icons/io5";
-// TODO - hrefs
 ---
 
-<ul class="social-icons mt-4 lg:mt-6">
-  <li class="inline-block">
+<ul class="social-icons">
+  <li>
     <a
       aria-label="facebook"
       href="https://www.facebook.com/Percymaincricketclub"
@@ -14,7 +14,7 @@ import { IoLocation, IoLogoFacebook, IoLogoLinkedin } from "react-icons/io5";
       <IoLogoFacebook />
     </a>
   </li>
-  <li class="inline-block">
+  <li>
     <a
       aria-label="location"
       href="https://maps.app.goo.gl/qQ5bFRqxoDYVvzdz9"
@@ -24,7 +24,7 @@ import { IoLocation, IoLogoFacebook, IoLogoLinkedin } from "react-icons/io5";
       <IoLocation />
     </a>
   </li>
-  <li class="inline-block">
+  <li>
     <a
       aria-label="location"
       href="https://www.linkedin.com/company/percy-main-cricket-and-sports-club"
@@ -35,3 +35,27 @@ import { IoLocation, IoLogoFacebook, IoLogoLinkedin } from "react-icons/io5";
     </a>
   </li>
 </ul>
+
+<style>
+  .social-icons {
+    @apply mt-4 lg:mt-6;
+    li {
+      @apply mr-2 inline-block;
+      a {
+        @apply inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-center transition-all duration-200 hover:bg-primary;
+
+        svg {
+          @apply m-auto h-11 fill-dark text-xl;
+        }
+
+        path {
+          @apply transition-all duration-200;
+        }
+
+        &:hover path {
+          @apply fill-white;
+        }
+      }
+    }
+  }
+</style>
