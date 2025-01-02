@@ -8,7 +8,7 @@ const news = await getCollection("news");
 const top5 = news.slice(0, 5);
 ---
 
-<Base>
+<Base title="Home">
   <h3>Latest News</h3>
   <ul>
     {
@@ -17,9 +17,7 @@ const top5 = news.slice(0, 5);
           <div class="flex items-center mb-4">
             <div>
               <h2 class="text-lg font-semibold">{article.data.title}</h2>
-              <p class="text-gray-500 text-sm">
-                Published on {article.data.when}
-              </p>
+              <p class="text-gray-500 text-sm">{article.data.when}</p>
             </div>
           </div>
           <p class="text-gray-700 mb-4">
