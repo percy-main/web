@@ -1,20 +1,16 @@
 ---
 import "./Base.css";
 import { AstroFont } from "astro-font";
-import { Image } from "astro:assets";
 import { ClientRouter } from "astro:transitions";
 import Footer from "../components/Footer.astro";
 import Header from "../components/Header.astro";
+import { theme } from "../lib/theme";
 
-// font families
-const pf = "Poppins:wght@400;500;600;700";
-const sf = "Merriweather:wght@700;900";
-
-const fontPrimary = pf
+const fontPrimary = theme.fonts.font_family.primary
   .replace(/\+/g, " ")
   .replace(/:[ital,]*[ital@]*[wght@]*[0-9,;]+/gi, "");
 
-const fontSecondary = sf
+const fontSecondary = theme.fonts.font_family.secondary
   .replace(/\+/g, " ")
   .replace(/:[ital,]*[ital@]*[wght@]*[0-9,;]+/gi, "");
 
@@ -58,7 +54,7 @@ const { title, description, image, author } = Astro.props;
           name: fontPrimary!,
           fallback: "sans-serif",
           cssVariable: "font-primary",
-          googleFontsURL: `https://fonts.googleapis.com/css2?family=${pf}&display=swap`,
+          googleFontsURL: `https://fonts.googleapis.com/css2?family=${theme.fonts.font_family.primary}&display=swap`,
         },
         {
           src: [],
@@ -67,7 +63,7 @@ const { title, description, image, author } = Astro.props;
           name: fontSecondary!,
           fallback: "sans-serif",
           cssVariable: "font-secondary",
-          googleFontsURL: `https://fonts.googleapis.com/css2?family=${sf}&display=swap`,
+          googleFontsURL: `https://fonts.googleapis.com/css2?family=${theme.fonts.font_family.secondary}&display=swap`,
         },
       ]}
     />
@@ -93,14 +89,14 @@ const { title, description, image, author } = Astro.props;
     <meta name="twitter:card" content="summary_large_image" />
 
     <title>
-      {title}
+      {title} :: Percy Main Cricket and Sports Club
     </title>
   </head>
   <body
     class="min-h-svh bg-body bg-[url('/images/body-bg.svg')] bg-repeat font-primary font-normal leading-relaxed text-text"
   >
     <Header />
-    <main class="lg p-2 container">
+    <main class="lg p-2 pt-4 container">
       <slot />
     </main>
     <Footer />

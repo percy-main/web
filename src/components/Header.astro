@@ -1,6 +1,5 @@
 ---
 import { getCollection } from "astro:content";
-import "./Header.css";
 import Logo from "./Logo.astro";
 const { pathname } = Astro.url;
 
@@ -36,7 +35,7 @@ const menu: MenuItem[] = [
 ];
 ---
 
-<header class="sticky top-0 z-50 py-6 transition-all duration-300 bg-[#F1F1F1]">
+<header class="sticky top-0 z-50 py-6 transition-all duration-300 bg-body">
   <nav class="relative flex flex-wrap items-center justify-between container">
     <div class="order-0">
       <Logo />

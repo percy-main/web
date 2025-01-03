@@ -1,35 +1,6 @@
-const theme = {
-  colors: {
-    default: {
-      theme_color: {
-        primary: "#FE6019",
-        secondary: "#FEE140",
-        body: "#fafafa",
-        border: "#EBEBEB",
-        theme_light: "#E5E5E5",
-        theme_dark: "#1a202c",
-      },
-      text_color: {
-        default: "#888888",
-        dark: "#222",
-        light: "#ceced0",
-      },
-    },
-  },
-
-  fonts: {
-    font_family: {
-      primary: "Poppins:wght@400;500;600;700",
-      primary_type: "sans-serif",
-      secondary: "Merriweather:wght@700;900",
-      secondary_type: "sans-serif",
-    },
-    font_size: {
-      base: "16",
-      scale: "1.24571",
-    },
-  },
-};
+import { theme } from "./src/lib/theme";
+import typography from "@tailwindcss/typography";
+import forms from "@tailwindcss/forms";
 
 let font_base = Number(theme.fonts.font_size.base.replace("px", ""));
 let font_scale = Number(theme.fonts.font_size.scale);
@@ -40,74 +11,56 @@ let h3 = h4 * font_scale;
 let h2 = h3 * font_scale;
 let h1 = h2 * font_scale;
 
-let fontPrimaryType, fontSecondaryType;
-if (theme.fonts.font_family.primary) {
-  fontPrimaryType = theme.fonts.font_family.primary_type;
-}
-if (theme.fonts.font_family.secondary) {
-  fontSecondaryType = theme.fonts.font_family.secondary_type;
-}
-
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: ["./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}"],
-  darkMode: "class",
-  mode: "jit",
-  theme: {
-    screens: {
-      sm: "540px",
-      md: "768px",
-      lg: "1024px",
-      xl: "1280px",
-      "2xl": "1536px",
+export const content = [
+  "./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}",
+];
+export const darkMode = "class";
+export const mode = "jit";
+export const theme = {
+  screens: {
+    sm: "540px",
+    md: "768px",
+    lg: "1024px",
+    xl: "1280px",
+    "2xl": "1536px",
+  },
+  container: {
+    center: true,
+    padding: "2rem",
+  },
+  extend: {
+    colors: {
+      text: theme.colors.default.text_color.default,
+      light: theme.colors.default.text_color.light,
+      dark: theme.colors.default.text_color.dark,
+      primary: theme.colors.default.theme_color.primary,
+      secondary: theme.colors.default.theme_color.secondary,
+      body: theme.colors.default.theme_color.body,
+      border: theme.colors.default.theme_color.border,
+      "theme-light": theme.colors.default.theme_color.theme_light,
+      "theme-dark": theme.colors.default.theme_color.theme_dark,
+      creamy: theme.colors.default.theme_color.creamy,
     },
-    container: {
-      center: true,
-      padding: "2rem",
+    fontSize: {
+      base: font_base + "px",
+      h1: h1 + "rem",
+      "h1-sm": h1 * 0.8 + "rem",
+      h2: h2 + "rem",
+      "h2-sm": h2 * 0.8 + "rem",
+      h3: h3 + "rem",
+      "h3-sm": h3 * 0.8 + "rem",
+      h4: h4 + "rem",
+      h5: h5 + "rem",
+      h6: h6 + "rem",
     },
-    extend: {
-      colors: {
-        text: theme.colors.default.text_color.default,
-        light: theme.colors.default.text_color.light,
-        dark: theme.colors.default.text_color.dark,
-        primary: theme.colors.default.theme_color.primary,
-        secondary: theme.colors.default.theme_color.secondary,
-        body: theme.colors.default.theme_color.body,
-        border: theme.colors.default.theme_color.border,
-        "theme-light": theme.colors.default.theme_color.theme_light,
-        "theme-dark": theme.colors.default.theme_color.theme_dark,
-      },
-      fontSize: {
-        base: font_base + "px",
-        h1: h1 + "rem",
-        "h1-sm": h1 * 0.8 + "rem",
-        h2: h2 + "rem",
-        "h2-sm": h2 * 0.8 + "rem",
-        h3: h3 + "rem",
-        "h3-sm": h3 * 0.8 + "rem",
-        h4: h4 + "rem",
-        h5: h5 + "rem",
-        h6: h6 + "rem",
-      },
-      fontFamily: {
-        primary: ["var(--font-primary)", fontPrimaryType],
-        secondary: ["var(--font-secondary)", fontSecondaryType],
-      },
+    fontFamily: {
+      primary: ["var(--font-primary)", theme.fonts.font_family.primary_type],
+      secondary: [
+        "var(--font-secondary)",
+        theme.fonts.font_family.secondary_type,
+      ],
     },
   },
-  plugins: [
-    require("@tailwindcss/typography"),
-    require("@tailwindcss/forms"),
-    // require("tailwind-bootstrap-grid")({
-    //   generateContainer: false,
-    //   gridGutterWidth: "2rem",
-    //   gridGutters: {
-    //     1: "0.25rem",
-    //     2: "0.5rem",
-    //     3: "1rem",
-    //     4: "1.5rem",
-    //     5: "3rem",
-    //   },
-    // }),
-  ],
 };
+export const plugins = [typography, forms];
