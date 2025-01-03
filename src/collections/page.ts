@@ -15,7 +15,6 @@ export const page = defineCollection({
   loader: async () => {
     const response = await client.getEntries<TypePageSkeleton>({
       content_type: "page",
-      "metadata.tags.sys.id[nin]": ["sport"],
     });
 
     return response.items.map((item) => ({

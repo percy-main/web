@@ -6,7 +6,7 @@ import { RichText } from "../components/RichText";
 export async function getStaticPaths() {
   const pages = await getCollection("page");
   return pages.map((page) => ({
-    params: { slug: page.data.title.toLowerCase() },
+    params: { slug: page.data.slug },
     props: { page },
   }));
 }
