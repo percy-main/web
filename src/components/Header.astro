@@ -3,17 +3,13 @@ import { getCollection } from "astro:content";
 import Logo from "./Logo.astro";
 const { pathname } = Astro.url;
 
-const sports = await getCollection("sport");
-const sportMenu = sports.map((sport) => ({
-  name: sport.data.title,
-  url: `/sports/${sport.data.slug}`,
-}));
-
 const pages = await getCollection("page");
-const pagesMenu = pages.map((page) => ({
-  name: page.data.title,
-  url: `/${page.data.slug}`,
-}));
+const pagesMenu = pages
+  .filter((page) => page.data.isMainMenu)
+  .map((page) => ({
+    name: page.data.title,
+    url: `/${page.data.slug}`,
+  }));
 
 type MenuItem = {
   name: string;

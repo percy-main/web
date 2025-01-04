@@ -1,0 +1,40 @@
+---
+import Base from "./Base.astro";
+
+type Props = {
+  title: string;
+  slug: string;
+  menu?: { title: string; items: Array<{ title: string; link: string }> };
+};
+
+const { title, menu, slug } = Astro.props;
+---
+
+<Base title={title}>
+  <div class="container flex flex-col md:flex-row">
+    {
+      menu && (
+        <>
+          <aside class="w-full sm:w-60 dark:bg-gray-50 dark:text-gray-800">
+            <nav class="space-y-8 text-sm">
+              <div class="space-y-2">
+                <h3 class="dark:text-gray-600">
+                  <a href={`/${slug}`}>{menu.title}</a>
+                </h3>
+                <div class="flex flex-col space-y-1">
+                  {menu.items.map(({ title, link }) => (
+                    <a href={link}>{title}</a>
+                  ))}
+                </div>
+              </div>
+            </nav>
+          </aside>
+          <hr class="md:hidden pt-4 pb-4" />
+        </>
+      )
+    }
+    <div class="flex flex-col">
+      <slot />
+    </div>
+  </div>
+</Base>

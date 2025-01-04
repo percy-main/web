@@ -6,15 +6,13 @@ import {
   type RenderNode,
 } from "@contentful/rich-text-react-renderer";
 import { BLOCKS, INLINES } from "@contentful/rich-text-types";
-import { Image } from "astro:assets";
 
 const renderOptions: Options = {
   renderNode: {
     [INLINES.EMBEDDED_ENTRY]: (node) => {
-      // target the contentType of the EMBEDDED_ENTRY to display as you need
       if (node.data.target.sys.contentType.sys.id === "trustee") {
         return (
-          <div className="trustee max-w-2xl mx-4 sm:max-w-sm md:max-w-sm lg:max-w-sm xl:max-w-sm sm:mx-auto md:mx-auto lg:mx-auto xl:mx-auto mt-16 bg-white shadow-xl rounded-lg text-gray-900">
+          <div className="trustee max-w-2xl mx-4 sm:max-w-sm md:max-w-sm lg:max-w-sm xl:max-w-sm sm:mx-auto md:mx-auto lg:mx-auto xl:mx-auto bg-white shadow-xl rounded-lg text-gray-900">
             <div className="rounded-t-lg h-32 overflow-hidden">
               <img
                 className="object-cover object-top w-full"
@@ -23,13 +21,17 @@ const renderOptions: Options = {
               />
             </div>
             <div className="mx-auto w-32 h-32 relative -mt-16 border-4 border-white rounded-full overflow-hidden">
-              {node.data.target.fields.photo && (
-                <img
-                  className="object-cover object-center h-32"
-                  src={node.data.target.fields.photo.fields.file.url}
-                  alt={node.data.target.fields.photo.fields.file.title}
-                />
-              )}
+              <img
+                className="object-cover object-center h-32"
+                src={
+                  node.data.target.fields.photo?.fields.file.url ??
+                  "/images/anon.jpg"
+                }
+                alt={
+                  node.data.target.fields.photo?.fields.file.title ??
+                  node.data.target.fields.name
+                }
+              />
             </div>
             <div className="text-center mt-2">
               <h5 className="font-semibold">{node.data.target.fields.name}</h5>
@@ -52,9 +54,8 @@ const renderOptions: Options = {
       );
     },
     [BLOCKS.UL_LIST]: (node, children) => {
-      ///has-[div.trustee]:
       return (
-        <ul className="w-full flex flex-col lg:flex-row justify-between gap-4">
+        <ul className="has-[div.trustee]:w-full has-[div.trustee]:flex has-[div.trustee]:flex-col has-[div.trustee]:lg:flex-row has-[div.trustee]:justify-between has-[div.trustee]:gap-4">
           {children}
         </ul>
       );

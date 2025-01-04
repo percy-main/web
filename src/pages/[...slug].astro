@@ -1,0 +1,69 @@
+---
+import { getCollection } from "astro:content";
+import { RichText } from "../components/RichText";
+import Page from "../layouts/Page.astro";
+import _ from "lodash";
+
+export async function getStaticPaths() {
+  const pages = await getCollection("page");
+
+  const [children, parents] = _.partition(pages, (p) => p.data.parent);
+
+  const parentRoutes = parents.map((page) => {
+    const childrenForThisPage = children.filter(
+      (child) => child.data.parent?.slug === page.data.slug
+    );
+
+    const menu =
+      childrenForThisPage.length === 0
+        ? undefined
+        : {
+            title: page.data.title,
+            items: childrenForThisPage.map((child) => ({
+              title: child.data.title,
+              link: `/${page.data.slug}/${child.data.slug}`,
+            })),
+          };
+
+    return {
+      params: {
+        slug: page.data.slug,
+      },
+      props: {
+        page,
+        menu,
+      },
+    };
+  });
+
+  const parentMap = _.keyBy(parentRoutes, (p) => p.params.slug);
+
+  const childRoutes = children.map((page) => {
+    const parent = parentMap[page.data.parent?.slug!];
+
+    return {
+      params: {
+        slug: page.data.parent
+          ? `${page.data.parent.slug}/${page.data.slug}`
+          : page.data.slug,
+      },
+      props: {
+        page,
+        menu: parent.props.menu,
+      },
+    };
+  });
+
+  return [...parentRoutes, ...childRoutes];
+}
+
+const { page, menu } = Astro.props;
+---
+
+<Page
+  title={page.data.title}
+  slug={page.data.parent ? page.data.parent.slug : page.data.slug}
+  menu={menu}
+>
+  <RichText document={page.data.content} />
+</Page>

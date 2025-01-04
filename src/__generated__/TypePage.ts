@@ -5,6 +5,7 @@ export interface TypePageFields {
     content: EntryFieldTypes.RichText;
     mainMenuItem?: EntryFieldTypes.Boolean;
     slug: EntryFieldTypes.Symbol;
+    parent?: EntryFieldTypes.EntryLink<TypePageSkeleton>;
 }
 
 export type TypePageSkeleton = EntrySkeletonType<TypePageFields, "page">;
