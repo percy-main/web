@@ -1,11 +1,15 @@
 ---
 export const prerender = false;
 
-import Base from "../../../layouts/Base.astro";
+import Base from "@/layouts/Base.astro";
 import { CDN_SPACE_ID, CDN_TOKEN } from "astro:env/server";
 import * as contentful from "contentful";
-import { RichText } from "../../../components/RichText";
-import type { TypePageSkeleton } from "../../../__generated__";
+import type { TypePageSkeleton } from "@/__generated__";
+import { ContentfulLivePreview } from "@contentful/live-preview";
+import { Preview } from "@/components/Preview";
+import Page from "@/layouts/Page.astro";
+
+ContentfulLivePreview.init({ locale: "en-US" });
 
 const client = contentful.createClient({
   space: CDN_SPACE_ID,
@@ -17,6 +21,6 @@ const { entry } = Astro.params;
 const response = await client.getEntry<TypePageSkeleton>(entry!);
 ---
 
-<Base title={response.fields.title}>
-  <RichText page="" document={response.fields.content} />
-</Base>
+<Page title={response.fields.title} slug={response.fields.slug}>
+  <Preview page={response.fields.slug} document={response.fields.content} />
+</Page>
