@@ -18,5 +18,5 @@ const response = await client.getEntry<TypePageSkeleton>(entry!);
 ---
 
 <Base title={response.fields.title}>
-  <RichText page="" document={response.fields.content} />
+  <RichText document={response.fields.content} />
 </Base>

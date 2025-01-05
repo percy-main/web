@@ -21,5 +21,8 @@ const { article } = Astro.props;
       Published on {article.data.when}
     </p>
   </div>
-  <RichText document={article.data.content} />
+  <RichText
+    page={`news/article/${article.id}`}
+    document={article.data.content}
+  />
 </Base>
