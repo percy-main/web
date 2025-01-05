@@ -17,7 +17,7 @@ const { pathname } = Astro.url;
 ---
 
 <Base title={title}>
-  <div class="container flex flex-col md:flex-row">
+  <div class="flex flex-col md:flex-row">
     {
       menu && (
         <>
@@ -65,7 +65,7 @@ const { pathname } = Astro.url;
         </>
       )
     }
-    <div class="flex flex-col">
+    <div class="flex flex-col grow">
       <slot />
     </div>
   </div>

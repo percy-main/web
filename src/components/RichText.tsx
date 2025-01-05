@@ -7,10 +7,11 @@ import {
 } from "@contentful/rich-text-react-renderer";
 import { BLOCKS, INLINES } from "@contentful/rich-text-types";
 
-const renderOptions: Options = {
+const renderOptions = (page: string): Options => ({
   renderNode: {
     [INLINES.EMBEDDED_ENTRY]: (node) => {
       if (node.data.target.sys.contentType.sys.id === "trustee") {
+        const pageDesc = node.data.target.fields.pageData?.[page];
         return (
           <div className="trustee max-w-2xl mx-4 sm:max-w-sm md:max-w-sm lg:max-w-sm xl:max-w-sm sm:mx-auto md:mx-auto lg:mx-auto xl:mx-auto bg-white shadow-xl rounded-lg text-gray-900">
             <div className="rounded-t-lg h-32 overflow-hidden">
@@ -37,6 +38,8 @@ const renderOptions: Options = {
               <h5 className="font-semibold pb-2">
                 {node.data.target.fields.name}
               </h5>
+
+              {pageDesc && <p className="prose">{pageDesc}</p>}
             </div>
           </div>
         );
@@ -49,18 +52,19 @@ const renderOptions: Options = {
           height={node.data.target.fields.file.details.image.height}
           width={node.data.target.fields.file.details.image.width}
           alt={node.data.target.fields.description}
+          className="rounded-lg mx-auto"
         />
       );
     },
     [BLOCKS.UL_LIST]: (node, children) => {
       return (
-        <ul className="has-[div.trustee]:w-full has-[div.trustee]:flex has-[div.trustee]:flex-col has-[div.trustee]:lg:flex-row has-[div.trustee]:justify-between has-[div.trustee]:gap-4">
+        <ul className="has-[div.trustee]:w-full has-[div.trustee]:flex has-[div.trustee]:flex-col has-[div.trustee]:lg:flex-row has-[div.trustee]:justify-around has-[div.trustee]:gap-4">
           {children}
         </ul>
       );
     },
   },
-};
+});
 
 type Components<T> = {
   [K in keyof T]: T[K] extends (a: infer Node, b: ReactNode) => ReactNode
@@ -73,8 +77,13 @@ type Components<T> = {
 type Props = {
   document: any;
   components?: Components<RenderNode>;
+  page: string;
 };
 
-export const RichText: FC<Props> = ({ document }) => {
-  return <>{documentToReactComponents(document, renderOptions)}</>;
+export const RichText: FC<Props> = ({ document, page }) => {
+  return (
+    <div className="[&>*]:mb-4">
+      {documentToReactComponents(document, renderOptions(page))}
+    </div>
+  );
 };

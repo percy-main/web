@@ -4,6 +4,7 @@ export interface TypeTrusteeFields {
     name: EntryFieldTypes.Symbol;
     photo?: EntryFieldTypes.AssetLink;
     position?: EntryFieldTypes.Symbol;
+    pageData?: EntryFieldTypes.Object;
 }
 
 export type TypeTrusteeSkeleton = EntrySkeletonType<TypeTrusteeFields, "trustee">;

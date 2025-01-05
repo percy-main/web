@@ -91,5 +91,5 @@ const { page, menu } = Astro.props;
   slug={page.data.parent ? page.data.parent.slug : page.data.slug}
   menu={menu}
 >
-  <RichText document={page.data.content} />
+  <RichText document={page.data.content} page={page.data.slug} />
 </Page>
