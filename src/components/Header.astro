@@ -45,13 +45,19 @@ const menu: MenuItem[] = [
 ];
 ---
 
-<header class="sticky top-0 z-50 py-6 transition-all duration-300 bg-body">
+<header
+  class="sticky top-0 z-50 py-6 transition-all duration-300 bg-gradient-to-b from-blue-100 to-creamy"
+>
   <nav class="relative flex flex-wrap items-center justify-between container">
-    <div class="order-0">
-      <Logo />
-    </div>
+    <div class="flex flex-row items-center gap-4">
+      <div class="order-0">
+        <Logo />
+      </div>
 
-    <h1 class="text-h3 hidden lg:block">Percy Main Cricket and Sports Club</h1>
+      <h1 class="text-h3 hidden lg:block mb-0">
+        Percy Main Cricket and Sports Club
+      </h1>
+    </div>
 
     <input id="nav-toggle" type="checkbox" class="hidden peer" />
     <label
