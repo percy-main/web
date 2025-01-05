@@ -8,6 +8,7 @@ import type { TypePageSkeleton } from "@/__generated__";
 import { ContentfulLivePreview } from "@contentful/live-preview";
 import { Preview } from "@/components/Preview";
 import Page from "@/layouts/Page.astro";
+import { ContentfulLivePreviewProvider } from "@contentful/live-preview/react";
 
 ContentfulLivePreview.init({ locale: "en-US" });
 
@@ -22,5 +23,7 @@ const response = await client.getEntry<TypePageSkeleton>(entry!);
 ---
 
 <Page title={response.fields.title} slug={response.fields.slug}>
-  <Preview page={response.fields.slug} document={response.fields.content} />
+  <ContentfulLivePreviewProvider locale="en-US">
+    <Preview page={response.fields.slug} document={response.fields.content} />
+  </ContentfulLivePreviewProvider>
 </Page>
