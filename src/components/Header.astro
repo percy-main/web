@@ -3,23 +3,43 @@ import { getCollection } from "astro:content";
 import Logo from "./Logo.astro";
 const { pathname } = Astro.url;
 
+const urlMatch = (pathname: string, item: MenuItem) => {
+  if (typeof item.match === "string") {
+    return pathname === `${item.url}/` || pathname === item.url;
+  }
+
+  return pathname.startsWith(item.match.start);
+};
+
 const pages = await getCollection("page");
 const pagesMenu = pages
   .filter((page) => page.data.isMainMenu)
   .map((page) => ({
     name: page.data.title,
     url: `/${page.data.slug}`,
+    match: {
+      start: `/${page.data.slug}`,
+    },
   }));
 
 type MenuItem = {
   name: string;
   url: string;
+  match: { start: string } | "exact";
 };
 
 const menu: MenuItem[] = [
   {
     name: "Home",
     url: "/",
+    match: "exact",
+  },
+  {
+    name: "News",
+    url: "/news/1",
+    match: {
+      start: "/news",
+    },
   },
   ...pagesMenu,
 ];
@@ -67,7 +87,7 @@ const menu: MenuItem[] = [
             >
               {item.name}
             </a>
-            {(pathname === `${item.url}/` || pathname === item.url) && (
+            {urlMatch(pathname, item) && (
               <div class="left-2 right-2 h-0.5 bg-gradient-to-tl from-green-400 to-blue-400" />
             )}
           </li>

@@ -1,0 +1,93 @@
+---
+import type { GetStaticPathsOptions } from "astro";
+import { getCollection } from "astro:content";
+import ArticlePreview from "../../components/ArticlePreview.astro";
+import Base from "../../layouts/Base.astro";
+
+export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
+  const news = await getCollection("news");
+
+  return paginate(news, { pageSize: 5 });
+}
+
+const { page } = Astro.props;
+---
+
+<Base title="News">
+  <ul>
+    {
+      page.data.map((article) => (
+        <li>
+          <ArticlePreview
+            id={article.id}
+            title={article.data.title}
+            when={article.data.when}
+            summary={article.data.summary}
+          />
+        </li>
+      ))
+    }
+  </ul>
+  <nav aria-label="Page navigation">
+    <ul class="inline-flex -space-x-px text-sm">
+      <li>
+        <a
+          href={page.url.prev ?? "#"}
+          class:list={[
+            "flex",
+            "items-center",
+            "justify-center",
+            "px-3",
+            "h-8",
+            "ms-0",
+            "leading-tight",
+            "text-gray-500",
+            page.url.prev ? "bg-white" : "bg-gray-200",
+            "border",
+            "border-e-0",
+            "border-gray-300",
+            "rounded-s-lg",
+            "hover:bg-gray-100",
+            "hover:text-gray-700",
+            "dark:bg-gray-800",
+            "dark:border-gray-700",
+            "dark:text-gray-400",
+            "dark:hover:bg-gray-700",
+            "dark:hover:text-white",
+          ]}
+        >
+          Previous
+        </a>
+      </li>
+      <li>
+        <a
+          href={page.url.next ?? "#"}
+          class:list={[
+            "flex",
+            "items-center",
+            "justify-center",
+            "px-3",
+            "h-8",
+            "ms-0",
+            "leading-tight",
+            "text-gray-500",
+            page.url.next ? "bg-white" : "bg-gray-200",
+            "border",
+            "border-s-0",
+            "border-gray-300",
+            "rounded-e-lg",
+            "hover:bg-gray-100",
+            "hover:text-gray-700",
+            "dark:bg-gray-800",
+            "dark:border-gray-700",
+            "dark:text-gray-400",
+            "dark:hover:bg-gray-700",
+            "dark:hover:text-white",
+          ]}
+        >
+          Next
+        </a>
+      </li>
+    </ul>
+  </nav>
+</Base>
