@@ -34,10 +34,9 @@ const renderOptions: Options = {
               />
             </div>
             <div className="text-center mt-2">
-              <h5 className="font-semibold">{node.data.target.fields.name}</h5>
-              <p className="text-gray-500">
-                {node.data.target.fields.position}
-              </p>
+              <h5 className="font-semibold pb-2">
+                {node.data.target.fields.name}
+              </h5>
             </div>
           </div>
         );

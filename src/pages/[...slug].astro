@@ -1,13 +1,30 @@
 ---
 import { getCollection } from "astro:content";
-import { RichText } from "../components/RichText";
-import Page from "../layouts/Page.astro";
+import { RichText } from "@/components/RichText";
+import Page from "@/layouts/Page.astro";
 import _ from "lodash";
 
 export async function getStaticPaths() {
   const pages = await getCollection("page");
 
   const [children, parents] = _.partition(pages, (p) => p.data.parent);
+
+  const childSlug = (page: {
+    slug: string;
+    parent?: { slug: string };
+  }): string => {
+    if (!page.parent) {
+      return page.slug;
+    }
+
+    const parent = pages.find((p) => p.data.slug === page.parent?.slug);
+
+    if (!parent) {
+      throw new Error(`Missing parent ${page.parent.slug}`);
+    }
+
+    return `${childSlug(parent.data)}/${page.slug}`;
+  };
 
   const parentRoutes = parents.map((page) => {
     const childrenForThisPage = children.filter(
@@ -22,6 +39,12 @@ export async function getStaticPaths() {
             items: childrenForThisPage.map((child) => ({
               title: child.data.title,
               link: `/${page.data.slug}/${child.data.slug}`,
+              children: children
+                .filter((c) => c.data.parent?.slug === child.data.slug)
+                .map((c) => ({
+                  title: c.data.title,
+                  link: `/${page.data.slug}/${child.data.slug}/${c.data.slug}`,
+                })),
             })),
           };
 
@@ -39,13 +62,16 @@ export async function getStaticPaths() {
   const parentMap = _.keyBy(parentRoutes, (p) => p.params.slug);
 
   const childRoutes = children.map((page) => {
-    const parent = parentMap[page.data.parent?.slug!];
+    const parent =
+      parentMap[page.data.parent?.slug!] ??
+      parentMap[
+        children.find((c) => c.data.slug === page.data.parent?.slug)?.data
+          .parent?.slug!
+      ];
 
     return {
       params: {
-        slug: page.data.parent
-          ? `${page.data.parent.slug}/${page.data.slug}`
-          : page.data.slug,
+        slug: childSlug(page.data),
       },
       props: {
         page,
