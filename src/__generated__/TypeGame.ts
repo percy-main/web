@@ -1,5 +1,6 @@
 import type { ChainModifiers, Entry, EntryFieldTypes, EntrySkeletonType, LocaleCode } from "contentful";
 import type { TypeLeagueSkeleton } from "./TypeLeague";
+import type { TypeSponsorSkeleton } from "./TypeSponsor";
 import type { TypeTeamSkeleton } from "./TypeTeam";
 
 export interface TypeGameFields {
@@ -8,6 +9,8 @@ export interface TypeGameFields {
     when: EntryFieldTypes.Date;
     team: EntryFieldTypes.EntryLink<TypeTeamSkeleton>;
     league: EntryFieldTypes.EntryLink<TypeLeagueSkeleton>;
+    sponsor?: EntryFieldTypes.EntryLink<TypeSponsorSkeleton>;
+    hasSponsor: EntryFieldTypes.Boolean;
 }
 
 export type TypeGameSkeleton = EntrySkeletonType<TypeGameFields, "game">;

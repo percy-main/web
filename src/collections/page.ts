@@ -1,5 +1,5 @@
 import { z, defineCollection } from "astro:content";
-import { client } from "../lib/contentful/client";
+import { contentClient } from "../lib/contentful/client";
 import type { Entry } from "contentful";
 import { type TypePageSkeleton } from "../__generated__";
 
@@ -20,7 +20,7 @@ export type Page = z.TypeOf<typeof pageSchema>;
 
 export const page = defineCollection({
   loader: async () => {
-    const response = await client.getEntries<TypePageSkeleton>({
+    const response = await contentClient.getEntries<TypePageSkeleton>({
       content_type: "page",
     });
 

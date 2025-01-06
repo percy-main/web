@@ -1,5 +1,5 @@
 import { z, defineCollection } from "astro:content";
-import { client } from "../lib/contentful/client";
+import { contentClient } from "../lib/contentful/client";
 import type { TypeNewsSkeleton } from "../__generated__";
 import * as df from "date-fns";
 
@@ -14,7 +14,7 @@ export type News = z.TypeOf<typeof newsSchema>;
 
 export const news = defineCollection({
   loader: async () => {
-    const response = await client.getEntries<TypeNewsSkeleton>({
+    const response = await contentClient.getEntries<TypeNewsSkeleton>({
       content_type: "news",
     });
 

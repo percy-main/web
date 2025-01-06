@@ -1,9 +1,6 @@
 export const prerender = false;
 import type { APIContext } from "astro";
-import { Stripe } from "stripe";
-import { STRIPE_SECRET_KEY } from "astro:env/server";
-
-const stripe = new Stripe(STRIPE_SECRET_KEY);
+import { stripe } from "@/lib/payments/client";
 
 export async function POST({ request }: APIContext): Promise<Response> {
   try {

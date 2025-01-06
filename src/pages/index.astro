@@ -2,7 +2,7 @@
 import { getCollection } from "astro:content";
 import Base from "@/layouts/Base.astro";
 import { RichText } from "@/components/RichText";
-import { client } from "../lib/contentful/client";
+import { contentClient } from "../lib/contentful/client";
 import type { TypeSiteDataSkeleton } from "@/__generated__/TypeSiteData";
 import ArticlePreview from "../components/ArticlePreview.astro";
 import _ from "lodash";
@@ -34,7 +34,7 @@ const next5games = games
   })
   .slice(0, 5);
 
-const siteData = await client
+const siteData = await contentClient
   .getEntries<TypeSiteDataSkeleton>({ content_type: "siteData" })
   .then((en) => en.items[0]);
 ---
@@ -69,11 +69,15 @@ const siteData = await client
                     <p>{game.data.league}</p>
                   </div>
                 </div>
-                <div class="justify-self-center py-2 px-4 mt-2 bg-blue-500 hover:bg-blue-700 text-white rounded text-sm">
-                  <a href={`/purchase?game=${game.id}`} class="">
-                    Sponsor This Game
-                  </a>
-                </div>
+                {game.data.hasSponsor ? (
+                  <p class="justify-self-center py-2 px-4 mt-2 bg-green-500 text-dark rounded text-sm">
+                    Sponsor: {game.data.sponsor?.name ?? "Pending"}
+                  </p>
+                ) : (
+                  <div class="justify-self-center mt-2 py-2 px-4  bg-blue-500 hover:bg-blue-700 text-white rounded text-sm">
+                    <a href={`/purchase?game=${game.id}`}>Sponsor This Game</a>
+                  </div>
+                )}
               </div>
             </li>
           ))
