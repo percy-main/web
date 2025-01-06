@@ -1,12 +1,9 @@
 import { z, defineCollection } from "astro:content";
 import { client } from "../lib/contentful/client";
-import type { Entry, EntrySkeletonType } from "contentful";
+import type { Entry } from "contentful";
 import {
-  isTypePage,
   type TypeGameSkeleton,
   type TypeLeagueSkeleton,
-  type TypePage,
-  type TypePageSkeleton,
   type TypeTeamSkeleton,
 } from "../__generated__";
 import * as df from "date-fns";

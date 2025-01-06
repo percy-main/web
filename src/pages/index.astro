@@ -20,8 +20,7 @@ const teamOrder: Record<string, number> = {
 };
 
 const next5games = games
-  .map(({ data }) => data)
-  .sort((g1, g2) => {
+  .sort(({ data: g1 }, { data: g2 }) => {
     const g1D = getDate(g1.when);
     const g2D = getDate(g2.when);
     if (g1D === g2D) {
@@ -51,22 +50,29 @@ const siteData = await client
         {
           next5games.map((game) => (
             <li>
-              <div class="bg-white rounded-lg shadow-md border p-4 flex flex-row items-center justify-stretch gap-4 mb-4">
-                <Image
-                  src="/images/cricket.png"
-                  alt="Cricket Match"
-                  width="24"
-                  height="24"
-                />
-                <div>
-                  <h5 class="text-lg font-semibold">
-                    {formatDate(game.when, "dd/MM/yyyy")}
-                  </h5>
-                  <p>
-                    {game.team} versus {game.opposition}{" "}
-                    {game.home ? "(H)" : "(A)"}
-                  </p>
-                  <p>{game.league}</p>
+              <div class="bg-white rounded-lg shadow-md border p-4 pb-2 mb-4">
+                <div class=" flex flex-row items-center justify-stretch gap-4">
+                  <Image
+                    src="/images/cricket.png"
+                    alt="Cricket Match"
+                    width="24"
+                    height="24"
+                  />
+                  <div class="w-full">
+                    <h5 class="text-lg font-semibold">
+                      {formatDate(game.data.when, "dd/MM/yyyy")}
+                    </h5>
+                    <p>
+                      {game.data.team} versus {game.data.opposition}{" "}
+                      {game.data.home ? "(H)" : "(A)"}
+                    </p>
+                    <p>{game.data.league}</p>
+                  </div>
+                </div>
+                <div class="justify-self-center py-2 px-4 mt-2 bg-blue-500 hover:bg-blue-700 text-white rounded text-sm">
+                  <a href={`/purchase?game=${game.id}`} class="">
+                    Sponsor This Game
+                  </a>
                 </div>
               </div>
             </li>

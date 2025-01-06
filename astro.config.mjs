@@ -13,6 +13,18 @@ export default defineConfig({
     schema: {
       CDN_TOKEN: envField.string({ context: "server", access: "secret" }),
       CDN_SPACE_ID: envField.string({ context: "server", access: "secret" }),
+      STRIPE_SECRET_KEY: envField.string({
+        context: "server",
+        access: "secret",
+      }),
+      STRIPE_PUBLIC_KEY: envField.string({
+        context: "client",
+        access: "public",
+      }),
+      SPONSORSHIP_PRICE_ID: envField.string({
+        context: "client",
+        access: "public",
+      }),
     },
   },
 
