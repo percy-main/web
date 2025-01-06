@@ -45,9 +45,9 @@ const menu: MenuItem[] = [
 ];
 ---
 
-<header
-  class="sticky top-0 z-50 py-6 transition-all duration-300 bg-gradient-to-b from-blue-100 to-creamy"
->
+<header class="sticky top-0 z-50 py-6 transition-all duration-300">
+  <div class="backdrop"></div>
+  <div class="backdrop-edge"></div>
   <nav class="relative flex flex-wrap items-center justify-between container">
     <div class="flex flex-row items-center gap-4">
       <div class="order-0">
@@ -102,3 +102,91 @@ const menu: MenuItem[] = [
     </ul>
   </nav>
 </header>
+
+<style>
+  header {
+    --thickness: 4px;
+    position: sticky;
+    top: 0;
+    /*
+        Very opaque, for unsupported browsers.
+        Overwritten in the feature queries below.
+      */
+    background: hsl(0deg 0% 100% / 0.95);
+  }
+
+  /*
+      This code gets applied for folks using
+      browsers that support backdrop-filter.
+    */
+  @supports (backdrop-filter: blur(16px)) or
+    (-webkit-backdrop-filter: blur(16px)) {
+    header {
+      background: hsl(0deg 0% 100% / 0.5);
+    }
+
+    .backdrop {
+      position: absolute;
+      inset: 0;
+      /*
+          These prefixed properties are usually
+          added automatically by tooling:
+        */
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      background: linear-gradient(to bottom, hsl(0deg 0% 95%), transparent 50%);
+      pointer-events: none;
+    }
+
+    .backdrop-edge {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: var(--thickness);
+      background: hsl(0deg 0% 100% / 0.1);
+      -webkit-backdrop-filter: blur(12px) brightness(0.96);
+      backdrop-filter: blur(12px) brightness(0.96);
+      transform: translateY(100%);
+      pointer-events: none;
+    }
+  }
+
+  /*
+      This code gets applied for folks using
+      browsers that support mask-image. This
+      adds the "consider near elements"
+      optimization discussed in this article.
+    */
+  @supports (mask-image: none) or (-webkit-mask-image: none) {
+    .backdrop {
+      height: 200%;
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        black 0% 50%,
+        transparent 50% 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        black 0% 50%,
+        transparent 50% 100%
+      );
+    }
+    .backdrop-edge {
+      height: 100%;
+      inset: 0;
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        black 0,
+        black var(--thickness),
+        transparent var(--thickness)
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        black 0,
+        black var(--thickness),
+        transparent var(--thickness)
+      );
+    }
+  }
+</style>
