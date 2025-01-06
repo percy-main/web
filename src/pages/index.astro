@@ -5,9 +5,35 @@ import { RichText } from "@/components/RichText";
 import { client } from "../lib/contentful/client";
 import type { TypeSiteDataSkeleton } from "@/__generated__/TypeSiteData";
 import ArticlePreview from "../components/ArticlePreview.astro";
+import _ from "lodash";
+import { formatDate, getDate, isBefore } from "date-fns";
+import { Image } from "astro:assets";
 
 const news = await getCollection("news");
 const top5 = news.slice(0, 5);
+
+const games = await getCollection("game");
+
+const teamOrder: Record<string, number> = {
+  "1st XI": 2,
+  "2nd XI": 1,
+};
+
+const next5games = games
+  .map(({ data }) => data)
+  .sort((g1, g2) => {
+    const g1D = getDate(g1.when);
+    const g2D = getDate(g2.when);
+    if (g1D === g2D) {
+      const t1 = teamOrder[g1.team] ?? 0;
+      const t2 = teamOrder[g2.team] ?? 0;
+
+      return t2 - t1;
+    }
+
+    return isBefore(g1.when, g2.when) ? -1 : 1;
+  })
+  .slice(0, 5);
 
 const siteData = await client
   .getEntries<TypeSiteDataSkeleton>({ content_type: "siteData" })
@@ -20,6 +46,33 @@ const siteData = await client
       {siteData.fields.mIssion}
     </p>
     <div class="max-w-sm md:min-w-96">
+      <h4>Upcoming Games</h4>
+      <ul>
+        {
+          next5games.map((game) => (
+            <li>
+              <div class="bg-white rounded-lg shadow-md border p-4 flex flex-row items-center justify-stretch gap-4 mb-4">
+                <Image
+                  src="/images/cricket.png"
+                  alt="Cricket Match"
+                  width="24"
+                  height="24"
+                />
+                <div>
+                  <h5 class="text-lg font-semibold">
+                    {formatDate(game.when, "dd/MM/yyyy")}
+                  </h5>
+                  <p>
+                    {game.team} versus {game.opposition}{" "}
+                    {game.home ? "(H)" : "(A)"}
+                  </p>
+                  <p>{game.league}</p>
+                </div>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
       <h4>Latest News</h4>
       <ul>
         {

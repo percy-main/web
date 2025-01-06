@@ -1,8 +1,14 @@
+export { isTypeGame } from "./TypeGame";
+export type { TypeGame, TypeGameFields, TypeGameSkeleton, TypeGameWithAllLocalesAndWithoutLinkResolutionResponse, TypeGameWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeGameWithAllLocalesResponse, TypeGameWithoutLinkResolutionResponse, TypeGameWithoutUnresolvableLinksResponse } from "./TypeGame";
+export { isTypeLeague } from "./TypeLeague";
+export type { TypeLeague, TypeLeagueFields, TypeLeagueSkeleton, TypeLeagueWithAllLocalesAndWithoutLinkResolutionResponse, TypeLeagueWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeLeagueWithAllLocalesResponse, TypeLeagueWithoutLinkResolutionResponse, TypeLeagueWithoutUnresolvableLinksResponse } from "./TypeLeague";
 export { isTypeNews } from "./TypeNews";
 export type { TypeNews, TypeNewsFields, TypeNewsSkeleton, TypeNewsWithAllLocalesAndWithoutLinkResolutionResponse, TypeNewsWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeNewsWithAllLocalesResponse, TypeNewsWithoutLinkResolutionResponse, TypeNewsWithoutUnresolvableLinksResponse } from "./TypeNews";
 export { isTypePage } from "./TypePage";
 export type { TypePage, TypePageFields, TypePageSkeleton, TypePageWithAllLocalesAndWithoutLinkResolutionResponse, TypePageWithAllLocalesAndWithoutUnresolvableLinksResponse, TypePageWithAllLocalesResponse, TypePageWithoutLinkResolutionResponse, TypePageWithoutUnresolvableLinksResponse } from "./TypePage";
 export { isTypeSiteData } from "./TypeSiteData";
 export type { TypeSiteData, TypeSiteDataFields, TypeSiteDataSkeleton, TypeSiteDataWithAllLocalesAndWithoutLinkResolutionResponse, TypeSiteDataWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeSiteDataWithAllLocalesResponse, TypeSiteDataWithoutLinkResolutionResponse, TypeSiteDataWithoutUnresolvableLinksResponse } from "./TypeSiteData";
+export { isTypeTeam } from "./TypeTeam";
+export type { TypeTeam, TypeTeamFields, TypeTeamSkeleton, TypeTeamWithAllLocalesAndWithoutLinkResolutionResponse, TypeTeamWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeTeamWithAllLocalesResponse, TypeTeamWithoutLinkResolutionResponse, TypeTeamWithoutUnresolvableLinksResponse } from "./TypeTeam";
 export { isTypeTrustee } from "./TypeTrustee";
 export type { TypeTrustee, TypeTrusteeFields, TypeTrusteeSkeleton, TypeTrusteeWithAllLocalesAndWithoutLinkResolutionResponse, TypeTrusteeWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeTrusteeWithAllLocalesResponse, TypeTrusteeWithoutLinkResolutionResponse, TypeTrusteeWithoutUnresolvableLinksResponse } from "./TypeTrustee";
