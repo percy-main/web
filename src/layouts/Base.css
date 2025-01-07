@@ -2,6 +2,7 @@
 
 html {
   @apply text-base;
+  scrollbar-gutter: stable;
 }
 
 h1,
