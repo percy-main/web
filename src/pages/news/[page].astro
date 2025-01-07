@@ -14,10 +14,10 @@ const { page } = Astro.props;
 ---
 
 <Base title="News">
-  <ul>
+  <ul class="flex flex-row gap-4 items-stretch flex-wrap mb-4">
     {
       page.data.map((article) => (
-        <li>
+        <li class="w-[20rem]">
           <ArticlePreview
             id={article.id}
             title={article.data.title}

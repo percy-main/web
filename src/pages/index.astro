@@ -52,21 +52,23 @@ const siteData = await contentClient
       <p class="text-lg mt-4">
         {siteData.fields.mIssion}
       </p>
-      <h4 class="mt-4">Latest News</h4>
-      <ul>
-        {
-          top5.map((article) => (
-            <li>
-              <ArticlePreview
-                id={article.id}
-                title={article.data.title}
-                when={article.data.when}
-                summary={article.data.summary}
-              />
-            </li>
-          ))
-        }
-      </ul>
+      <div>
+        <h4 class="mt-4">Latest News</h4>
+        <ul class="flex flex-row gap-4 items-stretch flex-wrap">
+          {
+            top5.map((article) => (
+              <li class="w-[20rem]">
+                <ArticlePreview
+                  id={article.id}
+                  title={article.data.title}
+                  when={article.data.when}
+                  summary={article.data.summary}
+                />
+              </li>
+            ))
+          }
+        </ul>
+      </div>
     </div>
     <div class="max-w-sm md:min-w-96">
       <h4>Upcoming Games</h4>
