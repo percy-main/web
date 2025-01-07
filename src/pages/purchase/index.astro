@@ -1,33 +1,8 @@
 ---
-import Base from "../../layouts/Base.astro";
+import { Checkout } from "@/components/Checkout";
+import Base from "@/layouts/Base.astro";
 ---
 
 <Base title="Checkout">
-  <div id="checkout"></div>
+  <Checkout client:load />
 </Base>
-
-<script>
-  import { loadStripe } from "@stripe/stripe-js";
-  import { STRIPE_PUBLIC_KEY, SPONSORSHIP_PRICE_ID } from "astro:env/client";
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const gameId = urlParams.get("game");
-
-  const stripeClient = await loadStripe(STRIPE_PUBLIC_KEY);
-
-  const response = await fetch("/api/checkout", {
-    method: "POST",
-    body: JSON.stringify({
-      priceId: SPONSORSHIP_PRICE_ID,
-      gameId,
-    }),
-  });
-
-  const { clientSecret } = await response.json();
-
-  const checkout = await stripeClient!.initEmbeddedCheckout({
-    clientSecret: clientSecret,
-  });
-
-  checkout.mount("#checkout");
-</script>
