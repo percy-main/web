@@ -14,6 +14,7 @@ const pageSchema = z.object({
       slug: z.string(),
     })
     .optional(),
+  menuOrder: z.number().optional(),
 });
 
 export type Page = z.TypeOf<typeof pageSchema>;
@@ -38,6 +39,7 @@ export const page = defineCollection({
               slug: (item.fields.parent as Entry<TypePageSkeleton>).fields.slug,
             }
           : undefined,
+        menuOrder: item.fields.menuOrder,
       };
     });
   },

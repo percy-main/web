@@ -36,16 +36,20 @@ export async function getStaticPaths() {
         ? undefined
         : {
             title: page.data.title,
-            items: childrenForThisPage.map((child) => ({
-              title: child.data.title,
-              link: `/${page.data.slug}/${child.data.slug}`,
-              children: children
-                .filter((c) => c.data.parent?.slug === child.data.slug)
-                .map((c) => ({
-                  title: c.data.title,
-                  link: `/${page.data.slug}/${child.data.slug}/${c.data.slug}`,
-                })),
-            })),
+            items: childrenForThisPage
+              .sort(
+                (c1, c2) => (c1.data.menuOrder ?? 0) - (c2.data.menuOrder ?? 0)
+              )
+              .map((child) => ({
+                title: child.data.title,
+                link: `/${page.data.slug}/${child.data.slug}`,
+                children: children
+                  .filter((c) => c.data.parent?.slug === child.data.slug)
+                  .map((c) => ({
+                    title: c.data.title,
+                    link: `/${page.data.slug}/${child.data.slug}/${c.data.slug}`,
+                  })),
+              })),
           };
 
     return {
