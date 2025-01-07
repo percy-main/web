@@ -41,9 +41,33 @@ const siteData = await contentClient
 
 <Base title="Home">
   <div class="container flex flex-col lg:flex-row gap-12">
-    <p class="text-lg">
-      {siteData.fields.mIssion}
-    </p>
+    <div>
+      <Image
+        class="rounded-lg"
+        src="/images/pitch.png"
+        width="1009"
+        height="313"
+        alt="The cricket pitch at Percy Main"
+      />
+      <p class="text-lg mt-4">
+        {siteData.fields.mIssion}
+      </p>
+      <h4 class="mt-4">Latest News</h4>
+      <ul>
+        {
+          top5.map((article) => (
+            <li>
+              <ArticlePreview
+                id={article.id}
+                title={article.data.title}
+                when={article.data.when}
+                summary={article.data.summary}
+              />
+            </li>
+          ))
+        }
+      </ul>
+    </div>
     <div class="max-w-sm md:min-w-96">
       <h4>Upcoming Games</h4>
       <ul>
@@ -79,21 +103,6 @@ const siteData = await contentClient
                   </div>
                 )}
               </div>
-            </li>
-          ))
-        }
-      </ul>
-      <h4>Latest News</h4>
-      <ul>
-        {
-          top5.map((article) => (
-            <li>
-              <ArticlePreview
-                id={article.id}
-                title={article.data.title}
-                when={article.data.when}
-                summary={article.data.summary}
-              />
             </li>
           ))
         }

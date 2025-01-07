@@ -6,6 +6,7 @@ export interface TypePageFields {
     mainMenuItem?: EntryFieldTypes.Boolean;
     slug: EntryFieldTypes.Symbol;
     parent?: EntryFieldTypes.EntryLink<TypePageSkeleton>;
+    menuOrder?: EntryFieldTypes.Integer;
 }
 
 export type TypePageSkeleton = EntrySkeletonType<TypePageFields, "page">;
