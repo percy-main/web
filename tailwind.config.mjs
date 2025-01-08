@@ -1,6 +1,7 @@
 import { theme } from "./src/lib/theme";
 import typography from "@tailwindcss/typography";
 import forms from "@tailwindcss/forms";
+import flowbite from "flowbite/plugin";
 
 let font_base = Number(theme.fonts.font_size.base.replace("px", ""));
 let font_scale = Number(theme.fonts.font_size.scale);
@@ -14,6 +15,7 @@ let h1 = h2 * font_scale;
 /** @type {import('tailwindcss').Config} */
 export const content = [
   "./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}",
+  "./node_modules/flowbite/**/*.js",
 ];
 export const darkMode = "class";
 export const mode = "jit";
@@ -63,4 +65,4 @@ export const theme = {
     },
   },
 };
-export const plugins = [typography, forms];
+export const plugins = [typography, forms, flowbite];
