@@ -1,29 +1,49 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, type FC } from "react";
 import { loadStripe, type StripeEmbeddedCheckout } from "@stripe/stripe-js";
 import { STRIPE_PUBLIC_KEY, SPONSORSHIP_PRICE_ID } from "astro:env/client";
+import { actions } from "astro:actions";
 
 const stripeClient = await loadStripe(STRIPE_PUBLIC_KEY);
 
-export const Checkout = () => {
+type Props = {
+  priceId: string;
+};
+
+export const Checkout: FC<Props> = ({ priceId }) => {
   const checkout = useRef<StripeEmbeddedCheckout>(undefined);
+
+  const [error, setError] = useState<string>();
 
   useEffect(() => {
     async function onMount() {
       const urlParams = new URLSearchParams(window.location.search);
-      const gameId = urlParams.get("game");
 
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        body: JSON.stringify({
-          priceId: SPONSORSHIP_PRICE_ID,
-          gameId,
-        }),
+      const metadata = () => {
+        const str = urlParams.get("metadata");
+
+        if (!str) {
+          return {};
+        }
+
+        try {
+          return JSON.parse(str);
+        } catch {
+          return {};
+        }
+      };
+
+      const response = await actions.checkout({
+        priceId,
+        metadata: metadata(),
       });
 
-      const { clientSecret } = await response.json();
+      if (response.error) {
+        setError(`We encountered an error. Code: ${response.error.code}`);
+        return;
+      }
 
       const checkoutInstance = await stripeClient!.initEmbeddedCheckout({
-        clientSecret: clientSecret,
+        clientSecret: response.data.clientSecret,
       });
 
       checkout.current = checkoutInstance;
@@ -37,6 +57,12 @@ export const Checkout = () => {
       checkout.current?.destroy();
     };
   }, []);
+
+  if (error) {
+    return (
+      <div>Sorry, we encountered an error creating your checkout page.</div>
+    );
+  }
 
   return <div id="checkout" />;
 };

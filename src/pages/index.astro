@@ -8,6 +8,7 @@ import ArticlePreview from "../components/ArticlePreview.astro";
 import _ from "lodash";
 import { formatDate, getDate, isBefore } from "date-fns";
 import { Image } from "astro:assets";
+import { SPONSORSHIP_PRICE_ID } from "astro:env/client";
 
 const news = await getCollection("news");
 const top5 = news.slice(0, 5);
@@ -101,7 +102,11 @@ const siteData = await contentClient
                   </p>
                 ) : (
                   <div class="justify-self-center mt-2 py-2 px-4  bg-blue-500 hover:bg-blue-700 text-white rounded text-sm">
-                    <a href={`/purchase?game=${game.id}`}>Sponsor This Game</a>
+                    <a
+                      href={`/purchase/${SPONSORSHIP_PRICE_ID}?metadata=${JSON.stringify({ gameId: game.id })}`}
+                    >
+                      Sponsor This Game
+                    </a>
                   </div>
                 )}
               </div>

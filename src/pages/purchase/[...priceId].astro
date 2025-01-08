@@ -1,0 +1,20 @@
+---
+import { Checkout } from "@/components/Checkout";
+import Base from "@/layouts/Base.astro";
+import type { GetStaticPathsResult } from "astro";
+import { SPONSORSHIP_PRICE_ID } from "astro:env/client";
+
+export async function getStaticPaths() {
+  return [
+    {
+      params: { priceId: SPONSORSHIP_PRICE_ID },
+    },
+  ];
+}
+
+const { priceId } = Astro.params;
+---
+
+<Base title="Checkout">
+  <Checkout client:load priceId={priceId} />
+</Base>
