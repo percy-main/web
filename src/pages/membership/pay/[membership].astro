@@ -1,0 +1,62 @@
+---
+import Base from "@/layouts/Base.astro";
+import { PayMembership } from "@/components/PayMembership";
+import stripeData from "~/stripe.json";
+
+export async function getStaticPaths() {
+  return [
+    {
+      params: { membership: "senior_player" },
+      props: {
+        membership: {
+          name: "Senior Player",
+          monthly: {
+            priceId: stripeData.prices.players_monthly,
+            transfer: "£15",
+          },
+          annually: {
+            priceId: stripeData.prices.players_annually,
+            transfer: "£150",
+          },
+        },
+      },
+    },
+    {
+      params: { membership: "social" },
+      props: {
+        membership: {
+          name: "Social",
+          monthly: {
+            priceId: stripeData.prices.social_monthly,
+            transfer: "£5",
+          },
+          annually: {
+            priceId: stripeData.prices.social_annually,
+            transfer: "£50",
+          },
+        },
+      },
+    },
+  ];
+}
+
+const { membership } = Astro.props;
+---
+
+<Base title="You've Joined!">
+  <div class="flex flex-col items-center w-full">
+    <div class="flex flex-col max-w-[600px]">
+      <h4>Thanks for joining the club!</h4>
+      <p>
+        <span class="font-bold">Your membership category:</span>
+        {membership.name}
+      </p>
+
+      <PayMembership
+        client:load
+        monthly={membership.monthly}
+        annually={membership.annually}
+      />
+    </div>
+  </div>
+</Base>

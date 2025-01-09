@@ -1,15 +1,18 @@
 ---
+export const prerender = false;
+
 import Base from "@/layouts/Base.astro";
 import SimpleInput from "@/components/form/SimpleInput.astro";
 import DatePicker from "@/components/form/DatePicker.astro";
 import TextArea from "@/components/form/TextArea.astro";
-import RadioButtons from "../components/form/RadioButtons.astro";
+import RadioButtons from "@/components/form/RadioButtons.astro";
+import { actions } from "astro:actions";
 ---
 
 <Base title="Join The Club">
   <div class="flex flex-col items-center">
     <h4 class="mb-8">Join Percy Main Cricket and Sports Club</h4>
-    <form class="lg:w-[720px]">
+    <form class="lg:w-[720px]" method="POST" action={actions.join}>
       <section class="mb-8">
         <h5 class="mb-4">Getting To Know You</h5>
         <SimpleInput id="title" label="Title" required />
@@ -59,7 +62,7 @@ import RadioButtons from "../components/form/RadioButtons.astro";
             {
               title: "Social",
               description:
-                "For supporters and friends of the club. Payable as £50/annum",
+                "For supporters and friends of the club. Payable as £50/annum, or $5/month",
               value: "social",
             },
           ]}

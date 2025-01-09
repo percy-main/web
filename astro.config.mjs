@@ -22,10 +22,6 @@ export default defineConfig({
         context: "client",
         access: "public",
       }),
-      SPONSORSHIP_PRICE_ID: envField.string({
-        context: "client",
-        access: "public",
-      }),
       STRIPE_WEBHOOK_SECRET: envField.string({
         context: "server",
         access: "secret",

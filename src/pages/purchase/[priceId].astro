@@ -1,15 +1,12 @@
 ---
 import { Checkout } from "@/components/Checkout";
 import Base from "@/layouts/Base.astro";
-import type { GetStaticPathsResult } from "astro";
-import { SPONSORSHIP_PRICE_ID } from "astro:env/client";
+import stripeData from "~/stripe.json";
 
 export async function getStaticPaths() {
-  return [
-    {
-      params: { priceId: SPONSORSHIP_PRICE_ID },
-    },
-  ];
+  return Object.values(stripeData.prices).map((priceId) => ({
+    params: { priceId },
+  }));
 }
 
 const { priceId } = Astro.params;

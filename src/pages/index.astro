@@ -1,14 +1,13 @@
 ---
 import { getCollection } from "astro:content";
 import Base from "@/layouts/Base.astro";
-import { RichText } from "@/components/RichText";
 import { contentClient } from "../lib/contentful/client";
 import type { TypeSiteDataSkeleton } from "@/__generated__/TypeSiteData";
 import ArticlePreview from "../components/ArticlePreview.astro";
 import _ from "lodash";
 import { formatDate, getDate, isBefore } from "date-fns";
 import { Image } from "astro:assets";
-import { SPONSORSHIP_PRICE_ID } from "astro:env/client";
+import stripeData from "~/stripe.json";
 
 const news = await getCollection("news");
 const top5 = news.slice(0, 5);
@@ -103,7 +102,7 @@ const siteData = await contentClient
                 ) : (
                   <div class="justify-self-center mt-2 py-2 px-4  bg-blue-500 hover:bg-blue-700 text-white rounded text-sm">
                     <a
-                      href={`/purchase/${SPONSORSHIP_PRICE_ID}?metadata=${JSON.stringify({ gameId: game.id })}`}
+                      href={`/purchase/${stripeData.prices.sponsorship}?metadata=${JSON.stringify({ gameId: game.id })}`}
                     >
                       Sponsor This Game
                     </a>

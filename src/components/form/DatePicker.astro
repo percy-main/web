@@ -11,7 +11,10 @@ const { id, label, required } = Astro.props;
 <div class="relative w-full mt-5 mb-5">
   <input
     datepicker
+    datepicker-format="dd/mm/yyyy"
+    autocomplete="off"
     id={id}
+    name={id}
     type="text"
     class="w-full block text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
     placeholder=" "
