@@ -1,51 +1,76 @@
 ---
 import Base from "@/layouts/Base.astro";
-import TextInput from "@/components/form/TextInput.astro";
+import SimpleInput from "@/components/form/SimpleInput.astro";
+import DatePicker from "@/components/form/DatePicker.astro";
+import TextArea from "@/components/form/TextArea.astro";
+import RadioButtons from "../components/form/RadioButtons.astro";
 ---
 
 <Base title="Join The Club">
   <div class="flex flex-col items-center">
     <h4 class="mb-8">Join Percy Main Cricket and Sports Club</h4>
-    <form class="w-96">
-      <TextInput id="title" label="Title" required />
-      <TextInput id="name" label="Name" required />
-      <form class="max-w-sm mx-auto">
-        <div class="relative z-0 w-full mb-5 group">
-          <textarea
-            placeholder=" "
-            id="address"
-            rows="4"
-            class="w-full block text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-          ></textarea>
-          <label
-            for="address"
-            class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-7 scale-75 top-3 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-7"
-          >
-            Address
-          </label>
-        </div>
-        <TextInput id="postcode" label="Postcode" required />
-        <div class="relative max-w-sm mt-8">
-          <input
-            datepicker
-            id="dob"
-            type="text"
-            class="w-full block text-sm text-gray-900 bg-transparent border-0 border-b-2 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
-            placeholder=" "
-          />
-          <label
-            for="dob"
-            class="peer-focus:font-medium absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-7 scale-75 top-3 origin-[0] peer-focus:start-0 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-7"
-          >
-            Date Of Birth
-          </label>
-        </div>
-      </form>
+    <form class="lg:w-[720px]">
+      <section class="mb-8">
+        <h5 class="mb-4">Getting To Know You</h5>
+        <SimpleInput id="title" label="Title" required />
+        <SimpleInput id="name" label="Name" required />
+        <TextArea id="address" label="Address" required />
+        <SimpleInput id="postcode" label="Postcode" required />
+        <DatePicker id="dob" label="Date of Birth" required />
+      </section>
+
+      <section class="mb-8">
+        <h5 class="mb-4">Let's Stay In Touch</h5>
+        <SimpleInput id="telephone" label="Telephone" type="tel" required />
+        <SimpleInput id="email" label="Email" type="email" required />
+      </section>
+
+      <section class="mb-8">
+        <h5 class="mb-4">Keeping You Safe</h5>
+        <p>
+          We'd like to know some details of an emergency contact so we can help
+          ensure you stay safe at the club. All information is strictly
+          confidential and kept in accordance with our privacy policy.
+        </p>
+        <SimpleInput id="emergency_name" label="Contact Name" required />
+        <SimpleInput
+          id="emergency_telephone"
+          label="Contact Telephone"
+          type="tel"
+          required
+        />
+      </section>
+
+      <section class="mb-8">
+        <h5 class="mb-4">Your Membership</h5>
+        <p>
+          Choose the category of membership for which you would like to apply.
+        </p>
+        <RadioButtons
+          id="membership"
+          required
+          options={[
+            {
+              title: "Senior Player",
+              description:
+                "For all senior playing members. Payable as £150/annum, or £15/month",
+              value: "senior_player",
+            },
+            {
+              title: "Social",
+              description:
+                "For supporters and friends of the club. Payable as £50/annum",
+              value: "social",
+            },
+          ]}
+        />
+      </section>
       <button
         type="submit"
         class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-        >Submit</button
       >
+        Submit
+      </button>
     </form>
   </div>
 </Base>
