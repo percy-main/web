@@ -1,6 +1,5 @@
 import { z } from "astro:schema";
-import { ActionError, defineAction } from "astro:actions";
-import { stripe } from "@/lib/payments/client";
+import { defineAction } from "astro:actions";
 
 export const join = defineAction({
   accept: "form",
@@ -19,6 +18,8 @@ export const join = defineAction({
   handler: async (data) => {
     console.log(JSON.stringify(data, null, 2));
 
-    return;
+    return {
+      membership: data.membership,
+    };
   },
 });

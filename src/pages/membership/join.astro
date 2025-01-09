@@ -7,6 +7,11 @@ import DatePicker from "@/components/form/DatePicker.astro";
 import TextArea from "@/components/form/TextArea.astro";
 import RadioButtons from "@/components/form/RadioButtons.astro";
 import { actions } from "astro:actions";
+
+const result = Astro.getActionResult(actions.join);
+if (result && !result.error) {
+  return Astro.redirect(`/membership/pay/${result.data.membership}`);
+}
 ---
 
 <Base title="Join The Club">
@@ -15,17 +20,39 @@ import { actions } from "astro:actions";
     <form class="lg:w-[720px]" method="POST" action={actions.join}>
       <section class="mb-8">
         <h5 class="mb-4">Getting To Know You</h5>
-        <SimpleInput id="title" label="Title" required />
-        <SimpleInput id="name" label="Name" required />
-        <TextArea id="address" label="Address" required />
-        <SimpleInput id="postcode" label="Postcode" required />
-        <DatePicker id="dob" label="Date of Birth" required />
+        <SimpleInput id="title" label="Title" required transition:persist />
+        <SimpleInput id="name" label="Name" required transition:persist />
+        <TextArea id="address" label="Address" required transition:persist />
+        <SimpleInput
+          id="postcode"
+          label="Postcode"
+          required
+          transition:persist
+        />
+        <DatePicker
+          id="dob"
+          label="Date of Birth"
+          required
+          transition:persist
+        />
       </section>
 
       <section class="mb-8">
         <h5 class="mb-4">Let's Stay In Touch</h5>
-        <SimpleInput id="telephone" label="Telephone" type="tel" required />
-        <SimpleInput id="email" label="Email" type="email" required />
+        <SimpleInput
+          id="telephone"
+          label="Telephone"
+          type="tel"
+          required
+          transition:persist
+        />
+        <SimpleInput
+          id="email"
+          label="Email"
+          type="email"
+          required
+          transition:persist
+        />
       </section>
 
       <section class="mb-8">
@@ -35,12 +62,18 @@ import { actions } from "astro:actions";
           ensure you stay safe at the club. All information is strictly
           confidential and kept in accordance with our privacy policy.
         </p>
-        <SimpleInput id="emergency_name" label="Contact Name" required />
+        <SimpleInput
+          id="emergency_name"
+          label="Contact Name"
+          required
+          transition:persist
+        />
         <SimpleInput
           id="emergency_telephone"
           label="Contact Telephone"
           type="tel"
           required
+          transition:persist
         />
       </section>
 
@@ -52,6 +85,7 @@ import { actions } from "astro:actions";
         <RadioButtons
           id="membership"
           required
+          transition:persist
           options={[
             {
               title: "Senior Player",

@@ -1,7 +1,6 @@
 ---
-type Props = {
+type Props = astroHTML.JSX.InputHTMLAttributes & {
   id: string;
-  required?: boolean;
   options: Array<{
     title: string;
     value: string;
@@ -9,7 +8,7 @@ type Props = {
   }>;
 };
 
-const { id, required, options } = Astro.props;
+const { options, id, ...inputProps } = Astro.props;
 ---
 
 <div class="relative z-0 w-full mt-2 mb-5 group">
@@ -17,11 +16,11 @@ const { id, required, options } = Astro.props;
     options.map(({ title, value, description }) => (
       <div class="flex items-center mb-4">
         <input
+          {...inputProps}
           id={`${id}-${value}`}
           name={id}
           value={value}
           type="radio"
-          required={required}
           class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
         />
         <div class="ms-2 text-sm">
