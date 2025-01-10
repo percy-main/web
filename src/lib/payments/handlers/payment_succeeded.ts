@@ -1,17 +1,10 @@
 import { stripe } from "../client";
-import cf from "contentful-management";
 import { type TypeGameFields } from "@/__generated__";
-import { CDN_CMA_TOKEN, CDN_SPACE_ID } from "astro:env/server";
+import { CDN_SPACE_ID } from "astro:env/server";
 import stripeData from "~/stripe.json";
+import { managementClient } from "../../contentful/client";
 
 export const paymentSucceeded = async (sessionId: string) => {
-  const managementClient = cf.createClient(
-    {
-      accessToken: CDN_CMA_TOKEN,
-    },
-    { type: "plain" },
-  );
-
   const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId, {
     expand: ["line_items"],
   });

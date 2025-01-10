@@ -30,6 +30,10 @@ export default defineConfig({
         context: "server",
         access: "secret",
       }),
+      CDN_PREVIEW_TOKEN: envField.string({
+        context: "server",
+        access: "secret",
+      }),
     },
   },
 

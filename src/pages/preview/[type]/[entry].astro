@@ -1,24 +1,18 @@
 ---
 export const prerender = false;
 
-import { CDN_SPACE_ID, CDN_TOKEN } from "astro:env/server";
-import * as contentful from "contentful";
 import type { TypePageSkeleton } from "@/__generated__";
 import { ContentfulLivePreview } from "@contentful/live-preview";
 import { Preview } from "@/components/Preview";
 import Page from "@/layouts/Page.astro";
 import { ContentfulLivePreviewProvider } from "@contentful/live-preview/react";
+import { previewClient } from "../../../lib/contentful/client";
 
 ContentfulLivePreview.init({ locale: "en-US" });
 
-const client = contentful.createClient({
-  space: CDN_SPACE_ID,
-  accessToken: CDN_TOKEN,
-});
-
 const { entry } = Astro.params;
 
-const response = await client.getEntry<TypePageSkeleton>(entry!);
+const response = await previewClient.getEntry<TypePageSkeleton>(entry!);
 ---
 
 <Page title={response.fields.title} slug={response.fields.slug}>
