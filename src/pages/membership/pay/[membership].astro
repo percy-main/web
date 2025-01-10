@@ -11,11 +11,11 @@ export async function getStaticPaths() {
         membership: {
           name: "Senior Player",
           monthly: {
-            priceId: stripeData.prices.players_monthly,
+            priceId: stripeData.prices.players_monthly.priceId,
             transfer: "£15",
           },
           annually: {
-            priceId: stripeData.prices.players_annually,
+            priceId: stripeData.prices.players_annually.priceId,
             transfer: "£150",
           },
         },
@@ -27,11 +27,11 @@ export async function getStaticPaths() {
         membership: {
           name: "Social",
           monthly: {
-            priceId: stripeData.prices.social_monthly,
+            priceId: stripeData.prices.social_monthly.priceId,
             transfer: "£5",
           },
           annually: {
-            priceId: stripeData.prices.social_annually,
+            priceId: stripeData.prices.social_annually.priceId,
             transfer: "£50",
           },
         },

@@ -111,6 +111,11 @@ if (result?.error) {
       >
         Submit
       </button>
+      {
+        result?.error && (
+          <p class="mt-6">Sorry we encountered an error saving your data.</p>
+        )
+      }
     </form>
   </div>
 </Base>
