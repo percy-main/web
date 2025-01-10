@@ -1,0 +1,6 @@
+{
+  "baseURL": "https://api.retool.com/v1/workflows",
+  "workflows": {
+    "register": "59dae819-c218-4148-9d2f-c0ca8a853552"
+  }
+}

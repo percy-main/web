@@ -26,6 +26,10 @@ export default defineConfig({
         context: "server",
         access: "secret",
       }),
+      RETOOL_API_KEY: envField.string({
+        context: "server",
+        access: "secret",
+      }),
     },
   },
 

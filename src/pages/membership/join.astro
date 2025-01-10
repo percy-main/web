@@ -12,6 +12,9 @@ const result = Astro.getActionResult(actions.join);
 if (result && !result.error) {
   return Astro.redirect(`/membership/pay/${result.data.membership}`);
 }
+if (result?.error) {
+  console.error(result.error);
+}
 ---
 
 <Base title="Join The Club">
@@ -63,13 +66,13 @@ if (result && !result.error) {
           confidential and kept in accordance with our privacy policy.
         </p>
         <SimpleInput
-          id="emergency_name"
+          id="emerg_name"
           label="Contact Name"
           required
           transition:persist
         />
         <SimpleInput
-          id="emergency_telephone"
+          id="emerg_phone"
           label="Contact Telephone"
           type="tel"
           required
