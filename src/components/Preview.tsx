@@ -1,14 +1,17 @@
 import { useContentfulLiveUpdates } from "@contentful/live-preview/react";
 import type { FC } from "react";
 import { RichText } from "./RichText";
+import type { Entry, EntrySkeletonType } from "contentful";
+import type { TypePageSkeleton } from "../__generated__";
 
 type Props = {
-  document: any;
-  page: string;
+  entry: Entry<TypePageSkeleton, undefined, string>;
 };
 
-export const Preview: FC<Props> = ({ document, page }) => {
-  const updated = useContentfulLiveUpdates(document);
+export const Preview: FC<Props> = ({ entry }) => {
+  const updated = useContentfulLiveUpdates(entry);
 
-  return <RichText document={updated} page={page} />;
+  return (
+    <RichText document={updated.fields.content} page={updated.fields.slug} />
+  );
 };
