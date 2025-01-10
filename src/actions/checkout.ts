@@ -5,13 +5,14 @@ import { stripe } from "@/lib/payments/client";
 export const checkout = defineAction({
   input: z.object({
     priceId: z.string(),
+    mode: z.enum(["payment", "subscription"]),
     metadata: z.any(),
   }),
-  handler: async ({ priceId, metadata }) => {
+  handler: async ({ priceId, mode, metadata }) => {
     try {
       const intent = await stripe.checkout.sessions.create({
         ui_mode: "embedded",
-        mode: "payment",
+        mode,
         line_items: [
           {
             price: priceId,

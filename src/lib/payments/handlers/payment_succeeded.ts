@@ -21,7 +21,7 @@ export const paymentSucceeded = async (sessionId: string) => {
   if (
     checkoutSession.payment_status === "paid" &&
     checkoutSession.line_items?.data.some(
-      (li) => li.price?.id === stripeData.prices.sponsorship,
+      (li) => li.price?.id === stripeData.prices.sponsorship.priceId,
     ) &&
     typeof gameId === "string"
   ) {

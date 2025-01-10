@@ -4,14 +4,16 @@ import Base from "@/layouts/Base.astro";
 import stripeData from "~/stripe.json";
 
 export async function getStaticPaths() {
-  return Object.values(stripeData.prices).map((priceId) => ({
+  return Object.values(stripeData.prices).map(({ priceId, mode }) => ({
     params: { priceId },
+    props: { mode: mode as "subscription" | "payment" },
   }));
 }
 
 const { priceId } = Astro.params;
+const { mode } = Astro.props;
 ---
 
 <Base title="Checkout">
-  <Checkout client:load priceId={priceId} />
+  <Checkout client:load priceId={priceId} mode={mode} />
 </Base>

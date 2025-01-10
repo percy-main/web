@@ -7,9 +7,10 @@ const stripeClient = await loadStripe(STRIPE_PUBLIC_KEY);
 
 type Props = {
   priceId: string;
+  mode: "subscription" | "payment";
 };
 
-export const Checkout: FC<Props> = ({ priceId }) => {
+export const Checkout: FC<Props> = ({ priceId, mode }) => {
   const checkout = useRef<StripeEmbeddedCheckout>(undefined);
 
   const [error, setError] = useState<string>();
@@ -34,6 +35,7 @@ export const Checkout: FC<Props> = ({ priceId }) => {
 
       const response = await actions.checkout({
         priceId,
+        mode,
         metadata: metadata(),
       });
 
