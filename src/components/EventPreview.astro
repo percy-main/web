@@ -1,0 +1,32 @@
+---
+import { formatDate } from "date-fns";
+import type { Event } from "../collections/event";
+import { IoCalendar, IoChevronForward } from "react-icons/io5";
+
+type Props = {
+  id: string;
+  event: Event;
+};
+
+const { id, event } = Astro.props;
+---
+
+<div class="bg-white rounded-lg shadow-md border p-4 mb-4">
+  <div class="flex flex-row items-center justify-stretch gap-4">
+    <IoCalendar title="Event" fontSize={32} />
+    <div class="w-full">
+      <h5 class="text-lg font-semibold">
+        {formatDate(event.when, "dd/MM/yyyy")}
+      </h5>
+      <p>
+        {event.name}
+      </p>
+    </div>
+    <a
+      href={`/calendar/event/${id}`}
+      class="self-stretch flex flex-col items-center justify-center"
+    >
+      <IoChevronForward fontSize={32} />
+    </a>
+  </div>
+</div>

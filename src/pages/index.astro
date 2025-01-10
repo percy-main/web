@@ -3,36 +3,44 @@ import { getCollection } from "astro:content";
 import Base from "@/layouts/Base.astro";
 import { contentClient } from "../lib/contentful/client";
 import type { TypeSiteDataSkeleton } from "@/__generated__/TypeSiteData";
-import ArticlePreview from "../components/ArticlePreview.astro";
+import ArticlePreview from "@/components/ArticlePreview.astro";
+import GamePreview from "@/components/GamePreview.astro";
+import EventPreview from "@/components/EventPreview.astro";
 import _ from "lodash";
-import { formatDate, getDate, compareAsc, compareDesc } from "date-fns";
+import { getDate, compareDesc, compareAsc } from "date-fns";
 import { Image } from "astro:assets";
 import stripeData from "~/stripe.json";
+import { match } from "ts-pattern";
 
 const news = await getCollection("news");
 const top5 = news
   .sort(({ data: g1 }, { data: g2 }) => compareDesc(g1.when, g2.when))
   .slice(0, 6);
 
-const games = await getCollection("game");
+const calendarItems = await getCollection("calendarItem");
 
 const teamOrder: Record<string, number> = {
   "1st XI": 2,
   "2nd XI": 1,
 };
 
-const next5games = games
+const next5calendarItems = calendarItems
   .sort(({ data: g1 }, { data: g2 }) => {
     const g1D = getDate(g1.when);
     const g2D = getDate(g2.when);
-    if (g1D === g2D) {
-      const t1 = teamOrder[g1.team] ?? 0;
-      const t2 = teamOrder[g2.team] ?? 0;
 
-      return t2 - t1;
+    if (g1D === g2D) {
+      if (g1.type === "game" && g2.type === "game") {
+        const t1 = teamOrder[g1.team] ?? 0;
+        const t2 = teamOrder[g2.team] ?? 0;
+
+        return t2 - t1;
+      }
+
+      return g1.type === "game" ? 1 : -1;
     }
 
-    return compareDesc(g1.when, g2.when);
+    return compareAsc(g1.when, g2.when);
   })
   .slice(0, 5);
 
@@ -96,42 +104,20 @@ const siteData = await contentClient
       <h4>Upcoming Games</h4>
       <ul>
         {
-          next5games.map((game) => (
+          next5calendarItems.map((calendarItem) => (
             <li>
-              <div class="bg-white rounded-lg shadow-md border p-4 pb-2 mb-4">
-                <div class=" flex flex-row items-center justify-stretch gap-4">
-                  <Image
-                    src="/images/cricket.png"
-                    alt="Cricket Match"
-                    width="24"
-                    height="24"
-                    loading="eager"
+              {match(calendarItem)
+                .with({ data: { type: "event" } }, (event) => (
+                  <EventPreview id={event.id} event={event.data} />
+                ))
+                .with({ data: { type: "game" } }, (game) => (
+                  <GamePreview
+                    id={game.id}
+                    game={game.data}
+                    sponsorshipPriceId={stripeData.prices.sponsorship.priceId}
                   />
-                  <div class="w-full">
-                    <h5 class="text-lg font-semibold">
-                      {formatDate(game.data.when, "dd/MM/yyyy")}
-                    </h5>
-                    <p>
-                      {game.data.team} versus {game.data.opposition}{" "}
-                      {game.data.home ? "(H)" : "(A)"}
-                    </p>
-                    <p>{game.data.league}</p>
-                  </div>
-                </div>
-                {game.data.hasSponsor ? (
-                  <p class="justify-self-center py-2 px-4 mt-2 bg-green-500 text-dark rounded text-sm">
-                    Sponsor: {game.data.sponsor?.name ?? "Pending"}
-                  </p>
-                ) : (
-                  <div class="justify-self-center mt-2 py-2 px-4  bg-blue-500 hover:bg-blue-700 text-white rounded text-sm">
-                    <a
-                      href={`/purchase/${stripeData.prices.sponsorship.priceId}?metadata=${JSON.stringify({ gameId: game.id })}`}
-                    >
-                      Sponsor This Game
-                    </a>
-                  </div>
-                )}
-              </div>
+                ))
+                .exhaustive()}
             </li>
           ))
         }

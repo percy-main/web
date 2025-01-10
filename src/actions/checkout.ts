@@ -35,7 +35,10 @@ export const checkout = defineAction({
       };
     } catch (err) {
       console.error(err);
-      throw err;
+      throw new ActionError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Could not generate checkout",
+      });
     }
   },
 });

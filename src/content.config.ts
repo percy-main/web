@@ -1,5 +1,7 @@
+import { calendarItem } from "./collections/calendarItem";
+import { event } from "./collections/event";
 import { game } from "./collections/game";
 import { news } from "./collections/news";
 import { page } from "./collections/page";
 
-export const collections = { page, news, game };
+export const collections = { page, news, game, event, calendarItem };

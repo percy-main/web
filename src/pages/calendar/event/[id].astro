@@ -1,0 +1,40 @@
+---
+import { getCollection } from "astro:content";
+import Base from "@/layouts/Base.astro";
+import { formatDate } from "date-fns";
+import { match } from "ts-pattern";
+import Game from "@/components/Game.astro";
+import Event from "@/components/Event.astro";
+import stripeData from "~/stripe.json";
+
+export async function getStaticPaths() {
+  const pages = await getCollection("calendarItem");
+  return pages.map((calendarItem) => ({
+    params: { id: calendarItem.id },
+    props: { calendarItem },
+  }));
+}
+
+const { calendarItem } = Astro.props;
+---
+
+{
+  match(calendarItem)
+    .with({ data: { type: "game" } }, (game) => (
+      <Base
+        title={`${game.data.team} Game - ${formatDate(game.data.when, "dd/MM/yyyy")}`}
+      >
+        <Game
+          id={game.id}
+          game={game.data}
+          sponsorshipPriceId={stripeData.prices.sponsorship.priceId}
+        />
+      </Base>
+    ))
+    .with({ data: { type: "event" } }, (event) => (
+      <Base title={event.data.name}>
+        <Event event={event.data} id={event.id} />
+      </Base>
+    ))
+    .exhaustive()
+}
