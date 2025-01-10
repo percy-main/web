@@ -1,11 +1,8 @@
-import { SPONSORSHIP_PRICE_ID } from "astro:env/client";
 import { stripe } from "../client";
 import cf from "contentful-management";
-import {
-  type TypeGameFields,
-  type TypeGameWithoutLinkResolutionResponse,
-} from "../../../__generated__";
+import { type TypeGameFields } from "@/__generated__";
 import { CDN_CMA_TOKEN, CDN_SPACE_ID } from "astro:env/server";
+import stripeData from "~/stripe.json";
 
 export const paymentSucceeded = async (sessionId: string) => {
   const managementClient = cf.createClient(
@@ -24,7 +21,7 @@ export const paymentSucceeded = async (sessionId: string) => {
   if (
     checkoutSession.payment_status === "paid" &&
     checkoutSession.line_items?.data.some(
-      (li) => li.price?.id === SPONSORSHIP_PRICE_ID,
+      (li) => li.price?.id === stripeData.prices.sponsorship,
     ) &&
     typeof gameId === "string"
   ) {
