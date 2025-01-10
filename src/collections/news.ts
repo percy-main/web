@@ -7,7 +7,7 @@ const newsSchema = z.object({
   title: z.string(),
   content: z.any(),
   summary: z.any(),
-  when: z.string(),
+  when: z.date(),
 });
 
 export type News = z.TypeOf<typeof newsSchema>;
@@ -23,7 +23,7 @@ export const news = defineCollection({
       title: item.fields.title,
       content: item.fields.content,
       summary: item.fields.summary,
-      when: df.format(new Date(item.sys.createdAt), "PPPP"),
+      when: new Date(item.sys.createdAt),
     }));
   },
   schema: newsSchema,

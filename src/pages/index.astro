@@ -5,12 +5,14 @@ import { contentClient } from "../lib/contentful/client";
 import type { TypeSiteDataSkeleton } from "@/__generated__/TypeSiteData";
 import ArticlePreview from "../components/ArticlePreview.astro";
 import _ from "lodash";
-import { formatDate, getDate, isBefore } from "date-fns";
+import { formatDate, getDate, compareAsc, compareDesc } from "date-fns";
 import { Image } from "astro:assets";
 import stripeData from "~/stripe.json";
 
 const news = await getCollection("news");
-const top5 = news.slice(0, 5);
+const top5 = news
+  .sort(({ data: g1 }, { data: g2 }) => compareDesc(g1.when, g2.when))
+  .slice(0, 6);
 
 const games = await getCollection("game");
 
@@ -30,7 +32,7 @@ const next5games = games
       return t2 - t1;
     }
 
-    return isBefore(g1.when, g2.when) ? -1 : 1;
+    return compareDesc(g1.when, g2.when);
   })
   .slice(0, 5);
 
@@ -42,16 +44,34 @@ const siteData = await contentClient
 <Base title="Home">
   <div class="container flex flex-col lg:flex-row gap-12">
     <div>
-      <Image
-        class="rounded-lg"
-        src="/images/pitch.png"
-        width="1009"
-        height="313"
-        alt="The cricket pitch at Percy Main"
-      />
-      <p class="text-lg mt-4">
-        {siteData.fields.mIssion}
-      </p>
+      <section class="bg-white dark:bg-gray-900">
+        <Image
+          class="rounded-lg rounded-b-none"
+          src="/images/pitch.png"
+          width="1009"
+          height="313"
+          alt="The cricket pitch at Percy Main"
+        />
+        <div class="py-2 px-4 mx-auto max-w-screen-xl sm:py-8 lg:px-6">
+          <div class="mx-auto max-w-screen-sm text-center">
+            <h2
+              class="mb-4 text-2xl font-primary tracking-tight font-extrabold leading-tight text-gray-900 dark:text-white"
+            >
+              Join The Main
+            </h2>
+            <p
+              class="mb-6 font-light text-gray-500 dark:text-gray-400 md:text-lg"
+            >
+              Get registered for the 2025 season
+            </p>
+            <a
+              href="/membership/join"
+              class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+              >Join Now</a
+            >
+          </div>
+        </div>
+      </section>
       <div>
         <h4 class="mt-4">Latest News</h4>
         <ul class="flex flex-row gap-4 items-stretch flex-wrap">

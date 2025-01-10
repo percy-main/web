@@ -2,6 +2,7 @@
 import { getCollection } from "astro:content";
 import Base from "../../../layouts/Base.astro";
 import { RichText } from "../../../components/RichText";
+import { formatDate } from "date-fns";
 
 export async function getStaticPaths() {
   const pages = await getCollection("news");
@@ -18,7 +19,7 @@ const { article } = Astro.props;
   <div>
     <h2>{article.data.title}</h2>
     <p class="text-gray-500 text-sm pb-4">
-      Published on {article.data.when}
+      Published on {formatDate(article.data.when, "PPPP")}
     </p>
   </div>
   <RichText
