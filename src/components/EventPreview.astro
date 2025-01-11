@@ -1,6 +1,6 @@
 ---
 import { formatDate } from "date-fns";
-import type { Event } from "../collections/event";
+import type { Event } from "@/collections/event";
 import { IoCalendar, IoChevronForward } from "react-icons/io5";
 
 type Props = {
@@ -26,7 +26,10 @@ const { id, event } = Astro.props;
       href={`/calendar/event/${id}`}
       class="self-stretch flex flex-col items-center justify-center"
     >
-      <IoChevronForward fontSize={32} />
+      <IoChevronForward
+        className="text-gray-700 hover:text-gray-400"
+        fontSize={32}
+      />
     </a>
   </div>
 </div>

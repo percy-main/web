@@ -1,12 +1,12 @@
 import { z, defineCollection } from "astro:content";
-import { contentClient } from "../lib/contentful/client";
+import { contentClient } from "@/lib/contentful/client";
 import type { Entry } from "contentful";
 import {
   type TypeGameSkeleton,
   type TypeLeagueSkeleton,
   type TypeSponsorSkeleton,
   type TypeTeamSkeleton,
-} from "../__generated__";
+} from "@/__generated__";
 import * as df from "date-fns";
 
 export const schema = z.object({

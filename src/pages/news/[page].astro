@@ -1,8 +1,8 @@
 ---
 import type { GetStaticPathsOptions } from "astro";
 import { getCollection } from "astro:content";
-import ArticlePreview from "../../components/ArticlePreview.astro";
-import Base from "../../layouts/Base.astro";
+import ArticlePreview from "@/components/ArticlePreview.astro";
+import Base from "@/layouts/Base.astro";
 
 export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
   const news = await getCollection("news");

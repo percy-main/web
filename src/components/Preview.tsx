@@ -2,7 +2,7 @@ import { useContentfulLiveUpdates } from "@contentful/live-preview/react";
 import type { FC } from "react";
 import { RichText } from "./RichText";
 import type { Entry, EntrySkeletonType } from "contentful";
-import type { TypePageSkeleton } from "../__generated__";
+import type { TypePageSkeleton } from "@/__generated__";
 
 type Props = {
   entry: Entry<TypePageSkeleton, undefined, string>;
