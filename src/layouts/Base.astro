@@ -16,7 +16,7 @@ const fontSecondary = theme.fonts.font_family.secondary
   .replace(/:[ital,]*[ital@]*[wght@]*[0-9,;]+/gi, "");
 
 export interface Props {
-  title: string;
+  title?: string;
   author?: string;
   description?: string;
   image?: string;
@@ -29,7 +29,11 @@ const { title, description, image, author } = Astro.props;
 <!doctype html>
 <html lang="en">
   <head>
-    <link rel="shortcut icon" href="/images/favicon.ico" />
+    <slot name="ldjson" />
+
+    <link rel="
+      shortcut
+      icon" href="/images/favicon.ico" />
     <meta name="msapplication-TileColor" content="#000000" />
     <meta
       name="theme-color"

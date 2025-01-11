@@ -1,0 +1,19 @@
+---
+import type { Thing } from "schema-dts";
+
+type Props = {
+  content: Thing;
+};
+
+const { content } = Astro.props;
+---
+
+<>
+  <script
+    type="application/ld+json"
+    set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      ...(content as object),
+    })}
+  />
+</>
