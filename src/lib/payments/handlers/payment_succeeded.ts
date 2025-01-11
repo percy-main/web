@@ -2,7 +2,7 @@ import { stripe } from "../client";
 import { type TypeGameFields } from "@/__generated__";
 import { CDN_SPACE_ID } from "astro:env/server";
 import stripeData from "~/stripe.json";
-import { managementClient } from "../../contentful/client";
+import { managementClient } from "@/lib/contentful/client";
 
 export const paymentSucceeded = async (sessionId: string) => {
   const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId, {

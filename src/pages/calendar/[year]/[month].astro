@@ -1,0 +1,236 @@
+---
+import Base from "@/layouts/Base.astro";
+import type { GetStaticPaths } from "astro";
+import {
+  addMonths,
+  compareAsc,
+  formatDate,
+  getDate,
+  getYear,
+  getMonth,
+} from "date-fns";
+import { generateCalendar } from "@/lib/calendar";
+import { IoCalendar, IoChevronBack, IoChevronForward } from "react-icons/io5";
+import { getCollection } from "astro:content";
+import _ from "lodash";
+import { match } from "ts-pattern";
+import { Image } from "astro:assets";
+
+export const getStaticPaths = (async () => {
+  const calendarItems = await getCollection("calendarItem");
+
+  const teamOrder: Record<string, number> = {
+    "1st XI": 2,
+    "2nd XI": 1,
+  };
+
+  const calendarItemGroups = _.groupBy(
+    calendarItems.sort(({ data: g1 }, { data: g2 }) => {
+      const g1D = getDate(g1.when);
+      const g2D = getDate(g2.when);
+
+      if (g1D === g2D) {
+        if (g1.type === "game" && g2.type === "game") {
+          const t1 = teamOrder[g1.team] ?? 0;
+          const t2 = teamOrder[g2.team] ?? 0;
+
+          return t2 - t1;
+        }
+
+        return g1.type === "game" ? 1 : -1;
+      }
+
+      return compareAsc(g1.when, g2.when);
+    }),
+    (item) => `${getYear(item.data.when)}-${getMonth(item.data.when)}`
+  );
+
+  const now = new Date();
+  const past12Months = Array.from(Array(12), (_, i) => addMonths(now, -i));
+  const next12Months = Array.from(Array(12), (_, i) => addMonths(now, i));
+
+  const paths = [...past12Months, ...next12Months].map((date, i, arr) => {
+    const prevDate = addMonths(date, -1);
+    const nextDate = addMonths(date, 1);
+    const props = {
+      year: formatDate(date, "yyyy"),
+      month: formatDate(date, "MMMM"),
+      calendar: generateCalendar(date, calendarItems),
+      items: calendarItemGroups[`${getYear(date)}-${getMonth(date)}`] ?? [],
+      previous:
+        i === 0
+          ? undefined
+          : `/calendar/${formatDate(prevDate, "yyyy").toLocaleLowerCase()}/${formatDate(prevDate, "MMMM").toLocaleLowerCase()}`,
+      next:
+        i === arr.length - 1
+          ? undefined
+          : `/calendar/${formatDate(nextDate, "yyyy").toLocaleLowerCase()}/${formatDate(nextDate, "MMMM").toLocaleLowerCase()}`,
+    };
+
+    return {
+      params: {
+        year: props.year.toLocaleLowerCase(),
+        month: props.month.toLocaleLowerCase(),
+      },
+      props,
+    };
+  });
+
+  return paths;
+}) satisfies GetStaticPaths;
+
+const { year, month, calendar, previous, next, items } = Astro.props;
+---
+
+<Base title="Calendar">
+  <h2>Event Calendar</h2>
+  <section class="relative">
+    <div class="w-full relative z-10">
+      <div class="w-full max-w-7xl">
+        <div class="grid grid-cols-12 gap-8 max-w-4xl xl:max-w-full">
+          <div
+            class="col-span-12 xl:col-span-7 px-2.5 py-5 sm:p-8 bg-gradient-to-b from-white/25 to-white xl:bg-white rounded-2xl max-xl:row-start-1"
+          >
+            <div
+              class="flex flex-col md:flex-row gap-4 items-center justify-between mb-5"
+            >
+              <div class="flex items-center justify-between gap-4 w-full">
+                <h5 class="text-xl leading-8 font-semibold text-gray-900 m-0">
+                  {month}
+                  {year}
+                </h5>
+                <div class="flex items-center">
+                  <a href={previous ?? "#"}>
+                    <IoChevronBack
+                      className="text-gray-700 hover:text-gray-400"
+                      fontSize={32}
+                    />
+                  </a>
+                  <a href={next ?? "#"}>
+                    <IoChevronForward
+                      className="text-gray-700 hover:text-gray-400"
+                      fontSize={32}
+                    />
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="border border-indigo-200 rounded-xl">
+              <div
+                class="grid grid-cols-7 rounded-t-3xl border-b border-indigo-200"
+              >
+                <div
+                  class="py-3.5 border-r border-indigo-200 bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600"
+                >
+                  Mon
+                </div>
+                <div
+                  class="py-3.5 border-r border-indigo-200 bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600"
+                >
+                  Tue
+                </div>
+                <div
+                  class="py-3.5 border-r border-indigo-200 bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600"
+                >
+                  Wed
+                </div>
+                <div
+                  class="py-3.5 border-r border-indigo-200 bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600"
+                >
+                  Thu
+                </div>
+                <div
+                  class="py-3.5 border-r border-indigo-200 bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600"
+                >
+                  Fri
+                </div>
+                <div
+                  class="py-3.5 rounded-tr-xl bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600"
+                >
+                  Sat
+                </div>
+                <div
+                  class="py-3.5 border-r rounded-tl-xl border-indigo-200 bg-indigo-50 flex items-center justify-center text-sm font-medium text-indigo-600"
+                >
+                  Sun
+                </div>
+              </div>
+              <div class="grid grid-cols-7 rounded-b-xl">
+                {
+                  calendar.map(({ date, isExtra, items }) => (
+                    <div
+                      class="flex items-start justify-between xl:aspect-square max-xl:min-h-[60px] p-3.5 border-r border-b border-indigo-200 transition-all duration-300 hover:bg-indigo-50"
+                      class:list={[isExtra ? "bg-gray-50" : "bg-gray-100"]}
+                    >
+                      <span class="text-xs font-semibold text-gray-400">
+                        {formatDate(date, "dd")}
+                      </span>
+                      {items.some((item) => item.data.type === "game") ? (
+                        <Image
+                          src="/images/cricket.png"
+                          alt="Cricket Match"
+                          title="Cricket Match"
+                          width="24"
+                          height="24"
+                          loading="eager"
+                          class="max-w-24 max-h-24"
+                        />
+                      ) : null}
+                      {items.some((item) => item.data.type === "event") ? (
+                        <IoCalendar title="Event" fontSize={24} />
+                      ) : null}
+                    </div>
+                  ))
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="col-span-12 xl:col-span-5">
+            <div class="flex gap-5 flex-col">
+              {
+                items.map((item) => (
+                  <div class="p-6 rounded-xl bg-white flex flex-row justify-between">
+                    <div class="flex flex-col">
+                      <p class="text-base font-medium text-gray-900">
+                        {formatDate(item.data.when, "dd/MM/yyyy")}
+                      </p>
+                      {match(item)
+                        .with({ data: { type: "game" } }, (game) => (
+                          <>
+                            <h6 class="text-xl leading-8 font-semibold text-black mb-1">
+                              Cricket Match
+                            </h6>
+                            <p class="text-base font-normal text-gray-600">
+                              {game.data.team} versus {game.data.opposition}{" "}
+                              {game.data.home ? "(H)" : "(A)"}
+                            </p>
+                            <p>{game.data.league}</p>
+                          </>
+                        ))
+                        .with({ data: { type: "event" } }, (event) => (
+                          <p class="text-base font-normal text-gray-600">
+                            {event.data.name}
+                          </p>
+                        ))
+                        .exhaustive()}
+                    </div>
+                    <a
+                      href={`/calendar/event/${item.id}`}
+                      class="self-stretch flex flex-col items-center justify-center"
+                    >
+                      <IoChevronForward
+                        className="text-gray-700 hover:text-gray-400"
+                        fontSize={32}
+                      />
+                    </a>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

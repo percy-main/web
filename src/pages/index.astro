@@ -1,8 +1,6 @@
 ---
 import { getCollection } from "astro:content";
 import Base from "@/layouts/Base.astro";
-import { contentClient } from "../lib/contentful/client";
-import type { TypeSiteDataSkeleton } from "@/__generated__/TypeSiteData";
 import ArticlePreview from "@/components/ArticlePreview.astro";
 import GamePreview from "@/components/GamePreview.astro";
 import EventPreview from "@/components/EventPreview.astro";
@@ -43,10 +41,6 @@ const next5calendarItems = calendarItems
     return compareAsc(g1.when, g2.when);
   })
   .slice(0, 5);
-
-const siteData = await contentClient
-  .getEntries<TypeSiteDataSkeleton>({ content_type: "siteData" })
-  .then((en) => en.items[0]);
 ---
 
 <Base title="Home">

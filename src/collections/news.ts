@@ -1,6 +1,6 @@
 import { z, defineCollection } from "astro:content";
-import { contentClient } from "../lib/contentful/client";
-import type { TypeNewsSkeleton } from "../__generated__";
+import { contentClient } from "@/lib/contentful/client";
+import type { TypeNewsSkeleton } from "@/__generated__";
 import * as df from "date-fns";
 
 const newsSchema = z.object({
