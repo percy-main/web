@@ -11,6 +11,11 @@ export default defineConfig({
 
   env: {
     schema: {
+      BASE_URL: envField.string({
+        context: "client",
+        access: "public",
+        default: "https://www.percymain.org",
+      }),
       CDN_TOKEN: envField.string({ context: "server", access: "secret" }),
       CDN_CMA_TOKEN: envField.string({ context: "server", access: "secret" }),
       CDN_SPACE_ID: envField.string({ context: "server", access: "secret" }),

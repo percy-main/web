@@ -5,6 +5,7 @@ import { ClientRouter } from "astro:transitions";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
 import { theme } from "@/lib/theme";
+import { BASE_URL } from "astro:env/client";
 
 const fontPrimary = theme.fonts.font_family.primary
   .replace(/\+/g, " ")
@@ -78,13 +79,10 @@ const { title, description, image, author } = Astro.props;
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
-    <meta
-      property="og:url"
-      content={`config.site.base_url}/${Astro.url.pathname.replace("/", "")}`}
-    />
+    <meta property="og:url" content={`${BASE_URL}/${Astro.url}`} />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <meta property="og:image" content={image} />
+    {image && <meta property="og:image" content={image} />}
     <meta name="twitter:image" content={image} />
     <meta name="twitter:card" content="summary_large_image" />
 
