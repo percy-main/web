@@ -1,14 +1,14 @@
 import { z } from "astro:schema";
 import { ActionError, defineAction } from "astro:actions";
 import { stripe } from "@/lib/payments/client";
+import { priceSchema } from "@/lib/payments/prices";
 
 export const checkout = defineAction({
   input: z.object({
-    priceId: z.string(),
-    mode: z.enum(["payment", "subscription"]),
+    price: priceSchema,
     metadata: z.any(),
   }),
-  handler: async ({ priceId, mode, metadata }) => {
+  handler: async ({ price: { priceId, mode, hasPromotion }, metadata }) => {
     try {
       const intent = await stripe.checkout.sessions.create({
         ui_mode: "embedded",
@@ -21,6 +21,7 @@ export const checkout = defineAction({
         ],
         redirect_on_completion: "never",
         metadata,
+        allow_promotion_codes: hasPromotion,
       });
 
       if (!intent.client_secret) {

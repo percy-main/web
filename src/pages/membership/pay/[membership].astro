@@ -1,7 +1,7 @@
 ---
 import Base from "@/layouts/Base.astro";
 import { PayMembership } from "@/components/PayMembership";
-import stripeData from "~/stripe.json";
+import { prices } from "@/lib/payments/prices";
 
 export async function getStaticPaths() {
   return [
@@ -11,11 +11,11 @@ export async function getStaticPaths() {
         membership: {
           name: "Senior Player",
           monthly: {
-            priceId: stripeData.prices.players_monthly.priceId,
+            priceId: prices.playersMonthly.priceId,
             transfer: "£15",
           },
           annually: {
-            priceId: stripeData.prices.players_annually.priceId,
+            priceId: prices.playersAnnually.priceId,
             transfer: "£150",
           },
         },
@@ -27,11 +27,11 @@ export async function getStaticPaths() {
         membership: {
           name: "Social",
           monthly: {
-            priceId: stripeData.prices.social_monthly.priceId,
+            priceId: prices.socialMonthly.priceId,
             transfer: "£5",
           },
           annually: {
-            priceId: stripeData.prices.social_annually.priceId,
+            priceId: prices.socialAnnually.priceId,
             transfer: "£50",
           },
         },

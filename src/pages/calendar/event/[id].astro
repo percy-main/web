@@ -5,7 +5,7 @@ import { formatDate } from "date-fns";
 import { match } from "ts-pattern";
 import Game from "@/components/Game.astro";
 import Event from "@/components/Event.astro";
-import stripeData from "~/stripe.json";
+import { prices } from "@/lib/payments/prices";
 
 export async function getStaticPaths() {
   const pages = await getCollection("calendarItem");
@@ -27,7 +27,7 @@ const { calendarItem } = Astro.props;
         <Game
           id={game.id}
           game={game.data}
-          sponsorshipPriceId={stripeData.prices.sponsorship.priceId}
+          sponsorshipPriceId={prices.sponsorship.priceId}
         />
       </Base>
     ))

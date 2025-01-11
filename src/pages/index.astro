@@ -7,7 +7,7 @@ import EventPreview from "@/components/EventPreview.astro";
 import _ from "lodash";
 import { getDate, compareDesc, compareAsc } from "date-fns";
 import { Image } from "astro:assets";
-import stripeData from "~/stripe.json";
+import { prices } from "@/lib/payments/prices";
 import { match } from "ts-pattern";
 
 const news = await getCollection("news");
@@ -108,7 +108,7 @@ const next5calendarItems = calendarItems
                   <GamePreview
                     id={game.id}
                     game={game.data}
-                    sponsorshipPriceId={stripeData.prices.sponsorship.priceId}
+                    sponsorshipPriceId={prices.sponsorship.priceId}
                   />
                 ))
                 .exhaustive()}

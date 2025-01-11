@@ -2,15 +2,15 @@ import { useEffect, useRef, useState, type FC } from "react";
 import { loadStripe, type StripeEmbeddedCheckout } from "@stripe/stripe-js";
 import { STRIPE_PUBLIC_KEY } from "astro:env/client";
 import { actions } from "astro:actions";
+import type { Price } from "@/lib/payments/prices";
 
 const stripeClient = await loadStripe(STRIPE_PUBLIC_KEY);
 
 type Props = {
-  priceId: string;
-  mode: "subscription" | "payment";
+  price: Price;
 };
 
-export const Checkout: FC<Props> = ({ priceId, mode }) => {
+export const Checkout: FC<Props> = ({ price }) => {
   const checkout = useRef<StripeEmbeddedCheckout>(undefined);
 
   const [error, setError] = useState<string>();
@@ -34,8 +34,7 @@ export const Checkout: FC<Props> = ({ priceId, mode }) => {
       };
 
       const response = await actions.checkout({
-        priceId,
-        mode,
+        price,
         metadata: metadata(),
       });
 
