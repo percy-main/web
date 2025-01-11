@@ -3,7 +3,6 @@ export const prerender = false;
 
 import Base from "@/layouts/Base.astro";
 import SimpleInput from "@/components/form/SimpleInput.astro";
-import DatePicker from "@/components/form/DatePicker.astro";
 import TextArea from "@/components/form/TextArea.astro";
 import RadioButtons from "@/components/form/RadioButtons.astro";
 import { actions } from "astro:actions";
@@ -32,9 +31,10 @@ if (result?.error) {
           required
           transition:persist
         />
-        <DatePicker
+        <SimpleInput
           id="dob"
           label="Date of Birth"
+          type="date"
           required
           transition:persist
         />

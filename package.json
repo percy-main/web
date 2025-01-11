@@ -24,11 +24,9 @@
     "@types/react-dom": "^19.0.2",
     "astro": "^5.1.1",
     "astro-font": "^0.1.81",
-    "cf-content-types-generator": "^2.15.5",
     "contentful": "^11.3.4",
     "contentful-management": "^11.40.3",
     "date-fns": "^4.1.0",
-    "flowbite": "^2.5.2",
     "html-to-text": "^9.0.5",
     "lodash": "^4.17.21",
     "postcss": "^8.4.49",
@@ -43,6 +41,7 @@
   "devDependencies": {
     "@types/html-to-text": "^9.0.4",
     "autoprefixer": "^10.4.20",
+    "cf-content-types-generator": "^2.15.5",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.6.9",
     "react-compiler-runtime": "^19.0.0-beta-b2e8e9c-20241220"
