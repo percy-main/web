@@ -13,7 +13,7 @@ const response = await previewClient.getEntry<TypePageSkeleton>(entry!);
 ---
 
 <Page title={response.fields.title} slug={response.fields.slug}>
-  <ContentfulLivePreviewProvider locale="en-US">
-    <Preview entry={response} />
+  <ContentfulLivePreviewProvider client:load locale="en-US">
+    <Preview client:load entry={response} />
   </ContentfulLivePreviewProvider>
 </Page>
