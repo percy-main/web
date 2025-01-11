@@ -1,14 +1,38 @@
 ---
 import { getCollection } from "astro:content";
 import Logo from "./Logo.astro";
+import { prices } from "../lib/payments/prices";
+import { match, P } from "ts-pattern";
 const { pathname } = Astro.url;
 
-const urlMatch = (pathname: string, item: MenuItem) => {
-  if (typeof item.match === "string") {
-    return pathname === `${item.url}/` || pathname === item.url;
-  }
+type MenuItem = {
+  name: string;
+  url: string;
+  match: { start: string } | "exact" | "never";
+  style: "cta" | "menu";
+};
 
-  return pathname.startsWith(item.match.start);
+const urlMatch = (pathname: string, item: MenuItem) => {
+  return match({ pathname, item })
+    .with(
+      {
+        item: { match: "never" },
+      },
+      () => false
+    )
+    .with(
+      { item: { match: "exact" } },
+      () => pathname === `${item.url}/` || pathname === item.url
+    )
+    .with(
+      { item: { match: { start: P.string } } },
+      ({
+        item: {
+          match: { start },
+        },
+      }) => pathname.startsWith(start)
+    )
+    .exhaustive();
 };
 
 const pages = await getCollection("page");
@@ -21,19 +45,15 @@ const pagesMenu = pages
     match: {
       start: `/${page.data.slug}`,
     },
+    style: "menu" as const,
   }));
-
-type MenuItem = {
-  name: string;
-  url: string;
-  match: { start: string } | "exact";
-};
 
 const menu: MenuItem[] = [
   {
     name: "Home",
     url: "/",
     match: "exact",
+    style: "menu",
   },
   {
     name: "News",
@@ -41,6 +61,7 @@ const menu: MenuItem[] = [
     match: {
       start: "/news",
     },
+    style: "menu",
   },
   {
     name: "Calendar",
@@ -48,8 +69,15 @@ const menu: MenuItem[] = [
     match: {
       start: "/calendar",
     },
+    style: "menu",
   },
   ...pagesMenu,
+  {
+    name: "Donate Now",
+    url: `/purchase/${prices.donation.priceId}`,
+    match: "never",
+    style: "cta",
+  },
 ];
 ---
 
@@ -100,6 +128,28 @@ const menu: MenuItem[] = [
             <a
               href={item.url}
               class="p-3 py-2 text-[15px] text-dark transition hover:text-primary md:px-2 inline-block lg:block"
+              class:list={match(item.style)
+                .with("cta", () => [
+                  "text-white",
+                  "hover:text-white",
+                  "bg-blue-700",
+                  "hover:bg-blue-800",
+                  "focus:ring-4",
+                  "focus:ring-blue-300",
+                  "font-medium",
+                  "rounded-lg",
+                  "text-sm",
+                  "px-5",
+                  "py-2.5",
+                  "mr-2",
+                  "mb-2",
+                  "dark:bg-blue-600",
+                  "dark:hover:bg-blue-700",
+                  "focus:outline-none",
+                  "dark:focus:ring-blue-800",
+                ])
+                .with("menu", () => [])
+                .exhaustive()}
             >
               {item.name}
             </a>

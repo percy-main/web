@@ -16,6 +16,7 @@ const schema = z.object({
     socialAnnually: priceSchema,
     socialMonthly: priceSchema,
     sponsorship: priceSchema,
+    donation: priceSchema,
   }),
 });
 
