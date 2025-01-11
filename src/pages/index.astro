@@ -62,13 +62,11 @@ const next5calendarItems = calendarItems
         <div class="py-2 px-4 mx-auto max-w-screen-xl sm:py-8 lg:px-6">
           <div class="mx-auto max-w-screen-sm text-center">
             <h2
-              class="mb-4 text-2xl font-primary tracking-tight font-extrabold leading-tight text-gray-900 dark:text-white"
+              class="mb-4 text-2xl font-primary tracking-tight font-extrabold leading-tight dark:text-white"
             >
               Join The Main
             </h2>
-            <p
-              class="mb-6 font-light text-gray-500 dark:text-gray-400 md:text-lg text-balance"
-            >
+            <p class="mb-6 md:text-lg text-balance">
               Players - use code <span class="font-bold">UTM2025</span> for £30 off
               annual membership, if you join before 19th April 2025
             </p>
@@ -81,7 +79,7 @@ const next5calendarItems = calendarItems
         </div>
       </section>
       <div class="flex flex-col items-center">
-        <h4 class="mt-4">Latest News</h4>
+        <h3 class="text-h4 mt-4">Latest News</h3>
         <ul class="flex flex-row gap-4 items-stretch justify-between flex-wrap">
           {
             top5.map((article) => (
@@ -99,7 +97,7 @@ const next5calendarItems = calendarItems
       </div>
     </div>
     <div class="max-w-sm md:min-w-96">
-      <h4>Upcoming Events</h4>
+      <h3 class="text-h4">Upcoming Events</h3>
       <ul>
         {
           next5calendarItems.map((calendarItem) => (

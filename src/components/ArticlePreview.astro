@@ -1,6 +1,7 @@
 ---
 import { RichText } from "@/components/RichText";
 import { formatDate } from "date-fns";
+import { IoChevronForward } from "react-icons/io5";
 
 type Props = {
   id: string;
@@ -12,19 +13,27 @@ type Props = {
 const { id, title, when, summary } = Astro.props;
 ---
 
-<div class="bg-white rounded-lg shadow-md border p-4 mb-4 h-full flex flex-col">
-  <div>
+<div class="bg-white rounded-lg shadow-md border p-4 h-full flex flex-row">
+  <div class="flex flex-col">
     <div>
-      <h2 class="text-lg font-semibold mb-1">{title}</h2>
-      <p class="text-gray-500 text-sm">{formatDate(when, "PPPP")}</p>
+      <div>
+        <h4 class="text-lg font-semibold mb-1">{title}</h4>
+        <p class="text-gray-500 text-sm">{formatDate(when, "PPPP")}</p>
+      </div>
     </div>
+    <p class="text-gray-700 mt-4">
+      <RichText page="" document={summary} />
+    </p>
   </div>
-  <p class="text-gray-700 mb-4">
-    <RichText page="" document={summary} />
-  </p>
-  <div class="flex justify-end items-end mt-auto grow">
-    <a href={`/news/article/${id}`} class="text-blue-500 font-semibold">
-      Read More
-    </a>
-  </div>
+
+  <a
+    href={`/news/article/${id}`}
+    class="self-stretch flex flex-col items-center justify-center"
+    aria-label="Read the full article"
+  >
+    <IoChevronForward
+      className="text-gray-700 hover:text-gray-400"
+      fontSize={32}
+    />
+  </a>
 </div>

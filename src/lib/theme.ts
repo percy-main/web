@@ -11,7 +11,7 @@ export const theme = {
         creamy: "#F1F1F1",
       },
       text_color: {
-        default: "#888888",
+        default: "#444",
         dark: "#222",
         light: "#ceced0",
       },

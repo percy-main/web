@@ -24,9 +24,9 @@ const { id, game, sponsorshipPriceId } = Astro.props;
       loading="eager"
     />
     <div class="w-full">
-      <h5 class="text-lg font-semibold">
+      <h4 class="text-lg font-semibold">
         {formatDate(game.when, "dd/MM/yyyy")}
-      </h5>
+      </h4>
       <p>
         {game.team} versus {game.opposition}{" "}
         {game.home ? "(H)" : "(A)"}
@@ -36,6 +36,7 @@ const { id, game, sponsorshipPriceId } = Astro.props;
     <a
       href={`/calendar/event/${id}`}
       class="self-stretch flex flex-col items-center justify-center"
+      aria-label="Read more about this game"
     >
       <IoChevronForward
         className="text-gray-700 hover:text-gray-400"
@@ -49,7 +50,7 @@ const { id, game, sponsorshipPriceId } = Astro.props;
         Sponsor: {game.sponsor?.name ?? "Pending"}
       </p>
     ) : (
-      <div class="justify-self-center mt-2 py-2 px-4  bg-blue-500 hover:bg-blue-700 text-white rounded text-sm">
+      <div class="justify-self-center mt-2 py-2 px-4  bg-blue-700 hover:bg-blue-800 text-white rounded text-sm">
         <a
           href={`/purchase/${sponsorshipPriceId}?metadata=${JSON.stringify({ gameId: id })}`}
         >
