@@ -1,9 +1,9 @@
 ---
 import { getCollection } from "astro:content";
 import Logo from "./Logo.astro";
-import { prices } from "../lib/payments/prices";
 import { match, P } from "ts-pattern";
 const { pathname } = Astro.url;
+import priceConfig from "~/stripe.json";
 
 type MenuItem = {
   name: string;
@@ -74,7 +74,7 @@ const menu: MenuItem[] = [
   ...pagesMenu,
   {
     name: "Donate Now",
-    url: `/purchase/${prices.donation.priceId}`,
+    url: `/purchase/${priceConfig.prices.donation}`,
     match: "never",
     style: "cta",
   },

@@ -1,16 +1,11 @@
 import { useState, type FC } from "react";
 import { match } from "ts-pattern";
 import { BankDetails } from "./BankDetails";
+import type { Price } from "../collections/price";
 
 type Props = {
-  monthly: {
-    priceId: string;
-    transfer: string;
-  };
-  annually: {
-    priceId: string;
-    transfer: string;
-  };
+  monthly: Price;
+  annually: Price;
 };
 
 export const PayMembership: FC<Props> = ({ monthly, annually }) => {
@@ -38,7 +33,7 @@ export const PayMembership: FC<Props> = ({ monthly, annually }) => {
             >
               <div className="block">
                 <div className="w-full text-lg font-semibold">Annually</div>
-                <div className="w-full">£150/year</div>
+                <div className="w-full">{annually.formattedPrice}/year</div>
               </div>
             </label>
           </li>
@@ -58,7 +53,7 @@ export const PayMembership: FC<Props> = ({ monthly, annually }) => {
             >
               <div className="block">
                 <div className="w-full text-lg font-semibold">Monthly</div>
-                <div className="w-full">£15/month</div>
+                <div className="w-full">{monthly.formattedPrice}/month</div>
               </div>
             </label>
           </li>
@@ -117,8 +112,8 @@ export const PayMembership: FC<Props> = ({ monthly, annually }) => {
           .with({ payment: "bank", schedule: "monthly" }, () => (
             <>
               <p>
-                Please setup a monthly standing order for {monthly.transfer} to
-                the following bank details:
+                Please setup a monthly standing order for{" "}
+                {monthly.formattedPrice} to the following bank details:
               </p>
               <BankDetails />
             </>
@@ -126,15 +121,15 @@ export const PayMembership: FC<Props> = ({ monthly, annually }) => {
           .with({ payment: "bank", schedule: "annually" }, () => (
             <>
               <p>
-                Please make a payment of {annually.transfer} to the following
-                bank details:
+                Please make a payment of {annually.formattedPrice} to the
+                following bank details:
               </p>
               <BankDetails />
             </>
           ))
           .with({ payment: "online", schedule: "annually" }, () => (
             <a
-              href={`/purchase/${annually.priceId}`}
+              href={`/purchase/${annually.id}`}
               className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
             >
               Pay Online
@@ -142,7 +137,7 @@ export const PayMembership: FC<Props> = ({ monthly, annually }) => {
           ))
           .with({ payment: "online", schedule: "monthly" }, () => (
             <a
-              href={`/purchase/${monthly.priceId}`}
+              href={`/purchase/${monthly.id}`}
               className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
             >
               Pay Online

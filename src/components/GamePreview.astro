@@ -14,8 +14,10 @@ type Props = {
 const { id, game, sponsorshipPriceId } = Astro.props;
 ---
 
-<div class="bg-white rounded-lg shadow-md border p-4 mb-4">
-  <div class="flex flex-row items-center justify-stretch gap-4">
+<div
+  class="bg-white rounded-lg shadow-md border p-4 mb-4 h-full flex flex-col items-center justify-between"
+>
+  <div class="flex flex-row justify-stretch gap-4 flex-grow">
     <Image
       src="/images/cricket.png"
       alt="Cricket Match"
@@ -23,6 +25,7 @@ const { id, game, sponsorshipPriceId } = Astro.props;
       width="24"
       height="24"
       loading="eager"
+      class="self-center"
     />
     <div class="w-full">
       <h4 class="text-lg font-semibold">

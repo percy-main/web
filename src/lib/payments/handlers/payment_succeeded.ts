@@ -1,7 +1,7 @@
 import { stripe } from "../client";
 import { type TypeGameFields } from "@/__generated__";
 import { CDN_SPACE_ID } from "astro:env/server";
-import { prices } from "@/lib/payments/prices";
+import priceConfig from "~/stripe.json";
 import { managementClient } from "@/lib/contentful/client";
 
 export const paymentSucceeded = async (sessionId: string) => {
@@ -14,7 +14,7 @@ export const paymentSucceeded = async (sessionId: string) => {
   if (
     checkoutSession.payment_status === "paid" &&
     checkoutSession.line_items?.data.some(
-      (li) => li.price?.id === prices.sponsorship.priceId,
+      (li) => li.price?.id === priceConfig.prices.sponsorship,
     ) &&
     typeof gameId === "string"
   ) {

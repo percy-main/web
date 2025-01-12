@@ -7,8 +7,8 @@ import EventPreview from "@/components/EventPreview.astro";
 import _ from "lodash";
 import { getDate, compareDesc, compareAsc } from "date-fns";
 import { Image } from "astro:assets";
-import { prices } from "@/lib/payments/prices";
 import { match } from "ts-pattern";
+import priceConfig from "~/stripe.json";
 
 const news = await getCollection("news");
 const top5 = news
@@ -59,7 +59,7 @@ const next5calendarItems = calendarItems
           priority
           loading="eager"
         />
-        <div class="py-2 px-4 mx-auto max-w-screen-xl sm:py-8 lg:px-6">
+        <div class="py-6 px-4 mx-auto max-w-screen-xl lg:px-6">
           <div class="mx-auto max-w-screen-sm text-center">
             <h2
               class="mb-4 text-2xl font-primary tracking-tight font-extrabold leading-tight dark:text-white"
@@ -78,7 +78,30 @@ const next5calendarItems = calendarItems
           </div>
         </div>
       </section>
-      <div class="flex flex-col items-center">
+      <section class="flex flex-col items-center">
+        <h3 class="text-h4 mt-4">Upcoming Events</h3>
+        <ul class="flex flex-row gap-4 items-stretch justify-between flex-wrap">
+          {
+            next5calendarItems.map((calendarItem) => (
+              <li class="w-full md:w-auto md:max-w-[20rem]">
+                {match(calendarItem)
+                  .with({ data: { type: "event" } }, (event) => (
+                    <EventPreview id={event.id} event={event.data} />
+                  ))
+                  .with({ data: { type: "game" } }, (game) => (
+                    <GamePreview
+                      id={game.id}
+                      game={game.data}
+                      sponsorshipPriceId={priceConfig.prices.sponsorship}
+                    />
+                  ))
+                  .exhaustive()}
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+      <section class="flex flex-col items-center">
         <h3 class="text-h4 mt-4">Latest News</h3>
         <ul class="flex flex-row gap-4 items-stretch justify-between flex-wrap">
           {
@@ -94,30 +117,7 @@ const next5calendarItems = calendarItems
             ))
           }
         </ul>
-      </div>
-    </div>
-    <div class="max-w-sm md:min-w-96">
-      <h3 class="text-h4">Upcoming Events</h3>
-      <ul>
-        {
-          next5calendarItems.map((calendarItem) => (
-            <li>
-              {match(calendarItem)
-                .with({ data: { type: "event" } }, (event) => (
-                  <EventPreview id={event.id} event={event.data} />
-                ))
-                .with({ data: { type: "game" } }, (game) => (
-                  <GamePreview
-                    id={game.id}
-                    game={game.data}
-                    sponsorshipPriceId={prices.sponsorship.priceId}
-                  />
-                ))
-                .exhaustive()}
-            </li>
-          ))
-        }
-      </ul>
+      </section>
     </div>
   </div>
 </Base>

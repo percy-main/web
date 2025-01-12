@@ -1,34 +1,10 @@
 {
   "prices": {
-    "playersAnnually": {
-      "priceId": "price_1Qg3KVIoYmCDxYlkza1gdQQy",
-      "mode": "payment",
-      "hasPromotion": true
-    },
-    "playersMonthly": {
-      "priceId": "price_1QfTA0IoYmCDxYlkjHTjc1ZH",
-      "mode": "subscription",
-      "hasPromotion": false
-    },
-    "socialAnnually": {
-      "priceId": "price_1QfTBqIoYmCDxYlkUM07OP1q",
-      "mode": "payment",
-      "hasPromotion": false
-    },
-    "socialMonthly": {
-      "priceId": "price_1QfTBqIoYmCDxYlkJ3zHhZdI",
-      "mode": "subscription",
-      "hasPromotion": false
-    },
-    "sponsorship": {
-      "priceId": "price_1QeNAEIoYmCDxYlku6fuUon5",
-      "mode": "payment",
-      "hasPromotion": false
-    },
-    "donation": {
-      "priceId": "price_1Qg3v7IoYmCDxYlkVFuUKYXX",
-      "mode": "payment",
-      "hasPromotion": false
-    }
+    "sponsorship": "price_1QeNAEIoYmCDxYlku6fuUon5",
+    "donation": "price_1Qg3v7IoYmCDxYlkVFuUKYXX"
+  },
+  "product": {
+    "subs_player": "prod_RYaHXiECGLyH9k",
+    "subs_social": "prod_RYaMScmSF06OQp"
   }
 }

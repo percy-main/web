@@ -11,26 +11,26 @@ type Props = {
 const { id, event } = Astro.props;
 ---
 
-<div class="bg-white rounded-lg shadow-md border p-4 mb-4">
-  <div class="flex flex-row items-center justify-stretch gap-4">
-    <IoCalendar title="Event" fontSize={32} />
-    <div class="w-full">
-      <h4 class="text-lg font-semibold">
-        {formatDate(event.when, "dd/MM/yyyy")}
-      </h4>
-      <p>
-        {event.name}
-      </p>
-    </div>
-    <a
-      href={`/calendar/event/${id}`}
-      class="self-stretch flex flex-col items-center justify-center"
-    >
-      <IoChevronForward
-        className="text-gray-700 hover:text-gray-400"
-        fontSize={32}
-        aria-label="Read more about this event"
-      />
-    </a>
+<div
+  class="sm:w-full bg-white rounded-lg shadow-md border p-4 mb-4 h-full flex flex-row justify-stretch gap-4 flex-grow"
+>
+  <IoCalendar title="Event" fontSize={32} />
+  <div class="w-full">
+    <h4 class="text-lg font-semibold">
+      {formatDate(event.when, "dd/MM/yyyy")}
+    </h4>
+    <p>
+      {event.name}
+    </p>
   </div>
+  <a
+    href={`/calendar/event/${id}`}
+    class="self-stretch flex flex-col items-center justify-center"
+  >
+    <IoChevronForward
+      className="text-gray-700 hover:text-gray-400"
+      fontSize={32}
+      aria-label="Read more about this event"
+    />
+  </a>
 </div>

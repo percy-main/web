@@ -1,11 +1,12 @@
 ---
 import { Checkout } from "@/components/Checkout";
 import Base from "@/layouts/Base.astro";
-import { prices } from "@/lib/payments/prices";
+import { getCollection } from "astro:content";
 
 export async function getStaticPaths() {
+  const prices = await getCollection("price");
   return Object.values(prices).map((price) => ({
-    params: { priceId: price.priceId },
+    params: { priceId: price.id },
     props: {
       price,
     },
@@ -16,5 +17,5 @@ const { price } = Astro.props;
 ---
 
 <Base title="Checkout">
-  <Checkout client:load price={price} />
+  <Checkout client:load price={price.data} />
 </Base>

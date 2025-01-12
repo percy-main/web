@@ -1,21 +1,21 @@
 import { z } from "astro:schema";
 import { ActionError, defineAction } from "astro:actions";
 import { stripe } from "@/lib/payments/client";
-import { priceSchema } from "@/lib/payments/prices";
+import * as price from "@/collections/price";
 
 export const checkout = defineAction({
   input: z.object({
-    price: priceSchema,
+    price: price.schema,
     metadata: z.any(),
   }),
-  handler: async ({ price: { priceId, mode, hasPromotion }, metadata }) => {
+  handler: async ({ price: { id, mode, hasPromotion }, metadata }) => {
     try {
       const intent = await stripe.checkout.sessions.create({
         ui_mode: "embedded",
         mode,
         line_items: [
           {
-            price: priceId,
+            price: id,
             quantity: 1,
           },
         ],

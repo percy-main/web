@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FC } from "react";
 import { loadStripe, type StripeEmbeddedCheckout } from "@stripe/stripe-js";
 import { STRIPE_PUBLIC_KEY } from "astro:env/client";
 import { actions } from "astro:actions";
-import type { Price } from "@/lib/payments/prices";
+import type { Price } from "../collections/price";
 
 const stripeClient = await loadStripe(STRIPE_PUBLIC_KEY);
 

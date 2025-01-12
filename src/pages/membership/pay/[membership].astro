@@ -1,23 +1,40 @@
 ---
 import Base from "@/layouts/Base.astro";
 import { PayMembership } from "@/components/PayMembership";
-import { prices } from "@/lib/payments/prices";
+import { getCollection } from "astro:content";
+import stripeConfig from "~/stripe.json";
 
 export async function getStaticPaths() {
+  const prices = await getCollection("price");
+  const seniorPlayerMonthly = prices.find(
+    (price) =>
+      price.data.product.id === stripeConfig.product.subs_player &&
+      price.data.mode === "subscription"
+  );
+  const seniorPlayerAnnual = prices.find(
+    (price) =>
+      price.data.product.id === stripeConfig.product.subs_player &&
+      price.data.mode === "payment"
+  );
+  const socialMonthly = prices.find(
+    (price) =>
+      price.data.product.id === stripeConfig.product.subs_social &&
+      price.data.mode === "subscription"
+  );
+  const socialAnnual = prices.find(
+    (price) =>
+      price.data.product.id === stripeConfig.product.subs_social &&
+      price.data.mode === "payment"
+  );
+
   return [
     {
       params: { membership: "senior_player" },
       props: {
         membership: {
           name: "Senior Player",
-          monthly: {
-            priceId: prices.playersMonthly.priceId,
-            transfer: "£15",
-          },
-          annually: {
-            priceId: prices.playersAnnually.priceId,
-            transfer: "£150",
-          },
+          monthly: seniorPlayerMonthly!.data,
+          annually: seniorPlayerAnnual!.data,
         },
       },
     },
@@ -26,14 +43,8 @@ export async function getStaticPaths() {
       props: {
         membership: {
           name: "Social",
-          monthly: {
-            priceId: prices.socialMonthly.priceId,
-            transfer: "£5",
-          },
-          annually: {
-            priceId: prices.socialAnnually.priceId,
-            transfer: "£50",
-          },
+          monthly: socialMonthly!.data,
+          annually: socialAnnual!.data,
         },
       },
     },
