@@ -10,21 +10,20 @@ import { MAPS_API_KEY, MAPS_MAP_ID } from "astro:env/client";
 import { useCallback, useState, type FC, type PropsWithChildren } from "react";
 import type { Coordinates } from "@/collections/location";
 
-type Props = {
+type Props = PropsWithChildren<{
   center: Coordinates;
   infoWindow?: {
-    header: React.ReactNode;
-    content: React.ReactNode;
+    header: string;
   };
-};
+}>;
 
-export const Map: FC<Props> = ({ center, infoWindow }) => {
+export const Map: FC<Props> = ({ center, infoWindow, children }) => {
   const position = { lat: center.lat, lng: center.lon };
   return (
     <APIProvider apiKey={MAPS_API_KEY}>
       <GMap
         mapId={MAPS_MAP_ID}
-        className="sm:w-96 md:w-full h-[24rem] md:h-[48rem] m-8"
+        className="w-96 md:w-full h-[24rem] md:h-[48rem] mt-8"
         defaultCenter={position}
         defaultZoom={15}
         gestureHandling={"greedy"}
@@ -32,7 +31,7 @@ export const Map: FC<Props> = ({ center, infoWindow }) => {
       >
         {infoWindow && (
           <MarkerWithInfoWindow position={position} header={infoWindow.header}>
-            {infoWindow.content}
+            {children}
           </MarkerWithInfoWindow>
         )}
       </GMap>
@@ -43,7 +42,7 @@ export const Map: FC<Props> = ({ center, infoWindow }) => {
 const MarkerWithInfoWindow: FC<
   PropsWithChildren<{
     position: google.maps.LatLngLiteral;
-    header: React.ReactNode;
+    header: string;
   }>
 > = ({ position, header, children }) => {
   const [markerRef, marker] = useAdvancedMarkerRef();
@@ -68,11 +67,7 @@ const MarkerWithInfoWindow: FC<
       />
 
       {infoWindowShown && (
-        <InfoWindow
-          anchor={marker}
-          onClose={handleClose}
-          headerContent={header}
-        >
+        <InfoWindow anchor={marker} onClose={handleClose} headerDisabled>
           {children}
         </InfoWindow>
       )}

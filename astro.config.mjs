@@ -9,7 +9,6 @@ import netlify from "@astrojs/netlify";
 export default defineConfig({
   site: "https://www.percymain.org",
   integrations: [react(), tailwind()],
-
   env: {
     schema: {
       BASE_URL: envField.string({

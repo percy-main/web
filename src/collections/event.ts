@@ -26,6 +26,7 @@ export const loader = async () => {
       name: item.fields.name,
       description: item.fields.description,
       when: df.parseISO(item.fields.when),
+      finish: item.fields.finish && df.parseISO(item.fields.finish),
       location: item.fields.location
         ? location.schema.parse(fromFields(item.fields.location))
         : undefined,

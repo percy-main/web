@@ -1,0 +1,74 @@
+---
+import { formatDate } from "date-fns";
+import type { Event as TEvent } from "@/collections/event";
+import { RichText } from "@/components/RichText";
+import { Map } from "@/components/Map";
+import { Fragment, type FC } from "react";
+import { When } from "./When";
+import { AddToCalendarButton } from "add-to-calendar-button-react";
+
+type Props = {
+  id: string;
+  event: TEvent;
+};
+
+const { id, event } = Astro.props;
+---
+
+<div class="flex flex-col items-start gap-4">
+  <div
+    class="w-full flex flex-row gap-2 md:gap-4 items-center justify-between flex-wrap"
+  >
+    <div>
+      <h2>{event.name}</h2>
+
+      <p class="text-gray-500 text-sm pb-1 md:pb-4">
+        Published on {formatDate(event.when, "PPPP")}
+      </p>
+    </div>
+
+    <div class="flex flex-row gap-2 md:gap-4 items-center flex-wrap">
+      <AddToCalendarButton
+        client:load
+        name={event.name}
+        options={[
+          "Apple",
+          "Google",
+          "iCal",
+          "Microsoft365",
+          "MicrosoftTeams",
+          "Outlook.com",
+          "Yahoo",
+        ]}
+        location={event.location?.name}
+        startDate={formatDate(event.when, "yyyy-MM-dd")}
+        endDate={event.finish && formatDate(event.finish, "yyyy-MM-dd")}
+        startTime={formatDate(event.when, "HH:mm")}
+        endTime={event.finish && formatDate(event.finish, "HH:mm")}
+        timeZone="GMT"
+      />
+      <When start={event.when} end={event.finish} />
+    </div>
+  </div>
+
+  <RichText page={`news/article/${id}`} document={event.description} />
+
+  {
+    event.location?.coordinates && (
+      <Map
+        client:load
+        center={event.location.coordinates}
+        infoWindow={{ header: event.location.name }}
+      >
+        <div class="flex flex-col p-4 gap-2 text-lg sm:text-sm bg-white">
+          <h4 class="text-h6 md:text-h5">{event.location.name}</h4>
+          <p>{event.location.street}</p>
+          <p>{event.location.city}</p>
+          <p>{event.location.county}</p>
+          <p>{event.location.country}</p>
+          <p>{event.location.postcode}</p>
+        </div>
+      </Map>
+    )
+  }
+</div>
