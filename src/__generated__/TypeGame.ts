@@ -11,6 +11,7 @@ export interface TypeGameFields {
     league: EntryFieldTypes.EntryLink<TypeLeagueSkeleton>;
     sponsor?: EntryFieldTypes.EntryLink<TypeSponsorSkeleton>;
     hasSponsor: EntryFieldTypes.Boolean;
+    sport?: EntryFieldTypes.Symbol<"cricket" | "football">;
 }
 
 export type TypeGameSkeleton = EntrySkeletonType<TypeGameFields, "game">;

@@ -17,6 +17,7 @@ const { pathname } = Astro.url;
 ---
 
 <Base title={title} description=`Percy Main Cricket and Sports Club - ${title}`>
+  <slot slot="ldjson" name="ldjson" />
   <div class="flex flex-col md:flex-row">
     {
       menu && (

@@ -15,6 +15,7 @@ const pageSchema = z.object({
     })
     .optional(),
   menuOrder: z.number().optional(),
+  ldjson: z.any().optional(),
 });
 
 export type Page = z.TypeOf<typeof pageSchema>;
@@ -40,6 +41,7 @@ export const page = defineCollection({
             }
           : undefined,
         menuOrder: item.fields.menuOrder,
+        ldjson: item.fields.ldjson,
       };
     });
   },

@@ -3,6 +3,7 @@ import { getCollection } from "astro:content";
 import { RichText } from "@/components/RichText";
 import Page from "@/layouts/Page.astro";
 import _ from "lodash";
+import LDJson from "../components/LDJson.astro";
 
 export async function getStaticPaths() {
   const pages = await getCollection("page");
@@ -95,5 +96,6 @@ const { page, menu } = Astro.props;
   slug={page.data.parent ? page.data.parent.slug : page.data.slug}
   menu={menu}
 >
+  <LDJson slot="ldjson" content={page.data.ldjson} />
   <RichText document={page.data.content} page={page.data.slug} />
 </Page>

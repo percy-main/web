@@ -7,6 +7,7 @@ export interface TypePageFields {
     slug: EntryFieldTypes.Symbol;
     parent?: EntryFieldTypes.EntryLink<TypePageSkeleton>;
     menuOrder?: EntryFieldTypes.Integer;
+    ldjson?: EntryFieldTypes.Object;
 }
 
 export type TypePageSkeleton = EntrySkeletonType<TypePageFields, "page">;
