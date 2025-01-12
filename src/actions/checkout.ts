@@ -8,7 +8,10 @@ export const checkout = defineAction({
     price: price.schema,
     metadata: z.any(),
   }),
-  handler: async ({ price: { id, mode, hasPromotion }, metadata }) => {
+  handler: async ({
+    price: { id, mode, hasPromotion, qtyAdjustable, maxQty },
+    metadata,
+  }) => {
     try {
       const intent = await stripe.checkout.sessions.create({
         ui_mode: "embedded",
@@ -17,6 +20,14 @@ export const checkout = defineAction({
           {
             price: id,
             quantity: 1,
+            ...(qtyAdjustable
+              ? {
+                  adjustable_quantity: {
+                    enabled: qtyAdjustable,
+                    maximum: maxQty,
+                  },
+                }
+              : {}),
           },
         ],
         redirect_on_completion: "never",

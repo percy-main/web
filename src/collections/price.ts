@@ -14,6 +14,8 @@ export const schema = z.object({
     id: z.string(),
     name: z.string(),
   }),
+  qtyAdjustable: z.boolean(),
+  maxQty: z.number().optional(),
 });
 
 export type Price = z.TypeOf<typeof schema>;
@@ -23,7 +25,9 @@ const loader = async () => {
     expand: ["data.product"],
   });
 
-  const coupons = await client.coupons.list();
+  const coupons = await client.coupons.list({
+    expand: ["data.applies_to"],
+  });
 
   return prices.data.map((price) => {
     const product = price.product as Stripe.Product;
@@ -39,6 +43,10 @@ const loader = async () => {
         id: product.id,
         name: product.name,
       },
+      qtyAdjustable: product.metadata.adjustable === "false" ? false : true,
+      maxQty: product.metadata.max_qty
+        ? Number(product.metadata.max_qty)
+        : undefined,
     };
   });
 };
