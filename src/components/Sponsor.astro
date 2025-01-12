@@ -1,0 +1,27 @@
+---
+import type { Game } from "@/collections/game";
+import { prices } from "@/lib/payments/prices";
+
+type Props = {
+  id: string;
+  game: Game;
+};
+
+const { id, game } = Astro.props;
+---
+
+{
+  game.hasSponsor ? (
+    <p class="justify-self-start py-2 px-4 mt-2 bg-green-500 text-dark rounded text-sm">
+      Sponsor: {game.sponsor?.name ?? "Pending"}
+    </p>
+  ) : (
+    <div class="justify-self-start mt-2 py-2 px-4  bg-blue-500 hover:bg-blue-700 text-white rounded text-sm">
+      <a
+        href={`/purchase/${prices.sponsorship.priceId}?metadata=${JSON.stringify({ gameId: id })}`}
+      >
+        Sponsor This Game
+      </a>
+    </div>
+  )
+}

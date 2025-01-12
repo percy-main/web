@@ -11,6 +11,7 @@ export const schema = z.object({
   when: z.date(),
   finish: z.date().optional(),
   location: location.schema.optional(),
+  createdAt: z.date(),
 });
 
 export type Event = z.TypeOf<typeof schema>;
@@ -23,6 +24,7 @@ export const loader = async () => {
   return response.items.map((item) => {
     return {
       id: item.sys.id,
+      createdAt: df.parseISO(item.sys.createdAt),
       name: item.fields.name,
       description: item.fields.description,
       when: df.parseISO(item.fields.when),

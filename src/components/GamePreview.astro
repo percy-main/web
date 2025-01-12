@@ -3,6 +3,7 @@ import { Image } from "astro:assets";
 import type { Game } from "@/collections/game";
 import { formatDate } from "date-fns";
 import { IoChevronForward } from "react-icons/io5";
+import Sponsor from "./Sponsor.astro";
 
 type Props = {
   id: string;
@@ -44,19 +45,7 @@ const { id, game, sponsorshipPriceId } = Astro.props;
       />
     </a>
   </div>
-  {
-    game.hasSponsor ? (
-      <p class="justify-self-center py-2 px-4 mt-2 bg-green-500 text-dark rounded text-sm">
-        Sponsor: {game.sponsor?.name ?? "Pending"}
-      </p>
-    ) : (
-      <div class="justify-self-center mt-2 py-2 px-4  bg-blue-700 hover:bg-blue-800 text-white rounded text-sm">
-        <a
-          href={`/purchase/${sponsorshipPriceId}?metadata=${JSON.stringify({ gameId: id })}`}
-        >
-          Sponsor This Game
-        </a>
-      </div>
-    )
-  }
+  <div class="justify-self-center">
+    <Sponsor id={id} game={game} />
+  </div>
 </div>

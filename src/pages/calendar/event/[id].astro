@@ -3,8 +3,8 @@ import { getCollection } from "astro:content";
 import Base from "@/layouts/Base.astro";
 import { formatDate } from "date-fns";
 import { match } from "ts-pattern";
-import Game from "@/components/Game.astro";
-import Event from "@/components/Event.astro";
+import Game from "@/components/Sponsor.astro";
+import Event from "@/components/CalendarItem.astro";
 import { prices } from "@/lib/payments/prices";
 
 export async function getStaticPaths() {
@@ -16,25 +16,17 @@ export async function getStaticPaths() {
 }
 
 const { calendarItem } = Astro.props;
+
+const title = match(calendarItem)
+  .with(
+    { data: { type: "game" } },
+    (game) =>
+      `${game.data.team} versus ${game.data.opposition} ${game.data.home ? "(H)" : "(A)"}`
+  )
+  .with({ data: { type: "event" } }, (event) => event.data.name)
+  .exhaustive();
 ---
 
-{
-  match(calendarItem)
-    .with({ data: { type: "game" } }, (game) => (
-      <Base
-        title={`${game.data.team} Game - ${formatDate(game.data.when, "dd/MM/yyyy")}`}
-      >
-        <Game
-          id={game.id}
-          game={game.data}
-          sponsorshipPriceId={prices.sponsorship.priceId}
-        />
-      </Base>
-    ))
-    .with({ data: { type: "event" } }, (event) => (
-      <Base title={event.data.name}>
-        <Event event={event.data} id={event.id} />
-      </Base>
-    ))
-    .exhaustive()
-}
+<Base title={title}>
+  <Event title={title} calendarItem={calendarItem.data} id={calendarItem.id} />
+</Base>

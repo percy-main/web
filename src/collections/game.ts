@@ -8,6 +8,8 @@ import {
   type TypeTeamSkeleton,
 } from "@/__generated__";
 import * as df from "date-fns";
+import * as location from "@/collections/location";
+import { fromFields } from "@/lib/contentful/from-fields";
 
 export const schema = z.object({
   type: z.literal("game"),
@@ -23,6 +25,9 @@ export const schema = z.object({
       logo: z.string().optional(),
     })
     .optional(),
+  finish: z.date().optional(),
+  location: location.schema.optional(),
+  createdAt: z.date(),
 });
 
 export type Game = z.TypeOf<typeof schema>;
@@ -35,6 +40,7 @@ export const loader = async () => {
   return response.items.map((item) => {
     return {
       id: item.sys.id,
+      createdAt: df.parseISO(item.sys.createdAt),
       type: "game",
       opposition: item.fields.opposition,
       home: item.fields.home,
@@ -47,6 +53,10 @@ export const loader = async () => {
             name: (item.fields.sponsor as Entry<TypeSponsorSkeleton>).fields
               .name,
           }
+        : undefined,
+      finish: item.fields.finish && df.parseISO(item.fields.finish),
+      location: item.fields.location
+        ? location.schema.parse(fromFields(item.fields.location))
         : undefined,
     };
   });

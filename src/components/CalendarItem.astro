@@ -1,0 +1,87 @@
+---
+import { formatDate } from "date-fns";
+import { RichText } from "@/components/RichText";
+import Sponsor from "@/components/Sponsor.astro";
+import { Map } from "@/components/Map";
+import { Fragment, type FC } from "react";
+import { When } from "./When";
+import { AddToCalendarButton } from "add-to-calendar-button-react";
+import { match } from "ts-pattern";
+import type { CalendarItem } from "../collections/calendarItem";
+
+type Props = {
+  id: string;
+  title: string;
+  calendarItem: CalendarItem;
+};
+
+const { id, title, calendarItem } = Astro.props;
+---
+
+<div class="flex flex-col items-start gap-4">
+  <div
+    class="w-full flex flex-row gap-2 md:gap-4 items-center justify-between flex-wrap"
+  >
+    <div>
+      <h2>{title}</h2>
+
+      <p class="text-gray-500 text-sm pb-1 md:pb-4">
+        Published on {formatDate(calendarItem.createdAt, "PPPP")}
+      </p>
+    </div>
+
+    <div class="flex flex-row gap-2 md:gap-4 items-center flex-wrap">
+      <AddToCalendarButton
+        client:only
+        hideBranding
+        name={title}
+        options={[
+          "Apple",
+          "Google",
+          "iCal",
+          "Microsoft365",
+          "MicrosoftTeams",
+          "Outlook.com",
+          "Yahoo",
+        ]}
+        location={calendarItem.location?.name}
+        startDate={formatDate(calendarItem.when, "yyyy-MM-dd")}
+        endDate={calendarItem.finish &&
+          formatDate(calendarItem.finish, "yyyy-MM-dd")}
+        startTime={formatDate(calendarItem.when, "HH:mm")}
+        endTime={calendarItem.finish &&
+          formatDate(calendarItem.finish, "HH:mm")}
+        timeZone="GMT"
+      />
+      <When start={calendarItem.when} end={calendarItem.finish} />
+    </div>
+  </div>
+
+  {
+    match(calendarItem)
+      .with({ type: "game" }, (game) => <Sponsor id={id} game={game} />)
+      .with({ type: "event" }, (event) => (
+        <RichText page={`calendar/event/${id}`} document={event.description} />
+      ))
+      .exhaustive()
+  }
+
+  {
+    calendarItem.location?.coordinates && (
+      <Map
+        client:only
+        center={calendarItem.location.coordinates}
+        infoWindow={{ header: calendarItem.location.name }}
+      >
+        <div class="flex flex-col p-4 gap-2 text-lg sm:text-sm bg-white">
+          <h4 class="text-h6 md:text-h5">{calendarItem.location.name}</h4>
+          <p>{calendarItem.location.street}</p>
+          <p>{calendarItem.location.city}</p>
+          <p>{calendarItem.location.county}</p>
+          <p>{calendarItem.location.country}</p>
+          <p>{calendarItem.location.postcode}</p>
+        </div>
+      </Map>
+    )
+  }
+</div>
