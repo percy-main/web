@@ -7,7 +7,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "contentful": "set -a && source .env && set +a && cf-content-types-generator -s $CDN_SPACE_ID  -t $CDN_CMA_TOKEN -o src/__generated__ -Xrg"
+    "contentful": "set -a && source .env && set +a && cf-content-types-generator -s $CDN_SPACE_ID  -t $CDN_CMA_TOKEN -o src/__generated__ -Xrg",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@astrojs/netlify": "^6.0.1",
@@ -45,6 +46,7 @@
     "@types/html-to-text": "^9.0.4",
     "autoprefixer": "^10.4.20",
     "cf-content-types-generator": "^2.15.5",
+    "patch-package": "^8.0.0",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.6.9",
     "react-compiler-runtime": "^19.0.0-beta-b2e8e9c-20241220"
