@@ -40,6 +40,14 @@ export default defineConfig({
         context: "server",
         access: "secret",
       }),
+      MAPS_API_KEY: envField.string({
+        context: "client",
+        access: "public",
+      }),
+      MAPS_MAP_ID: envField.string({
+        context: "client",
+        access: "public",
+      }),
     },
   },
 

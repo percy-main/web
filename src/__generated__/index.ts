@@ -4,6 +4,8 @@ export { isTypeGame } from "./TypeGame";
 export type { TypeGame, TypeGameFields, TypeGameSkeleton, TypeGameWithAllLocalesAndWithoutLinkResolutionResponse, TypeGameWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeGameWithAllLocalesResponse, TypeGameWithoutLinkResolutionResponse, TypeGameWithoutUnresolvableLinksResponse } from "./TypeGame";
 export { isTypeLeague } from "./TypeLeague";
 export type { TypeLeague, TypeLeagueFields, TypeLeagueSkeleton, TypeLeagueWithAllLocalesAndWithoutLinkResolutionResponse, TypeLeagueWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeLeagueWithAllLocalesResponse, TypeLeagueWithoutLinkResolutionResponse, TypeLeagueWithoutUnresolvableLinksResponse } from "./TypeLeague";
+export { isTypeLocation } from "./TypeLocation";
+export type { TypeLocation, TypeLocationFields, TypeLocationSkeleton, TypeLocationWithAllLocalesAndWithoutLinkResolutionResponse, TypeLocationWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeLocationWithAllLocalesResponse, TypeLocationWithoutLinkResolutionResponse, TypeLocationWithoutUnresolvableLinksResponse } from "./TypeLocation";
 export { isTypeNews } from "./TypeNews";
 export type { TypeNews, TypeNewsFields, TypeNewsSkeleton, TypeNewsWithAllLocalesAndWithoutLinkResolutionResponse, TypeNewsWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeNewsWithAllLocalesResponse, TypeNewsWithoutLinkResolutionResponse, TypeNewsWithoutUnresolvableLinksResponse } from "./TypeNews";
 export { isTypePage } from "./TypePage";

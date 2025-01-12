@@ -4,7 +4,7 @@ import Base from "@/layouts/Base.astro";
 import { formatDate } from "date-fns";
 import { match } from "ts-pattern";
 import Game from "@/components/Game.astro";
-import Event from "@/components/Event.astro";
+import { Event } from "@/components/Event";
 import { prices } from "@/lib/payments/prices";
 
 export async function getStaticPaths() {
@@ -33,7 +33,7 @@ const { calendarItem } = Astro.props;
     ))
     .with({ data: { type: "event" } }, (event) => (
       <Base title={event.data.name}>
-        <Event event={event.data} id={event.id} />
+        <Event event={event.data} id={event.id} client:load />
       </Base>
     ))
     .exhaustive()

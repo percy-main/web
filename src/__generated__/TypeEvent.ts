@@ -1,9 +1,12 @@
 import type { ChainModifiers, Entry, EntryFieldTypes, EntrySkeletonType, LocaleCode } from "contentful";
+import type { TypeLocationSkeleton } from "./TypeLocation";
 
 export interface TypeEventFields {
     name: EntryFieldTypes.Symbol;
     description: EntryFieldTypes.RichText;
     when: EntryFieldTypes.Date;
+    finish?: EntryFieldTypes.Date;
+    location?: EntryFieldTypes.EntryLink<TypeLocationSkeleton>;
 }
 
 export type TypeEventSkeleton = EntrySkeletonType<TypeEventFields, "event">;
