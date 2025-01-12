@@ -28,8 +28,6 @@ const loader = async () => {
   return prices.data.map((price) => {
     const product = price.product as Stripe.Product;
 
-    console.log(JSON.stringify(price, null, 2));
-
     return {
       id: price.id,
       mode: price.recurring ? "subscription" : "payment",
