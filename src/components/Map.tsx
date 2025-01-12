@@ -3,7 +3,6 @@ import {
   APIProvider,
   Map as GMap,
   InfoWindow,
-  Marker,
   useAdvancedMarkerRef,
 } from "@vis.gl/react-google-maps";
 import { MAPS_API_KEY, MAPS_MAP_ID } from "astro:env/client";
