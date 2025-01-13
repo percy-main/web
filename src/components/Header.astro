@@ -1,4 +1,6 @@
 ---
+export const prerender = false;
+
 import { getCollection } from "astro:content";
 import Logo from "./Logo.astro";
 import { match, P } from "ts-pattern";
@@ -72,6 +74,16 @@ const menu: MenuItem[] = [
     style: "menu",
   },
   ...pagesMenu,
+  ...(Astro.locals.session
+    ? []
+    : [
+        {
+          name: "Login",
+          url: "/login",
+          match: "exact",
+          style: "menu",
+        } as MenuItem,
+      ]),
   {
     name: "Donate Now",
     url: `/purchase/${priceConfig.prices.donation}`,

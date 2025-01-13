@@ -1,0 +1,8 @@
+---
+export const prerender = false;
+import Login from "@/components/Login.astro";
+
+const { session } = Astro.locals;
+---
+
+{session ? session.id : <Login />}

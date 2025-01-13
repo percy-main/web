@@ -47,6 +47,14 @@ export default defineConfig({
         context: "client",
         access: "public",
       }),
+      DB_TOKEN: envField.string({
+        context: "server",
+        access: "secret",
+      }),
+      DB_SYNC_URL: envField.string({
+        context: "server",
+        access: "secret",
+      }),
     },
   },
 
