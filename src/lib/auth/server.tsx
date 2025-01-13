@@ -1,4 +1,4 @@
-import { betterAuth, type BetterAuthOptions } from "better-auth";
+import { betterAuth } from "better-auth";
 import * as db from "@/lib/db/client";
 import * as email from "@/lib/email/send";
 import { render } from "@react-email/render";
