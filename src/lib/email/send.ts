@@ -19,7 +19,7 @@ type Email = {
 
 export const send = async ({ to, subject, html }: Email) => {
   return await mg.messages.create(MAILGUN_DOMAIN, {
-    from: "Support <support@notifications.percymain.org>",
+    from: "Percy Main CSC Support <support@notifications.percymain.org>",
     to: [to],
     subject,
     text: htmlToText(html),
