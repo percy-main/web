@@ -1,0 +1,7 @@
+<script>
+  import { authClient } from "@/lib/auth/client";
+
+  await authClient.signOut();
+
+  window.location.href = "/";
+</script>
