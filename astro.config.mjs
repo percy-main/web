@@ -47,6 +47,26 @@ export default defineConfig({
         context: "client",
         access: "public",
       }),
+      DB_TOKEN: envField.string({
+        context: "server",
+        access: "secret",
+      }),
+      DB_SYNC_URL: envField.string({
+        context: "server",
+        access: "secret",
+      }),
+      MAILGUN_API_KEY: envField.string({
+        context: "server",
+        access: "secret",
+      }),
+      MAILGUN_DOMAIN: envField.string({
+        context: "server",
+        access: "public",
+      }),
+      MAILGUN_URL: envField.string({
+        context: "server",
+        access: "public",
+      }),
     },
   },
 

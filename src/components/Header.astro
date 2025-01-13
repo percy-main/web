@@ -1,39 +1,14 @@
 ---
+export const prerender = false;
+
 import { getCollection } from "astro:content";
-import Logo from "./Logo.astro";
-import { match, P } from "ts-pattern";
-const { pathname } = Astro.url;
+import Logo from "@/components/Logo.astro";
 import priceConfig from "~/stripe.json";
+import { MenuItem } from "@/components/MenuItem";
+import { AuthNav } from "@/components/auth/Nav";
+import { urlMatch } from "@/lib/util/url-match";
 
-type MenuItem = {
-  name: string;
-  url: string;
-  match: { start: string } | "exact" | "never";
-  style: "cta" | "menu";
-};
-
-const urlMatch = (pathname: string, item: MenuItem) => {
-  return match({ pathname, item })
-    .with(
-      {
-        item: { match: "never" },
-      },
-      () => false
-    )
-    .with(
-      { item: { match: "exact" } },
-      () => pathname === `${item.url}/` || pathname === item.url
-    )
-    .with(
-      { item: { match: { start: P.string } } },
-      ({
-        item: {
-          match: { start },
-        },
-      }) => pathname.startsWith(start)
-    )
-    .exhaustive();
-};
+const { pathname } = Astro.url;
 
 const pages = await getCollection("page");
 const pagesMenu = pages
@@ -125,40 +100,13 @@ const menu: MenuItem[] = [
       {
         menu.map((item) => (
           <li>
-            <a
-              href={item.url}
-              class="p-3 py-2 text-[15px] text-dark transition hover:text-primary md:px-2 inline-block lg:block"
-              class:list={match(item.style)
-                .with("cta", () => [
-                  "text-white",
-                  "hover:text-white",
-                  "bg-blue-700",
-                  "hover:bg-blue-800",
-                  "focus:ring-4",
-                  "focus:ring-blue-300",
-                  "font-medium",
-                  "rounded-lg",
-                  "text-sm",
-                  "px-5",
-                  "py-2.5",
-                  "mr-2",
-                  "mb-2",
-                  "dark:bg-blue-600",
-                  "dark:hover:bg-blue-700",
-                  "focus:outline-none",
-                  "dark:focus:ring-blue-800",
-                ])
-                .with("menu", () => [])
-                .exhaustive()}
-            >
-              {item.name}
-            </a>
-            {urlMatch(pathname, item) && (
-              <div class="left-2 right-2 h-0.5 bg-gradient-to-tl from-green-400 to-blue-400" />
-            )}
+            <MenuItem item={item} isActive={urlMatch(pathname, item)} />
           </li>
         ))
       }
+      <li>
+        <AuthNav client:load pathname={pathname} />
+      </li>
     </ul>
   </nav>
 </header>
