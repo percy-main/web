@@ -1,13 +1,7 @@
 import { reactClient, useSession } from "@/lib/auth/client";
 import { useState } from "react";
 import { navigate } from "astro:transitions/client";
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  QueryClient,
-  QueryClientProvider,
-} from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Purchases } from "./Purchases";
 
 export const MembersPage = () => {
