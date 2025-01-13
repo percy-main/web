@@ -31,20 +31,31 @@ export const MembersPage = () => {
   const { user } = session.data!;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 items-start">
       <h1>Members Area</h1>
       <p>
-        {user.name} - {user.email} (
-        {user.emailVerified ? (
-          "Verified"
-        ) : (
-          <button disabled={isVerifying} onClick={verify}>
-            Verify Now
-          </button>
-        )}
-        )
+        <h2>{user.name}</h2>
+        <p>{user.email}</p>
+        <p>
+          {user.emailVerified ? (
+            "Verified"
+          ) : (
+            <button
+              className=" mt-2 py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white rounded text-sm cursor-pointer"
+              disabled={isVerifying}
+              onClick={verify}
+            >
+              Verify Now
+            </button>
+          )}
+        </p>
       </p>
-      <a href="/logout">Sign Out</a>
+      <a
+        className="justify-self-start mt-2 py-2 px-4 border-1  border-gray-800 hover:bg-gray-200 text-dark rounded text-sm"
+        href="/logout"
+      >
+        Sign Out
+      </a>
     </div>
   );
 };

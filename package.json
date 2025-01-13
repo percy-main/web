@@ -9,7 +9,8 @@
     "astro": "dotenv -- astro",
     "contentful": "set -a && source .env && set +a && cf-content-types-generator -s $CDN_SPACE_ID  -t $CDN_CMA_TOKEN -o src/__generated__ -Xrg",
     "postinstall": "patch-package",
-    "auth:migrate": "dotenv -- npx @better-auth/cli migrate --config ./src/lib/auth/client.ts"
+    "auth:migrate": "dotenv -- npx @better-auth/cli migrate --config ./src/lib/auth/client.ts",
+    "email": "email dev"
   },
   "dependencies": {
     "@astrojs/netlify": "^6.0.1",
@@ -20,6 +21,8 @@
     "@contentful/rich-text-react-renderer": "^16.0.1",
     "@libsql/client": "^0.14.0",
     "@libsql/kysely-libsql": "^0.4.1",
+    "@react-email/components": "^0.0.32",
+    "@react-email/render": "1.0.4",
     "@stripe/stripe-js": "^5.4.0",
     "@tailwindcss/forms": "^0.5.9",
     "@tailwindcss/typography": "^0.5.15",
@@ -31,6 +34,7 @@
     "astro": "^5.1.1",
     "astro-font": "^0.1.81",
     "better-auth": "^1.1.11",
+    "class-variance-authority": "^0.7.1",
     "contentful": "^11.3.4",
     "contentful-management": "^11.40.3",
     "date-fns": "^4.1.0",
@@ -55,6 +59,7 @@
     "patch-package": "^8.0.0",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-tailwindcss": "^0.6.9",
-    "react-compiler-runtime": "^19.0.0-beta-b2e8e9c-20241220"
+    "react-compiler-runtime": "^19.0.0-beta-b2e8e9c-20241220",
+    "react-email": "3.0.6"
   }
 }
