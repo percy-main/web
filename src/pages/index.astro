@@ -51,22 +51,26 @@ const next5calendarItems = calendarItems
     <Hero />
     <section class="flex flex-col items-center">
       <h3 class="text-h4 mt-4">Upcoming Events</h3>
-      <ul class="flex flex-row gap-4 items-stretch justify-between flex-wrap">
+      <ul
+        class="flex flex-row gap-0 md:gap-4 items-stretch justify-around flex-wrap"
+      >
         {
           next5calendarItems.map((calendarItem) => (
-            <li class="w-full md:w-auto md:max-w-[20rem]">
-              {match(calendarItem)
-                .with({ data: { type: "event" } }, (event) => (
-                  <EventPreview id={event.id} event={event.data} />
-                ))
-                .with({ data: { type: "game" } }, (game) => (
-                  <GamePreview
-                    id={game.id}
-                    game={game.data}
-                    sponsorshipPriceId={priceConfig.prices.sponsorship}
-                  />
-                ))
-                .exhaustive()}
+            <li class="w-full md:w-auto max-w-[20rem]">
+              <div class="bg-white rounded-none lg:rounded-lg shadow-md border p-4 mb-0 md:mb-4 h-full">
+                {match(calendarItem)
+                  .with({ data: { type: "event" } }, (event) => (
+                    <EventPreview id={event.id} event={event.data} />
+                  ))
+                  .with({ data: { type: "game" } }, (game) => (
+                    <GamePreview
+                      id={game.id}
+                      game={game.data}
+                      sponsorshipPriceId={priceConfig.prices.sponsorship}
+                    />
+                  ))
+                  .exhaustive()}
+              </div>
             </li>
           ))
         }
