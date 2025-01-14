@@ -2,13 +2,13 @@
 import { defineConfig, envField } from "astro/config";
 import react from "@astrojs/react";
 import tailwind from "@astrojs/tailwind";
-
 import netlify from "@astrojs/netlify";
+import sitemap from "@astrojs/sitemap";
 
 // https://astro.build/config
 export default defineConfig({
   site: "https://www.percymain.org",
-  integrations: [react(), tailwind()],
+  integrations: [react(), tailwind(), sitemap()],
   env: {
     schema: {
       BASE_URL: envField.string({
