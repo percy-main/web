@@ -30,11 +30,24 @@ const { title, description, image, author } = Astro.props;
 <html lang="en">
   <head>
     <slot name="ldjson" />
-
-    <link rel="
-      shortcut
-      icon" href="/images/favicon.ico" />
-    <meta name="msapplication-TileColor" content="#000000" />
+    <link
+      rel="icon"
+      type="image/png"
+      href="/images/favicon/favicon-96x96.png"
+      sizes="96x96"
+    />
+    <link rel="icon" type="image/svg+xml" href="/images/favicon/favicon.svg" />
+    <link rel="shortcut icon" href="/images/favicon/favicon.ico" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/images/favicon/apple-touch-icon.png"
+    />
+    <meta
+      name="apple-mobile-web-app-title"
+      content="Percy Main Cricket and Sports Club"
+    />
+    <link rel="manifest" href="/images/favicon/site.webmanifest" />
     <meta
       name="theme-color"
       media="(prefers-color-scheme: light)"
