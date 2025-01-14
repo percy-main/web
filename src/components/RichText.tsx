@@ -20,6 +20,7 @@ const renderOptions = (page: string): Options => ({
                 title: node.data.target.fields.photo?.fields.file.title,
                 url: node.data.target.fields.photo?.fields.file.url,
               },
+              slug: node.data.target.fields.slug,
             }}
             pageDescription={node.data.target.fields.pageData?.[page]}
           />

@@ -5,6 +5,8 @@ export interface TypeTrusteeFields {
     photo?: EntryFieldTypes.AssetLink;
     position?: EntryFieldTypes.Symbol;
     pageData?: EntryFieldTypes.Object;
+    bio?: EntryFieldTypes.RichText;
+    slug?: EntryFieldTypes.Symbol;
 }
 
 export type TypeTrusteeSkeleton = EntrySkeletonType<TypeTrusteeFields, "trustee">;

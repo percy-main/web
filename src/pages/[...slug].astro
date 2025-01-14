@@ -89,6 +89,7 @@ export async function getStaticPaths() {
 }
 
 const { page, menu } = Astro.props;
+const { pathname } = Astro.url;
 ---
 
 <Page
@@ -97,5 +98,5 @@ const { page, menu } = Astro.props;
   menu={menu}
 >
   <LDJson slot="ldjson" content={page.data.ldjson} />
-  <RichText document={page.data.content} page={page.data.slug} />
+  <RichText document={page.data.content} page={pathname} />
 </Page>

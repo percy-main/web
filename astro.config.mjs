@@ -9,6 +9,9 @@ import netlify from "@astrojs/netlify";
 export default defineConfig({
   site: "https://www.percymain.org",
   integrations: [react(), tailwind()],
+  image: {
+    domains: ["images.ctfassets.net"],
+  },
   env: {
     schema: {
       BASE_URL: envField.string({

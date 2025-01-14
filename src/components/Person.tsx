@@ -1,9 +1,10 @@
 import type { FC } from "react";
-import type { TypeTrusteeSkeleton } from "../__generated__";
 import type { Person as TPerson } from "../collections/person";
 
 type Props = {
-  person: TPerson;
+  person: Pick<TPerson, "name" | "slug"> & {
+    photo: { url: string; title: string };
+  };
   pageDescription?: string;
 };
 
@@ -29,7 +30,12 @@ export const Person: FC<Props> = ({ person, pageDescription }) => {
 
         {pageDescription && <p className="prose">{pageDescription}</p>}
 
-        {person.profile}
+        <a
+          className="text-sm text-blue-900 underline"
+          href={`/person/${person.slug}`}
+        >
+          Read more about {person.name}
+        </a>
       </div>
     </div>
   );

@@ -1,0 +1,65 @@
+---
+import type { GetStaticPathsOptions, GetStaticPathsResult } from "astro";
+import { getCollection } from "astro:content";
+import Container from "@/layouts/Container.astro";
+import { RichText } from "../../components/RichText";
+import { Picture } from "astro:assets";
+
+export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
+  const people = await getCollection("person");
+
+  return people.map((person) => ({
+    params: { slug: person.data.slug },
+    props: { person },
+  })) satisfies GetStaticPathsResult;
+}
+
+const {
+  person: { data: person },
+} = Astro.props;
+const { pathname } = Astro.url;
+const pageData = Object.entries(person.pageData);
+---
+
+<Container title={person.name}>
+  <div class="flex flex-row gap-4 items-center">
+    {
+      person.photo && (
+        <Picture
+          class={`rounded-full mb-4 max-h-48`}
+          formats={["avif", "webp"]}
+          src={person.photo.url}
+          alt={person.photo.title}
+          width={132}
+          height={132}
+        />
+      )
+    }
+    <h1>{person.name}</h1>
+  </div>
+
+  {
+    person.bio && (
+      <section>
+        <RichText document={person.bio} page={pathname} />
+      </section>
+    )
+  }
+
+  {
+    pageData.length > 0 && (
+      <section>
+        <h5>Club Roles</h5>
+        <ul>
+          {pageData.map(([slug, role]) => (
+            <li>
+              <a class="text-sm text-blue-900 underline" href={slug}>
+                {role}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+</Container>
