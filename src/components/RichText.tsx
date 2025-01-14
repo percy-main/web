@@ -12,6 +12,10 @@ const renderOptions = (page: string): Options => ({
   renderNode: {
     [INLINES.EMBEDDED_ENTRY]: (node) => {
       if (node.data.target.sys.contentType.sys.id === "trustee") {
+        const dataLookup = page.endsWith("/")
+          ? page.substring(0, page.length - 1)
+          : page;
+        console.log({ page, dataLookup });
         return (
           <Person
             person={{
