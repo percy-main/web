@@ -63,11 +63,7 @@ const next5calendarItems = calendarItems
                     <EventPreview id={event.id} event={event.data} />
                   ))
                   .with({ data: { type: "game" } }, (game) => (
-                    <GamePreview
-                      id={game.id}
-                      game={game.data}
-                      sponsorshipPriceId={priceConfig.prices.sponsorship}
-                    />
+                    <GamePreview id={game.id} game={game.data} />
                   ))
                   .exhaustive()}
               </div>
