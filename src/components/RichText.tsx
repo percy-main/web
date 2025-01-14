@@ -8,14 +8,27 @@ import {
 import { BLOCKS, INLINES } from "@contentful/rich-text-types";
 import { Person } from "./Person";
 
+const resolvePageData = (
+  page: string,
+  pageData: Record<string, string> | undefined,
+): string | undefined => {
+  if (!pageData) {
+    return undefined;
+  }
+
+  const dataLookup = page.endsWith("/")
+    ? page.substring(0, page.length - 1)
+    : page;
+
+  const key = `page$${dataLookup}`;
+  const data = pageData[key];
+  return data;
+};
+
 const renderOptions = (page: string): Options => ({
   renderNode: {
     [INLINES.EMBEDDED_ENTRY]: (node) => {
       if (node.data.target.sys.contentType.sys.id === "trustee") {
-        const dataLookup = page.endsWith("/")
-          ? page.substring(0, page.length - 1)
-          : page;
-
         return (
           <Person
             person={{
@@ -26,7 +39,10 @@ const renderOptions = (page: string): Options => ({
               },
               slug: node.data.target.fields.slug,
             }}
-            pageDescription={node.data.target.fields.pageData?.[dataLookup]}
+            pageDescription={resolvePageData(
+              page,
+              node.data.target.fields.pageData,
+            )}
           />
         );
       } else if (node.data.target.sys.contentType.sys.id === "location") {

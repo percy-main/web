@@ -61,7 +61,14 @@ const pageData = Object.entries(person.pageData);
         <ul>
           {pageData.map(([slug, role]) => (
             <li>
-              <a class="text-sm text-blue-900 underline" href={slug}>
+              <a
+                class="text-sm text-blue-900 underline"
+                href={
+                  slug.startsWith("page$")
+                    ? slug.substring("page$".length)
+                    : slug
+                }
+              >
                 {role}
               </a>
             </li>
