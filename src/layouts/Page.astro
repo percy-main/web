@@ -1,5 +1,6 @@
 ---
 import Container from "@/layouts/Container.astro";
+import { urlMatch } from "../lib/util/url-match";
 
 type MenuLink = {
   title: string;
@@ -31,36 +32,59 @@ const { pathname } = Astro.url;
                 <h3 class="dark:text-gray-600">
                   <a href={`/${slug}`}>{menu.title}</a>
                 </h3>
-                <div class="flex flex-col space-y-1">
-                  {menu.items.map(({ title, link, children }) => (
-                    <>
-                      <a
-                        href={link}
-                        class:list={[
-                          pathname.startsWith(link) ? "text-orange-900" : "",
-                        ]}
-                      >
-                        {title}
-                      </a>
+                <div class="flex flex-col">
+                  {menu.items.map(({ title, link, children }) => {
+                    return (
+                      <>
+                        <a
+                          href={link}
+                          class="py-1"
+                          class:list={[
+                            urlMatch(pathname, {
+                              url: link,
+                              match: { start: link },
+                            })
+                              ? "border-gray-500 border-l-4 pl-2 text-bold text-orange-900"
+                              : "",
+                          ]}
+                        >
+                          {title}
+                        </a>
 
-                      <div class="flex flex-col ml-2">
-                        {children.map(({ title, link }) => (
-                          <>
-                            <a
-                              href={link}
-                              class:list={[
-                                pathname.startsWith(link)
-                                  ? "text-orange-900"
-                                  : "",
-                              ]}
-                            >
-                              {title}
-                            </a>
-                          </>
-                        ))}
-                      </div>
-                    </>
-                  ))}
+                        <div class="flex flex-col ml-2">
+                          {children.map(({ title, link }) => (
+                            <>
+                              <a
+                                href={link}
+                                class="py-1"
+                                class:list={[
+                                  urlMatch(pathname, {
+                                    url: link,
+                                    match: { start: link },
+                                  })
+                                    ? "border-gray-500 border-l-4 pl-2 ml-[-0.5rem] text-bold text-orange-900"
+                                    : "",
+                                ]}
+                              >
+                                <span
+                                  class:list={
+                                    urlMatch(pathname, {
+                                      url: link,
+                                      match: { start: link },
+                                    })
+                                      ? ["pl-2"]
+                                      : []
+                                  }
+                                >
+                                  {title}
+                                </span>
+                              </a>
+                            </>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })}
                 </div>
               </div>
             </nav>
