@@ -1,7 +1,7 @@
 ---
 export const prerender = false;
 
-import Base from "@/layouts/Base.astro";
+import Container from "@/layouts/Container.astro";
 import SimpleInput from "@/components/form/SimpleInput.astro";
 import TextArea from "@/components/form/TextArea.astro";
 import RadioButtons from "@/components/form/RadioButtons.astro";
@@ -16,7 +16,7 @@ if (result?.error) {
 }
 ---
 
-<Base title="Join The Club">
+<Container title="Join The Club">
   <div class="flex flex-col items-center">
     <h4 class="mb-8">Join Percy Main Cricket and Sports Club</h4>
     <form class="lg:w-[720px]" method="POST" action={actions.join}>
@@ -118,4 +118,4 @@ if (result?.error) {
       }
     </form>
   </div>
-</Base>
+</Container>

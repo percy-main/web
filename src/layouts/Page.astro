@@ -1,5 +1,5 @@
 ---
-import Base from "./Base.astro";
+import Container from "@/layouts/Container.astro";
 
 type MenuLink = {
   title: string;
@@ -16,7 +16,10 @@ const { title, menu, slug } = Astro.props;
 const { pathname } = Astro.url;
 ---
 
-<Base title={title} description=`Percy Main Cricket and Sports Club - ${title}`>
+<Container
+  title={title}
+  description=`Percy Main Cricket and Sports Club - ${title}`
+>
   <slot slot="ldjson" name="ldjson" />
   <div class="flex flex-col md:flex-row">
     {
@@ -70,4 +73,4 @@ const { pathname } = Astro.url;
       <slot />
     </div>
   </div>
-</Base>
+</Container>

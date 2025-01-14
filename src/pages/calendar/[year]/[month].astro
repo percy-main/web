@@ -1,5 +1,5 @@
 ---
-import Base from "@/layouts/Base.astro";
+import Container from "@/layouts/Container.astro";
 import type { GetStaticPaths } from "astro";
 import {
   addMonths,
@@ -82,7 +82,7 @@ export const getStaticPaths = (async () => {
 const { year, month, calendar, previous, next, items } = Astro.props;
 ---
 
-<Base title="Calendar">
+<Container title="Calendar">
   <h2>Event Calendar</h2>
   <section class="relative">
     <div class="w-full relative z-10">
@@ -233,4 +233,4 @@ const { year, month, calendar, previous, next, items } = Astro.props;
       </div>
     </div>
   </section>
-</Base>
+</Container>

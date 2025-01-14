@@ -1,6 +1,6 @@
 ---
 import { getCollection } from "astro:content";
-import Base from "@/layouts/Base.astro";
+import Container from "@/layouts/Container.astro";
 import { RichText } from "@/components/RichText";
 import { formatDate, formatISO } from "date-fns";
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
@@ -21,7 +21,7 @@ export async function getStaticPaths() {
 const { article, description } = Astro.props;
 ---
 
-<Base title={article.data.title} description={description}>
+<Container title={article.data.title} description={description}>
   <LDJson
     content={{
       "@type": "NewsArticle",
@@ -41,4 +41,4 @@ const { article, description } = Astro.props;
     page={`news/article/${article.id}`}
     document={article.data.content}
   />
-</Base>
+</Container>

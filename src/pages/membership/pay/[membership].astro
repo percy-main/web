@@ -1,5 +1,5 @@
 ---
-import Base from "@/layouts/Base.astro";
+import Container from "@/layouts/Container.astro";
 import { PayMembership } from "@/components/PayMembership";
 import { getCollection } from "astro:content";
 import stripeConfig from "~/stripe.json";
@@ -54,7 +54,7 @@ export async function getStaticPaths() {
 const { membership } = Astro.props;
 ---
 
-<Base title="You've Joined!">
+<Container title="You've Joined!">
   <div class="flex flex-col items-center w-full">
     <div class="flex flex-col max-w-[600px]">
       <h4>Thanks for joining the club!</h4>
@@ -70,4 +70,4 @@ const { membership } = Astro.props;
       />
     </div>
   </div>
-</Base>
+</Container>

@@ -1,6 +1,6 @@
 ---
 import { getCollection } from "astro:content";
-import Base from "@/layouts/Base.astro";
+import Container from "@/layouts/Container.astro";
 import { match } from "ts-pattern";
 import Event from "@/components/CalendarItem.astro";
 
@@ -24,6 +24,6 @@ const title = match(calendarItem)
   .exhaustive();
 ---
 
-<Base title={title}>
+<Container title={title}>
   <Event title={title} calendarItem={calendarItem.data} id={calendarItem.id} />
-</Base>
+</Container>
