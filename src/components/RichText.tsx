@@ -62,7 +62,7 @@ const renderOptions = (page: string): Options => ({
     },
     [BLOCKS.UL_LIST]: (node, children) => {
       return (
-        <ul className="has-[div.person]:w-full has-[div.person]:flex has-[div.person]:flex-col has-[div.person]:lg:flex-row has-[div.person]:justify-around has-[div.person]:gap-4 has-[div.person]:flex-wrap ">
+        <ul className="has-[div.person]:w-full has-[div.person]:flex has-[div.person]:flex-col has-[div.person]:lg:flex-row has-[div.person]:justify-around has-[div.person]:gap-4 has-[div.person]:flex-wrap [&>li]:basis-1/5">
           {children}
         </ul>
       );
