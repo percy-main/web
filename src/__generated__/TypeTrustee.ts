@@ -3,10 +3,10 @@ import type { ChainModifiers, Entry, EntryFieldTypes, EntrySkeletonType, LocaleC
 export interface TypeTrusteeFields {
     name: EntryFieldTypes.Symbol;
     photo?: EntryFieldTypes.AssetLink;
-    position?: EntryFieldTypes.Symbol;
     pageData?: EntryFieldTypes.Object;
     bio?: EntryFieldTypes.RichText;
     slug?: EntryFieldTypes.Symbol;
+    dbsChecked?: EntryFieldTypes.Boolean;
 }
 
 export type TypeTrusteeSkeleton = EntrySkeletonType<TypeTrusteeFields, "trustee">;

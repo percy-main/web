@@ -7,7 +7,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "dotenv -- astro",
-    "contentful:types": "set -a && source .env && set +a && npm run setup-env && cf-content-types-generator -s $CDN_SPACE_ID  -t $CDN_CMA_TOKEN -o src/__generated__ -Xrg",
+    "contentful:types": "set -a && source .env && set +a && npm run setup-env && cf-content-types-generator -s $CDN_SPACE_ID -e dev -t $CDN_CMA_TOKEN -o src/__generated__ -Xrg",
     "contentful:create-merge": "set -a && source .env && set +a && npm run setup-env && contentful-merge create --space $CDN_SPACE_ID --source dev --target master --cda-token $CDN_TOKEN --output-file ./.contentful/merge.json",
     "contentful:apply-merge": "set -a && source .env && set +a && npm run setup-env && contentful-merge apply --space $CDN_SPACE_ID --environment master --cma-token $CDN_CMA_TOKEN --file ./.contentful/merge.json",
     "postinstall": "patch-package",

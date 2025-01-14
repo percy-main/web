@@ -17,6 +17,7 @@ export const schema = z.object({
     .optional(),
   slug: z.string(),
   pageData: z.object({}).passthrough(),
+  isDBSChecked: z.boolean(),
 });
 
 export type Person = z.TypeOf<typeof schema>;
@@ -42,6 +43,7 @@ export const loader = async () => {
       },
       slug: item.fields.slug,
       pageData: item.fields.pageData ?? {},
+      isDBSChecked: item.fields.dbsChecked ?? false,
     };
   });
 };
