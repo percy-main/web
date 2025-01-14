@@ -67,6 +67,10 @@ export default defineConfig({
         context: "server",
         access: "public",
       }),
+      CDN_ENVIRONMENT: envField.string({
+        context: "server",
+        access: "public",
+      }),
     },
   },
 
