@@ -2,8 +2,8 @@
 import type { GetStaticPathsOptions, GetStaticPathsResult } from "astro";
 import { getCollection } from "astro:content";
 import Container from "@/layouts/Container.astro";
-import { RichText } from "../../components/RichText";
-import { Picture } from "astro:assets";
+import { RichText } from "@/components/RichText";
+import LDJson from "@/components/LDJson.astro";
 
 export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
   const people = await getCollection("person");
@@ -20,6 +20,15 @@ const {
 const { pathname } = Astro.url;
 const pageData = Object.entries(person.pageData);
 ---
+
+<LDJson
+  slot="ldjson"
+  content={{
+    "@type": "Person",
+    name: person.name,
+    image: person.photo?.url,
+  }}
+/>
 
 <Container title={person.name}>
   <div class="flex flex-col md:flex-row gap-4 items-center">
