@@ -1,6 +1,6 @@
-import { stripe } from "../client";
+import { stripe } from "@/lib/payments/client";
 import { type TypeGameFields } from "@/__generated__";
-import { CDN_SPACE_ID } from "astro:env/server";
+import { CDN_ENVIRONMENT, CDN_SPACE_ID } from "astro:env/server";
 import priceConfig from "~/stripe.json";
 import { managementClient } from "@/lib/contentful/client";
 
@@ -21,7 +21,7 @@ export const paymentSucceeded = async (sessionId: string) => {
     const gameEntry = await managementClient.entry.get<TypeGameFields>({
       entryId: gameId,
       spaceId: CDN_SPACE_ID,
-      environmentId: "master",
+      environmentId: CDN_ENVIRONMENT,
     });
 
     if (!gameEntry) {
@@ -38,7 +38,7 @@ export const paymentSucceeded = async (sessionId: string) => {
       {
         entryId: gameId,
         spaceId: CDN_SPACE_ID,
-        environmentId: "master",
+        environmentId: CDN_ENVIRONMENT,
       },
       [{ op: "replace", path: "/fields/hasSponsor/en-US", value: true }],
       {
@@ -50,7 +50,7 @@ export const paymentSucceeded = async (sessionId: string) => {
       {
         entryId: gameId,
         spaceId: CDN_SPACE_ID,
-        environmentId: "master",
+        environmentId: CDN_ENVIRONMENT,
       },
       updated,
     );

@@ -3,6 +3,7 @@ import {
   CDN_TOKEN,
   CDN_CMA_TOKEN,
   CDN_PREVIEW_TOKEN,
+  CDN_ENVIRONMENT,
 } from "astro:env/server";
 import * as contentful from "contentful";
 import cm from "contentful-management";
@@ -10,6 +11,7 @@ import cm from "contentful-management";
 export const contentClient = contentful.createClient({
   space: CDN_SPACE_ID,
   accessToken: CDN_TOKEN,
+  environment: CDN_ENVIRONMENT,
 });
 
 export const managementClient = cm.createClient(
@@ -22,5 +24,6 @@ export const managementClient = cm.createClient(
 export const previewClient = contentful.createClient({
   space: CDN_SPACE_ID,
   accessToken: CDN_PREVIEW_TOKEN,
+  environment: CDN_ENVIRONMENT,
   host: "preview.contentful.com",
 });
