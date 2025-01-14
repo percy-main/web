@@ -24,3 +24,7 @@ pnpm-debug.log*
 .idea/
 
 .netlify
+
+*.log
+
+.contentful/

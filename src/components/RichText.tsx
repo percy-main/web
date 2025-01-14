@@ -15,7 +15,7 @@ const renderOptions = (page: string): Options => ({
         const dataLookup = page.endsWith("/")
           ? page.substring(0, page.length - 1)
           : page;
-        console.log({ page, dataLookup });
+
         return (
           <Person
             person={{
@@ -26,7 +26,7 @@ const renderOptions = (page: string): Options => ({
               },
               slug: node.data.target.fields.slug,
             }}
-            pageDescription={node.data.target.fields.pageData?.[page]}
+            pageDescription={node.data.target.fields.pageData?.[dataLookup]}
           />
         );
       } else if (node.data.target.sys.contentType.sys.id === "location") {
@@ -46,7 +46,7 @@ const renderOptions = (page: string): Options => ({
     },
     [BLOCKS.UL_LIST]: (node, children) => {
       return (
-        <ul className="has-[div.person]:w-full has-[div.person]:flex has-[div.person]:flex-col has-[div.person]:lg:flex-row has-[div.person]:justify-around has-[div.person]:gap-4">
+        <ul className="has-[div.person]:w-full has-[div.person]:flex has-[div.person]:flex-col has-[div.person]:lg:flex-row has-[div.person]:justify-around has-[div.person]:gap-4 has-[div.person]:flex-wrap ">
           {children}
         </ul>
       );

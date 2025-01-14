@@ -7,10 +7,13 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "dotenv -- astro",
-    "contentful": "set -a && source .env && set +a && cf-content-types-generator -s $CDN_SPACE_ID  -t $CDN_CMA_TOKEN -o src/__generated__ -Xrg",
+    "contentful:types": "set -a && source .env && set +a && npm run setup-env && cf-content-types-generator -s $CDN_SPACE_ID  -t $CDN_CMA_TOKEN -o src/__generated__ -Xrg",
+    "contentful:create-merge": "set -a && source .env && set +a && npm run setup-env && contentful-merge create --space $CDN_SPACE_ID --source dev --target master --cda-token $CDN_TOKEN --output-file ./.contentful/merge.json",
+    "contentful:apply-merge": "set -a && source .env && set +a && npm run setup-env && contentful-merge apply --space $CDN_SPACE_ID --environment master --cma-token $CDN_CMA_TOKEN --file ./.contentful/merge.json",
     "postinstall": "patch-package",
     "auth:migrate": "dotenv -- npx @better-auth/cli migrate --config ./src/lib/auth/client.ts",
-    "email": "email dev"
+    "email": "email dev",
+    "setup-env": ""
   },
   "dependencies": {
     "@astrojs/netlify": "^6.0.1",
@@ -56,6 +59,7 @@
     "@types/html-to-text": "^9.0.4",
     "autoprefixer": "^10.4.20",
     "cf-content-types-generator": "^2.15.5",
+    "contentful-merge": "^2.6.5",
     "dotenv-cli": "^8.0.0",
     "patch-package": "^8.0.0",
     "prettier-plugin-astro": "^0.14.1",
