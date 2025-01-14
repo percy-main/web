@@ -10,10 +10,9 @@
     "contentful:types": "set -a && source .env && set +a && npm run setup-env && cf-content-types-generator -s $CDN_SPACE_ID -e dev -t $CDN_CMA_TOKEN -o src/__generated__ -Xrg",
     "contentful:create-merge": "set -a && source .env && set +a && npm run setup-env && contentful-merge create --space $CDN_SPACE_ID --source dev --target master --cda-token $CDN_TOKEN --output-file ./.contentful/merge.json",
     "contentful:apply-merge": "set -a && source .env && set +a && npm run setup-env && contentful-merge apply --space $CDN_SPACE_ID --environment master --cma-token $CDN_CMA_TOKEN --file ./.contentful/merge.json",
-    "postinstall": "patch-package",
     "auth:migrate": "dotenv -- npx @better-auth/cli migrate --config ./src/lib/auth/client.ts",
     "email": "email dev",
-    "setup-env": ""
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@astrojs/netlify": "^6.0.1",
