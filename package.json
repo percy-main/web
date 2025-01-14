@@ -8,8 +8,8 @@
     "preview": "astro preview",
     "astro": "dotenv -- astro",
     "contentful:types": "set -a && source .env && set +a && npm run setup-env && cf-content-types-generator -s $CDN_SPACE_ID -e dev -t $CDN_CMA_TOKEN -o src/__generated__ -Xrg",
-    "contentful:create-merge": "set -a && source .env && set +a && npm run setup-env && contentful-merge create --space $CDN_SPACE_ID --source dev --target master --cda-token $CDN_TOKEN --output-file ./.contentful/merge.json",
-    "contentful:apply-merge": "set -a && source .env && set +a && npm run setup-env && contentful-merge apply --space $CDN_SPACE_ID --environment master --cma-token $CDN_CMA_TOKEN --file ./.contentful/merge.json",
+    "contentful:create-merge": "set -a && source .env && set +a && contentful-merge create --space $CDN_SPACE_ID --source dev --target master --cda-token $CDN_TOKEN --output-file ./.contentful/merge.json",
+    "contentful:apply-merge": "set -a && source .env && set +a && contentful-merge apply --space $CDN_SPACE_ID --environment master --cma-token $CDN_CMA_TOKEN --file ./.contentful/merge.json",
     "auth:migrate": "dotenv -- npx @better-auth/cli migrate --config ./src/lib/auth/client.ts",
     "email": "email dev",
     "postinstall": "patch-package"
@@ -35,6 +35,7 @@
     "@vis.gl/react-google-maps": "^1.5.0",
     "add-to-calendar-button-react": "^2.8.1",
     "astro": "^5.1.1",
+    "astro-breadcrumbs": "^3.3.1",
     "astro-font": "^0.1.81",
     "better-auth": "^1.1.11",
     "class-variance-authority": "^0.7.1",

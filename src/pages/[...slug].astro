@@ -4,6 +4,11 @@ import { RichText } from "@/components/RichText";
 import Page from "@/layouts/Page.astro";
 import _ from "lodash";
 import LDJson from "../components/LDJson.astro";
+import { urlMatch } from "../lib/util/url-match";
+import { Breadcrumbs } from "astro-breadcrumbs";
+
+// import "astro-breadcrumbs/breadcrumbs.css";
+import { IoChevronForward } from "react-icons/io5";
 
 export async function getStaticPaths() {
   const pages = await getCollection("page");
@@ -36,7 +41,6 @@ export async function getStaticPaths() {
       childrenForThisPage.length === 0
         ? undefined
         : {
-            title: page.data.title,
             items: childrenForThisPage
               .sort(
                 (c1, c2) => (c1.data.menuOrder ?? 0) - (c2.data.menuOrder ?? 0)
@@ -49,6 +53,7 @@ export async function getStaticPaths() {
                   .map((c) => ({
                     title: c.data.title,
                     link: `/${page.data.slug}/${child.data.slug}/${c.data.slug}`,
+                    parent: page,
                   })),
               })),
           };
@@ -74,6 +79,15 @@ export async function getStaticPaths() {
           .parent?.slug!
       ];
 
+    const grandparent =
+      parent &&
+      (parentMap[parent.props.page.data.parent?.slug!] ??
+        parentMap[
+          children.find(
+            (c) => c.data.slug === parent.props.page.data.parent?.slug
+          )?.data.parent?.slug!
+        ]);
+
     return {
       params: {
         slug: childSlug(page.data),
@@ -92,11 +106,97 @@ const { page, menu } = Astro.props;
 const { pathname } = Astro.url;
 ---
 
-<Page
-  title={page.data.title}
-  slug={page.data.parent ? page.data.parent.slug : page.data.slug}
-  menu={menu}
->
+<Page title={page.data.title} menu={menu}>
   <LDJson slot="ldjson" content={page.data.ldjson} />
-  <RichText document={page.data.content} page={pathname} />
+
+  {
+    menu && (
+      <aside
+        slot="menu"
+        class="w-full sm:w-60 dark:bg-gray-50 dark:text-gray-800 border-b-2 border-gray-400 pb-2 md:pb-0 md:border-0 mb-4 md:mb-0"
+      >
+        <nav class="space-y-8 text-sm">
+          <div class="space-y-2">
+            <div class="flex flex-col">
+              {menu.items.map(({ title, link, children }) => {
+                return (
+                  <>
+                    <a
+                      href={link}
+                      class="py-1"
+                      class:list={[
+                        urlMatch(pathname, {
+                          url: link,
+                          match: { start: link },
+                        })
+                          ? "border-gray-500 border-l-4 pl-2 text-bold text-orange-900"
+                          : "",
+                      ]}
+                    >
+                      {title}
+                    </a>
+
+                    <div class="flex flex-col ml-2">
+                      {children.map(({ title, link }) => (
+                        <>
+                          <a
+                            href={link}
+                            class="py-1"
+                            class:list={[
+                              urlMatch(pathname, {
+                                url: link,
+                                match: { start: link },
+                              })
+                                ? "border-gray-500 border-l-4 pl-2 ml-[-0.5rem] text-bold text-orange-900"
+                                : "",
+                            ]}
+                          >
+                            <span
+                              class:list={
+                                urlMatch(pathname, {
+                                  url: link,
+                                  match: { start: link },
+                                })
+                                  ? ["pl-2"]
+                                  : []
+                              }
+                            >
+                              {title}
+                            </span>
+                          </a>
+                        </>
+                      ))}
+                    </div>
+                  </>
+                );
+              })}
+            </div>
+          </div>
+        </nav>
+      </aside>
+    )
+  }
+
+  <div
+    slot="breadcrumbs"
+    class="text-h4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2 mb-4"
+  >
+    <Breadcrumbs
+      linkTextFormat="capitalized"
+      customizeListElements={[{ index: 0, remove: true }]}
+      mainBemClass="breadcrumbs"
+    >
+      <IoChevronForward slot="separator" />
+    </Breadcrumbs>
+  </div>
+
+  <div class="flex flex-col grow container">
+    <RichText document={page.data.content} page={pathname} />
+  </div>
 </Page>
+
+<style>
+  .breadcrumbs {
+    @apply flex flex-row gap-4;
+  }
+</style>

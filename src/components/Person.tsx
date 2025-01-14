@@ -31,10 +31,10 @@ export const Person: FC<Props> = ({ person, pageDescription }) => {
         {pageDescription && <p className="prose">{pageDescription}</p>}
 
         <a
-          className="text-sm text-blue-900 underline"
+          className="text-sm text-blue-900 underline px-2"
           href={`/person/${person.slug}`}
         >
-          Read more about {person.name}
+          Profile
         </a>
       </div>
     </div>
