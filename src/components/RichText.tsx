@@ -50,14 +50,22 @@ const renderOptions = (page: string): Options => ({
       }
     },
     [BLOCKS.EMBEDDED_ASSET]: (node) => {
+      const title = node.data.target.fields.title;
+      const description = node.data.target.fields.description;
       return (
-        <img
-          src={`https://${node.data.target.fields.file.url}`}
-          height={node.data.target.fields.file.details.image.height}
-          width={node.data.target.fields.file.details.image.width}
-          alt={node.data.target.fields.description}
-          className="rounded-lg mx-auto"
-        />
+        <figure className="max-w-lg self-center">
+          <img
+            src={`https://${node.data.target.fields.file.url}`}
+            height={node.data.target.fields.file.details.image.height}
+            width={node.data.target.fields.file.details.image.width}
+            alt={node.data.target.fields.description}
+            className="h-auto max-w-full rounded-lg"
+          />
+          <figcaption className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            <h6>{title}</h6>
+            {description && <p>{description}</p>}
+          </figcaption>
+        </figure>
       );
     },
     [BLOCKS.UL_LIST]: (node, children) => {
@@ -86,7 +94,7 @@ type Props = {
 
 export const RichText: FC<Props> = ({ document, page }) => {
   return (
-    <div className="[&>*]:mb-4">
+    <div className="[&>*]:mb-4 flex flex-col">
       {documentToReactComponents(document, renderOptions(page))}
     </div>
   );
