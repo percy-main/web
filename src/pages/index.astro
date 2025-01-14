@@ -6,9 +6,9 @@ import GamePreview from "@/components/GamePreview.astro";
 import EventPreview from "@/components/EventPreview.astro";
 import _ from "lodash";
 import { getDate, compareDesc, compareAsc } from "date-fns";
-import { Image } from "astro:assets";
 import { match } from "ts-pattern";
 import priceConfig from "~/stripe.json";
+import Hero from "@/components/Hero/Hero.astro";
 
 const news = await getCollection("news");
 const top5 = news
@@ -48,34 +48,7 @@ const next5calendarItems = calendarItems
   description="Percy Main Cricket and Sports Club supports community sports in Percy Main and surrounding areas."
 >
   <div class="flex flex-col gap-12">
-    <section class="bg-white dark:bg-gray-900">
-      <Image
-        src="/images/pitch.png"
-        width="1536"
-        height="476"
-        alt="The cricket pitch at Percy Main"
-        priority
-        loading="eager"
-      />
-      <div class="py-6 px-4 mx-auto max-w-screen-xl lg:px-6">
-        <div class="mx-auto max-w-screen-sm text-center">
-          <h2
-            class="mb-4 text-2xl font-primary tracking-tight font-extrabold leading-tight dark:text-white"
-          >
-            Join The Main
-          </h2>
-          <p class="mb-6 md:text-lg text-balance">
-            Players - use code <span class="font-bold">UTM2025</span> for £30 off
-            annual membership, if you join before 19th April 2025
-          </p>
-          <a
-            href="/membership/join"
-            class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
-            >Join Now</a
-          >
-        </div>
-      </div>
-    </section>
+    <Hero />
     <section class="flex flex-col items-center">
       <h3 class="text-h4 mt-4">Upcoming Events</h3>
       <ul class="flex flex-row gap-4 items-stretch justify-between flex-wrap">
