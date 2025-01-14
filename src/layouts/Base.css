@@ -16,12 +16,12 @@ h6 {
 
 h1,
 .h1 {
-  @apply text-h1-sm md:text-h1 mb-6;
+  @apply text-h2-sm md:text-h2 mb-6;
 }
 
 h2,
 .h2 {
-  @apply text-h2-sm md:text-h2 mb-5;
+  @apply text-h2-sm mb-5;
 }
 
 h3,

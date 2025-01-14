@@ -22,7 +22,7 @@ export const theme = {
     font_family: {
       primary: "Poppins:wght@400;500;600;700",
       primary_type: "sans-serif",
-      secondary: "Pattaya",
+      secondary: "Commissioner",
       secondary_type: "sans-serif",
     },
     font_size: {
