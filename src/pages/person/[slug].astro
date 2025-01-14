@@ -25,9 +25,8 @@ const pageData = Object.entries(person.pageData);
   <div class="flex flex-row gap-4 items-center">
     {
       person.photo && (
-        <Picture
+        <img
           class={`rounded-full mb-4 max-h-48`}
-          formats={["avif", "webp"]}
           src={person.photo.url}
           alt={person.photo.title}
           width={132}
