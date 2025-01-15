@@ -177,6 +177,7 @@ const { pathname } = Astro.url;
     <Breadcrumbs
       linkTextFormat="capitalized"
       customizeListElements={[{ index: 0, remove: true }]}
+      customizeLinks={[{ index: "last", text: page.data.title }]}
       mainBemClass="breadcrumbs"
     >
       <IoChevronForward slot="separator" />
