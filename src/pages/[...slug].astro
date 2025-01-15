@@ -50,6 +50,9 @@ export async function getStaticPaths() {
                 link: `/${page.data.slug}/${child.data.slug}`,
                 children: children
                   .filter((c) => c.data.parent?.slug === child.data.slug)
+                  .sort(
+                    (a, b) => (a.data.menuOrder ?? 0) - (b.data.menuOrder ?? 0)
+                  )
                   .map((c) => ({
                     title: c.data.title,
                     link: `/${page.data.slug}/${child.data.slug}/${c.data.slug}`,
@@ -78,16 +81,6 @@ export async function getStaticPaths() {
         children.find((c) => c.data.slug === page.data.parent?.slug)?.data
           .parent?.slug!
       ];
-
-    const grandparent =
-      parent &&
-      (parentMap[parent.props.page.data.parent?.slug!] ??
-        parentMap[
-          children.find(
-            (c) => c.data.slug === parent.props.page.data.parent?.slug
-          )?.data.parent?.slug!
-        ]);
-
     return {
       params: {
         slug: childSlug(page.data),
@@ -129,14 +122,14 @@ const { pathname } = Astro.url;
                           url: link,
                           match: { start: link },
                         })
-                          ? "border-gray-500 border-l-4 pl-2 text-bold text-orange-900"
+                          ? "border-gray-500 border-l-4 pl-2 ml-[-0.76rem] text-bold text-orange-900"
                           : "",
                       ]}
                     >
                       {title}
                     </a>
 
-                    <div class="flex flex-col ml-2">
+                    <div class="flex flex-col ml-4">
                       {children.map(({ title, link }) => (
                         <>
                           <a
@@ -147,7 +140,7 @@ const { pathname } = Astro.url;
                                 url: link,
                                 match: { start: link },
                               })
-                                ? "border-gray-500 border-l-4 pl-2 ml-[-0.5rem] text-bold text-orange-900"
+                                ? "border-gray-500 border-l-4 pl-4 ml-[-1.76rem] text-bold text-orange-900"
                                 : "",
                             ]}
                           >
