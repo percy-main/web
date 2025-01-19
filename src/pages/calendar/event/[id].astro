@@ -3,6 +3,10 @@ import { getCollection } from "astro:content";
 import Container from "@/layouts/Container.astro";
 import { match } from "ts-pattern";
 import Event from "@/components/CalendarItem.astro";
+import LDJson from "../../../components/LDJson.astro";
+import { undefined } from "astro:schema";
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
+import { htmlToText } from "html-to-text";
 
 export async function getStaticPaths() {
   const pages = await getCollection("calendarItem");
@@ -18,12 +22,56 @@ const title = match(calendarItem)
   .with(
     { data: { type: "game" } },
     (game) =>
-      `${game.data.team} versus ${game.data.opposition} ${game.data.home ? "(H)" : "(A)"}`
+      `${game.data.team} vs. ${game.data.opposition} ${game.data.home ? "(H)" : "(A)"}`
   )
   .with({ data: { type: "event" } }, (event) => event.data.name)
   .exhaustive();
+
+const ifSet = (val: string | undefined, key: string) => {
+  if (!val) return undefined;
+
+  return {
+    [key]: val,
+  };
+};
 ---
 
 <Container title={title}>
+  <LDJson
+    slot="ldjson"
+    content={{
+      "@type": "Event",
+      name: title,
+      startDate: calendarItem.data.when.toISOString(),
+      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+      organizer: {
+        "@type": "Organization",
+        name: "Percy Main Cricket and Sports Club",
+        url: "https://www.percymain.org",
+      },
+      ...(calendarItem.data.location && {
+        location: {
+          "@type": "Place",
+          ...ifSet(calendarItem.data.location.name, "name"),
+          address: {
+            "@type": "PostalAddress",
+            ...ifSet(calendarItem.data.location.street, "streetAddress"),
+            ...ifSet(calendarItem.data.location.city, "addressLocality"),
+            ...ifSet(calendarItem.data.location.postcode, "postalCode"),
+            ...ifSet(calendarItem.data.location.county, "addressRegion"),
+            ...ifSet(calendarItem.data.location.country, "addressCountry"),
+          },
+        },
+      }),
+      ...match(calendarItem.data)
+        .with({ type: "game" }, (game) => ({
+          description: `Cricket match between Percy Main ${game.team} and ${game.opposition}`,
+        }))
+        .with({ type: "event" }, (event) => ({
+          description: htmlToText(documentToHtmlString(event.description)),
+        }))
+        .exhaustive(),
+    }}
+  />
   <Event title={title} calendarItem={calendarItem.data} id={calendarItem.id} />
 </Container>

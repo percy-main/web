@@ -3,7 +3,7 @@ import { formatDate } from "date-fns";
 import { RichText } from "@/components/RichText";
 import Sponsor from "@/components/Sponsor.astro";
 import { Map } from "@/components/Map";
-import { Fragment, type FC } from "react";
+import { Fragment } from "react";
 import { When } from "./When";
 import { AddToCalendarButton } from "add-to-calendar-button-react";
 import { match } from "ts-pattern";
@@ -52,6 +52,7 @@ const { id, title, calendarItem } = Astro.props;
         endTime={calendarItem.finish &&
           formatDate(calendarItem.finish, "HH:mm")}
         timeZone="GMT"
+        hideRichData
       />
       <When start={calendarItem.when} end={calendarItem.finish} />
     </div>
