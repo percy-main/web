@@ -2,7 +2,8 @@ import { reactClient, useSession } from "@/lib/auth/client";
 import { useState } from "react";
 import { navigate } from "astro:transitions/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Purchases } from "./Purchases";
+import { Payments } from "./Payments";
+import { Subscriptions } from "./Subscriptions";
 
 export const MembersPage = () => {
   const session = useSession();
@@ -57,10 +58,16 @@ export const MembersPage = () => {
           )}
         </p>
       </p>
-      <h2 className="text-h4 mb-0">Your Orders</h2>
-      <QueryClientProvider client={new QueryClient()}>
-        <Purchases />
-      </QueryClientProvider>
+      {user.emailVerified ? (
+        <QueryClientProvider client={new QueryClient()}>
+          <h2 className="text-h4 mb-0">Your Subscriptions</h2>
+          <Subscriptions />
+          <h2 className="text-h4 mb-0">Payment History</h2>
+          <Payments />
+        </QueryClientProvider>
+      ) : (
+        <p>Verify your email to see your purchase history</p>
+      )}
     </div>
   );
 };

@@ -47,10 +47,12 @@ export function defineAuthAction<
   accept,
   input,
   handler,
+  requireVerifiedEmail,
 }: {
   input?: TInputSchema;
   accept?: TAccept;
   handler: AuthActionHandler<TInputSchema, TOutput>;
+  requireVerifiedEmail?: boolean;
 }) {
   return defineAction({
     accept,
@@ -61,6 +63,10 @@ export function defineAuthAction<
       });
 
       if (!isAuthed) {
+        throw new ActionError({ code: "UNAUTHORIZED" });
+      }
+
+      if (requireVerifiedEmail && !isAuthed.user.emailVerified) {
         throw new ActionError({ code: "UNAUTHORIZED" });
       }
 

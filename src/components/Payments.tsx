@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { formatDate } from "date-fns";
 
-export const Purchases = () => {
+export const Payments = () => {
   const query = useQuery({
-    queryKey: ["purchases"],
-    queryFn: actions.purchases,
+    queryKey: ["payments"],
+    queryFn: actions.payments,
   });
 
   if (!query.data?.data) {
@@ -31,7 +31,7 @@ export const Purchases = () => {
             <div className="flex flex-wrap items-center gap-y-4">
               <dl className="w-1/2 sm:w-1/4 lg:w-auto lg:flex-1">
                 <dt className="text-base font-medium text-gray-500 dark:text-gray-400">
-                  Order ID:
+                  Product
                 </dt>
                 <dd className="mt-1.5 text-base font-semibold text-gray-900 dark:text-white">
                   {purchase.price?.product.name}
@@ -40,19 +40,16 @@ export const Purchases = () => {
 
               <dl className="w-1/2 sm:w-1/4 lg:w-auto lg:flex-1">
                 <dt className="text-base font-medium text-gray-500 dark:text-gray-400">
-                  Date:
+                  Date
                 </dt>
                 <dd className="mt-1.5 text-base font-semibold text-gray-900 dark:text-white">
-                  {formatDate(
-                    new Date(purchase.created * 1000),
-                    "dd/MM/yyyy hh:mm",
-                  )}
+                  {formatDate(purchase.created, "dd/MM/yyyy hh:mm")}
                 </dd>
               </dl>
 
               <dl className="w-1/2 sm:w-1/4 lg:w-auto lg:flex-1">
                 <dt className="text-base font-medium text-gray-500 dark:text-gray-400">
-                  Price:
+                  Price
                 </dt>
                 <dd className="mt-1.5 text-base font-semibold text-gray-900 dark:text-white">
                   £{currencyFormatter.format(purchase.amount / 100)}
@@ -61,7 +58,7 @@ export const Purchases = () => {
 
               <dl className="w-1/2 sm:w-1/4 lg:w-auto lg:flex-1">
                 <dt className="text-base font-medium text-gray-500 dark:text-gray-400">
-                  Status:
+                  Status
                 </dt>
                 <dd className="me-2 mt-1.5 inline-flex items-center rounded bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-300">
                   <svg

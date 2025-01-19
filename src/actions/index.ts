@@ -1,9 +1,11 @@
 import { checkout } from "./checkout";
 import { join } from "./join";
-import { purchases } from "./purchases";
+import { payments } from "./payments";
+import { subscriptions } from "./subscriptions";
 
 export const server = {
   checkout,
   join,
-  purchases,
+  payments,
+  subscriptions,
 };
