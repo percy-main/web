@@ -9,6 +9,7 @@ import { getDate, compareDesc, compareAsc } from "date-fns";
 import { match } from "ts-pattern";
 import priceConfig from "~/stripe.json";
 import Hero from "@/components/Hero/Hero.astro";
+import LDJson from "../components/LDJson.astro";
 
 const news = await getCollection("news");
 const top5 = news
@@ -47,6 +48,15 @@ const next5calendarItems = calendarItems
   title="Home"
   description="Percy Main Cricket and Sports Club supports community sports in Percy Main and surrounding areas."
 >
+  <LDJson
+    slot="ldjson"
+    content={{
+      "@type": "WebSite",
+      name: "Percy Main Cricket and Sports Club",
+      url: "https://www.percymain.org",
+    }}
+  />
+
   <div class="flex flex-col gap-12">
     <Hero />
     <section class="flex flex-col items-center">
