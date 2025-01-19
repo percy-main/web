@@ -29,9 +29,9 @@ const { id, game } = Astro.props;
     </h4>
   </div>
   <div class="flex flex-row gap-4 justify-between">
-    <div class="text-sm">
+    <div class="text-xs">
       <p>
-        {game.team} versus {game.opposition}{" "}
+        {game.team} vs. {game.opposition}{" "}
         {game.home ? "(H)" : "(A)"}
       </p>
       <p>{game.league}</p>
