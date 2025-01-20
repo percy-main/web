@@ -16,7 +16,7 @@ const { id, game } = Astro.props;
       Sponsor: {game.sponsor?.name ?? "Pending"}
     </p>
   ) : (
-    <div class="justify-self-start mt-2 py-2 px-4  bg-blue-500 hover:bg-blue-700 text-white rounded text-sm">
+    <div class="justify-self-start mt-4 py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white rounded text-sm">
       <a
         href={`/purchase/${priceConfig.prices.sponsorship}?metadata=${JSON.stringify({ gameId: id })}`}
       >
