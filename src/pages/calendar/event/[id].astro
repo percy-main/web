@@ -6,6 +6,8 @@ import Event from "@/components/CalendarItem.astro";
 import LDJson from "../../../components/LDJson.astro";
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
 import { htmlToText } from "html-to-text";
+import { Breadcrumbs } from "astro-breadcrumbs";
+import { IoChevronForward } from "react-icons/io5";
 
 export async function getStaticPaths() {
   const pages = await getCollection("calendarItem");
@@ -72,5 +74,28 @@ const ifSet = (val: string | undefined, key: string) => {
         .exhaustive(),
     }}
   />
+
+  <div
+    class="text-h4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2 mb-4"
+    slot="breadcrumbs"
+  >
+    <Breadcrumbs
+      linkTextFormat="capitalized"
+      crumbs={[
+        {
+          text: "Calendar",
+          href: "#",
+        },
+        {
+          text: title,
+          href: "#",
+        },
+      ]}
+      mainBemClass="breadcrumbs"
+    >
+      <IoChevronForward slot="separator" />
+    </Breadcrumbs>
+  </div>
+
   <Event title={title} calendarItem={calendarItem.data} id={calendarItem.id} />
 </Container>
