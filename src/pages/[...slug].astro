@@ -183,7 +183,7 @@ const { pathname } = Astro.url;
   </div>
 
   <div class="flex flex-col grow container">
-    <RichText document={page.data.content} page={pathname} />
+    <RichText document={page.data.content} page={pathname} client:load />
   </div>
 </Page>
 

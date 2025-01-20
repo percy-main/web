@@ -71,6 +71,18 @@ export default defineConfig({
         context: "server",
         access: "public",
       }),
+      PLAY_CRICKET_URL: envField.string({
+        context: "server",
+        access: "secret",
+      }),
+      PLAY_CRICKET_API_KEY: envField.string({
+        context: "server",
+        access: "secret",
+      }),
+      PLAY_CRICKET_SITE_ID: envField.string({
+        context: "server",
+        access: "secret",
+      }),
     },
   },
 

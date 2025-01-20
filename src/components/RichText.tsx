@@ -1,5 +1,5 @@
 import type { FC, ReactNode } from "react";
-
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   documentToReactComponents,
   type Options,
@@ -7,6 +7,7 @@ import {
 } from "@contentful/rich-text-react-renderer";
 import { BLOCKS, INLINES } from "@contentful/rich-text-types";
 import { Person } from "./Person";
+import { LeagueTable } from "@/components/LeagueTable";
 
 const resolvePageData = (
   page: string,
@@ -43,6 +44,13 @@ const renderOptions = (page: string): Options => ({
               page,
               node.data.target.fields.pageData,
             )}
+          />
+        );
+      } else if (node.data.target.sys.contentType.sys.id === "league") {
+        return (
+          <LeagueTable
+            divisionId={node.data.target.fields.divisionId}
+            name={node.data.target.fields.name}
           />
         );
       } else if (node.data.target.sys.contentType.sys.id === "location") {
@@ -99,8 +107,10 @@ type Props = {
 
 export const RichText: FC<Props> = ({ document, page }) => {
   return (
-    <div className="[&>*]:mb-4 flex flex-col">
-      {documentToReactComponents(document, renderOptions(page))}
-    </div>
+    <QueryClientProvider client={new QueryClient()}>
+      <div className="[&>*]:mb-4 flex flex-col">
+        {documentToReactComponents(document, renderOptions(page))}
+      </div>
+    </QueryClientProvider>
   );
 };
