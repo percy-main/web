@@ -6,6 +6,8 @@ import { RichText } from "@/components/RichText";
 import LDJson from "@/components/LDJson.astro";
 import dbsChecked from "@/components/dbs.png";
 import { Picture } from "astro:assets";
+import { Breadcrumbs } from "astro-breadcrumbs";
+import { IoChevronForward } from "react-icons/io5";
 
 export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
   const people = await getCollection("person");
@@ -33,6 +35,19 @@ const pageData = Object.entries(person.pageData);
 />
 
 <Container title={person.name}>
+  <div
+    slot="breadcrumbs"
+    class="text-h6 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2 mb-4"
+  >
+    <Breadcrumbs
+      linkTextFormat="capitalized"
+      customizeListElements={[{ index: 0, remove: true }]}
+      customizeLinks={[{ index: 1, text: "People" }]}
+      mainBemClass="breadcrumbs"
+    >
+      <IoChevronForward slot="separator" />
+    </Breadcrumbs>
+  </div>
   <div
     class="flex flex-col md:flex-row gap-4 items-center justify-between mb-4"
   >

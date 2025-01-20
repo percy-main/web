@@ -1,16 +1,20 @@
-import type { FC } from "react";
+import type { FC, PropsWithChildren } from "react";
 import type { Person as TPerson } from "../collections/person";
 
 type Props = {
   person: Pick<TPerson, "name" | "slug"> & {
-    photo: { url: string; title: string };
+    photo?: { url: string; title: string };
   };
-  pageDescription?: string;
+  pageDescription?: React.ReactNode;
 };
 
-export const Person: FC<Props> = ({ person, pageDescription }) => {
+export const Person: FC<PropsWithChildren<Props>> = ({
+  person,
+  pageDescription,
+  children,
+}) => {
   return (
-    <div className="person max-w-2xl mx-4 sm:max-w-sm md:max-w-sm lg:max-w-sm xl:max-w-sm sm:mx-auto md:mx-auto lg:mx-auto xl:mx-auto bg-white shadow-xl rounded-lg text-gray-900 pb-2">
+    <div className="person h-full max-w-2xl mx-4 sm:max-w-sm md:max-w-sm lg:max-w-sm xl:max-w-sm sm:mx-auto md:mx-auto lg:mx-auto xl:mx-auto bg-white shadow-xl rounded-lg text-gray-900 pb-2">
       <div className="rounded-t-lg h-32 overflow-hidden">
         <img
           className="object-cover object-top w-full"
@@ -29,6 +33,8 @@ export const Person: FC<Props> = ({ person, pageDescription }) => {
         <h5 className="font-semibold pb-2">{person.name}</h5>
 
         {pageDescription && <p className="prose">{pageDescription}</p>}
+
+        {children && <p className="prose">{children}</p>}
 
         <a
           className="text-sm text-blue-900 underline px-2"

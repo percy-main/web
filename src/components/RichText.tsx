@@ -33,9 +33,9 @@ const renderOptions = (page: string): Options => ({
           <Person
             person={{
               name: node.data.target.fields.name,
-              photo: {
-                title: node.data.target.fields.photo?.fields.file.title,
-                url: node.data.target.fields.photo?.fields.file.url,
+              photo: node.data.target.fields.photo && {
+                title: node.data.target.fields.photo.fields.file.title,
+                url: node.data.target.fields.photo.fields.file.url,
               },
               slug: node.data.target.fields.slug,
             }}

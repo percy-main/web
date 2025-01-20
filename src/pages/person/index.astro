@@ -1,0 +1,62 @@
+---
+import { getCollection } from "astro:content";
+import { Person } from "../../components/Person";
+import _ from "lodash";
+import { Breadcrumbs } from "astro-breadcrumbs";
+import { IoChevronForward } from "react-icons/io5";
+import Container from "@/layouts/Container.astro";
+
+const people = _.sortBy(
+  await getCollection("person"),
+  (p) => p.data.name.split(" ")[1]
+);
+---
+
+<Container title="The People of PMCSC">
+  <div
+    class="text-h4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2 mb-4"
+    slot="breadcrumbs"
+  >
+    <Breadcrumbs
+      linkTextFormat="capitalized"
+      customizeListElements={[{ index: 0, remove: true }]}
+      customizeLinks={[{ index: 1, text: "People" }]}
+      mainBemClass="breadcrumbs"
+    >
+      <IoChevronForward slot="separator" />
+    </Breadcrumbs>
+  </div>
+  <p>
+    Our club is built by its people - these are some of the volunteers you might
+    meet at Percy Main Cricket and Sports Club
+  </p>
+
+  <div class="flex flex-col items-center my-auto">
+    <ul
+      class="mt-4 flex flex-row justify-around items-stretch gap-8 flex-wrap [&>li]:basis-1/5"
+    >
+      {
+        people.map((person) => (
+          <li class="min-w-64">
+            <Person
+              person={{
+                name: person.data.name,
+                photo: person.data.photo && {
+                  title: person.data.photo.title,
+                  url: person.data.photo.url,
+                },
+                slug: person.data.slug,
+              }}
+            >
+              <ul>
+                {Object.entries(person.data.pageData).map(([page, role]) => (
+                  <li>{role}</li>
+                ))}
+              </ul>
+            </Person>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</Container>
