@@ -52,6 +52,7 @@ const renderOptions = (page: string): Options => ({
     [BLOCKS.EMBEDDED_ASSET]: (node) => {
       const title = node.data.target.fields.title;
       const description = node.data.target.fields.description;
+
       return (
         <figure className="max-w-lg self-center">
           <img
@@ -61,10 +62,14 @@ const renderOptions = (page: string): Options => ({
             alt={node.data.target.fields.description}
             className="h-auto max-w-full rounded-lg"
           />
-          <figcaption className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            <h6>{title}</h6>
-            {description && <p>{description}</p>}
-          </figcaption>
+          {node.data.target.metadata.tags.some(
+            (tag: { sys: { id: string } }) => tag.sys.id === "nocaption",
+          ) ? null : (
+            <figcaption className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              <h6>{title}</h6>
+              {description && <p>{description}</p>}
+            </figcaption>
+          )}
         </figure>
       );
     },
