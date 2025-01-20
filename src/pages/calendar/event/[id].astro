@@ -8,6 +8,7 @@ import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
 import { htmlToText } from "html-to-text";
 import { Breadcrumbs } from "astro-breadcrumbs";
 import { IoChevronForward } from "react-icons/io5";
+import { formatDate } from "date-fns";
 
 export async function getStaticPaths() {
   const pages = await getCollection("calendarItem");
@@ -35,6 +36,9 @@ const ifSet = (val: string | undefined, key: string) => {
     [key]: val,
   };
 };
+
+const year = formatDate(calendarItem.data.when, "yyyy");
+const month = formatDate(calendarItem.data.when, "MMMM");
 ---
 
 <Container title={title}>
@@ -85,6 +89,10 @@ const ifSet = (val: string | undefined, key: string) => {
         {
           text: "Calendar",
           href: "#",
+        },
+        {
+          text: `${month} ${year}`,
+          href: `/calendar/${year}/${month.toLowerCase()}`,
         },
         {
           text: title,
