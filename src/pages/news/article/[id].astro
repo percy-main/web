@@ -6,6 +6,8 @@ import { formatDate, formatISO } from "date-fns";
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer";
 import { convert } from "html-to-text";
 import LDJson from "@/components/LDJson.astro";
+import { Breadcrumbs } from "astro-breadcrumbs";
+import { IoChevronForward } from "react-icons/io5";
 
 export async function getStaticPaths() {
   const pages = await getCollection("news");
@@ -30,6 +32,27 @@ const { article, description } = Astro.props;
     }}
     slot="ldjson"
   />
+
+  <div
+    class="text-h4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2 mb-4"
+    slot="breadcrumbs"
+  >
+    <Breadcrumbs
+      linkTextFormat="capitalized"
+      customizeListElements={[
+        { index: 0, remove: true },
+        { index: 2, remove: true },
+      ]}
+      customizeLinks={[
+        { index: 1, href: "/news/1" },
+        ,
+        { index: "last", text: article.data.title },
+      ]}
+      mainBemClass="breadcrumbs"
+    >
+      <IoChevronForward slot="separator" />
+    </Breadcrumbs>
+  </div>
 
   <div slot="main">
     <h2>{article.data.title}</h2>

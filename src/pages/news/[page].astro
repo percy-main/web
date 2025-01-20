@@ -3,6 +3,8 @@ import type { GetStaticPathsOptions } from "astro";
 import { getCollection } from "astro:content";
 import ArticlePreview from "@/components/ArticlePreview.astro";
 import Container from "@/layouts/Container.astro";
+import { Breadcrumbs } from "astro-breadcrumbs";
+import { IoChevronForward } from "react-icons/io5";
 
 export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
   const news = await getCollection("news");
@@ -14,6 +16,24 @@ const { page } = Astro.props;
 ---
 
 <Container title="News">
+  <div
+    class="text-h4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2 mb-4"
+    slot="breadcrumbs"
+  >
+    <Breadcrumbs
+      linkTextFormat="capitalized"
+      crumbs={[
+        {
+          text: "News",
+          href: "#",
+        },
+      ]}
+      mainBemClass="breadcrumbs"
+    >
+      <IoChevronForward slot="separator" />
+    </Breadcrumbs>
+  </div>
+
   <ul class="flex flex-row gap-4 items-stretch flex-wrap mb-4">
     {
       page.data.map((article) => (
