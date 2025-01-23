@@ -1,6 +1,10 @@
 import { LibsqlDialect } from "@libsql/kysely-libsql";
+import { cliSafeEnv } from "../util/cliSafeEnv";
 
-export const client = new LibsqlDialect({
-  url: import.meta.env.DB_SYNC_URL as string,
-  authToken: import.meta.env.DB_TOKEN as string,
+const url = await cliSafeEnv((env) => env.DB_SYNC_URL, "file:local.db");
+const authToken = await cliSafeEnv((env) => env.DB_TOKEN, undefined);
+
+export const dialect = new LibsqlDialect({
+  url,
+  authToken,
 });

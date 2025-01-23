@@ -10,11 +10,12 @@
     "contentful:types": "set -a && source .env && set +a && cf-content-types-generator -s $CDN_SPACE_ID -e $CDN_ENVIRONMENT -t $CDN_CMA_TOKEN -o src/__generated__ -Xrg",
     "contentful:create-merge": "set -a && source .env && set +a && contentful-merge create --space $CDN_SPACE_ID --source dev --target master --cda-token $CDN_TOKEN --output-file ./.contentful/merge.json",
     "contentful:apply-merge": "set -a && source .env && set +a && contentful-merge apply --space $CDN_SPACE_ID --environment master --cma-token $CDN_CMA_TOKEN --file ./.contentful/merge.json",
-    "auth:migrate": "dotenv -- npx @better-auth/cli migrate --config ./src/lib/auth/client.ts",
+    "auth:migrate": "CLI=true zx ./scripts/auth-migrate.mjs",
     "email": "email dev",
     "postinstall": "patch-package",
     "format": "prettier . --write",
-    "lint": "eslint src/**"
+    "lint": "eslint src/**",
+    "migrate:up": "CLI=true set -a && source .env && set +a && tsx ./scripts/migrate-up"
   },
   "dependencies": {
     "@astrojs/netlify": "^6.1.0",
@@ -61,6 +62,7 @@
     "@tailwindcss/postcss": "^4.0.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/eslint": "^9.6.1",
+    "@better-auth/cli": "^1.1.14",
     "@types/html-to-text": "^9.0.4",
     "@typescript-eslint/parser": "^8.22.0",
     "autoprefixer": "^10.4.20",
@@ -82,6 +84,8 @@
     "react-compiler-runtime": "^19.0.0-beta-b2e8e9c-20241220",
     "react-email": "3.0.6",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.22.0"
+    "typescript-eslint": "^8.22.0",
+    "tsx": "^4.19.2",
+    "zx": "^8.3.0"
   }
 }

@@ -28,3 +28,6 @@ pnpm-debug.log*
 *.log
 
 .contentful/
+
+local.db
+.temp

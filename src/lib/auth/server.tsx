@@ -1,14 +1,22 @@
 import * as db from "@/lib/db/client";
 import * as email from "@/lib/email/send";
 import { render } from "@react-email/render";
-import { BASE_URL } from "astro:env/client";
 import { betterAuth } from "better-auth";
-import { VerifyEmail } from "../../../emails/VerifyEmail";
+import { VerifyEmail } from "~/emails/VerifyEmail";
+
+const baseURL = await (
+  import.meta.env.CLI === "true"
+    ? () => import.meta.env.BASE_URL
+    : async () => {
+        const env = await import("astro:env/client");
+        return env.BASE_URL;
+      }
+)();
 
 export const auth = betterAuth({
   database: {
     type: "sqlite",
-    dialect: db.client,
+    dialect: db.dialect,
   },
   emailAndPassword: {
     enabled: true,
@@ -21,7 +29,7 @@ export const auth = betterAuth({
         html: await render(
           <VerifyEmail
             url={url}
-            imageBaseUrl={`${BASE_URL}/images`}
+            imageBaseUrl={`${baseURL}/images`}
             name={user.name}
           />,
           {
