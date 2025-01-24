@@ -54,7 +54,7 @@ export const VerifyEmail = ({ url, name, imageBaseUrl }: Props) => (
 );
 
 VerifyEmail.PreviewProps = {
-  url: "http://localhost:4321",
+  url: "http://localhost:4321/auth/email-confirmed",
   imageBaseUrl: "http://localhost:4321/images",
   name: "Alex",
 } as Props;

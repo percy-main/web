@@ -14,6 +14,22 @@ export const authClient = createAuthClient({
   baseURL,
 });
 
+export const register = ({
+  name,
+  email,
+  password,
+}: {
+  name: string;
+  email: string;
+  password: string;
+}) =>
+  authClient.signUp.email({
+    name,
+    email,
+    password,
+    callbackURL: baseURL + "/auth/email-confirmed",
+  });
+
 export const reactClient = createReactClient({
   baseURL,
 });

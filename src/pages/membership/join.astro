@@ -2,14 +2,15 @@
 export const prerender = false;
 
 import Container from "@/layouts/Container.astro";
-import SimpleInput from "@/components/form/SimpleInput.astro";
+import { SimpleInput } from "@/components/form/SimpleInput";
 import TextArea from "@/components/form/TextArea.astro";
-import RadioButtons from "@/components/form/RadioButtons.astro";
 import { actions } from "astro:actions";
 
 const result = Astro.getActionResult(actions.join);
 if (result && !result.error) {
-  return Astro.redirect(`/membership/pay/${result.data.membership}`);
+  return Astro.redirect(
+    `/auth/register?email=${encodeURIComponent(result.data.email)}&name=${encodeURIComponent(result.data.name)}`
+  );
 }
 if (result?.error) {
   console.error(result.error);
@@ -17,105 +18,82 @@ if (result?.error) {
 ---
 
 <Container title="Join The Club">
-  <div class="flex flex-col items-center">
-    <h4 class="mb-8">Join Percy Main Cricket and Sports Club</h4>
-    <form class="lg:w-[720px]" method="POST" action={actions.join}>
-      <section class="mb-8">
-        <h5 class="mb-4">Getting To Know You</h5>
-        <SimpleInput id="title" label="Title" required transition:persist />
-        <SimpleInput id="name" label="Name" required transition:persist />
-        <TextArea id="address" label="Address" required transition:persist />
-        <SimpleInput
-          id="postcode"
-          label="Postcode"
-          required
-          transition:persist
-        />
-        <SimpleInput
-          id="dob"
-          label="Date of Birth"
-          type="date"
-          required
-          transition:persist
-        />
-      </section>
+  <div class="bg-white rounded-lg shadow p-4 max-w-max mx-auto">
+    <div class="flex flex-col items-center">
+      <h4 class="mb-8">Join Percy Main Cricket and Sports Club</h4>
+      <form class="lg:w-[720px]" method="POST" action={actions.join}>
+        <section class="mb-8">
+          <h5 class="mb-4">Getting To Know You</h5>
+          <SimpleInput id="title" label="Title" required transition:persist />
+          <SimpleInput id="name" label="Name" required transition:persist />
+          <TextArea id="address" label="Address" required transition:persist />
+          <SimpleInput
+            id="postcode"
+            label="Postcode"
+            required
+            transition:persist
+          />
+          <SimpleInput
+            id="dob"
+            label="Date of Birth"
+            type="date"
+            required
+            transition:persist
+          />
+        </section>
 
-      <section class="mb-8">
-        <h5 class="mb-4">Let's Stay In Touch</h5>
-        <SimpleInput
-          id="telephone"
-          label="Telephone"
-          type="tel"
-          required
-          transition:persist
-        />
-        <SimpleInput
-          id="email"
-          label="Email"
-          type="email"
-          required
-          transition:persist
-        />
-      </section>
+        <section class="mb-8">
+          <h5 class="mb-4">Let's Stay In Touch</h5>
+          <SimpleInput
+            id="telephone"
+            label="Telephone"
+            type="tel"
+            required
+            transition:persist
+          />
+          <SimpleInput
+            id="email"
+            label="Email"
+            type="email"
+            required
+            transition:persist
+          />
+        </section>
 
-      <section class="mb-8">
-        <h5 class="mb-4">Keeping You Safe</h5>
-        <p>
-          We'd like to know some details of an emergency contact so we can help
-          ensure you stay safe at the club. All information is strictly
-          confidential and kept in accordance with our privacy policy.
-        </p>
-        <SimpleInput
-          id="emerg_name"
-          label="Contact Name"
-          required
-          transition:persist
-        />
-        <SimpleInput
-          id="emerg_phone"
-          label="Contact Telephone"
-          type="tel"
-          required
-          transition:persist
-        />
-      </section>
+        <section class="mb-8">
+          <h5 class="mb-4">Keeping You Safe</h5>
+          <p>
+            We'd like to know some details of an emergency contact so we can
+            help ensure you stay safe at the club. All information is strictly
+            confidential and kept in accordance with our privacy policy.
+          </p>
+          <SimpleInput
+            id="emerg_name"
+            label="Contact Name"
+            required
+            transition:persist
+          />
+          <SimpleInput
+            id="emerg_phone"
+            label="Contact Telephone"
+            type="tel"
+            required
+            transition:persist
+          />
+        </section>
 
-      <section class="mb-8">
-        <h5 class="mb-4">Your Membership</h5>
-        <p>
-          Choose the category of membership for which you would like to apply.
-        </p>
-        <RadioButtons
-          id="membership"
-          required
-          transition:persist
-          options={[
-            {
-              title: "Senior Player",
-              description:
-                "For all senior playing members. Payable as £150/annum, or £15/month",
-              value: "senior_player",
-            },
-            {
-              title: "Social",
-              description:
-                "For supporters and friends of the club. Payable as £50/annum, or $5/month",
-              value: "social",
-            },
-          ]}
-        />
-      </section>
-      <button
-        type="submit"
-        class="w-full rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 focus:outline-hidden sm:w-auto dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-      >
-        Submit
-      </button>
-      {
-        result?.error && (
-          <p class="mt-6">Sorry we encountered an error saving your data.</p>
-        )
-      }
-    </form>
+        <button
+          type="submit"
+          class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+        >
+          Submit
+        </button>
+        {
+          result?.error && (
+            <p class="mt-6">Sorry we encountered an error saving your data.</p>
+          )
+        }
+      </form>
+    </div>
   </div>
 </Container>
