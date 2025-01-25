@@ -91,6 +91,13 @@ const renderOptions = (page: string): Options => ({
     [BLOCKS.PARAGRAPH]: (node, children) => {
       return <div>{children}</div>;
     },
+    [INLINES.HYPERLINK]: (node, children) => {
+      return (
+        <a href={node.data.uri} className="text-blue-600 hover:underline">
+          {children}
+        </a>
+      );
+    },
   },
 });
 
