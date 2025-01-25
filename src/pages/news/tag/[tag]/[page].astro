@@ -8,10 +8,10 @@ import { Breadcrumbs } from "astro-breadcrumbs";
 import { IoChevronForward } from "react-icons/io5";
 
 export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
-  const news = await getCollection("news");
+  const allNews = await getCollection("news");
 
   const tags = _.uniqBy(
-    news.flatMap((n) => n.data.pages),
+    allNews.flatMap((n) => n.data.pages),
     (p) => p.id
   ).map((tag) => ({
     ...tag,
@@ -19,7 +19,7 @@ export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
   }));
 
   const tagPages = _.groupBy(
-    news.flatMap((n) =>
+    allNews.flatMap((n) =>
       n.data.pages.map((p) => ({
         ...n,
         tag: p.slug.replaceAll("/", "_"),
@@ -28,20 +28,27 @@ export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
     (p) => p.tag
   );
 
-  return paginate(news, {
-    pageSize: 5,
-    props: {
-      tags: tags.map((tag) => ({
-        ...tag,
-        slug: tag.slug.replaceAll("/", "_"),
-        count: tagPages[tag.slug]?.length ?? 0,
-        isActive: false,
-      })),
-    },
+  return tags.flatMap((tag) => {
+    const news = tagPages[tag.slug];
+
+    return paginate(news, {
+      pageSize: 5,
+      params: {
+        tag: tag.slug,
+      },
+      props: {
+        tag,
+        tags: tags.map((t) => ({
+          ...t,
+          count: tagPages[t.slug]?.length ?? 0,
+          isActive: t.slug === tag.slug,
+        })),
+      },
+    });
   });
 }
 
-const { page, tags } = Astro.props;
+const { page, tags, tag } = Astro.props;
 ---
 
 <Container title="News">
@@ -54,7 +61,15 @@ const { page, tags } = Astro.props;
       crumbs={[
         {
           text: "News",
+          href: "/news/1",
+        },
+        {
+          text: "Tag",
           href: "#",
+        },
+        {
+          text: tag.title,
+          href: `/news/tag/${tag.slug}/1`,
         },
       ]}
       mainBemClass="breadcrumbs"
