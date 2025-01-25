@@ -115,6 +115,8 @@ const { title, description, image, author } = Astro.props;
     <main>
       <slot />
     </main>
-    <Footer />
+    <Footer>
+      <slot name="footer" />
+    </Footer>
   </body>
 </html>

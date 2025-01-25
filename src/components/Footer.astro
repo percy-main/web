@@ -28,7 +28,9 @@ import Social from "./Social.astro";
         Registered Charity 1206787
       </a>
     </div>
-    <div class="footer-copyright mx-auto pb-10 text-center">
+    <div
+      class="footer-copyright mx-auto pb-10 flex flex-col items-center gap-4"
+    >
       <p class="content">Copyright 2024 Percy Main Cricket and Sports Club</p>
       <p>
         <a
@@ -37,6 +39,8 @@ import Social from "./Social.astro";
           title="Privacy Policy">Privacy Policy</a
         >
       </p>
+
+      <slot />
     </div>
   </div>
 </footer>
