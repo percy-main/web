@@ -83,10 +83,13 @@ const renderOptions = (page: string): Options => ({
     },
     [BLOCKS.UL_LIST]: (node, children) => {
       return (
-        <ul className="has-[div.person]:w-full has-[div.person]:flex has-[div.person]:flex-col has-[div.person]:lg:flex-row has-[div.person]:justify-around has-[div.person]:gap-4 has-[div.person]:flex-wrap [&>li]:basis-1/5">
+        <ul className="ml-4 list-disc [&>li>ul]:list-[circle] [&>li]:mb-6 has-[div.person]:list-none has-[div.person]:ml-0 has-[div.person]:w-full has-[div.person]:flex has-[div.person]:flex-col has-[div.person]:lg:flex-row has-[div.person]:justify-around has-[div.person]:gap-4 has-[div.person]:flex-wrap [&>li]:basis-1/5">
           {children}
         </ul>
       );
+    },
+    [BLOCKS.PARAGRAPH]: (node, children) => {
+      return <div>{children}</div>;
     },
   },
 });
