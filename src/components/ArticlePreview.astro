@@ -1,39 +1,58 @@
 ---
 import { RichText } from "@/components/RichText";
 import { formatDate } from "date-fns";
-import { IoChevronForward } from "react-icons/io5";
+import type { News } from "../collections/news";
+import {
+  IoArrowForward,
+  IoNewspaper,
+  IoNewspaperOutline,
+} from "react-icons/io5";
 
-type Props = {
-  id: string;
-  title: string;
-  when: Date;
-  summary: string;
-};
+type Props = News & { id: string };
 
-const { id, title, when, summary } = Astro.props;
+const { id, title, when, summary, author } = Astro.props;
 ---
 
-<div class="bg-white rounded-lg shadow-md border p-4 h-full flex flex-row">
-  <div class="flex flex-col">
-    <div>
-      <div>
-        <h4 class="text-lg font-semibold mb-1">{title}</h4>
-        <p class="text-gray-500 text-sm">{formatDate(when, "PPPP")}</p>
-      </div>
-    </div>
-    <p class="text-gray-700 mt-4">
-      <RichText page="" document={summary} />
-    </p>
+<article
+  class="p-6 bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700"
+>
+  <div class="flex justify-between items-center mb-5 text-gray-500">
+    <span
+      class="bg-primary-100 text-primary-800 text-xs font-medium inline-flex items-center px-2.5 py-0.5 rounded dark:bg-primary-200 dark:text-primary-800"
+    >
+      <IoNewspaperOutline size={24} className="mr-4" />
+      News
+    </span>
+    <span class="text-sm">{formatDate(when, "PPPP")}</span>
   </div>
-
-  <a
-    href={`/news/article/${id}`}
-    class="self-stretch flex flex-col items-center justify-center"
-    aria-label="Read the full article"
+  <h2
+    class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
   >
-    <IoChevronForward
-      className="text-gray-700 hover:text-gray-400"
-      fontSize={32}
-    />
-  </a>
-</div>
+    <a href={`/news/article/${id}`}>{title}</a>
+  </h2>
+  <p class="mb-5 font-light text-gray-500 dark:text-gray-400">
+    <RichText page="" document={summary} />
+  </p>
+  <div class="flex flex-col md:flex-row gap-4 justify-between items-center">
+    <a class="flex items-center space-x-4" href={`/person/${author.slug}`}>
+      {
+        author.photo && (
+          <img
+            class="w-7 h-7 rounded-full"
+            src={author.photo.url}
+            alt={author.photo?.title}
+          />
+        )
+      }
+      <span class="font-medium dark:text-white">
+        {author.name}
+      </span>
+    </a>
+    <a
+      href={`/news/article/${id}`}
+      class="inline-flex items-center font-medium text-primary-600 dark:text-primary-500 hover:underline"
+      >Read the full article
+      <IoArrowForward size={24} className="ml-2" />
+    </a>
+  </div>
+</article>

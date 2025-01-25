@@ -34,15 +34,19 @@ const { page } = Astro.props;
     </Breadcrumbs>
   </div>
 
-  <ul class="flex flex-row gap-4 items-stretch flex-wrap mb-4">
+  <ul
+    class="flex flex-col gap-4 items-stretch justify-between flex-wrap mb-4 mx-auto"
+  >
     {
       page.data.map((article) => (
-        <li class="w-[20rem]">
+        <li>
           <ArticlePreview
             id={article.id}
             title={article.data.title}
             when={article.data.when}
             summary={article.data.summary}
+            author={article.data.author}
+            pages={article.data.pages}
           />
         </li>
       ))
