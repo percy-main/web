@@ -1,7 +1,6 @@
 ---
 import "./Base.css";
 import { AstroFont } from "astro-font";
-import { ClientRouter } from "astro:transitions";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
 import { theme } from "@/lib/theme";
@@ -60,8 +59,6 @@ const { title, description, image, author } = Astro.props;
     />
     <meta name="generator" content={Astro.generator} />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-
-    <ClientRouter />
 
     <AstroFont
       config={[
