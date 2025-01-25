@@ -2,6 +2,7 @@ import type { ChainModifiers, Entry, EntryFieldTypes, EntrySkeletonType, LocaleC
 
 export interface TypeTeamFields {
     name: EntryFieldTypes.Symbol;
+    teamId: EntryFieldTypes.Symbol;
 }
 
 export type TypeTeamSkeleton = EntrySkeletonType<TypeTeamFields, "team">;

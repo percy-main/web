@@ -1,5 +1,7 @@
 export { isTypeEvent } from "./TypeEvent";
 export type { TypeEvent, TypeEventFields, TypeEventSkeleton, TypeEventWithAllLocalesAndWithoutLinkResolutionResponse, TypeEventWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeEventWithAllLocalesResponse, TypeEventWithoutLinkResolutionResponse, TypeEventWithoutUnresolvableLinksResponse } from "./TypeEvent";
+export { isTypeFixtureList } from "./TypeFixtureList";
+export type { TypeFixtureList, TypeFixtureListFields, TypeFixtureListSkeleton, TypeFixtureListWithAllLocalesAndWithoutLinkResolutionResponse, TypeFixtureListWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeFixtureListWithAllLocalesResponse, TypeFixtureListWithoutLinkResolutionResponse, TypeFixtureListWithoutUnresolvableLinksResponse } from "./TypeFixtureList";
 export { isTypeGame } from "./TypeGame";
 export type { TypeGame, TypeGameFields, TypeGameSkeleton, TypeGameWithAllLocalesAndWithoutLinkResolutionResponse, TypeGameWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeGameWithAllLocalesResponse, TypeGameWithoutLinkResolutionResponse, TypeGameWithoutUnresolvableLinksResponse } from "./TypeGame";
 export { isTypeLeague } from "./TypeLeague";

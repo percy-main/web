@@ -54,14 +54,29 @@ const { article, description } = Astro.props;
     </Breadcrumbs>
   </div>
 
-  <div slot="main">
-    <h2>{article.data.title}</h2>
-    <p class="text-gray-500 text-sm pb-4">
-      Published on {formatDate(article.data.when, "PPPP")}
-    </p>
+  <div class="flex flex-col md:flex-row gap-4 md:gap-8">
+    <div class="flex-grow">
+      <p class="text-gray-500 text-sm pb-4">
+        Published on {formatDate(article.data.when, "PPPP")}
+      </p>
+      <RichText
+        page={`news/article/${article.id}`}
+        document={article.data.content}
+      />
+    </div>
+    <div class="min-w-min text-nowrap">
+      <h5>Related Pages</h5>
+      <ul>
+        {
+          article.data.pages.map((page) => (
+            <li>
+              <a href={page.slug} class="text-blue-600 hover:underline">
+                {page.title}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
   </div>
-  <RichText
-    page={`news/article/${article.id}`}
-    document={article.data.content}
-  />
 </Container>

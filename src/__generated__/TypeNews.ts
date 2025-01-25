@@ -1,4 +1,5 @@
 import type { ChainModifiers, Entry, EntryFieldTypes, EntrySkeletonType, LocaleCode } from "contentful";
+import type { TypePageSkeleton } from "./TypePage";
 import type { TypeTrusteeSkeleton } from "./TypeTrustee";
 
 export interface TypeNewsFields {
@@ -6,6 +7,7 @@ export interface TypeNewsFields {
     content: EntryFieldTypes.RichText;
     summary: EntryFieldTypes.RichText;
     author?: EntryFieldTypes.EntryLink<TypeTrusteeSkeleton>;
+    pages?: EntryFieldTypes.Array<EntryFieldTypes.EntryLink<TypePageSkeleton>>;
 }
 
 export type TypeNewsSkeleton = EntrySkeletonType<TypeNewsFields, "news">;
