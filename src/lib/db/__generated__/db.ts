@@ -3,6 +3,12 @@
  * Please do not edit it manually.
  */
 
+import type { ColumnType } from "kysely";
+
+export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
+  ? ColumnType<S, I | undefined, U>
+  : ColumnType<T, T | undefined, T>;
+
 export interface Account {
   accessToken: string | null;
   accessTokenExpiresAt: string | null;
@@ -25,11 +31,18 @@ export interface Member {
   email: string;
   emergency_contact_name: string;
   emergency_contact_telephone: string;
-  id: string | null;
+  id: string;
   name: string;
   postcode: string;
   telephone: string;
   title: string;
+}
+
+export interface Membership {
+  created_at: Generated<string | null>;
+  id: string;
+  paid_until: string;
+  user_d: string;
 }
 
 export interface Session {
@@ -65,6 +78,7 @@ export interface Verification {
 export interface DB {
   account: Account;
   member: Member;
+  membership: Membership;
   session: Session;
   user: User;
   verification: Verification;
