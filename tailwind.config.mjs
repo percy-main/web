@@ -1,9 +1,8 @@
-import { theme as libTheme } from "./src/lib/theme";
 import typography from "@tailwindcss/typography";
 import forms from "@tailwindcss/forms";
 
-let font_base = Number(libTheme.fonts.font_size.base.replace("px", ""));
-let font_scale = Number(libTheme.fonts.font_size.scale);
+let font_base = 16;
+let font_scale = 1.24571;
 let h6 = font_base / font_base;
 let h5 = h6 * font_scale;
 let h4 = h5 * font_scale;
@@ -31,16 +30,16 @@ export const theme = {
   },
   extend: {
     colors: {
-      text: libTheme.colors.default.text_color.default,
-      light: libTheme.colors.default.text_color.light,
-      dark: libTheme.colors.default.text_color.dark,
-      primary: libTheme.colors.default.theme_color.primary,
-      secondary: libTheme.colors.default.theme_color.secondary,
-      body: libTheme.colors.default.theme_color.body,
-      border: libTheme.colors.default.theme_color.border,
-      "theme-light": libTheme.colors.default.theme_color.theme_light,
-      "theme-dark": libTheme.colors.default.theme_color.theme_dark,
-      creamy: libTheme.colors.default.theme_color.creamy,
+      text: "#444",
+      light: "#ceced0",
+      dark: "#222",
+      primary: "#FE6019",
+      secondary: "#FEE140",
+      body: "#fafafa",
+      border: "#EBEBEB",
+      "theme-light": "#E5E5E5",
+      "theme-dark": "#1a202c",
+      creamy: "#F1F1F1",
     },
     fontSize: {
       base: font_base + "px",
@@ -55,11 +54,8 @@ export const theme = {
       h6: h6 + "rem",
     },
     fontFamily: {
-      primary: ["var(--font-primary)", libTheme.fonts.font_family.primary_type],
-      secondary: [
-        "var(--font-secondary)",
-        libTheme.fonts.font_family.secondary_type,
-      ],
+      primary: ["var(--font-primary)", "sans-serif"],
+      secondary: ["var(--font-secondary)", "sans-serif"],
     },
   },
 };
