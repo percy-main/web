@@ -1,4 +1,5 @@
 import { z } from "astro:schema";
+import { isMatching } from "ts-pattern";
 
 export const gameSponsoredSchema = z.object({
   type: z.literal("sponsorGame"),
@@ -10,12 +11,14 @@ export const membershipSchema = z.object({
   type: z.literal("membership"),
 });
 
-export const metadata = z
-  .union([gameSponsoredSchema, membershipSchema, z.object({})])
-  .optional();
+export const metadata = z.union([
+  gameSponsoredSchema,
+  membershipSchema,
+  z.undefined(),
+]);
 export type Metadata = z.TypeOf<typeof metadata>;
 
 export const is =
-  <Type>(type: Type) =>
+  <const Type extends Exclude<Metadata, undefined>["type"]>(type: Type) =>
   (meta: Metadata): meta is Extract<Metadata, { type: Type }> =>
-    meta && "type" in meta && meta.type === type ? true : false;
+    isMatching<Partial<Metadata>>({ type })(meta);

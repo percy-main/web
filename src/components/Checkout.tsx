@@ -23,14 +23,14 @@ export const Checkout: FC<Props> = ({ price }) => {
         const str = urlParams.get("metadata");
 
         if (!str) {
-          return {};
+          return undefined;
         }
 
         try {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-          return JSON.parse(str);
+          return JSON.parse(decodeURIComponent(str));
         } catch {
-          return {};
+          return undefined;
         }
       };
 

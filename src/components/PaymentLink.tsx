@@ -15,7 +15,7 @@ export const PaymentLink: FC<Props> = ({
   children,
 }) => (
   <a
-    href={`/purchase/${priceId}?metadata=${JSON.stringify(metadata)}`}
+    href={`/purchase/${priceId}?metadata=${encodeURIComponent(JSON.stringify(metadata))}`}
     className={className}
   >
     {children}

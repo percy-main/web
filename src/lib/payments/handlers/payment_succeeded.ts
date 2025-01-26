@@ -1,5 +1,5 @@
 import { type TypeGameFields } from "@/__generated__";
-import { match, P } from "ts-pattern";
+import { match, P, isMatching } from "ts-pattern";
 import { patchEntry } from "../../contentful/patch-entry";
 import _ from "lodash/fp";
 import { is } from "../metadata";
