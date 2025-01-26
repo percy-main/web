@@ -5,9 +5,15 @@ import {
   type Options,
   type RenderNode,
 } from "@contentful/rich-text-react-renderer";
-import { BLOCKS, INLINES } from "@contentful/rich-text-types";
+import {
+  BLOCKS,
+  INLINES,
+  type Block,
+  type Inline,
+} from "@contentful/rich-text-types";
 import { Person } from "./Person";
 import { LeagueTable } from "@/components/LeagueTable";
+import type { Asset } from "contentful";
 
 const resolvePageData = (
   page: string,
@@ -24,6 +30,31 @@ const resolvePageData = (
   const key = `page$${dataLookup}`;
   const data = pageData[key];
   return data;
+};
+
+const renderEmbeddedAsset = ({ fields, metadata }: Asset<undefined>) => {
+  const title = fields.title;
+  const description = fields.description;
+
+  return (
+    <figure className="max-w-lg self-center">
+      <img
+        src={`https://${fields.file?.url}`}
+        height={fields.file?.details.image?.height}
+        width={fields.file?.details.image?.width}
+        alt={fields.description}
+        className="h-auto max-w-full rounded-lg"
+      />
+      {metadata.tags.some(
+        (tag: { sys: { id: string } }) => tag.sys.id === "nocaption",
+      ) ? null : (
+        <figcaption className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          <h6>{title}</h6>
+          {description && <p>{description}</p>}
+        </figcaption>
+      )}
+    </figure>
+  );
 };
 
 const renderOptions = (page: string): Options => ({
@@ -53,33 +84,22 @@ const renderOptions = (page: string): Options => ({
             name={node.data.target.fields.name}
           />
         );
+      } else if (node.data.target.sys.contentType.sys.id === "assetLink") {
+        return (
+          <a
+            href={node.data.target.fields.href}
+            title={node.data.target.fields.asset.fields.description}
+            className="text-blue-600 hover:underline"
+          >
+            {renderEmbeddedAsset(node.data.target.fields.asset)}
+          </a>
+        );
       } else if (node.data.target.sys.contentType.sys.id === "location") {
         return "location";
       }
     },
     [BLOCKS.EMBEDDED_ASSET]: (node) => {
-      const title = node.data.target.fields.title;
-      const description = node.data.target.fields.description;
-
-      return (
-        <figure className="max-w-lg self-center">
-          <img
-            src={`https://${node.data.target.fields.file.url}`}
-            height={node.data.target.fields.file.details.image.height}
-            width={node.data.target.fields.file.details.image.width}
-            alt={node.data.target.fields.description}
-            className="h-auto max-w-full rounded-lg"
-          />
-          {node.data.target.metadata.tags.some(
-            (tag: { sys: { id: string } }) => tag.sys.id === "nocaption",
-          ) ? null : (
-            <figcaption className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              <h6>{title}</h6>
-              {description && <p>{description}</p>}
-            </figcaption>
-          )}
-        </figure>
-      );
+      return renderEmbeddedAsset(node.data.target);
     },
     [BLOCKS.UL_LIST]: (node, children) => {
       return (
