@@ -60,7 +60,7 @@ export const Payments = () => {
                 <dt className="text-base font-medium text-gray-500 dark:text-gray-400">
                   Status
                 </dt>
-                <dd className="me-2 mt-1.5 inline-flex items-center rounded bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-300">
+                <dd className="me-2 mt-1.5 inline-flex items-center rounded-sm bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900 dark:text-green-300">
                   <svg
                     className="me-1 h-3 w-3"
                     aria-hidden="true"

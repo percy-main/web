@@ -3,16 +3,7 @@ import "./Base.css";
 import { AstroFont } from "astro-font";
 import Footer from "@/components/Footer.astro";
 import Header from "@/components/Header.astro";
-import { theme } from "@/lib/theme";
 import { BASE_URL } from "astro:env/client";
-
-const fontPrimary = theme.fonts.font_family.primary
-  .replace(/\+/g, " ")
-  .replace(/:[ital,]*[ital@]*[wght@]*[0-9,;]+/gi, "");
-
-const fontSecondary = theme.fonts.font_family.secondary
-  .replace(/\+/g, " ")
-  .replace(/:[ital,]*[ital@]*[wght@]*[0-9,;]+/gi, "");
 
 export interface Props {
   title?: string;
@@ -66,19 +57,19 @@ const { title, description, image, author } = Astro.props;
           src: [],
           preload: false,
           display: "swap",
-          name: fontPrimary!,
+          name: "Poppins",
           fallback: "sans-serif",
           cssVariable: "font-primary",
-          googleFontsURL: `https://fonts.googleapis.com/css2?family=${theme.fonts.font_family.primary}&display=swap`,
+          googleFontsURL: `https://fonts.googleapis.com/css2?family=Poppins&display=swap`,
         },
         {
           src: [],
           preload: false,
           display: "swap",
-          name: fontSecondary!,
+          name: "Commissioner",
           fallback: "sans-serif",
           cssVariable: "font-secondary",
-          googleFontsURL: `https://fonts.googleapis.com/css2?family=${theme.fonts.font_family.secondary}&display=swap`,
+          googleFontsURL: `https://fonts.googleapis.com/css2?family=Commissioner&display=swap`,
         },
       ]}
     />

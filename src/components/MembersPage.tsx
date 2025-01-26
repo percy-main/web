@@ -37,7 +37,7 @@ export const MembersPage = () => {
       <div className="flex flex-row items-start justify-between w-full">
         <h1>Members Area</h1>
         <a
-          className="justify-self-start py-2 px-4 border-1  border-gray-800 hover:bg-gray-200 text-dark rounded text-sm"
+          className="justify-self-start py-2 px-4 border-1  border-gray-800 hover:bg-gray-200 text-dark rounded-sm text-sm"
           href="/logout"
         >
           Sign Out
@@ -49,7 +49,7 @@ export const MembersPage = () => {
         <p>
           {!user.emailVerified && (
             <button
-              className=" mt-2 py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white rounded text-sm cursor-pointer"
+              className=" mt-2 py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white rounded-sm text-sm cursor-pointer"
               disabled={isVerifying}
               onClick={verify}
             >

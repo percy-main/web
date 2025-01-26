@@ -48,14 +48,13 @@ const { article, description } = Astro.props;
         ,
         { index: "last", text: article.data.title },
       ]}
-      mainBemClass="breadcrumbs"
     >
       <IoChevronForward slot="separator" />
     </Breadcrumbs>
   </div>
 
   <div class="flex flex-col md:flex-row gap-4 md:gap-8">
-    <div class="flex-grow">
+    <div class="grow">
       <p class="text-gray-500 text-sm pb-4">
         Published on {formatDate(article.data.when, "PPPP")}
       </p>
