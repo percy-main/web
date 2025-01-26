@@ -7,69 +7,52 @@ import {
 } from "react-icons/io5";
 ---
 
-<ul class="social-icons">
-  <li>
+<ul class="mt-4 lg:mt-6">
+  <li class="mr-2 inline-block">
     <a
       aria-label="facebook"
       href="https://www.facebook.com/Percymaincricketclub"
       target="_blank"
       rel="noopener noreferrer nofollow"
+      class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-center transition-all duration-200 hover:bg-primary [&>svg]:m-auto[&>svg]:h-11 [&_svg]:fill-dark [&>svg]:text-xl [&_path]:transition-all [&_path]:duration-200 hover:[&_svg]:fill-white"
     >
       <IoLogoFacebook />
     </a>
   </li>
-  <li>
+
+  <li class="mr-2 inline-block">
     <a
       aria-label="location"
       href="https://maps.app.goo.gl/qQ5bFRqxoDYVvzdz9"
       target="_blank"
       rel="noopener noreferrer nofollow"
+      class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-center transition-all duration-200 hover:bg-primary [&>svg]:m-auto[&>svg]:h-11 [&_svg]:fill-dark [&>svg]:text-xl [&_path]:transition-all [&_path]:duration-200 hover:[&_svg]:fill-white"
     >
       <IoLocation />
     </a>
   </li>
-  <li>
+
+  <li class="mr-2 inline-block">
     <a
       aria-label="linkedin"
       href="https://www.linkedin.com/company/percy-main-cricket-and-sports-club"
       target="_blank"
       rel="noopener noreferrer nofollow"
+      class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-center transition-all duration-200 hover:bg-primary [&>svg]:m-auto[&>svg]:h-11 [&_svg]:fill-dark [&>svg]:text-xl [&_path]:transition-all [&_path]:duration-200 hover:[&_svg]:fill-white"
     >
       <IoLogoLinkedin />
     </a>
   </li>
-  <li>
+
+  <li class="mr-2 inline-block">
     <a
       aria-label="github"
       href="https://github.com/percy-main/web"
       target="_blank"
       rel="noopener noreferrer nofollow"
+      class="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-center transition-all duration-200 hover:bg-primary [&>svg]:m-auto[&>svg]:h-11 [&_svg]:fill-dark [&>svg]:text-xl [&_path]:transition-all [&_path]:duration-200 hover:[&_svg]:fill-white"
     >
       <IoLogoGithub />
     </a>
   </li>
 </ul>
-
-<style>
-  .social-icons {
-    @apply mt-4 lg:mt-6;
-    li {
-      @apply mr-2 inline-block;
-      a {
-        @apply inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-center transition-all duration-200 hover:bg-primary;
-
-        svg {
-          @apply m-auto h-11 fill-dark text-xl;
-        }
-
-        path {
-          @apply transition-all duration-200;
-        }
-
-        &:hover path {
-          @apply fill-white;
-        }
-      }
-    }
-  }
-</style>
