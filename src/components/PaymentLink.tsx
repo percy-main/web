@@ -1,4 +1,4 @@
-import type { Metadata } from "@/lib/payments/handlers";
+import type { Metadata } from "@/lib/payments/metadata";
 import type { FC, ReactNode } from "react";
 
 type Props = {

@@ -1,8 +1,8 @@
 import * as price from "@/collections/price";
 import { stripe } from "@/lib/payments/client";
+import { metadata } from "@/lib/payments/handlers";
 import { ActionError, defineAction } from "astro:actions";
 import { z } from "astro:schema";
-import { metadata } from "../lib/payments/handlers";
 
 export const checkout = defineAction({
   input: z.object({
