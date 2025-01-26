@@ -2,6 +2,7 @@ import { useState, type FC } from "react";
 import { match } from "ts-pattern";
 import type { Price } from "../collections/price";
 import { RadioButtons } from "./form/RadioButtons";
+import { PaymentLink } from "./PaymentLink";
 
 type Props = {
   options: {
@@ -120,20 +121,22 @@ export const PayMembership: FC<Props> = ({ options }) => {
                       </>
                     ))
                     .with({ payment: "online", schedule: "annually" }, () => (
-                      <a
-                        href={`/purchase/${price.annually.id}`}
+                      <PaymentLink
+                        priceId={price.annually.id}
+                        metadata={{ type: "membership" }}
                         className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                       >
                         Pay Online
-                      </a>
+                      </PaymentLink>
                     ))
                     .with({ payment: "online", schedule: "monthly" }, () => (
-                      <a
-                        href={`/purchase/${price.monthly.id}`}
+                      <PaymentLink
+                        priceId={price.monthly.id}
+                        metadata={{ type: "membership" }}
                         className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                       >
                         Pay Online
-                      </a>
+                      </PaymentLink>
                     ))
                     .otherwise(() => (
                       <></>

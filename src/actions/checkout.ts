@@ -2,11 +2,12 @@ import * as price from "@/collections/price";
 import { stripe } from "@/lib/payments/client";
 import { ActionError, defineAction } from "astro:actions";
 import { z } from "astro:schema";
+import { metadata } from "../lib/payments/handlers";
 
 export const checkout = defineAction({
   input: z.object({
     price: price.schema,
-    metadata: z.any(),
+    metadata,
   }),
   handler: async ({
     price: { id, mode, hasPromotion, qtyAdjustable, maxQty },

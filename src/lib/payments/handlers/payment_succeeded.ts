@@ -1,58 +1,45 @@
 import { type TypeGameFields } from "@/__generated__";
-import { managementClient } from "@/lib/contentful/client";
-import { stripe } from "@/lib/payments/client";
-import { CDN_ENVIRONMENT, CDN_SPACE_ID } from "astro:env/server";
-import priceConfig from "~/stripe.json";
+import { match, P } from "ts-pattern";
+import { patchEntry } from "../../contentful/patch-entry";
+import _ from "lodash/fp";
+import { z } from "astro:schema";
+
+export const gameSponsoredSchema = z.object({
+  type: z.literal("sponsorGame"),
+  gameId: z.string(),
+});
+export type GameSponsored = z.TypeOf<typeof gameSponsoredSchema>;
+
+export const membershipSchema = z.object({
+  type: z.literal("membership"),
+});
+
+export const metadata = z.union([gameSponsoredSchema, membershipSchema]);
+export type Metadata = z.TypeOf<typeof metadata>;
+
+const is =
+  <T extends Metadata>(fn: (a: Metadata) => a is T) =>
+  (cand: Metadata): cand is T =>
+    fn(cand);
+
+const gameSponsored = (meta: Metadata): meta is GameSponsored =>
+  meta.type === "sponsorGame";
 
 export const paymentSucceeded = async (sessionId: string) => {
   const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId, {
     expand: ["line_items"],
   });
 
-  const gameId = checkoutSession.metadata?.gameId;
-
-  if (
-    checkoutSession.payment_status === "paid" &&
-    checkoutSession.line_items?.data.some(
-      (li) => li.price?.id === priceConfig.prices.sponsorship,
-    ) &&
-    typeof gameId === "string"
-  ) {
-    const gameEntry = await managementClient.entry.get<TypeGameFields>({
-      entryId: gameId,
-      spaceId: CDN_SPACE_ID,
-      environmentId: CDN_ENVIRONMENT,
-    });
-
-    if (!gameEntry) {
-      console.error(`Missing game entry ${gameId}`);
-      return;
-    }
-
-    if (gameEntry.fields.sponsor) {
-      console.error(`Game entry ${gameId} already has a sponsor`);
-      return;
-    }
-
-    const updated = await managementClient.entry.patch(
+  await match(checkoutSession)
+    .with(
       {
-        entryId: gameId,
-        spaceId: CDN_SPACE_ID,
-        environmentId: CDN_ENVIRONMENT,
+        payment_status: "paid",
+        metadata: P.when(is(gameSponsored)),
       },
-      [{ op: "replace", path: "/fields/hasSponsor/en-US", value: true }],
-      {
-        "X-Contentful-Version": gameEntry.sys.version,
-      },
-    );
-
-    await managementClient.entry.publish(
-      {
-        entryId: gameId,
-        spaceId: CDN_SPACE_ID,
-        environmentId: CDN_ENVIRONMENT,
-      },
-      updated,
-    );
-  }
+      ({ metadata: { gameId } }) =>
+        patchEntry<TypeGameFields>(gameId, (entry) => !entry.fields.sponsor, [
+          { op: "replace", path: "/fields/hasSponsor/en-US", value: true },
+        ]),
+    )
+    .otherwise(_.noop);
 };

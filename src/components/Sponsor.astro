@@ -1,6 +1,7 @@
 ---
 import type { Game } from "@/collections/game";
 import priceConfig from "~/stripe.json";
+import { PaymentLink } from "@/components/PaymentLink";
 
 type Props = {
   id: string;
@@ -16,12 +17,13 @@ const { id, game } = Astro.props;
       Sponsor: {game.sponsor?.name ?? "Pending"}
     </p>
   ) : (
-    <div class="mt-4 justify-self-start rounded-sm bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-700">
-      <a
-        href={`/purchase/${priceConfig.prices.sponsorship}?metadata=${JSON.stringify({ gameId: id })}`}
+    <div class="justify-self-start mt-4 py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white rounded text-sm">
+      <PaymentLink
+        priceId={priceConfig.prices.sponsorship}
+        metadata={{ type: "sponsorGame", gameId: id }}
       >
         Sponsor This Game
-      </a>
+      </PaymentLink>
     </div>
   )
 }

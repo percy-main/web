@@ -13,15 +13,11 @@
     "auth:migrate": "CLI=true zx ./scripts/auth-migrate.mjs",
     "email": "email dev",
     "postinstall": "patch-package",
-<<<<<<< HEAD
     "format": "prettier . --write",
     "lint": "eslint src/**",
-    "migrate:up": "CLI=true set -a && source .env && set +a && tsx ./scripts/migrate-up"
-=======
     "migrate:up": "CLI=true set -a && source .env && set +a && tsx ./scripts/migrate-up",
     "db:codegen": "DATABASE_URL=./local.db kysely-codegen --out-file ./src/lib/db/__generated__/db.ts",
     "db:migration": "zx ./scripts/create-migration.mjs"
->>>>>>> 234bc44 (feat: 🎸 revamped signup)
   },
   "dependencies": {
     "@astrojs/netlify": "^6.1.0",
@@ -71,11 +67,11 @@
     "@better-auth/cli": "^1.1.14",
     "@types/html-to-text": "^9.0.4",
     "@typescript-eslint/parser": "^8.22.0",
+    "@types/json-patch": "^0.0.33",
     "autoprefixer": "^10.4.20",
     "cf-content-types-generator": "^2.15.5",
     "contentful-merge": "^2.6.5",
     "dotenv-cli": "^8.0.0",
-<<<<<<< HEAD
     "eslint": "^8.57.1",
     "eslint-config-standard": "^17.1.0",
     "eslint-plugin-astro": "^1.3.1",
@@ -83,9 +79,8 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-n": "^16.6.2",
     "eslint-plugin-promise": "^6.6.0",
-=======
+    "json-patch": "^0.7.0",
     "kysely-codegen": "^0.17.0",
->>>>>>> 234bc44 (feat: 🎸 revamped signup)
     "patch-package": "^8.0.0",
     "prettier": "^3.4.2",
     "prettier-plugin-astro": "^0.14.1",
