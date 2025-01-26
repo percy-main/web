@@ -174,7 +174,6 @@ const { pathname } = Astro.url;
       linkTextFormat="capitalized"
       customizeListElements={[{ index: 0, remove: true }]}
       customizeLinks={[{ index: "last", text: page.data.title }]}
-      mainBemClass="breadcrumbs"
     >
       <IoChevronForward slot="separator" />
     </Breadcrumbs>
@@ -184,9 +183,3 @@ const { pathname } = Astro.url;
     <RichText document={page.data.content} page={pathname} client:load />
   </div>
 </Page>
-
-<style>
-  .breadcrumbs {
-    @reference flex flex-row gap-4;
-  }
-</style>
