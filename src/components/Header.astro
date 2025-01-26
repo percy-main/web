@@ -65,7 +65,7 @@ const menu: MenuItem[] = [
 ---
 
 <header
-  class="sticky top-0 z-50 py-6 transition-all duration-300 pl-[calc(100vw-100%)] shadow-[0_-28px_60px_10px_rgba(102,102,102,1)] bg-gradient-to-t from-blue-100 to-creamy"
+  class="sticky top-0 z-50 py-6 transition-all duration-300 pl-[calc(100vw-100%)] shadow-[0_-28px_60px_10px_rgba(102,102,102,1)] bg-linear-to-t from-blue-100 to-creamy"
 >
   <nav class="relative flex flex-wrap items-center justify-between container">
     <div class="flex flex-row items-center gap-4">
@@ -90,7 +90,7 @@ const menu: MenuItem[] = [
     </label>
     <label
       for="nav-toggle"
-      class="order-2 hidden cursor-pointer items-center lg:order-1 peer-checked:flex peer-checked:lg:hidden"
+      class="order-2 hidden cursor-pointer items-center lg:order-1 peer-checked:flex lg:peer-checked:hidden"
     >
       <svg class="h-6 fill-current" viewBox="0 0 20 20">
         <title>Menu Close</title>
@@ -101,7 +101,7 @@ const menu: MenuItem[] = [
     </label>
 
     <ul
-      class="text-center lg:text-left order-3 hidden w-full lg:order-1 lg:flex lg:w-auto lg:space-x-2 peer-checked:block peer-checked:lg:flex"
+      class="text-center lg:text-left order-3 hidden w-full lg:order-1 lg:flex lg:w-auto lg:space-x-2 peer-checked:block lg:peer-checked:flex"
     >
       {
         menu.map((item) => (
