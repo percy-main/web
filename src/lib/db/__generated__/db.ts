@@ -41,8 +41,8 @@ export interface Member {
 export interface Membership {
   created_at: Generated<string | null>;
   id: string;
+  member_id: string;
   paid_until: string;
-  user_d: string;
 }
 
 export interface Session {

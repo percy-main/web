@@ -2,27 +2,27 @@
 import Container from "@/layouts/Container.astro";
 import { PayMembership } from "@/components/PayMembership";
 import { getCollection } from "astro:content";
-import stripeConfig from "~/stripe.json";
+import { paymentData } from "../../lib/payments/config";
 
 const prices = await getCollection("price");
 const seniorPlayerMonthly = prices.find(
   (price) =>
-    price.data.product.id === stripeConfig.product.subs_player &&
+    price.data.product.id === paymentData.product.subs_player &&
     price.data.mode === "subscription"
 );
 const seniorPlayerAnnual = prices.find(
   (price) =>
-    price.data.product.id === stripeConfig.product.subs_player &&
+    price.data.product.id === paymentData.product.subs_player &&
     price.data.mode === "payment"
 );
 const socialMonthly = prices.find(
   (price) =>
-    price.data.product.id === stripeConfig.product.subs_social &&
+    price.data.product.id === paymentData.product.subs_social &&
     price.data.mode === "subscription"
 );
 const socialAnnual = prices.find(
   (price) =>
-    price.data.product.id === stripeConfig.product.subs_social &&
+    price.data.product.id === paymentData.product.subs_social &&
     price.data.mode === "payment"
 );
 

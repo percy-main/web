@@ -12,12 +12,16 @@
     "contentful:apply-merge": "set -a && source .env && set +a && contentful-merge apply --space $CDN_SPACE_ID --environment master --cma-token $CDN_CMA_TOKEN --file ./.contentful/merge.json",
     "auth:migrate": "CLI=true zx ./scripts/auth-migrate.mjs",
     "email": "email dev",
-    "postinstall": "patch-package",
     "format": "prettier . --write",
     "lint": "eslint src/**",
     "migrate:up": "CLI=true set -a && source .env && set +a && tsx ./scripts/migrate-up",
+    "email:dev": "email dev",
     "db:codegen": "DATABASE_URL=./local.db kysely-codegen --out-file ./src/lib/db/__generated__/db.ts",
-    "db:migration": "zx ./scripts/create-migration.mjs"
+    "db:types": "DATABASE_URL=./local.db kysely-codegen --out-file ./src/lib/db/__generated__/db.ts",
+    "db:migration": "zx ./scripts/create-migration.mjs",
+    "db:up": "CLI=true set -a && source .env && set +a && tsx ./scripts/migrate-up",
+    "stripe:local": "stripe listen --forward-to localhost:4321/api/stripe_hook",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@astrojs/netlify": "^6.1.0",

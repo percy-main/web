@@ -1,10 +1,22 @@
 {
-  "prices": {
-    "sponsorship": "price_1QeNAEIoYmCDxYlku6fuUon5",
-    "donation": "price_1Qg3v7IoYmCDxYlkVFuUKYXX"
+  "default": {
+    "prices": {
+      "sponsorship": "price_1QeNAEIoYmCDxYlku6fuUon5",
+      "donation": "price_1Qg3v7IoYmCDxYlkVFuUKYXX"
+    },
+    "product": {
+      "subs_player": "prod_RYaHXiECGLyH9k",
+      "subs_social": "prod_RYaMScmSF06OQp"
+    }
   },
-  "product": {
-    "subs_player": "prod_RYaHXiECGLyH9k",
-    "subs_social": "prod_RYaMScmSF06OQp"
+  "dev": {
+    "prices": {
+      "sponsorship": "price_1QlwpNIoYmCDxYlk50mvNJ6R",
+      "donation": "price_1PHSBTIoYmCDxYlkBoo86Xdb"
+    },
+    "product": {
+      "subs_player": "prod_RfHLa2wMmBDJcK",
+      "subs_social": "prod_RfHN1rXeCNb2a9"
+    }
   }
 }
