@@ -41,10 +41,14 @@ export const checkoutSessionCompleted = async (
         customer_details: { email: P.string },
         line_items: P.nonNullable,
       },
-      async ({ customer_details: { email }, line_items }) => {
+      async ({ customer_details: { email }, line_items, metadata }) => {
         const customer = await db.client
           .selectFrom("member")
-          .leftJoin("membership", "member.id", "membership.member_id")
+          .leftJoin("membership", (join) =>
+            join
+              .onRef("member.id", "=", "membership.member_id")
+              .on("membership.type", "=", metadata.membership),
+          )
           .select([
             "member.id as member_id",
             "membership.id as membership_id",
@@ -96,6 +100,7 @@ export const checkoutSessionCompleted = async (
             .insertInto("membership")
             .values({
               id: randomUUID(),
+              type: metadata.membership,
               member_id: customer.member_id,
               paid_until,
             })

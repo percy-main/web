@@ -43,6 +43,7 @@ export interface Membership {
   id: string;
   member_id: string;
   paid_until: string;
+  type: string | null;
 }
 
 export interface Session {
