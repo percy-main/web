@@ -45,12 +45,17 @@ export const checkoutSessionCompleted = async (
         const customer = await db.client
           .selectFrom("member")
           .leftJoin("membership", "member.id", "membership.member_id")
-          .select(["member.id as member_id", "membership.id as membership_id"])
+          .select([
+            "member.id as member_id",
+            "membership.id as membership_id",
+            "membership.paid_until as paid_until",
+          ])
           .where("member.email", "=", email)
           .executeTakeFirst();
 
         if (!customer) {
-          throw new Error(`No customer with email: ${email}`);
+          console.log(`No customer with email`, { email });
+          return;
         }
 
         const addedMembershipDuration = (line_items.data ?? [])
@@ -77,12 +82,16 @@ export const checkoutSessionCompleted = async (
 
         console.log("Adding membership duration", addedMembershipDuration);
 
-        const paid_until = add(
-          stripeDate(event.created),
-          addedMembershipDuration,
-        ).toISOString();
-
         if (!customer.membership_id) {
+          console.log(
+            "No existing membership for customer, creating membership ",
+          );
+
+          const paid_until = add(
+            stripeDate(event.created),
+            addedMembershipDuration,
+          ).toISOString();
+
           await db.client
             .insertInto("membership")
             .values({
@@ -92,6 +101,25 @@ export const checkoutSessionCompleted = async (
             })
             .returning(["id"])
             .executeTakeFirstOrThrow();
+        } else {
+          console.log(
+            "Existing membership for customer, adding duration to previous paid_until ",
+          );
+
+          const paid_until = add(
+            customer.paid_until
+              ? new Date(customer.paid_until)
+              : stripeDate(event.created),
+            addedMembershipDuration,
+          ).toISOString();
+
+          await db.client
+            .updateTable("membership")
+            .set({
+              paid_until,
+            })
+            .where("id", "=", customer.membership_id)
+            .execute();
         }
       },
     )

@@ -34,7 +34,7 @@ export const PayMembership: FC<Props> = ({ options }) => {
           </p>
           <RadioButtons
             id="membership"
-            onChange={(e) => setMembership(e.target.value as any)}
+            onChange={setMembership}
             value={membership}
             options={[
               {
@@ -58,7 +58,7 @@ export const PayMembership: FC<Props> = ({ options }) => {
             <h5>You can choose to pay annually or monthly.</h5>
             <RadioButtons
               id="schedule"
-              onChange={(e) => setSchedule(e.target.value as any)}
+              onChange={setSchedule}
               value={schedule}
               options={[
                 {
@@ -67,7 +67,7 @@ export const PayMembership: FC<Props> = ({ options }) => {
                   value: "annually",
                 },
                 {
-                  title: "Social",
+                  title: "Monthly",
                   description: `${price.monthly.formattedPrice}/month`,
                   value: "monthly",
                 },
@@ -81,7 +81,7 @@ export const PayMembership: FC<Props> = ({ options }) => {
 
                 <RadioButtons
                   id="payment"
-                  onChange={(e) => setPayment(e.target.value as any)}
+                  onChange={setPayment}
                   value={payment}
                   options={[
                     {

@@ -4,7 +4,9 @@ import { stripe } from "@/lib/payments/client";
 import { checkoutSessionCompleted } from "@/lib/payments/handlers/checkoutSessionCompleted";
 import type { APIContext } from "astro";
 import { STRIPE_WEBHOOK_SECRET } from "astro:env/server";
+import { writeFileSync } from "fs";
 import _ from "lodash/fp";
+import path from "path";
 import { match, P } from "ts-pattern";
 
 export async function POST({ request }: APIContext): Promise<Response> {
@@ -21,6 +23,13 @@ export async function POST({ request }: APIContext): Promise<Response> {
       sig,
       STRIPE_WEBHOOK_SECRET,
     );
+
+    if (import.meta.env.DEV) {
+      writeFileSync(
+        path.join(".sample", `stripe-event-${event.type}-${event.created}`),
+        JSON.stringify(event, null, 2),
+      );
+    }
 
     await match(event)
       .with(
