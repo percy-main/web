@@ -1,3 +1,4 @@
+import { writeFileSync } from "fs";
 import type { FC, ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -5,15 +6,11 @@ import {
   type Options,
   type RenderNode,
 } from "@contentful/rich-text-react-renderer";
-import {
-  BLOCKS,
-  INLINES,
-  type Block,
-  type Inline,
-} from "@contentful/rich-text-types";
+import { BLOCKS, INLINES } from "@contentful/rich-text-types";
 import { Person } from "./Person";
 import { LeagueTable } from "@/components/LeagueTable";
 import type { Asset } from "contentful";
+import { slugup } from "../lib/util/slug";
 
 const resolvePageData = (
   page: string,
@@ -114,6 +111,15 @@ const renderOptions = (page: string): Options => ({
     [INLINES.HYPERLINK]: (node, children) => {
       return (
         <a href={node.data.uri} className="text-blue-600 hover:underline">
+          {children}
+        </a>
+      );
+    },
+    [INLINES.ENTRY_HYPERLINK]: (node, children) => {
+      const href = slugup(node.data.target);
+
+      return (
+        <a href={`/${href}`} className="text-blue-600 hover:underline">
           {children}
         </a>
       );

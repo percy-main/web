@@ -1,15 +1,7 @@
 import { z, defineCollection } from "astro:content";
 import { contentClient } from "@/lib/contentful/client";
 import { type TypeNewsSkeleton, type TypePageSkeleton } from "@/__generated__";
-import type { Entry } from "contentful";
-
-const slugup = (page: Entry<TypePageSkeleton, undefined, string>): string => {
-  if (!page.fields.parent || !("fields" in page.fields.parent)) {
-    return `${page.fields.slug}`;
-  }
-
-  return `${slugup(page.fields.parent)}/${page.fields.slug}`;
-};
+import { slugup, type Sluggable } from "@/lib/util/slug";
 
 const newsSchema = z.object({
   title: z.string(),
@@ -79,7 +71,7 @@ export const news = defineCollection({
             if ("fields" in page)
               return {
                 id: page.sys.id,
-                slug: `/${slugup(page)}`,
+                slug: `/${slugup(page as Sluggable)}`,
                 title: page.fields.title,
               };
           }) ?? [],
