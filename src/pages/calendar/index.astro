@@ -6,6 +6,6 @@ import { formatDate } from "date-fns";
 const now = new Date();
 
 return Astro.redirect(
-  `/calendar/${formatDate(now, "yyyy").toLocaleLowerCase()}/${formatDate(now, "MMMM").toLocaleLowerCase()}`
+  `/calendar/${formatDate(now, "yyyy").toLocaleLowerCase()}/${formatDate(now, "MMMM").toLocaleLowerCase()}`,
 );
 ---

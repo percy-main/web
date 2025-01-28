@@ -1,7 +1,7 @@
 import { useSession } from "@/lib/auth/client";
 import { urlMatch } from "@/lib/util/url-match";
-import { MenuItem } from "../MenuItem";
 import type { FC } from "react";
+import { MenuItem } from "../MenuItem";
 
 type Props = {
   pathname: string;

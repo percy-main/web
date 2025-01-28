@@ -12,7 +12,7 @@ export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
 
   const tags = _.uniqBy(
     news.flatMap((n) => n.data.pages),
-    (p) => p.id
+    (p) => p.id,
   ).map((tag) => ({
     ...tag,
     slug: tag.slug.replaceAll("/", "_"),
@@ -23,9 +23,9 @@ export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
       n.data.pages.map((p) => ({
         ...n,
         tag: p.slug.replaceAll("/", "_"),
-      }))
+      })),
     ),
-    (p) => p.tag
+    (p) => p.tag,
   );
 
   return paginate(news, {
@@ -46,7 +46,7 @@ const { page, tags } = Astro.props;
 
 <Container title="News">
   <div
-    class="text-h4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2 mb-4"
+    class="text-h4 mb-4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2"
     slot="breadcrumbs"
   >
     <Breadcrumbs

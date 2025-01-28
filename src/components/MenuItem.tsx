@@ -1,6 +1,6 @@
+import type { Match } from "@/lib/util/url-match";
 import { cva } from "class-variance-authority";
 import type { FC } from "react";
-import type { Match } from "@/lib/util/url-match";
 
 export type MenuItem = {
   name: string;
@@ -50,7 +50,7 @@ export const MenuItem: FC<Props> = ({ item, isActive }) => {
         {item.name}
       </a>
       {isActive && (
-        <div className="left-2 right-2 h-0.5 bg-linear-to-tl from-green-400 to-blue-400" />
+        <div className="right-2 left-2 h-0.5 bg-linear-to-tl from-green-400 to-blue-400" />
       )}
     </>
   );

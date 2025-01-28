@@ -1,9 +1,9 @@
 import {
+  CDN_CMA_TOKEN,
+  CDN_ENVIRONMENT,
+  CDN_PREVIEW_TOKEN,
   CDN_SPACE_ID,
   CDN_TOKEN,
-  CDN_CMA_TOKEN,
-  CDN_PREVIEW_TOKEN,
-  CDN_ENVIRONMENT,
 } from "astro:env/server";
 import * as contentful from "contentful";
 import cm from "contentful-management";

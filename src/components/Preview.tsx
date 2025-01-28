@@ -1,8 +1,8 @@
+import type { TypePageSkeleton } from "@/__generated__";
 import { useContentfulLiveUpdates } from "@contentful/live-preview/react";
+import type { Entry } from "contentful";
 import type { FC } from "react";
 import { RichText } from "./RichText";
-import type { Entry, EntrySkeletonType } from "contentful";
-import type { TypePageSkeleton } from "@/__generated__";
 
 type Props = {
   entry: Entry<TypePageSkeleton, undefined, string>;

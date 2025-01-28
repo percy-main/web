@@ -1,8 +1,8 @@
 export const prerender = false;
+import { stripe } from "@/lib/payments/client";
+import * as handlers from "@/lib/payments/handlers";
 import type { APIContext } from "astro";
 import { STRIPE_WEBHOOK_SECRET } from "astro:env/server";
-import * as handlers from "@/lib/payments/handlers";
-import { stripe } from "@/lib/payments/client";
 
 export async function POST({ request }: APIContext): Promise<Response> {
   try {

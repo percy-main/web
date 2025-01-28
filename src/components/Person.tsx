@@ -14,30 +14,30 @@ export const Person: FC<PropsWithChildren<Props>> = ({
   children,
 }) => {
   return (
-    <div className="person h-full max-w-2xl mx-4 sm:max-w-sm md:max-w-sm lg:max-w-sm xl:max-w-sm sm:mx-auto md:mx-auto lg:mx-auto xl:mx-auto bg-white shadow-xl rounded-lg text-gray-900 pb-2">
-      <div className="rounded-t-lg h-32 overflow-hidden">
+    <div className="person mx-4 h-full max-w-2xl rounded-lg bg-white pb-2 text-gray-900 shadow-xl sm:mx-auto sm:max-w-sm md:mx-auto md:max-w-sm lg:mx-auto lg:max-w-sm xl:mx-auto xl:max-w-sm">
+      <div className="h-32 overflow-hidden rounded-t-lg">
         <img
-          className="object-cover object-top w-full"
+          className="w-full object-cover object-top"
           src="/images/pitch.png"
           alt="Percy Main Outfield"
         />
       </div>
-      <div className="mx-auto w-32 h-32 relative -mt-16 border-4 border-white rounded-full overflow-hidden">
+      <div className="relative mx-auto -mt-16 h-32 w-32 overflow-hidden rounded-full border-4 border-white">
         <img
-          className="object-cover object-center h-32"
+          className="h-32 object-cover object-center"
           src={person.photo?.url ?? "/images/anon.jpg"}
           alt={person.photo?.title ?? person.name}
         />
       </div>
-      <div className="text-center mt-2">
-        <h5 className="font-semibold pb-2">{person.name}</h5>
+      <div className="mt-2 text-center">
+        <h5 className="pb-2 font-semibold">{person.name}</h5>
 
         {pageDescription && <p className="prose">{pageDescription}</p>}
 
         {children && <p className="prose">{children}</p>}
 
         <a
-          className="text-sm text-blue-900 underline px-2"
+          className="px-2 text-sm text-blue-900 underline"
           href={`/person/${person.slug}`}
         >
           Profile

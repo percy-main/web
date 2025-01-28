@@ -37,7 +37,7 @@ const pageData = Object.entries(person.pageData);
 <Container title={person.name}>
   <div
     slot="breadcrumbs"
-    class="text-h4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2 mb-4"
+    class="text-h4 mb-4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2"
   >
     <Breadcrumbs
       linkTextFormat="capitalized"
@@ -48,13 +48,13 @@ const pageData = Object.entries(person.pageData);
     </Breadcrumbs>
   </div>
   <div
-    class="flex flex-col md:flex-row gap-4 items-center justify-between mb-4"
+    class="mb-4 flex flex-col items-center justify-between gap-4 md:flex-row"
   >
-    <div class="flex flex-col md:flex-row gap-4 items-center justify-start">
+    <div class="flex flex-col items-center justify-start gap-4 md:flex-row">
       {
         person.photo && (
           <img
-            class={`rounded-full mb-0 max-h-48`}
+            class={`mb-0 max-h-48 rounded-full`}
             src={person.photo.url}
             alt={person.photo.title}
             width={132}

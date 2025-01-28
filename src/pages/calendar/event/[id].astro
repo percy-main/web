@@ -24,7 +24,7 @@ const title = match(calendarItem)
   .with(
     { data: { type: "game" } },
     (game) =>
-      `${game.data.team} vs. ${game.data.opposition} ${game.data.home ? "(H)" : "(A)"}`
+      `${game.data.team} vs. ${game.data.opposition} ${game.data.home ? "(H)" : "(A)"}`,
   )
   .with({ data: { type: "event" } }, (event) => event.data.name)
   .exhaustive();
@@ -80,7 +80,7 @@ const month = formatDate(calendarItem.data.when, "MMMM");
   />
 
   <div
-    class="text-h4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2 mb-4"
+    class="text-h4 mb-4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2"
     slot="breadcrumbs"
   >
     <Breadcrumbs

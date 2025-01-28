@@ -1,4 +1,3 @@
-import type { InferEntrySchema } from "astro:content";
 import {
   addDays,
   differenceInCalendarDays,

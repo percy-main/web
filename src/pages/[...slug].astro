@@ -32,7 +32,7 @@ export async function getStaticPaths() {
 
   const parentRoutes = parents.map((page) => {
     const childrenForThisPage = children.filter(
-      (child) => child.data.parent?.slug === page.data.slug
+      (child) => child.data.parent?.slug === page.data.slug,
     );
 
     const menu =
@@ -41,7 +41,7 @@ export async function getStaticPaths() {
         : {
             items: childrenForThisPage
               .sort(
-                (c1, c2) => (c1.data.menuOrder ?? 0) - (c2.data.menuOrder ?? 0)
+                (c1, c2) => (c1.data.menuOrder ?? 0) - (c2.data.menuOrder ?? 0),
               )
               .map((child) => ({
                 title: child.data.title,
@@ -49,7 +49,7 @@ export async function getStaticPaths() {
                 children: children
                   .filter((c) => c.data.parent?.slug === child.data.slug)
                   .sort(
-                    (a, b) => (a.data.menuOrder ?? 0) - (b.data.menuOrder ?? 0)
+                    (a, b) => (a.data.menuOrder ?? 0) - (b.data.menuOrder ?? 0),
                   )
                   .map((c) => ({
                     title: c.data.title,
@@ -104,13 +104,14 @@ const { pathname } = Astro.url;
     menu && (
       <aside
         slot="menu"
-        class="w-full sm:w-60 dark:bg-gray-50 dark:text-gray-800 border-b-2 border-gray-400 pb-2 md:pb-0 md:border-0 mb-4 md:mb-0"
+        class="mb-4 w-full border-b-2 border-gray-400 pb-2 sm:w-60 md:mb-0 md:border-0 md:pb-0 dark:bg-gray-50 dark:text-gray-800"
       >
         <nav class="space-y-8 text-sm">
           <div class="space-y-2">
-            <div class="flex flex-col">
+            <di class="flex flex-col">
               {menu.items.map(({ title, link, children }) => {
                 return (
+                  <>
                     <a
                       href={link}
                       class="py-1"
@@ -119,14 +120,14 @@ const { pathname } = Astro.url;
                           url: link,
                           match: { start: link },
                         })
-                          ? "border-gray-500 border-l-4 pl-2 ml-[-0.76rem] text-bold text-orange-900"
+                          ? "text-bold ml-[-0.76rem] border-l-4 border-gray-500 pl-2 text-orange-900"
                           : "",
                       ]}
                     >
                       {title}
                     </a>
 
-                    <div class="flex flex-col ml-4">
+                    <div class="ml-4 flex flex-col">
                       {children.map(({ title, link }) => (
                         <>
                           <a
@@ -137,7 +138,7 @@ const { pathname } = Astro.url;
                                 url: link,
                                 match: { start: link },
                               })
-                                ? "border-gray-500 border-l-4 pl-4 ml-[-1.76rem] text-bold text-orange-900"
+                                ? "text-bold ml-[-1.76rem] border-l-4 border-gray-500 pl-4 text-orange-900"
                                 : "",
                             ]}
                           >
@@ -157,9 +158,10 @@ const { pathname } = Astro.url;
                         </>
                       ))}
                     </div>
+                  </>
                 );
               })}
-            </div>
+            </di>
           </div>
         </nav>
       </aside>
@@ -168,7 +170,7 @@ const { pathname } = Astro.url;
 
   <div
     slot="breadcrumbs"
-    class="text-h4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2 mb-4"
+    class="text-h4 mb-4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2"
   >
     <Breadcrumbs
       linkTextFormat="capitalized"
@@ -179,7 +181,7 @@ const { pathname } = Astro.url;
     </Breadcrumbs>
   </div>
 
-  <div class="flex flex-col grow container">
+  <div class="container flex grow flex-col">
     <RichText document={page.data.content} page={pathname} client:load />
   </div>
 </Page>

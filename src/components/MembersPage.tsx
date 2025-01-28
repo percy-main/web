@@ -1,7 +1,7 @@
 import { reactClient, useSession } from "@/lib/auth/client";
-import { useState } from "react";
-import { navigate } from "astro:transitions/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { navigate } from "astro:transitions/client";
+import { useState } from "react";
 import { Payments } from "./Payments";
 import { Subscriptions } from "./Subscriptions";
 
@@ -33,11 +33,11 @@ export const MembersPage = () => {
   const { user } = session.data!;
 
   return (
-    <div className="flex flex-col gap-4 items-start">
-      <div className="flex flex-row items-start justify-between w-full">
+    <div className="flex flex-col items-start gap-4">
+      <div className="flex w-full flex-row items-start justify-between">
         <h1>Members Area</h1>
         <a
-          className="justify-self-start py-2 px-4 border-1  border-gray-800 hover:bg-gray-200 text-dark rounded-sm text-sm"
+          className="text-dark justify-self-start rounded-sm border-1 border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
           href="/logout"
         >
           Sign Out
@@ -49,7 +49,7 @@ export const MembersPage = () => {
         <p>
           {!user.emailVerified && (
             <button
-              className=" mt-2 py-2 px-4 bg-blue-500 hover:bg-blue-700 text-white rounded-sm text-sm cursor-pointer"
+              className="mt-2 cursor-pointer rounded-sm bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-700"
               disabled={isVerifying}
               onClick={verify}
             >

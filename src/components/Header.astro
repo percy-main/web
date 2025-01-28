@@ -65,23 +65,23 @@ const menu: MenuItem[] = [
 ---
 
 <header
-  class="sticky top-0 z-50 py-6 transition-all duration-300 pl-[calc(100vw-100%)] shadow-[0_-28px_60px_10px_rgba(102,102,102,1)] bg-linear-to-t from-blue-100 to-creamy"
+  class="to-creamy sticky top-0 z-50 bg-linear-to-t from-blue-100 py-6 pl-[calc(100vw-100%)] shadow-[0_-28px_60px_10px_rgba(102,102,102,1)] transition-all duration-300"
 >
-  <nav class="relative flex flex-wrap items-center justify-between container">
+  <nav class="relative container flex flex-wrap items-center justify-between">
     <div class="flex flex-row items-center gap-4">
       <div class="order-0">
         <Logo />
       </div>
 
-      <h1 class="text-h4 hidden lg:block mb-0">
+      <h1 class="text-h4 mb-0 hidden lg:block">
         Percy Main Cricket and Sports Club
       </h1>
     </div>
 
-    <input id="nav-toggle" type="checkbox" class="hidden peer" />
+    <input id="nav-toggle" type="checkbox" class="peer hidden" />
     <label
       for="nav-toggle"
-      class="order-2 flex cursor-pointer items-center lg:order-1 lg:hidden peer-checked:hidden"
+      class="order-2 flex cursor-pointer items-center peer-checked:hidden lg:order-1 lg:hidden"
     >
       <svg class="h-6 fill-current" viewBox="0 0 20 20">
         <title>Menu Open</title>
@@ -90,7 +90,7 @@ const menu: MenuItem[] = [
     </label>
     <label
       for="nav-toggle"
-      class="order-2 hidden cursor-pointer items-center lg:order-1 peer-checked:flex lg:peer-checked:hidden"
+      class="order-2 hidden cursor-pointer items-center peer-checked:flex lg:order-1 lg:peer-checked:hidden"
     >
       <svg class="h-6 fill-current" viewBox="0 0 20 20">
         <title>Menu Close</title>
@@ -101,7 +101,7 @@ const menu: MenuItem[] = [
     </label>
 
     <ul
-      class="text-center lg:text-left order-3 hidden w-full lg:order-1 lg:flex lg:w-auto lg:space-x-2 peer-checked:block lg:peer-checked:flex"
+      class="order-3 hidden w-full text-center peer-checked:block lg:order-1 lg:flex lg:w-auto lg:space-x-2 lg:text-left lg:peer-checked:flex"
     >
       {
         menu.map((item) => (

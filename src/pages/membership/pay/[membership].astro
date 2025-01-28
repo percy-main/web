@@ -9,22 +9,22 @@ export async function getStaticPaths() {
   const seniorPlayerMonthly = prices.find(
     (price) =>
       price.data.product.id === stripeConfig.product.subs_player &&
-      price.data.mode === "subscription"
+      price.data.mode === "subscription",
   );
   const seniorPlayerAnnual = prices.find(
     (price) =>
       price.data.product.id === stripeConfig.product.subs_player &&
-      price.data.mode === "payment"
+      price.data.mode === "payment",
   );
   const socialMonthly = prices.find(
     (price) =>
       price.data.product.id === stripeConfig.product.subs_social &&
-      price.data.mode === "subscription"
+      price.data.mode === "subscription",
   );
   const socialAnnual = prices.find(
     (price) =>
       price.data.product.id === stripeConfig.product.subs_social &&
-      price.data.mode === "payment"
+      price.data.mode === "payment",
   );
 
   return [
@@ -55,8 +55,8 @@ const { membership } = Astro.props;
 ---
 
 <Container title="You've Joined!">
-  <div class="flex flex-col items-center w-full">
-    <div class="flex flex-col max-w-[600px]">
+  <div class="flex w-full flex-col items-center">
+    <div class="flex max-w-[600px] flex-col">
       <h4>Thanks for joining the club!</h4>
       <p>
         <span class="font-bold">Your membership category:</span>

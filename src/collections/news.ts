@@ -1,7 +1,7 @@
-import { z, defineCollection } from "astro:content";
+import { type TypeNewsSkeleton } from "@/__generated__";
 import { contentClient } from "@/lib/contentful/client";
-import { type TypeNewsSkeleton, type TypePageSkeleton } from "@/__generated__";
 import { slugup, type Sluggable } from "@/lib/util/slug";
+import { defineCollection, z } from "astro:content";
 
 const newsSchema = z.object({
   title: z.string(),

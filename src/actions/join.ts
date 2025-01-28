@@ -1,7 +1,7 @@
-import { z } from "astro:schema";
 import { defineAction } from "astro:actions";
-import retool from "~/retool.json";
 import { RETOOL_API_KEY } from "astro:env/server";
+import { z } from "astro:schema";
+import retool from "~/retool.json";
 
 export const join = defineAction({
   accept: "form",

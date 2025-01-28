@@ -1,5 +1,5 @@
-import typography from "@tailwindcss/typography";
 import forms from "@tailwindcss/forms";
+import typography from "@tailwindcss/typography";
 
 let font_base = 16;
 let font_scale = 1.24571;

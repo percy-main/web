@@ -1,7 +1,7 @@
-import { z, defineCollection } from "astro:content";
-import { contentClient } from "@/lib/contentful/client";
-import type { Entry } from "contentful";
 import { type TypePageSkeleton } from "@/__generated__";
+import { contentClient } from "@/lib/contentful/client";
+import { defineCollection, z } from "astro:content";
+import type { Entry } from "contentful";
 
 const pageSchema = z.object({
   title: z.string(),

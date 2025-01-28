@@ -12,7 +12,8 @@
     "contentful:apply-merge": "set -a && source .env && set +a && contentful-merge apply --space $CDN_SPACE_ID --environment master --cma-token $CDN_CMA_TOKEN --file ./.contentful/merge.json",
     "auth:migrate": "dotenv -- npx @better-auth/cli migrate --config ./src/lib/auth/client.ts",
     "email": "email dev",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "prettier": "prettier . --write"
   },
   "dependencies": {
     "@astrojs/netlify": "^6.1.0",
@@ -63,7 +64,9 @@
     "contentful-merge": "^2.6.5",
     "dotenv-cli": "^8.0.0",
     "patch-package": "^8.0.0",
+    "prettier": "^3.4.2",
     "prettier-plugin-astro": "^0.14.1",
+    "prettier-plugin-organize-imports": "^4.1.0",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "react-compiler-runtime": "^19.0.0-beta-b2e8e9c-20241220",
     "react-email": "3.0.6"

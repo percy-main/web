@@ -18,14 +18,14 @@ const { id, event } = Astro.props;
       {formatDate(event.when, "dd/MM/yyyy")}
     </h4>
   </div>
-  <div class="flex flex-row gap-4 mt-4 items-center justify-between">
+  <div class="mt-4 flex flex-row items-center justify-between gap-4">
     <p class="text-sm">
       {event.name}
     </p>
 
     <a
       href={`/calendar/event/${id}`}
-      class="self-stretch flex flex-col items-center justify-center"
+      class="flex flex-col items-center justify-center self-stretch"
     >
       <IoChevronForward
         className="text-gray-700 hover:text-gray-400"

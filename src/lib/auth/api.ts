@@ -1,6 +1,7 @@
-import type { APIRoute } from "astro";
-import { type Session, type User } from "better-auth";
 import { auth } from "@/lib/auth/server";
+import type { APIRoute } from "astro";
+import type { MaybePromise } from "astro/actions/runtime/utils.js";
+import type { z } from "astro/zod";
 import {
   ActionError,
   defineAction,
@@ -8,8 +9,7 @@ import {
   type ActionAPIContext,
   type ActionHandler,
 } from "astro:actions";
-import type { z } from "astro/zod";
-import type { MaybePromise } from "astro/actions/runtime/utils.js";
+import { type Session, type User } from "better-auth";
 
 export const authedApi =
   (route: (session: { user: User; session: Session }) => APIRoute): APIRoute =>

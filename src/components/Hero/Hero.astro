@@ -6,29 +6,29 @@ import pitchImg from "./pitch.png";
 <section class="bg-white dark:bg-gray-900">
   <div class="relative">
     <Picture
-      class="h-64 md:h-96 w-full object-cover"
+      class="h-64 w-full object-cover md:h-96"
       src={pitchImg}
       formats={["avif", "webp"]}
       alt="The cricket pitch at Percy Main"
       priority
       loading="eager"
     />
-    <div class="absolute inset-0 bg-gray-700 opacity-60 rounded-md"></div>
+    <div class="absolute inset-0 rounded-md bg-gray-700 opacity-60"></div>
     <div class="absolute inset-0 flex items-center justify-center text-white">
-      <div class="py-6 px-4 mx-auto max-w-(--breakpoint-xl) lg:px-6">
+      <div class="mx-auto max-w-(--breakpoint-xl) px-4 py-6 lg:px-6">
         <div class="mx-auto max-w-(--breakpoint-sm) text-center">
           <h2
-            class="mb-4 text-h3 md:text-h2 tracking-tight font-extrabold leading-tight text-white"
+            class="text-h3 md:text-h2 mb-4 leading-tight font-extrabold tracking-tight text-white"
           >
             Join The Main
           </h2>
-          <p class="mb-6 md:text-lg text-balance">
+          <p class="mb-6 text-balance md:text-lg">
             Players - use code <span class="font-bold">UTM2025</span> for £30 off
             annual membership, if you join before 19th April 2025
           </p>
           <a
             href="/membership/join"
-            class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-hidden dark:focus:ring-blue-800"
+            class="mr-2 mb-2 rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 focus:outline-hidden dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
             >Join Now</a
           >
         </div>

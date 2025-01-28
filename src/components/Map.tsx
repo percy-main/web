@@ -1,3 +1,4 @@
+import type { Coordinates } from "@/collections/location";
 import {
   AdvancedMarker,
   APIProvider,
@@ -7,7 +8,6 @@ import {
 } from "@vis.gl/react-google-maps";
 import { MAPS_API_KEY, MAPS_MAP_ID } from "astro:env/client";
 import { useCallback, useState, type FC, type PropsWithChildren } from "react";
-import type { Coordinates } from "@/collections/location";
 
 type Props = PropsWithChildren<{
   center: Coordinates;
@@ -22,7 +22,7 @@ export const Map: FC<Props> = ({ center, infoWindow, children }) => {
     <APIProvider apiKey={MAPS_API_KEY}>
       <GMap
         mapId={MAPS_MAP_ID}
-        className="w-96 md:w-full h-[24rem] md:h-[48rem] mt-8"
+        className="mt-8 h-[24rem] w-96 md:h-[48rem] md:w-full"
         defaultCenter={position}
         defaultZoom={15}
         gestureHandling={"greedy"}

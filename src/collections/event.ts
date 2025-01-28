@@ -1,9 +1,9 @@
-import { z, defineCollection } from "astro:content";
-import { contentClient } from "@/lib/contentful/client";
 import { type TypeEventSkeleton } from "@/__generated__";
-import * as df from "date-fns";
 import * as location from "@/collections/location";
+import { contentClient } from "@/lib/contentful/client";
 import { fromFields } from "@/lib/contentful/from-fields";
+import { defineCollection, z } from "astro:content";
+import * as df from "date-fns";
 
 export const schema = z.object({
   name: z.string(),

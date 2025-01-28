@@ -1,16 +1,15 @@
-import { writeFileSync } from "fs";
-import type { FC, ReactNode } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { LeagueTable } from "@/components/LeagueTable";
 import {
   documentToReactComponents,
   type Options,
   type RenderNode,
 } from "@contentful/rich-text-react-renderer";
 import { BLOCKS, INLINES } from "@contentful/rich-text-types";
-import { Person } from "./Person";
-import { LeagueTable } from "@/components/LeagueTable";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Asset } from "contentful";
+import type { FC, ReactNode } from "react";
 import { slugup } from "../lib/util/slug";
+import { Person } from "./Person";
 
 const resolvePageData = (
   page: string,
@@ -100,7 +99,7 @@ const renderOptions = (page: string): Options => ({
     },
     [BLOCKS.UL_LIST]: (node, children) => {
       return (
-        <ul className="ml-4 list-disc [&>li>ul]:list-[circle] [&>li]:mb-6 has-[div.person]:list-none has-[div.person]:ml-0 has-[div.person]:w-full has-[div.person]:flex has-[div.person]:flex-col lg:has-[div.person]:flex-row has-[div.person]:justify-around has-[div.person]:gap-4 has-[div.person]:flex-wrap [&>li]:basis-1/5">
+        <ul className="ml-4 list-disc has-[div.person]:ml-0 has-[div.person]:flex has-[div.person]:w-full has-[div.person]:list-none has-[div.person]:flex-col has-[div.person]:flex-wrap has-[div.person]:justify-around has-[div.person]:gap-4 lg:has-[div.person]:flex-row [&>li]:mb-6 [&>li]:basis-1/5 [&>li>ul]:list-[circle]">
           {children}
         </ul>
       );
@@ -144,7 +143,7 @@ type Props = {
 export const RichText: FC<Props> = ({ document, page }) => {
   return (
     <QueryClientProvider client={new QueryClient()}>
-      <div className="*:mb-4 flex flex-col">
+      <div className="flex flex-col *:mb-4">
         {documentToReactComponents(document, renderOptions(page))}
       </div>
     </QueryClientProvider>

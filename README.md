@@ -25,26 +25,29 @@ Any static assets, like images, can be placed in the `public/` directory.
 
 All commands are run from the root of the project, from a terminal:
 
-| Command                               | Action                                           |
-| :------------------------------------ | :----------------------------------------------- |
-| `npm install`                         | Installs dependencies                            |
-| `npm run dev`                         | Starts local dev server at `localhost:4321`      |
-| `npm run build`                       | Build your production site to `./dist/`          |
-| `npm run preview`                     | Preview your build locally, before deploying     |
-| `npm run astro ...`                   | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help`             | Get help using the Astro CLI                     |
-| `npm run contentful:types`            | Generate Contentful types                        |
-| `npm run contentful:create-merge`     | Create a content merge from dev -> master        |
-| `npm run contentful:apply-merge`      | Apply a created merge                            |
+| Command                           | Action                                           |
+| :-------------------------------- | :----------------------------------------------- |
+| `npm install`                     | Installs dependencies                            |
+| `npm run dev`                     | Starts local dev server at `localhost:4321`      |
+| `npm run build`                   | Build your production site to `./dist/`          |
+| `npm run preview`                 | Preview your build locally, before deploying     |
+| `npm run astro ...`               | Run CLI commands like `astro add`, `astro check` |
+| `npm run astro -- --help`         | Get help using the Astro CLI                     |
+| `npm run contentful:types`        | Generate Contentful types                        |
+| `npm run contentful:create-merge` | Create a content merge from dev -> master        |
+| `npm run contentful:apply-merge`  | Apply a created merge                            |
 
 ## Services
+
 ### Content
+
 Content is stored in Contentful, and pulled into collections `src/collections`, using generated types.
 
 There are two environments in our Contentful space - `dev` and `master`. Dev is used for local development, and testing content model changes.
 
 #### Deploying a new content model
-1. Make changes in dev environment 
+
+1. Make changes in dev environment
 2. Use `contentful:types` script to generate types
 3. Test locally
 4. Open a PR, and test the deploy preview (this will use the dev space)
@@ -58,24 +61,31 @@ There are two environments in our Contentful space - `dev` and `master`. Dev is 
 If anything goes wrong, the `master` alias can be pointed to its previous location, and a redeploy from Netlify will restore the previous version.
 
 #### Stripe
+
 Stripe is used as a checkout/payment processor. Wherever possible, data should be pulled into astro collections, but when unavoidable use `stripe.json` to hold payment related configuration.
 
 #### Retool
+
 Retool hosts some workflows which are triggered by webhook (e.g. save data to a GSheet on player registration). Any configuration goes in `retool.json`
 
 #### Maps
+
 Google maps provides us with maps for cricket games.
 
 #### Better Auth
+
 Used to provide authentication to members' area.
 
 #### Turso
+
 Distributed SQLite database storing authentication data
 
 #### Mailgun
+
 Email sending. Emails are written with `react-email`, and stored in the `emails` folder. A preview UI can be seen by running `npm run email`
 
 ## Environment
+
 Locally you'll need a `.env` file containing the follwing:
 
 ```

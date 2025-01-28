@@ -1,6 +1,6 @@
-import type { FC } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { actions } from "astro:actions";
+import type { FC } from "react";
 
 type Props = {
   name: string;
@@ -20,8 +20,8 @@ export const LeagueTable: FC<Props> = ({ name, divisionId }) => {
   const { columns, rows } = query.data.data;
 
   return (
-    <div className="container p-2 mx-auto rounded-md sm:p-4 dark:text-gray-800 dark:bg-gray-50">
-      <h2 className="mb-3 text-2xl font-semibold leading-tight">{name}</h2>
+    <div className="container mx-auto rounded-md p-2 sm:p-4 dark:bg-gray-50 dark:text-gray-800">
+      <h2 className="mb-3 text-2xl leading-tight font-semibold">{name}</h2>
       <div className="overflow-x-auto">
         <table className="min-w-full text-xs">
           <thead className="rounded-t-lg dark:bg-gray-300">
@@ -38,7 +38,7 @@ export const LeagueTable: FC<Props> = ({ name, divisionId }) => {
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr className="text-right border-b border-opacity-20 dark:border-gray-300 dark:bg-gray-100">
+              <tr className="border-opacity-20 border-b text-right dark:border-gray-300 dark:bg-gray-100">
                 <td className="px-3 py-2 text-left">
                   <span>{row.position}</span>
                 </td>

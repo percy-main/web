@@ -1,7 +1,7 @@
 import { getCollection } from "astro:content";
+import type Stripe from "stripe";
 import { defineAuthAction } from "../lib/auth/api";
 import { stripe } from "../lib/payments/client";
-import type Stripe from "stripe";
 
 const stripeDate = (d: number) => new Date(d * 1000);
 

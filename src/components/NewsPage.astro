@@ -21,9 +21,9 @@ const { articles, page, tags } = Astro.props;
 
 <div class="flex flex-col-reverse md:flex-row">
   <aside
-    class="w-full sm:w-60 dark:bg-gray-50 dark:text-gray-800 border-b-2 border-gray-400 pb-2 md:pb-0 md:border-0 mb-4 md:mb-0"
+    class="mb-4 w-full border-b-2 border-gray-400 pb-2 sm:w-60 md:mb-0 md:border-0 md:pb-0 dark:bg-gray-50 dark:text-gray-800"
   >
-    <nav class="text-sm flex flex-col">
+    <nav class="flex flex-col text-sm">
       <h5>Filter By Tag</h5>
       <ul class="flex flex-col gap-2">
         {
@@ -33,7 +33,7 @@ const { articles, page, tags } = Astro.props;
               class="py-1"
               class:list={[
                 isActive
-                  ? "border-gray-500 border-l-4 pl-4 ml-[-1.76rem] text-bold text-orange-900"
+                  ? "text-bold ml-[-1.76rem] border-l-4 border-gray-500 pl-4 text-orange-900"
                   : "",
               ]}
             >
@@ -46,11 +46,11 @@ const { articles, page, tags } = Astro.props;
       </ul>
     </nav>
   </aside>
-  <div class="flex flex-col w-full space-y-4">
+  <div class="flex w-full flex-col space-y-4">
     {
       (page.url.prev || page.url.next) && (
         <nav>
-          <div class="flex items-center justify-between gap-4 w-full">
+          <div class="flex w-full items-center justify-between gap-4">
             {page.url.prev && (
               <a href={page.url.prev} title="Previous Page">
                 <IoChevronBack
@@ -73,7 +73,7 @@ const { articles, page, tags } = Astro.props;
     }
     <section>
       <ul
-        class="flex flex-col gap-4 items-stretch justify-between flex-wrap grow mb-4 mx-auto"
+        class="mx-auto mb-4 flex grow flex-col flex-wrap items-stretch justify-between gap-4"
       >
         {
           articles.map((article) => (
@@ -94,7 +94,7 @@ const { articles, page, tags } = Astro.props;
     {
       (page.url.prev || page.url.next) && (
         <nav>
-          <div class="flex items-center justify-between gap-4 w-full">
+          <div class="flex w-full items-center justify-between gap-4">
             {page.url.prev && (
               <a href={page.url.prev} title="Previous Page">
                 <IoChevronBack

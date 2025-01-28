@@ -7,7 +7,7 @@ type Props = {
   end?: Date;
 };
 export const When: FC<Props> = ({ start, end }) => (
-  <div className="p-4 rounded-xl bg-white flex flex-row gap-4 justify-between items-center">
+  <div className="flex flex-row items-center justify-between gap-4 rounded-xl bg-white p-4">
     <IoCalendar fontSize={32} />
     <div className="flex flex-col gap-4">
       <p>

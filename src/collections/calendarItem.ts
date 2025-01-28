@@ -1,6 +1,6 @@
-import { z, defineCollection } from "astro:content";
-import * as game from "./game";
+import { defineCollection, z } from "astro:content";
 import * as event from "./event";
+import * as game from "./game";
 
 const schema = z.union([
   game.schema.extend({ type: z.literal("game") }),

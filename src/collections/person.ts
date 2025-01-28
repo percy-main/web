@@ -1,8 +1,8 @@
-import { z } from "astro/zod";
 import { contentClient } from "@/lib/contentful/client";
-import type { TypeTrusteeSkeleton } from "../__generated__";
-import type { Asset, AssetDetails } from "contentful";
+import { z } from "astro/zod";
 import { defineCollection } from "astro:content";
+import type { Asset, AssetDetails } from "contentful";
+import type { TypeTrusteeSkeleton } from "../__generated__";
 
 export const schema = z.object({
   name: z.string(),

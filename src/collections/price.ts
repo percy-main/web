@@ -1,7 +1,7 @@
 import { z } from "astro/zod";
-import { Stripe } from "stripe";
-import { STRIPE_SECRET_KEY } from "astro:env/server";
 import { defineCollection } from "astro:content";
+import { STRIPE_SECRET_KEY } from "astro:env/server";
+import { Stripe } from "stripe";
 
 const client = new Stripe(STRIPE_SECRET_KEY);
 
