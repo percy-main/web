@@ -1,16 +1,16 @@
-import { z } from "zod";
-import fss from "fs";
-import path from "path";
-import { logger } from "better-auth";
-import yoctoSpinner from "yocto-spinner";
-import prompts from "prompts";
-import fs from "fs/promises";
-import chalk from "chalk";
-import { getAdapter } from "better-auth/db";
-import { getMigrations } from "better-auth/db";
-import { loadConfig } from "c12";
-import babelPresetTypescript from "@babel/preset-typescript";
+/* eslint-disable  */
 import babelPresetReact from "@babel/preset-react";
+import babelPresetTypescript from "@babel/preset-typescript";
+import { logger } from "better-auth";
+import { getAdapter, getMigrations } from "better-auth/db";
+import { loadConfig } from "c12";
+import chalk from "chalk";
+import fss from "fs";
+import fs from "fs/promises";
+import path from "path";
+import prompts from "prompts";
+import yoctoSpinner from "yocto-spinner";
+import { z } from "zod";
 
 function stripJsonComments(jsonString) {
   return jsonString

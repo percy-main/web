@@ -9,7 +9,7 @@ import type {
 export type TypeSponsorFields = {
   name: EntryFieldTypes.Symbol;
   logo?: EntryFieldTypes.AssetLink;
-}
+};
 
 export type TypeSponsorSkeleton = EntrySkeletonType<
   TypeSponsorFields,

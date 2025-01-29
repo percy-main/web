@@ -11,7 +11,7 @@ export type TypeFixtureListFields = {
   team: EntryFieldTypes.EntryLink<TypeTeamSkeleton>;
   name: EntryFieldTypes.Symbol;
   season: EntryFieldTypes.Symbol;
-}
+};
 
 export type TypeFixtureListSkeleton = EntrySkeletonType<
   TypeFixtureListFields,

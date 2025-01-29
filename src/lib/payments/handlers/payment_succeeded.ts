@@ -1,9 +1,10 @@
 import { type TypeGameFields } from "@/__generated__";
-import { match, P, isMatching } from "ts-pattern";
 import { patchEntry } from "@/lib/contentful/patch-entry";
-import _ from "lodash/fp";
-import { is } from "../metadata";
 import * as db from "@/lib/db/client";
+import _ from "lodash/fp";
+import { match, P } from "ts-pattern";
+import { stripe } from "../client";
+import { is } from "../metadata";
 
 export const paymentSucceeded = async (sessionId: string) => {
   const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId, {
@@ -23,8 +24,9 @@ export const paymentSucceeded = async (sessionId: string) => {
     )
     .with(
       { payment_status: "paid", metadata: P.when(is("membership")) },
-      async ({ metadata, customer_email }) => {
-        const customer = await db.client
+      async ({ customer_email }) => {
+        // const customer =
+        await db.client
           .selectFrom("membership")
           .leftJoin("user", "email", "email")
           .select(["membership.id", "membership.paid_until"])

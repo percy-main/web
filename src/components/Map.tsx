@@ -49,13 +49,14 @@ const MarkerWithInfoWindow: FC<
   const [infoWindowShown, setInfoWindowShown] = useState(true);
 
   // clicking the marker will toggle the infowindow
-  const handleMarkerClick = useCallback(
-    () => { setInfoWindowShown((isShown) => !isShown); },
-    [],
-  );
+  const handleMarkerClick = useCallback(() => {
+    setInfoWindowShown((isShown) => !isShown);
+  }, []);
 
   // if the maps api closes the infowindow, we have to synchronize our state
-  const handleClose = useCallback(() => { setInfoWindowShown(false); }, []);
+  const handleClose = useCallback(() => {
+    setInfoWindowShown(false);
+  }, []);
 
   return (
     <>

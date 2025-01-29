@@ -1,6 +1,6 @@
 import { Kysely, sql } from "kysely";
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
   await db.schema
     .createTable("membership")
     .addColumn("id", "uuid", (col) => col.primaryKey().notNull())

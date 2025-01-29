@@ -1,5 +1,3 @@
-import type { ChangeEvent, FC } from "react";
-
 type Props<T> = Omit<
   React.DetailedHTMLProps<
     React.InputHTMLAttributes<HTMLInputElement>,
@@ -17,19 +15,19 @@ type Props<T> = Omit<
   onChange: (e: T) => void;
 };
 
-export const RadioButtons = <T,>({
+export const RadioButtons = <T extends string>({
   options,
   id,
   value,
   ...inputProps
 }: Props<T>) => (
-  <div className="relative z-0 w-full mt-2 mb-5 group">
+  <div className="group relative z-0 mt-2 mb-5 w-full">
     {options.map(({ title, value: radioValue, description }) => {
       return (
         <label
           htmlFor={`${id}-${radioValue}`}
           key={`${id}-${radioValue}`}
-          className="flex items-center mb-4"
+          className="mb-4 flex items-center"
         >
           <input
             {...inputProps}
@@ -37,7 +35,9 @@ export const RadioButtons = <T,>({
             id={`${id}-${radioValue}`}
             name={`${id}-${radioValue}`}
             checked={radioValue === value}
-            onChange={() => inputProps.onChange(radioValue)}
+            onChange={() => {
+              inputProps.onChange(radioValue);
+            }}
           />
           <div className="ms-2 font-medium text-gray-900 dark:text-gray-300">
             {title}

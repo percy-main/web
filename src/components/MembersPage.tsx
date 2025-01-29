@@ -1,7 +1,6 @@
-import { reactClient, useSession } from "@/lib/auth/client";
+import { useSession } from "@/lib/auth/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
-import { useState } from "react";
 import { Payments } from "./Payments";
 import { Subscriptions } from "./Subscriptions";
 
@@ -23,7 +22,7 @@ export const MembersPage = () => {
       <div className="flex w-full flex-row items-start justify-between">
         <h1>Members Area</h1>
         <a
-          className="justify-self-start py-2 px-4 border-1  border-gray-800 hover:bg-gray-200 text-dark rounded text-sm"
+          className="text-dark justify-self-start rounded border-1 border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
           href="/auth/logout"
         >
           Sign Out

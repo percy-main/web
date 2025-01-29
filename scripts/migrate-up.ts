@@ -1,6 +1,6 @@
-import * as path from "path";
 import { promises as fs } from "fs";
-import { Kysely, Migrator, FileMigrationProvider } from "kysely";
+import { FileMigrationProvider, Kysely, Migrator } from "kysely";
+import * as path from "path";
 import { dialect } from "../src/lib/db/client";
 
 async function migrateToLatest() {

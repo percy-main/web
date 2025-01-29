@@ -1,6 +1,6 @@
+import * as db from "@/lib/db/client";
 import { defineAction } from "astro:actions";
 import { z } from "astro:schema";
-import * as db from "@/lib/db/client";
 import { randomUUID } from "crypto";
 
 const input = z.object({

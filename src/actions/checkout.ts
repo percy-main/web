@@ -1,6 +1,6 @@
 import * as price from "@/collections/price";
 import { stripe } from "@/lib/payments/client";
-import { metadata } from "@/lib/payments/handlers";
+import { metadata } from "@/lib/payments/metadata";
 import { ActionError, defineAction } from "astro:actions";
 import { z } from "astro:schema";
 

@@ -14,7 +14,7 @@ export type TypeNewsFields = {
   summary: EntryFieldTypes.RichText;
   author?: EntryFieldTypes.EntryLink<TypeTrusteeSkeleton>;
   pages?: EntryFieldTypes.Array<EntryFieldTypes.EntryLink<TypePageSkeleton>>;
-}
+};
 
 export type TypeNewsSkeleton = EntrySkeletonType<TypeNewsFields, "news">;
 export type TypeNews<

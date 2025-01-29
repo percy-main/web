@@ -9,7 +9,7 @@ import { actions } from "astro:actions";
 const result = Astro.getActionResult(actions.join);
 if (result && !result.error) {
   return Astro.redirect(
-    `/auth/register?email=${encodeURIComponent(result.data.email)}&name=${encodeURIComponent(result.data.name)}`
+    `/auth/register?email=${encodeURIComponent(result.data.email)}&name=${encodeURIComponent(result.data.name)}`,
   );
 }
 if (result?.error) {
@@ -18,7 +18,7 @@ if (result?.error) {
 ---
 
 <Container title="Join The Club">
-  <div class="bg-white rounded-lg shadow p-4 max-w-max mx-auto">
+  <div class="mx-auto max-w-max rounded-lg bg-white p-4 shadow">
     <div class="flex flex-col items-center">
       <h4 class="mb-8">Join Percy Main Cricket and Sports Club</h4>
       <form class="lg:w-[720px]" method="POST" action={actions.join}>
@@ -84,7 +84,7 @@ if (result?.error) {
 
         <button
           type="submit"
-          class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+          class="w-full rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 focus:outline-none sm:w-auto dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
         >
           Submit
         </button>

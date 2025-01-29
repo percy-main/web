@@ -21,7 +21,7 @@ export type TypeGameFields = {
   sport?: EntryFieldTypes.Symbol<"cricket" | "football">;
   finish?: EntryFieldTypes.Date;
   location?: EntryFieldTypes.EntryLink<TypeLocationSkeleton>;
-}
+};
 
 export type TypeGameSkeleton = EntrySkeletonType<TypeGameFields, "game">;
 export type TypeGame<

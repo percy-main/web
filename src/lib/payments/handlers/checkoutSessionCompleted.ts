@@ -1,15 +1,15 @@
-import { stripe } from "@/lib/payments/client";
 import { type TypeGameFields } from "@/__generated__";
-import { match, P, isMatching } from "ts-pattern";
 import { patchEntry } from "@/lib/contentful/patch-entry";
-import _ from "lodash/fp";
-import { is } from "../metadata";
 import * as db from "@/lib/db/client";
-import { randomUUID } from "crypto";
-import type { Stripe } from "stripe";
-import { add, type Duration } from "date-fns";
+import { stripe } from "@/lib/payments/client";
 import { addDurations } from "@/lib/util/addDuration";
 import { stripeDate } from "@/lib/util/stripeDate";
+import { randomUUID } from "crypto";
+import { add, type Duration } from "date-fns";
+import _ from "lodash/fp";
+import type { Stripe } from "stripe";
+import { match, P } from "ts-pattern";
+import { is } from "../metadata";
 
 export const checkoutSessionCompleted = async (
   event:

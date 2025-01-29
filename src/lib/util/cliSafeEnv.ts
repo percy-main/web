@@ -1,4 +1,4 @@
-export const cliSafeEnv = async <K extends string, T>(
+export const cliSafeEnv = <K extends string, T>(
   getter: (env: Record<K, string>) => T,
   cliValue?: T,
 ) => {

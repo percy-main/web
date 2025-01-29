@@ -8,7 +8,7 @@ import type {
 
 export type TypeSiteDataFields = {
   mIssion: EntryFieldTypes.Text;
-}
+};
 
 export type TypeSiteDataSkeleton = EntrySkeletonType<
   TypeSiteDataFields,

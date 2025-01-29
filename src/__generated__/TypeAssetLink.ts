@@ -9,7 +9,7 @@ import type {
 export type TypeAssetLinkFields = {
   asset: EntryFieldTypes.AssetLink;
   href: EntryFieldTypes.Symbol;
-}
+};
 
 export type TypeAssetLinkSkeleton = EntrySkeletonType<
   TypeAssetLinkFields,
