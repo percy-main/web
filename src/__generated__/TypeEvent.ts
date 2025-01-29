@@ -7,7 +7,7 @@ import type {
 } from "contentful";
 import type { TypeLocationSkeleton } from "./TypeLocation";
 
-export interface TypeEventFields {
+export type TypeEventFields = {
   name: EntryFieldTypes.Symbol;
   description: EntryFieldTypes.RichText;
   when: EntryFieldTypes.Date;

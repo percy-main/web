@@ -4,5 +4,5 @@ import Container from "@/layouts/Container.astro";
 ---
 
 <Container title="Members Area">
-  <MembersPage client:load />
+  <MembersPage client:only="react" />
 </Container>

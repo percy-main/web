@@ -43,19 +43,19 @@ const MarkerWithInfoWindow: FC<
     position: google.maps.LatLngLiteral;
     header: string;
   }>
-> = ({ position, header, children }) => {
+> = ({ position, children }) => {
   const [markerRef, marker] = useAdvancedMarkerRef();
 
   const [infoWindowShown, setInfoWindowShown] = useState(true);
 
   // clicking the marker will toggle the infowindow
   const handleMarkerClick = useCallback(
-    () => setInfoWindowShown((isShown) => !isShown),
+    () => { setInfoWindowShown((isShown) => !isShown); },
     [],
   );
 
   // if the maps api closes the infowindow, we have to synchronize our state
-  const handleClose = useCallback(() => setInfoWindowShown(false), []);
+  const handleClose = useCallback(() => { setInfoWindowShown(false); }, []);
 
   return (
     <>

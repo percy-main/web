@@ -6,7 +6,7 @@ import type {
   LocaleCode,
 } from "contentful";
 
-export interface TypeSiteDataFields {
+export type TypeSiteDataFields = {
   mIssion: EntryFieldTypes.Text;
 }
 

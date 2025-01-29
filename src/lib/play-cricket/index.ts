@@ -1,39 +1,42 @@
+import { z } from "astro/zod";
 import { PLAY_CRICKET_API_KEY } from "astro:env/server";
 
-type GetLeagueTableResponse = {
-  league_table: [
-    {
-      id: string;
-      name: string;
-      headings: Record<string, string>;
-      values: Array<{
-        position: string;
-        team_id: string;
-        column_1: string;
-        column_2: string;
-        column_3: string;
-        column_4: string;
-        column_5: string;
-        column_6: string;
-        column_7: string;
-        column_8: string;
-        column_9: string;
-        column_10: string;
-        column_11: string;
-        column_12: string;
-      }>;
-    },
-  ];
-};
+const GetLeagueTableResponse = z.object({
+  league_table: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      headings: z.record(z.string()),
+      values: z.array(
+        z.object({
+          position: z.string(),
+          team_id: z.string(),
+          column_1: z.string(),
+          column_2: z.string(),
+          column_3: z.string(),
+          column_4: z.string(),
+          column_5: z.string(),
+          column_6: z.string(),
+          column_7: z.string(),
+          column_8: z.string(),
+          column_9: z.string(),
+          column_10: z.string(),
+          column_11: z.string(),
+          column_12: z.string(),
+        }),
+      ),
+    }),
+  ),
+});
 
 export const getLeagueTable = async ({
   divisionId,
 }: {
   divisionId: string;
-}): Promise<GetLeagueTableResponse> => {
+}): Promise<z.TypeOf<typeof GetLeagueTableResponse>> => {
   const res = await fetch(
     `http://play-cricket.com/api/v2/league_table.json?division_id=${divisionId}&api_token=${PLAY_CRICKET_API_KEY}`,
   );
 
-  return await res.json();
+  return await res.json().then((data) => GetLeagueTableResponse.parse(data));
 };

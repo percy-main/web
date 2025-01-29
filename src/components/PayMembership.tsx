@@ -23,7 +23,7 @@ export const PayMembership: FC<Props> = ({ monthly, annually }) => {
               id="annually"
               name="schedule"
               value="annually"
-              onChange={() => setSchedule("annually")}
+              onChange={() => { setSchedule("annually"); }}
               checked={schedule === "annually"}
               className="peer hidden"
             />
@@ -43,7 +43,7 @@ export const PayMembership: FC<Props> = ({ monthly, annually }) => {
               id="monthly"
               name="schedule"
               value="monthly"
-              onChange={() => setSchedule("monthly")}
+              onChange={() => { setSchedule("monthly"); }}
               checked={schedule === "monthly"}
               className="peer hidden"
             />
@@ -68,7 +68,7 @@ export const PayMembership: FC<Props> = ({ monthly, annually }) => {
               id="online"
               name="pay_method"
               value="online"
-              onChange={() => setPayment("online")}
+              onChange={() => { setPayment("online"); }}
               checked={payment === "online"}
               className="peer hidden"
               required
@@ -89,7 +89,7 @@ export const PayMembership: FC<Props> = ({ monthly, annually }) => {
               id="bank"
               name="pay_method"
               value="bank"
-              onChange={() => setPayment("bank")}
+              onChange={() => { setPayment("bank"); }}
               checked={payment === "bank"}
               className="peer hidden"
             />

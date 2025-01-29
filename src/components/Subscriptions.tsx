@@ -12,13 +12,6 @@ export const Subscriptions = () => {
     return null;
   }
 
-  const currencyFormatter = new Intl.NumberFormat("en-GB", {
-    currency: "GBP",
-    currencySign: "standard",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
   if (query.data.data.subscriptions.length === 0) {
     return <p>You have no subscriptions.</p>;
   }

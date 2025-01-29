@@ -32,7 +32,7 @@ type AuthActionHandler<TInputSchema, TOutput> = TInputSchema extends z.ZodType
       context: ActionAPIContext,
     ) => MaybePromise<TOutput>
   : (
-      input: any,
+      input: unknown,
       session: { user: User; session: Session },
       context: ActionAPIContext,
     ) => MaybePromise<TOutput>;

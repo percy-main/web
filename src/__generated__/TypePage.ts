@@ -6,7 +6,7 @@ import type {
   LocaleCode,
 } from "contentful";
 
-export interface TypePageFields {
+export type TypePageFields = {
   title: EntryFieldTypes.Symbol;
   content: EntryFieldTypes.RichText;
   mainMenuItem?: EntryFieldTypes.Boolean;

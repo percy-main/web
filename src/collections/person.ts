@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { contentClient } from "@/lib/contentful/client";
 import { z } from "astro/zod";
 import { defineCollection } from "astro:content";

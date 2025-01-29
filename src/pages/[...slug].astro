@@ -74,11 +74,12 @@ export async function getStaticPaths() {
 
   const childRoutes = children.map((page) => {
     const parent =
-      parentMap[page.data.parent?.slug!] ??
+      parentMap[page.data.parent?.slug ?? "NEVER"] ??
       parentMap[
         children.find((c) => c.data.slug === page.data.parent?.slug)?.data
-          .parent?.slug!
+          .parent?.slug ?? "NEVER"
       ];
+
     return {
       params: {
         slug: childSlug(page.data),

@@ -3,4 +3,4 @@
  * @param data Contentful data
  * @returns Data fields
  */
-export const fromFields = (data: any) => data.fields;
+export const fromFields = (data: { fields: unknown }) => data.fields;

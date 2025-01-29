@@ -8,7 +8,7 @@ import type {
 import type { TypePageSkeleton } from "./TypePage";
 import type { TypeTrusteeSkeleton } from "./TypeTrustee";
 
-export interface TypeNewsFields {
+export type TypeNewsFields = {
   title: EntryFieldTypes.Symbol;
   content: EntryFieldTypes.RichText;
   summary: EntryFieldTypes.RichText;

@@ -1,10 +1,13 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { LeagueTable } from "@/components/LeagueTable";
 import {
   documentToReactComponents,
   type Options,
   type RenderNode,
 } from "@contentful/rich-text-react-renderer";
-import { BLOCKS, INLINES } from "@contentful/rich-text-types";
+import { BLOCKS, INLINES, type Document } from "@contentful/rich-text-types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Asset } from "contentful";
 import type { FC, ReactNode } from "react";
@@ -35,7 +38,7 @@ const renderEmbeddedAsset = ({ fields, metadata }: Asset<undefined>) => {
   return (
     <figure className="max-w-lg self-center">
       <img
-        src={`https://${fields.file?.url}`}
+        src={fields.file?.url ? `https://${fields.file.url}` : "#"}
         height={fields.file?.details.image?.height}
         width={fields.file?.details.image?.width}
         alt={fields.description}
@@ -135,7 +138,7 @@ type Components<T> = {
 };
 
 type Props = {
-  document: any;
+  document: Document;
   components?: Components<RenderNode>;
   page: string;
 };

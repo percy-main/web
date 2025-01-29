@@ -6,7 +6,7 @@ import type {
   LocaleCode,
 } from "contentful";
 
-export interface TypeSponsorFields {
+export type TypeSponsorFields = {
   name: EntryFieldTypes.Symbol;
   logo?: EntryFieldTypes.AssetLink;
 }

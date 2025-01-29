@@ -31,6 +31,7 @@ export const checkout = defineAction({
           },
         ],
         redirect_on_completion: "never",
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         metadata,
         allow_promotion_codes: hasPromotion,
       });

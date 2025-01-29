@@ -5,7 +5,7 @@ import type { FC } from "react";
 import { RichText } from "./RichText";
 
 type Props = {
-  entry: Entry<TypePageSkeleton, undefined, string>;
+  entry: Entry<TypePageSkeleton, undefined>;
 };
 
 export const Preview: FC<Props> = ({ entry }) => {

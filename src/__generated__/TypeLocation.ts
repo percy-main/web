@@ -6,7 +6,7 @@ import type {
   LocaleCode,
 } from "contentful";
 
-export interface TypeLocationFields {
+export type TypeLocationFields = {
   name?: EntryFieldTypes.Symbol;
   street?: EntryFieldTypes.Symbol;
   city?: EntryFieldTypes.Symbol;

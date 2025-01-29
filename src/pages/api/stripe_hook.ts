@@ -27,8 +27,9 @@ export async function POST({ request }: APIContext): Promise<Response> {
     }
 
     return Response.json({}, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Failed to create checkout session", error);
-    return Response.json({ message: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return Response.json({ message }, { status: 500 });
   }
 }
