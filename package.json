@@ -97,5 +97,10 @@
     "tsx": "^4.19.2",
     "vitest": "^3.0.4",
     "zx": "^8.3.0"
+  },
+  "overrides": {
+    "kysely-codegen": {
+      "@libsql/kysely-libsql": "^0.4.1"
+    }
   }
 }
