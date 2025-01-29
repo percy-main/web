@@ -43,7 +43,7 @@ const MarkerWithInfoWindow: FC<
     position: google.maps.LatLngLiteral;
     header: string;
   }>
-> = ({ position, header, children }) => {
+> = ({ position, children }) => {
   const [markerRef, marker] = useAdvancedMarkerRef();
 
   const [infoWindowShown, setInfoWindowShown] = useState(true);

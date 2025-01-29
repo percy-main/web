@@ -1,5 +1,5 @@
 ---
-import type { GetStaticPathsOptions, GetStaticPathsResult } from "astro";
+import type { GetStaticPathsResult } from "astro";
 import { getCollection } from "astro:content";
 import Container from "@/layouts/Container.astro";
 import { RichText } from "@/components/RichText";
@@ -9,7 +9,7 @@ import { Picture } from "astro:assets";
 import { Breadcrumbs } from "astro-breadcrumbs";
 import { IoChevronForward } from "react-icons/io5";
 
-export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
+export async function getStaticPaths() {
   const people = await getCollection("person");
 
   return people.map((person) => ({

@@ -11,9 +11,12 @@ export const MembersPage = () => {
 
   const verify = async () => {
     try {
+      if (!session.data) {
+        return null;
+      }
       setIsVerifying(true);
       await reactClient.sendVerificationEmail({
-        email: session.data?.user.email!,
+        email: session.data.user.email,
       });
     } catch {
       setIsVerifying(false);

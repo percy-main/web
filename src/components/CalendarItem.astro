@@ -3,7 +3,6 @@ import { formatDate } from "date-fns";
 import { RichText } from "@/components/RichText";
 import Sponsor from "@/components/Sponsor.astro";
 import { Map } from "@/components/Map";
-import { Fragment } from "react";
 import { When } from "./When";
 import { AddToCalendarButton } from "add-to-calendar-button-react";
 import { match } from "ts-pattern";
@@ -35,7 +34,7 @@ const { id, title, calendarItem } = Astro.props;
     }
     <div class="flex flex-row flex-wrap items-center gap-2 md:gap-4">
       <AddToCalendarButton
-        client:only
+        client:only="react"
         hideBranding
         name={title}
         options={[
@@ -64,7 +63,7 @@ const { id, title, calendarItem } = Astro.props;
   {
     calendarItem.location?.coordinates && (
       <Map
-        client:only
+        client:only="react"
         center={calendarItem.location.coordinates}
         infoWindow={{ header: calendarItem.location.name }}
       >

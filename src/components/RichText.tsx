@@ -4,7 +4,7 @@ import {
   type Options,
   type RenderNode,
 } from "@contentful/rich-text-react-renderer";
-import { BLOCKS, INLINES } from "@contentful/rich-text-types";
+import { BLOCKS, INLINES, type Document } from "@contentful/rich-text-types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Asset } from "contentful";
 import type { FC, ReactNode } from "react";
@@ -135,7 +135,7 @@ type Components<T> = {
 };
 
 type Props = {
-  document: any;
+  document: Document;
   components?: Components<RenderNode>;
   page: string;
 };

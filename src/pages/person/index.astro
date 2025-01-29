@@ -48,7 +48,7 @@ const people = _.sortBy(
               }}
             >
               <ul>
-                {Object.entries(person.data.pageData).map(([page, role]) => (
+                {Object.entries(person.data.pageData).map(([, role]) => (
                   <li>{role}</li>
                 ))}
               </ul>
