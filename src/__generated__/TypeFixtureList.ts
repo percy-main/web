@@ -7,7 +7,7 @@ import type {
 } from "contentful";
 import type { TypeTeamSkeleton } from "./TypeTeam";
 
-export interface TypeFixtureListFields {
+export type TypeFixtureListFields = {
   team: EntryFieldTypes.EntryLink<TypeTeamSkeleton>;
   name: EntryFieldTypes.Symbol;
   season: EntryFieldTypes.Symbol;

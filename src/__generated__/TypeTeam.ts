@@ -6,7 +6,7 @@ import type {
   LocaleCode,
 } from "contentful";
 
-export interface TypeTeamFields {
+export type TypeTeamFields = {
   name: EntryFieldTypes.Symbol;
   teamId: EntryFieldTypes.Symbol;
 }

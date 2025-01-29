@@ -6,7 +6,7 @@ import type {
   LocaleCode,
 } from "contentful";
 
-export interface TypeAssetLinkFields {
+export type TypeAssetLinkFields = {
   asset: EntryFieldTypes.AssetLink;
   href: EntryFieldTypes.Symbol;
 }

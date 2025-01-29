@@ -4,13 +4,38 @@ import tseslint from "typescript-eslint";
 
 /** @type {import("eslint").ESLint.Options[]} */
 export default [
-  ...tseslint.config(eslint.configs.recommended, tseslint.configs.recommended),
-  // add more generic rule sets here, such as:
-  // js.configs.recommended,
+  ...tseslint.config(
+    eslint.configs.recommended,
+    tseslint.configs.strictTypeChecked,
+    tseslint.configs.stylisticTypeChecked,
+    {
+      languageOptions: {
+        parserOptions: {
+          projectService: true,
+          tsconfigRootDir: import.meta.dirname,
+        },
+      },
+    },
+    {
+      rules: {
+        "@typescript-eslint/restrict-template-expressions": [
+          "error",
+          { allowNumber: true },
+        ],
+      },
+    },
+    {
+      files: ["**/*.astro"],
+      extends: [tseslint.configs.disableTypeChecked],
+    },
+  ),
   ...eslintPluginAstro.configs.recommended,
   {
     rules: {
       "no-undef": "off",
+      "@typescript-eslint/consistent-type-definitions": ["error", "type"],
+      "@typescript-eslint/array-type": ["error", { default: "array-simple" }],
+      "@typescript-eslint/no-unnecessary-condition": "off", // largely broken
     },
   },
 ];

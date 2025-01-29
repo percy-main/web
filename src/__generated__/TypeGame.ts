@@ -10,7 +10,7 @@ import type { TypeLocationSkeleton } from "./TypeLocation";
 import type { TypeSponsorSkeleton } from "./TypeSponsor";
 import type { TypeTeamSkeleton } from "./TypeTeam";
 
-export interface TypeGameFields {
+export type TypeGameFields = {
   opposition: EntryFieldTypes.Symbol;
   home: EntryFieldTypes.Boolean;
   when: EntryFieldTypes.Date;

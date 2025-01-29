@@ -9,7 +9,11 @@ import { previewClient } from "@/lib/contentful/client";
 
 const { entry } = Astro.params;
 
-const response = await previewClient.getEntry<TypePageSkeleton>(entry!);
+if (!entry) {
+  throw new Error(`Missing param "entry"`);
+}
+
+const response = await previewClient.getEntry<TypePageSkeleton>(entry);
 ---
 
 <Page title={response.fields.title} slug={response.fields.slug}>

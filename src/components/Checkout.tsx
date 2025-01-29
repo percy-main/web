@@ -27,6 +27,7 @@ export const Checkout: FC<Props> = ({ price }) => {
         }
 
         try {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
           return JSON.parse(str);
         } catch {
           return {};
@@ -35,6 +36,7 @@ export const Checkout: FC<Props> = ({ price }) => {
 
       const response = await actions.checkout({
         price,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         metadata: metadata(),
       });
 
@@ -43,16 +45,16 @@ export const Checkout: FC<Props> = ({ price }) => {
         return;
       }
 
-      const checkoutInstance = await stripeClient!.initEmbeddedCheckout({
+      const checkoutInstance = await stripeClient?.initEmbeddedCheckout({
         clientSecret: response.data.clientSecret,
       });
 
       checkout.current = checkoutInstance;
 
-      checkoutInstance.mount("#checkout");
+      checkoutInstance?.mount("#checkout");
     }
 
-    onMount();
+    void onMount();
 
     return () => {
       checkout.current?.destroy();

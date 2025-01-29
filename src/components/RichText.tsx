@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { LeagueTable } from "@/components/LeagueTable";
 import {
   documentToReactComponents,
@@ -35,7 +38,7 @@ const renderEmbeddedAsset = ({ fields, metadata }: Asset<undefined>) => {
   return (
     <figure className="max-w-lg self-center">
       <img
-        src={`https://${fields.file?.url}`}
+        src={fields.file?.url ? `https://${fields.file.url}` : "#"}
         height={fields.file?.details.image?.height}
         width={fields.file?.details.image?.width}
         alt={fields.description}

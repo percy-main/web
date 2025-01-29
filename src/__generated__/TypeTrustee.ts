@@ -6,7 +6,7 @@ import type {
   LocaleCode,
 } from "contentful";
 
-export interface TypeTrusteeFields {
+export type TypeTrusteeFields = {
   name: EntryFieldTypes.Symbol;
   photo?: EntryFieldTypes.AssetLink;
   pageData?: EntryFieldTypes.Object;

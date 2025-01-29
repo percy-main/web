@@ -23,17 +23,15 @@ export const MembersPage = () => {
     }
   };
 
-  const hasData = !!session?.data;
-
-  if (!session.isPending && !hasData) {
+  if (!session.isPending && !session.data) {
     return navigate("/login");
   }
 
-  if (!hasData) {
+  if (!session.data) {
     return null;
   }
 
-  const { user } = session.data!;
+  const { user } = session.data;
 
   return (
     <div className="flex flex-col items-start gap-4">
@@ -54,7 +52,9 @@ export const MembersPage = () => {
             <button
               className="mt-2 cursor-pointer rounded-sm bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-700"
               disabled={isVerifying}
-              onClick={verify}
+              onClick={() => {
+                void verify();
+              }}
             >
               Verify Now
             </button>
