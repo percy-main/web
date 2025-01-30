@@ -38,9 +38,6 @@ export const loader = async () => {
   });
 
   return response.items.map((item) => {
-    if (!item.fields.location || !("fields" in item.fields.location)) {
-      throw new Error("Invalid item");
-    }
     return {
       id: item.sys.id,
       createdAt: df.parseISO(item.sys.createdAt),
@@ -58,9 +55,10 @@ export const loader = async () => {
           }
         : undefined,
       finish: item.fields.finish && df.parseISO(item.fields.finish),
-      location: item.fields.location
-        ? location.schema.parse(fromFields(item.fields.location))
-        : undefined,
+      location:
+        item.fields.location && "fields" in item.fields.location
+          ? location.schema.parse(fromFields(item.fields.location))
+          : undefined,
     };
   });
 };
