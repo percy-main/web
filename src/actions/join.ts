@@ -18,7 +18,7 @@ const input = z.object({
 export const handler = async (data: z.TypeOf<typeof input>) => {
   const id = randomUUID();
 
-  const member = await db.client
+  await db.client
     .insertInto("member")
     .values({
       id,
@@ -33,8 +33,6 @@ export const handler = async (data: z.TypeOf<typeof input>) => {
       emergency_contact_telephone: data.emerg_phone,
     })
     .executeTakeFirst();
-
-  console.log({ member });
 
   return { id, ...data };
 };

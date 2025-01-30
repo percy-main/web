@@ -1,7 +1,8 @@
 export const prerender = false;
 
 import { stripe } from "@/lib/payments/client";
-import { checkoutSessionCompleted } from "@/lib/payments/handlers/checkoutSessionCompleted";
+import { checkoutSessionCompleted } from "@/lib/payments/handlers/checkout.session.completed";
+import { invoicePaymentSucceeded } from "@/lib/payments/handlers/invoice.payment_succeeded";
 import type { APIContext } from "astro";
 import { STRIPE_WEBHOOK_SECRET } from "astro:env/server";
 import { writeFileSync } from "fs";
@@ -41,6 +42,7 @@ export async function POST({ request }: APIContext): Promise<Response> {
         },
         checkoutSessionCompleted,
       )
+      .with({ type: "invoice.payment_succeeded" }, invoicePaymentSucceeded)
       .otherwise(_.noop);
 
     return Response.json({}, { status: 200 });
