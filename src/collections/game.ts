@@ -38,6 +38,9 @@ export const loader = async () => {
   });
 
   return response.items.map((item) => {
+    if (!item.fields.location || !("fields" in item.fields.location)) {
+      throw new Error("Invalid item");
+    }
     return {
       id: item.sys.id,
       createdAt: df.parseISO(item.sys.createdAt),

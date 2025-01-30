@@ -1,8 +1,9 @@
+import type { Price } from "@/collections/price";
+import { BankDetails } from "@/components/BankDetails";
+import { RadioButtons } from "@/components/form/RadioButtons";
+import { PaymentLink } from "@/components/PaymentLink";
 import { useState, type FC } from "react";
 import { match } from "ts-pattern";
-import type { Price } from "../collections/price";
-import { RadioButtons } from "./form/RadioButtons";
-import { PaymentLink } from "./PaymentLink";
 
 type Props = {
   options: {
