@@ -27,7 +27,7 @@ export const register = ({
     name,
     email,
     password,
-    callbackURL: baseURL + "/auth/email-confirmed",
+    callbackURL: "/auth/email-confirmed/",
   });
 
 export const reactClient = createReactClient({

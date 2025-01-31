@@ -33,3 +33,4 @@ local.db
 local.db*
 .temp
 .sample
+.emails
