@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { LibsqlDialect } from "@libsql/kysely-libsql";
 import { promises as fs } from "fs";
-import { readFile, writeFile } from "fs/promises";
+import { mkdir, readFile, writeFile } from "fs/promises";
 import { Kysely, Migrator } from "kysely";
 import * as path from "path";
 import ts from "typescript";
@@ -28,6 +28,9 @@ export const onPostBuild = async ({ utils }) => {
     db = new Kysely({
       dialect,
     });
+
+    console.log("Ensuring .temp directory exists");
+    await mkdir(path.join(process.cwd(), ".temp")).catch(console.error);
 
     const migrator = new Migrator({
       db,
