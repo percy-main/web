@@ -55,9 +55,10 @@ export const loader = async () => {
           }
         : undefined,
       finish: item.fields.finish && df.parseISO(item.fields.finish),
-      location: item.fields.location
-        ? location.schema.parse(fromFields(item.fields.location))
-        : undefined,
+      location:
+        item.fields.location && "fields" in item.fields.location
+          ? location.schema.parse(fromFields(item.fields.location))
+          : undefined,
     };
   });
 };

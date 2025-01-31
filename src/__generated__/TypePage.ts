@@ -14,7 +14,7 @@ export type TypePageFields = {
   parent?: EntryFieldTypes.EntryLink<TypePageSkeleton>;
   menuOrder?: EntryFieldTypes.Integer;
   ldjson?: EntryFieldTypes.Object;
-}
+};
 
 export type TypePageSkeleton = EntrySkeletonType<TypePageFields, "page">;
 export type TypePage<

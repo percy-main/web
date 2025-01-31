@@ -1,8 +1,14 @@
 export const prerender = false;
+
 import { stripe } from "@/lib/payments/client";
-import * as handlers from "@/lib/payments/handlers";
+import { checkoutSessionCompleted } from "@/lib/payments/handlers/checkout.session.completed";
+import { invoicePaymentSucceeded } from "@/lib/payments/handlers/invoice.payment_succeeded";
 import type { APIContext } from "astro";
 import { STRIPE_WEBHOOK_SECRET } from "astro:env/server";
+import { writeFileSync } from "fs";
+import _ from "lodash/fp";
+import path from "path";
+import { match, P } from "ts-pattern";
 
 export async function POST({ request }: APIContext): Promise<Response> {
   try {
@@ -19,12 +25,28 @@ export async function POST({ request }: APIContext): Promise<Response> {
       STRIPE_WEBHOOK_SECRET,
     );
 
-    if (
-      event.type === "checkout.session.completed" ||
-      event.type === "checkout.session.async_payment_succeeded"
-    ) {
-      await handlers.paymentSucceeded(event.data.object.id);
+    if (import.meta.env.DEV) {
+      writeFileSync(
+        path.join(
+          ".sample",
+          `${new Date().toISOString()}-stripe-event-${event.type}-${event.created}`,
+        ),
+        JSON.stringify(event, null, 2),
+      );
     }
+
+    await match(event)
+      .with(
+        {
+          type: P.union(
+            "checkout.session.completed",
+            "checkout.session.async_payment_succeeded",
+          ),
+        },
+        checkoutSessionCompleted,
+      )
+      .with({ type: "invoice.payment_succeeded" }, invoicePaymentSucceeded)
+      .otherwise(_.noop);
 
     return Response.json({}, { status: 200 });
   } catch (error: unknown) {

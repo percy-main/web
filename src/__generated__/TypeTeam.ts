@@ -9,7 +9,7 @@ import type {
 export type TypeTeamFields = {
   name: EntryFieldTypes.Symbol;
   teamId: EntryFieldTypes.Symbol;
-}
+};
 
 export type TypeTeamSkeleton = EntrySkeletonType<TypeTeamFields, "team">;
 export type TypeTeam<

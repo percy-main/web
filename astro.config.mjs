@@ -34,10 +34,6 @@ export default defineConfig({
         context: "server",
         access: "secret",
       }),
-      RETOOL_API_KEY: envField.string({
-        context: "server",
-        access: "secret",
-      }),
       CDN_PREVIEW_TOKEN: envField.string({
         context: "server",
         access: "secret",
@@ -53,10 +49,12 @@ export default defineConfig({
       DB_TOKEN: envField.string({
         context: "server",
         access: "secret",
+        optional: true,
       }),
       DB_SYNC_URL: envField.string({
         context: "server",
         access: "secret",
+        optional: true,
       }),
       MAILGUN_API_KEY: envField.string({
         context: "server",

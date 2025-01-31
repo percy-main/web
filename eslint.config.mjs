@@ -33,9 +33,12 @@ export default [
   {
     rules: {
       "no-undef": "off",
-      "@typescript-eslint/consistent-type-definitions": ["error", "type"],
+      "@typescript-eslint/consistent-type-definitions": ["off", "type"],
       "@typescript-eslint/array-type": ["error", { default: "array-simple" }],
       "@typescript-eslint/no-unnecessary-condition": "off", // largely broken
     },
+  },
+  {
+    ignores: ["**/__tests__/*"],
   },
 ];

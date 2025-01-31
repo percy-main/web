@@ -13,7 +13,7 @@ export type TypeEventFields = {
   when: EntryFieldTypes.Date;
   finish?: EntryFieldTypes.Date;
   location?: EntryFieldTypes.EntryLink<TypeLocationSkeleton>;
-}
+};
 
 export type TypeEventSkeleton = EntrySkeletonType<TypeEventFields, "event">;
 export type TypeEvent<

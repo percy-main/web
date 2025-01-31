@@ -1,0 +1,60 @@
+---
+import Container from "@/layouts/Container.astro";
+import { PayMembership } from "@/components/PayMembership";
+import { getCollection } from "astro:content";
+import { paymentData } from "../../lib/payments/config";
+
+const prices = await getCollection("price");
+
+const seniorPlayerMonthly = prices.find(
+  (price) =>
+    price.data.product.id === paymentData.product.subs_player &&
+    price.data.mode === "subscription",
+);
+const seniorPlayerAnnual = prices.find(
+  (price) =>
+    price.data.product.id === paymentData.product.subs_player &&
+    price.data.mode === "payment",
+);
+const socialMonthly = prices.find(
+  (price) =>
+    price.data.product.id === paymentData.product.subs_social &&
+    price.data.mode === "subscription",
+);
+const socialAnnual = prices.find(
+  (price) =>
+    price.data.product.id === paymentData.product.subs_social &&
+    price.data.mode === "payment",
+);
+
+if (
+  !seniorPlayerMonthly ||
+  !seniorPlayerAnnual ||
+  !socialMonthly ||
+  !socialAnnual
+) {
+  throw new Error("Missing price data");
+}
+
+const options = {
+  senior_player: {
+    name: "Senior Player",
+    monthly: seniorPlayerMonthly.data,
+    annually: seniorPlayerAnnual.data,
+  },
+  social: {
+    name: "Social",
+    monthly: socialMonthly.data,
+    annually: socialAnnual.data,
+  },
+};
+---
+
+<Container title="You've Joined!">
+  <div class="flex w-full flex-col items-center">
+    <div class="flex flex-col">
+      <h4>Thanks for joining the club!</h4>
+      <PayMembership client:only="react" options={options} />
+    </div>
+  </div>
+</Container>

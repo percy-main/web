@@ -17,8 +17,9 @@ export const Subscriptions = () => {
   }
 
   return (
-    <div className="flow-root w-full">
-      <div className="divide-y divide-gray-200 dark:divide-gray-700">
+    <>
+      <h2 className="text-h4 mb-0">Your Subscriptions</h2>
+      <div className="w-full">
         {query.data.data.subscriptions.map((subscription) => (
           <>
             <div className="flex flex-wrap items-center gap-y-4">
@@ -27,7 +28,7 @@ export const Subscriptions = () => {
                   Name
                 </dt>
                 <dd className="mt-1.5 text-base font-semibold text-gray-900 dark:text-white">
-                  {subscription.name}
+                  {subscription.name ?? subscription.product.name}
                 </dd>
               </dl>
 
@@ -61,6 +62,6 @@ export const Subscriptions = () => {
           </>
         ))}
       </div>
-    </div>
+    </>
   );
 };

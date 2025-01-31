@@ -19,7 +19,7 @@ export const AuthNav: FC<Props> = ({ pathname }) => {
       }
     : {
         name: "Login",
-        url: "/login",
+        url: "/auth/login",
         match: "exact",
         style: "menu",
       };

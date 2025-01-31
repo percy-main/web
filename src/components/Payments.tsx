@@ -24,8 +24,9 @@ export const Payments = () => {
   }
 
   return (
-    <div className="flow-root w-full">
-      <div className="divide-y divide-gray-200 dark:divide-gray-700">
+    <>
+      <h2 className="text-h4 mb-0">Payment History</h2>
+      <div className="w-full">
         {query.data.data.charges.map((purchase) => (
           <>
             <div className="flex flex-wrap items-center gap-y-4">
@@ -85,6 +86,6 @@ export const Payments = () => {
           </>
         ))}
       </div>
-    </div>
+    </>
   );
 };

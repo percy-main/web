@@ -1,9 +1,8 @@
+import { defineAuthAction } from "@/lib/auth/api";
+import { stripe } from "@/lib/payments/client";
+import { stripeDate } from "@/lib/util/stripeDate";
 import { getCollection } from "astro:content";
 import type Stripe from "stripe";
-import { defineAuthAction } from "../lib/auth/api";
-import { stripe } from "../lib/payments/client";
-
-const stripeDate = (d: number) => new Date(d * 1000);
 
 export const payments = defineAuthAction({
   requireVerifiedEmail: true,

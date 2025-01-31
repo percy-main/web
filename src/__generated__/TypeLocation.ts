@@ -14,7 +14,7 @@ export type TypeLocationFields = {
   country?: EntryFieldTypes.Symbol;
   postcode?: EntryFieldTypes.Symbol;
   coordinates?: EntryFieldTypes.Location;
-}
+};
 
 export type TypeLocationSkeleton = EntrySkeletonType<
   TypeLocationFields,
