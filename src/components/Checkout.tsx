@@ -20,7 +20,7 @@ export const Checkout: FC<Props> = ({ price }) => {
 
   const metadata = useSearchParam({
     param: "metadata",
-    parse: (val) => JSON.parse(val) as unknown,
+    parse: (val) => JSON.parse(val),
     schema: metadataSchema,
   });
 
