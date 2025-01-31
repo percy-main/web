@@ -9,6 +9,7 @@ export const subscriptions = defineAuthAction({
     try {
       const customers = await stripe.customers.search({
         query: `email:"${user.email}"`,
+        // expand: ["data.plan.product"],
       });
 
       const customer = customers.data[0];
@@ -23,13 +24,32 @@ export const subscriptions = defineAuthAction({
         customer: customer.id,
       });
 
-      const subscriptionsData = subscriptions.data.map((s) => ({
-        id: s.id,
-        created: stripeDate(s.created),
-        paidUntil: stripeDate(s.current_period_end),
-        name: s.items.data[0]?.plan.nickname,
-        status: s.status,
-      }));
+      const subscriptionsData = await Promise.all(
+        subscriptions.data.map(async (s) => {
+          const productId = s.items.data[0]?.plan.product;
+
+          if (!productId) {
+            throw new Error("Missing productId on subscription item");
+          }
+
+          const product =
+            typeof productId === "string"
+              ? await stripe.products.retrieve(productId)
+              : productId;
+
+          return {
+            id: s.id,
+            created: stripeDate(s.created),
+            paidUntil: stripeDate(s.current_period_end),
+            name: s.items.data[0]?.plan.nickname,
+            status: s.status,
+            product: {
+              id: product.id,
+              name: product.deleted ? "Deleted product" : product.name,
+            },
+          };
+        }),
+      );
 
       return {
         subscriptions: subscriptionsData,

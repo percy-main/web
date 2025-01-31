@@ -27,7 +27,10 @@ export async function POST({ request }: APIContext): Promise<Response> {
 
     if (import.meta.env.DEV) {
       writeFileSync(
-        path.join(".sample", `stripe-event-${event.type}-${event.created}`),
+        path.join(
+          ".sample",
+          `${new Date().toISOString()}-stripe-event-${event.type}-${event.created}`,
+        ),
         JSON.stringify(event, null, 2),
       );
     }

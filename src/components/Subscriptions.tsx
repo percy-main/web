@@ -27,7 +27,7 @@ export const Subscriptions = () => {
                   Name
                 </dt>
                 <dd className="mt-1.5 text-base font-semibold text-gray-900 dark:text-white">
-                  {subscription.name}
+                  {subscription.name ?? subscription.product.name}
                 </dd>
               </dl>
 
