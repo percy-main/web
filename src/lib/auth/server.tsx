@@ -8,6 +8,9 @@ const baseURL = await (
   import.meta.env.CLI === "true"
     ? () => import.meta.env.BASE_URL
     : async () => {
+        if (process.env.DEPLOY_URL) {
+          return process.env.DEPLOY_URL;
+        }
         const env = await import("astro:env/client");
         return env.BASE_URL;
       }
