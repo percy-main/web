@@ -1,8 +1,10 @@
 /* eslint-disable */
 import { LibsqlDialect } from "@libsql/kysely-libsql";
 import { promises as fs } from "fs";
+import { readFile, writeFile } from "fs/promises";
 import { FileMigrationProvider, Kysely, Migrator } from "kysely";
 import * as path from "path";
+import * as ts from "typescript";
 
 export const onPostBuild = async ({ utils }) => {
   let db;
@@ -32,7 +34,41 @@ export const onPostBuild = async ({ utils }) => {
       provider: new FileMigrationProvider({
         fs,
         path,
-        migrationFolder: path.join(process.cwd(), "./src/lib/db/migrations"),
+        migrationFolder: {
+          getMigrations: async () => {
+            const migrationDir = path.join(
+              process.cwd(),
+              "./src/lib/db/migrations",
+            );
+
+            console.log(`Looking for migrations in ${migrationDir}`);
+            const files = await fs.readdir(migrationDir);
+            console.log(`Found ${files.length} migrations`);
+
+            const migrations = await Promise.all(
+              files.map(async (filename) => {
+                console.log(`${filename} : Reading`);
+                const tsContent = await readFile(filename, "utf-8");
+                console.log(`${filename} : Transpiling TS -> JS`);
+                const jsFileContent = ts.transpile(tsContent);
+
+                const jsFilepath = path.join(
+                  process.cwd(),
+                  ".temp",
+                  `${filename.substring(filename.length - 2)}.mjs`,
+                );
+                console.log(`${filename} : Writing JS to ${jsFilepath}`);
+                await writeFile(jsFilepath, jsFileContent);
+
+                console.log(`${filename} : Importing compiled JS module`);
+                const migration = await import(jsFilepath);
+                return [filename, migration];
+              }),
+            );
+
+            return Object.fromEntries(migrations);
+          },
+        },
       }),
     });
 
