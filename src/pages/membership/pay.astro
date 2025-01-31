@@ -5,6 +5,7 @@ import { getCollection } from "astro:content";
 import { paymentData } from "../../lib/payments/config";
 
 const prices = await getCollection("price");
+
 const seniorPlayerMonthly = prices.find(
   (price) =>
     price.data.product.id === paymentData.product.subs_player &&

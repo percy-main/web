@@ -2,7 +2,8 @@
   "default": {
     "prices": {
       "sponsorship": "price_1QeNAEIoYmCDxYlku6fuUon5",
-      "donation": "price_1Qg3v7IoYmCDxYlkVFuUKYXX"
+      "donation": "price_1Qg3v7IoYmCDxYlkVFuUKYXX",
+      "nets": "price_1QgUuVIoYmCDxYlke2hIm9ku"
     },
     "product": {
       "subs_player": "prod_RYaHXiECGLyH9k",
@@ -12,7 +13,8 @@
   "dev": {
     "prices": {
       "sponsorship": "price_1QlwpNIoYmCDxYlk50mvNJ6R",
-      "donation": "price_1PHSBTIoYmCDxYlkBoo86Xdb"
+      "donation": "price_1PHSBTIoYmCDxYlkBoo86Xdb",
+      "nets": "price_1QnTf1IoYmCDxYlkLJelFvkH"
     },
     "product": {
       "subs_player": "prod_RfHLa2wMmBDJcK",

@@ -1,3 +1,5 @@
 ---
-return Astro.rewrite("/purchase/price_1QgUuVIoYmCDxYlke2hIm9ku");
+import { paymentData } from "../lib/payments/config";
+
+return Astro.rewrite(`/purchase/${paymentData.prices.nets}`);
 ---
