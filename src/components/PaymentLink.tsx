@@ -6,6 +6,7 @@ type Props = {
   metadata: Metadata;
   children: ReactNode;
   className?: string;
+  email?: string;
 };
 
 export const PaymentLink: FC<Props> = ({
@@ -13,11 +14,18 @@ export const PaymentLink: FC<Props> = ({
   metadata,
   className,
   children,
-}) => (
-  <a
-    href={`/purchase/${priceId}?metadata=${encodeURIComponent(JSON.stringify(metadata))}`}
-    className={className}
-  >
-    {children}
-  </a>
-);
+  email,
+}) => {
+  const searchParams = new URLSearchParams();
+  searchParams.set("metadata", encodeURIComponent(JSON.stringify(metadata)));
+  if (email) {
+    searchParams.set("email", encodeURIComponent(email));
+  }
+
+  const href = `/purchase/${priceId}?${searchParams.toString()}`;
+  return (
+    <a href={href} className={className}>
+      {children}
+    </a>
+  );
+};

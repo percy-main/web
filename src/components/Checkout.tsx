@@ -34,10 +34,14 @@ export const Checkout: FC<Props> = ({ price }) => {
         }
       };
 
+      const emailStr = urlParams.get("email");
+      const email = emailStr == null ? undefined : decodeURIComponent(emailStr);
+
       const response = await actions.checkout({
         price,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         metadata: metadata(),
+        email,
       });
 
       if (response.error) {

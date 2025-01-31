@@ -25,6 +25,9 @@ export const PayMembership: FC<Props> = ({ options }) => {
 
   const price = membership ? options[membership] : null;
 
+  const emailParam = new URLSearchParams(location.search).get("email");
+  const email = emailParam == null ? undefined : decodeURIComponent(emailParam);
+
   return (
     <>
       <div className="mt-8">
@@ -123,6 +126,7 @@ export const PayMembership: FC<Props> = ({ options }) => {
                     ))
                     .with({ payment: "online", schedule: "annually" }, () => (
                       <PaymentLink
+                        email={email}
                         priceId={price.annually.id}
                         metadata={{ type: "membership", membership }}
                         className="w-full rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 focus:outline-none sm:w-auto dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
@@ -132,6 +136,7 @@ export const PayMembership: FC<Props> = ({ options }) => {
                     ))
                     .with({ payment: "online", schedule: "monthly" }, () => (
                       <PaymentLink
+                        email={email}
                         priceId={price.monthly.id}
                         metadata={{ type: "membership", membership }}
                         className="w-full rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 focus:outline-none sm:w-auto dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"

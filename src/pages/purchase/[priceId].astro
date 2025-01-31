@@ -17,5 +17,5 @@ const { price } = Astro.props;
 ---
 
 <Container title={`${price.data.product.name} :: Checkout`}>
-  <Checkout client:load price={price.data} />
+  <Checkout client:only="react" price={price.data} />
 </Container>

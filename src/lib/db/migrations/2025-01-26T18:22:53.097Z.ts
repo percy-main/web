@@ -10,7 +10,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .addColumn("paid_until", "date", (col) => col.notNull())
     .addColumn("type", "text")
     .addColumn("created_at", "date", (col) =>
-      col.defaultTo(sql`CURRENT_TIMESTAMP`),
+      col.defaultTo(sql`CURRENT_TIMESTAMP`).notNull(),
     )
     .execute();
 }

@@ -8,10 +8,12 @@ export const checkout = defineAction({
   input: z.object({
     price: price.schema,
     metadata,
+    email: z.string().optional(),
   }),
   handler: async ({
     price: { id, mode, hasPromotion, qtyAdjustable, maxQty },
     metadata,
+    email,
   }) => {
     try {
       const intent = await stripe.checkout.sessions.create({
@@ -35,6 +37,7 @@ export const checkout = defineAction({
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         metadata,
         allow_promotion_codes: hasPromotion,
+        customer_email: email,
       });
 
       if (!intent.client_secret) {

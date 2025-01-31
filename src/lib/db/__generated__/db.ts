@@ -39,7 +39,7 @@ export interface Member {
 }
 
 export interface Membership {
-  created_at: Generated<string | null>;
+  created_at: Generated<string>;
   id: string;
   member_id: string;
   paid_until: string;
