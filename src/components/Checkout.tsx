@@ -1,8 +1,11 @@
+import type { Price } from "@/collections/price";
+import { useSearchParam } from "@/hooks/useSearchParams";
+import { metadata as metadataSchema } from "@/lib/payments/metadata";
 import { loadStripe, type StripeEmbeddedCheckout } from "@stripe/stripe-js";
 import { actions } from "astro:actions";
 import { STRIPE_PUBLIC_KEY } from "astro:env/client";
+import { z } from "astro:schema";
 import { useEffect, useRef, useState, type FC } from "react";
-import type { Price } from "../collections/price";
 
 const stripeClient = await loadStripe(STRIPE_PUBLIC_KEY);
 
@@ -15,32 +18,22 @@ export const Checkout: FC<Props> = ({ price }) => {
 
   const [error, setError] = useState<string>();
 
+  const metadata = useSearchParam({
+    param: "metadata",
+    parse: (val) => JSON.parse(val) as unknown,
+    schema: metadataSchema,
+  });
+
+  const email = useSearchParam({
+    param: "email",
+    schema: z.string().optional(),
+  });
+
   useEffect(() => {
     async function onMount() {
-      const urlParams = new URLSearchParams(window.location.search);
-
-      const metadata = () => {
-        const str = urlParams.get("metadata");
-
-        if (!str) {
-          return undefined;
-        }
-
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-          return JSON.parse(decodeURIComponent(str));
-        } catch {
-          return undefined;
-        }
-      };
-
-      const emailStr = urlParams.get("email");
-      const email = emailStr == null ? undefined : decodeURIComponent(emailStr);
-
       const response = await actions.checkout({
         price,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        metadata: metadata(),
+        metadata,
         email,
       });
 
