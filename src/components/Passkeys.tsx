@@ -30,8 +30,8 @@ export const Passkeys = () => {
   });
 
   return (
-    <>
-      <h2 className="text-h4 mb-0">Your Passkeys</h2>
+    <section>
+      <h2 className="text-h4">Your Passkeys</h2>
       <div className="flex flex-col gap-4">
         {query.data?.data?.map((passkey) => (
           <div
@@ -80,6 +80,6 @@ export const Passkeys = () => {
           Add new passkey
         </button>
       </form>
-    </>
+    </section>
   );
 };

@@ -1,5 +1,5 @@
 import { createAuthClient } from "better-auth/client";
-import { passkeyClient } from "better-auth/client/plugins";
+import { passkeyClient, twoFactorClient } from "better-auth/client/plugins";
 import { createAuthClient as createReactClient } from "better-auth/react";
 
 const baseURL = await (
@@ -16,12 +16,12 @@ const baseURL = await (
 
 export const authClient = createAuthClient({
   baseURL,
-  plugins: [passkeyClient()],
+  plugins: [passkeyClient(), twoFactorClient()],
 });
 
 export const reactClient = createReactClient({
   baseURL,
-  plugins: [passkeyClient()],
+  plugins: [passkeyClient(), twoFactorClient()],
 });
 
 export const register = ({
