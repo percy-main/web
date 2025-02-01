@@ -1,5 +1,5 @@
 ---
-import LoginPage from "@/components/auth/Login
+import { LoginPage } from "@/components/auth/Login";
 import Container from "@/layouts/Container.astro";
 ---
 
@@ -11,5 +11,5 @@ import Container from "@/layouts/Container.astro";
       Thanks for confirming your email!
     </h1>
   </section>
-  <LoginPage />
+  <LoginPage client:only="react" />
 </Container>
