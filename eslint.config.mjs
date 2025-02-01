@@ -36,6 +36,7 @@ export default [
       "@typescript-eslint/consistent-type-definitions": ["off", "type"],
       "@typescript-eslint/array-type": ["error", { default: "array-simple" }],
       "@typescript-eslint/no-unnecessary-condition": "off", // largely broken
+      "@typescript-eslint/no-misused-promises": "off",
     },
   },
   {

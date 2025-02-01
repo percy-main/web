@@ -2,11 +2,13 @@ import { useSession } from "@/lib/auth/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
 import { Membership } from "./Membership";
+import { Passkeys } from "./Passkeys";
 import { Payments } from "./Payments";
 import { Subscriptions } from "./Subscriptions";
 
 export const MembersPage = () => {
   const session = useSession();
+
   const hasData = !!session?.data;
   if (!session.isPending && !hasData) {
     return navigate("/auth/login");
@@ -37,6 +39,7 @@ export const MembersPage = () => {
           </div>
           <Membership email={user.email} />
         </div>
+        <Passkeys />
         <Subscriptions />
         <Payments />
       </div>

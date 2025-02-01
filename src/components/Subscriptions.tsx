@@ -12,14 +12,13 @@ export const Subscriptions = () => {
     return null;
   }
 
-  if (query.data.data.subscriptions.length === 0) {
-    return <p>You have no subscriptions.</p>;
-  }
-
   return (
     <>
       <h2 className="text-h4 mb-0">Your Subscriptions</h2>
       <div className="w-full">
+        {query.data.data.subscriptions.length === 0 && (
+          <p>You have no subscriptions.</p>
+        )}
         {query.data.data.subscriptions.map((subscription) => (
           <>
             <div className="flex flex-wrap items-center gap-y-4">

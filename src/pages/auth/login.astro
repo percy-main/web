@@ -1,8 +1,8 @@
 ---
-import LoginPage from "@/components/auth/Login.astro";
+import { LoginPage } from "@/components/auth/Login";
 import Container from "@/layouts/Container.astro";
 ---
 
 <Container title="Login">
-  <LoginPage />
+  <LoginPage client:only="react" />
 </Container>
