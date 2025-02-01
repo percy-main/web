@@ -90,6 +90,7 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-n": "^16.6.2",
     "eslint-plugin-promise": "^6.6.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
     "json-patch": "^0.7.0",
     "kysely-codegen": "^0.17.0",
     "patch-package": "^8.0.0",

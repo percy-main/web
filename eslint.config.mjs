@@ -1,5 +1,6 @@
 import eslint from "@eslint/js";
 import eslintPluginAstro from "eslint-plugin-astro";
+import hooksPlugin from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
 /** @type {import("eslint").ESLint.Options[]} */
@@ -8,6 +9,12 @@ export default [
     eslint.configs.recommended,
     tseslint.configs.strictTypeChecked,
     tseslint.configs.stylisticTypeChecked,
+    {
+      plugins: {
+        "react-hooks": hooksPlugin,
+      },
+      rules: hooksPlugin.configs.recommended.rules,
+    },
     {
       languageOptions: {
         parserOptions: {
@@ -22,6 +29,7 @@ export default [
           "error",
           { allowNumber: true },
         ],
+        "react-hooks/exhaustive-deps": "error",
       },
     },
     {

@@ -56,7 +56,7 @@ export const Checkout: FC<Props> = ({ price }) => {
     return () => {
       checkout.current?.destroy();
     };
-  }, []);
+  }, [email, metadata, price]);
 
   if (error) {
     return (
