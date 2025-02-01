@@ -31,7 +31,7 @@ export const Passkeys = () => {
 
   return (
     <>
-      <h2 className="text-h4 mb-0">Your Passkeys</h2>
+      <h2 className="text-h4">Your Passkeys</h2>
       <div className="flex flex-col gap-4">
         {query.data?.data?.map((passkey) => (
           <div
