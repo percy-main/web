@@ -21,7 +21,7 @@ export const Membership: FC<Props> = ({ email }) => {
   const { membership } = query.data.data;
 
   return (
-    <div className="rounded-2xl bg-red-200 p-4">
+    <div className="rounded-2xl border border-gray-500 bg-blue-100 p-4">
       {membership ? (
         <>
           <div className="mb-2 font-semibold">

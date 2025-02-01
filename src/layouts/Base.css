@@ -46,4 +46,8 @@
   .h6 {
     @apply text-h6 mb-1;
   }
+
+  button {
+    cursor: pointer;
+  }
 }

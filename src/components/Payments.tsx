@@ -19,14 +19,13 @@ export const Payments = () => {
     maximumFractionDigits: 2,
   });
 
-  if (query.data.data.charges.length === 0) {
-    return <p>You are yet to make any purchases.</p>;
-  }
-
   return (
     <>
       <h2 className="text-h4 mb-0">Payment History</h2>
       <div className="w-full">
+        {query.data.data.charges.length === 0 && (
+          <p>You are yet to make any purchases.</p>
+        )}
         {query.data.data.charges.map((purchase) => (
           <>
             <div className="flex flex-wrap items-center gap-y-4">

@@ -7,13 +7,13 @@ const filename = new Date().toISOString();
 
 await generateAction({
   cwd: process.cwd(),
-  output: `./.temp/${filename}.sql`,
+  output: `./.better-auth/${filename}.sql`,
   config: "./src/lib/auth/server.tsx",
 });
 
-console.log(`SQL generated to ./.temp/${filename}.sql`);
+console.log(`SQL generated to ./.better-auth/${filename}.sql`);
 
-const sql = await $`cat "./.temp/${filename}.sql"`;
+const sql = await $`cat "./.better-auth/${filename}.sql"`;
 
 const migrationLines = sql
   .lines()
@@ -35,11 +35,11 @@ const migrationLines = sql
 const kyseley_migration = `
 import { Kysely, sql } from 'kysely'
 
-export async function up(db: Kysely<any>): Promise<void> {
+export async function up(db: Kysely<unknown>): Promise<void> {
     ${migrationLines}
 }
 `;
 
-$`echo ${kyseley_migration} >> "src/lib/db/migrations/${filename}.ts"`;
+void $`echo ${kyseley_migration} >> "src/lib/db/migrations/${filename}.ts"`;
 
-console.log(`Kysesly generated to src/lib/db/migrations/${filename}.ts`);
+console.log(`Kysely generated to src/lib/db/migrations/${filename}.ts`);

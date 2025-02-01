@@ -34,3 +34,4 @@ local.db*
 .temp
 .sample
 .emails
+.better-auth
