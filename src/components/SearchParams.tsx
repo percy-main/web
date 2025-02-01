@@ -18,7 +18,5 @@ export const SearchParams = <T extends string, U extends Record<T, string>>({
     }),
   ) as U;
 
-  console.log({ props });
-
   return children(props);
 };
