@@ -9,7 +9,6 @@ export const subscriptions = defineAuthAction({
     try {
       const customers = await stripe.customers.search({
         query: `email:"${user.email}"`,
-        // expand: ["data.plan.product"],
       });
 
       const customer = customers.data[0];

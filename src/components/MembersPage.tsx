@@ -6,6 +6,7 @@ import { Membership } from "./Membership";
 import { Passkeys } from "./Passkeys";
 import { Payments } from "./Payments";
 import { Subscriptions } from "./Subscriptions";
+import { TwoFactor } from "./TwoFactor";
 
 export const MembersPage = () => {
   const session = useSession();
@@ -40,7 +41,7 @@ export const MembersPage = () => {
             <TabsTrigger value="payments">Payments</TabsTrigger>
           </TabsList>
           <TabsContent value="membership">
-            <div className="flex w-full flex-row justify-between gap-4">
+            <div className="flex flex-col gap-4">
               <div>
                 <h2>{user.name}</h2>
                 <p>{user.email}</p>
@@ -49,7 +50,10 @@ export const MembersPage = () => {
             </div>
           </TabsContent>
           <TabsContent value="security">
-            <Passkeys />
+            <div className="flex flex-col gap-4">
+              <Passkeys />
+              <TwoFactor user={user} />
+            </div>
           </TabsContent>
           <TabsContent value="payments">
             <div className="flex flex-col gap-8">

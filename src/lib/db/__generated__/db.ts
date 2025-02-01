@@ -46,6 +46,19 @@ export interface Membership {
   type: string | null;
 }
 
+export interface Passkey {
+  backedUp: number;
+  counter: number;
+  createdAt: string | null;
+  credentialID: string;
+  deviceType: string;
+  id: string;
+  name: string | null;
+  publicKey: string;
+  transports: string | null;
+  userId: string;
+}
+
 export interface Session {
   createdAt: string;
   expiresAt: string;
@@ -57,6 +70,13 @@ export interface Session {
   userId: string;
 }
 
+export interface TwoFactor {
+  backupCodes: string;
+  id: string;
+  secret: string;
+  userId: string;
+}
+
 export interface User {
   createdAt: string;
   email: string;
@@ -64,6 +84,7 @@ export interface User {
   id: string;
   image: string | null;
   name: string;
+  twoFactorEnabled: number | null;
   updatedAt: string;
 }
 
@@ -80,7 +101,9 @@ export interface DB {
   account: Account;
   member: Member;
   membership: Membership;
+  passkey: Passkey;
   session: Session;
+  twoFactor: TwoFactor;
   user: User;
   verification: Verification;
 }

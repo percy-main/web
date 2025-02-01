@@ -21,32 +21,38 @@ export const Membership: FC<Props> = ({ email }) => {
   const { membership } = query.data.data;
 
   return (
-    <div className="rounded-2xl border border-gray-500 bg-blue-100 p-4">
-      {membership ? (
-        <>
-          <div className="mb-2 font-semibold">
-            {match(membership.type)
-              .with("senior_player", () => "Playing Member (Senior)")
-              .with("social", () => "Social Member")
-              .otherwise(() => "Unknown membership type")}
-          </div>
-          <p className="text-sm">
-            <span className="font-semibold">Member Since: </span>
-            {formatDate(membership.created_at, "dd/MM/yyyy")}
-          </p>
-          <p className="text-sm">
-            <span className="font-semibold">Paid Until: </span>
-            {formatDate(membership.paid_until, "dd/MM/yyyy")}
-          </p>
-        </>
-      ) : (
-        <>
-          <div className="mb-2 font-semibold">No Membership</div>
-          <a href={`/membership/pay?email=${encodeURIComponent(email)}`}>
-            Join Now
-          </a>
-        </>
-      )}
-    </div>
+    <section>
+      <h2 className="text-h4">Your Membership</h2>
+      <div className="rounded-2xl border border-gray-500 bg-blue-100 p-4">
+        {membership ? (
+          <>
+            <div className="mb-2 font-semibold">
+              {match(membership.type)
+                .with("senior_player", () => "Playing Member (Senior)")
+                .with("social", () => "Social Member")
+                .otherwise(() => "Unknown membership type")}
+            </div>
+            <p className="text-sm">
+              <span className="font-semibold">Member Since: </span>
+              {formatDate(membership.created_at, "dd/MM/yyyy")}
+            </p>
+            <p className="text-sm">
+              <span className="font-semibold">Paid Until: </span>
+              {formatDate(membership.paid_until, "dd/MM/yyyy")}
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="mb-2 font-semibold">No Membership</div>
+            <a
+              className="hover:underline"
+              href={`/membership/pay?email=${encodeURIComponent(email)}`}
+            >
+              Join Now
+            </a>
+          </>
+        )}
+      </div>
+    </section>
   );
 };

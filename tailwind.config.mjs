@@ -40,6 +40,30 @@ export const theme = {
       "theme-light": "#E5E5E5",
       "theme-dark": "#1a202c",
       creamy: "#F1F1F1",
+      input: "hsl(var(--input))",
+      ring: "hsl(var(--ring))",
+      background: "hsl(var(--background))",
+      foreground: "hsl(var(--foreground))",
+      destructive: {
+        DEFAULT: "hsl(var(--destructive))",
+        foreground: "hsl(var(--destructive-foreground))",
+      },
+      muted: {
+        DEFAULT: "hsl(var(--muted))",
+        foreground: "hsl(var(--muted-foreground))",
+      },
+      accent: {
+        DEFAULT: "hsl(var(--accent))",
+        foreground: "hsl(var(--accent-foreground))",
+      },
+      popover: {
+        DEFAULT: "hsl(var(--popover))",
+        foreground: "hsl(var(--popover-foreground))",
+      },
+      card: {
+        DEFAULT: "hsl(var(--card))",
+        foreground: "hsl(var(--card-foreground))",
+      },
     },
     fontSize: {
       base: String(font_base) + "px",
@@ -56,6 +80,16 @@ export const theme = {
     fontFamily: {
       primary: ["var(--font-primary)", "sans-serif"],
       secondary: ["var(--font-secondary)", "sans-serif"],
+    },
+
+    keyframes: {
+      "caret-blink": {
+        "0%,70%,100%": { opacity: "1" },
+        "20%,50%": { opacity: "0" },
+      },
+    },
+    animation: {
+      "caret-blink": "caret-blink 1.25s ease-out infinite",
     },
   },
 };
