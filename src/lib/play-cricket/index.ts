@@ -4,7 +4,8 @@ import { PLAY_CRICKET_API_KEY } from "astro:env/server";
 const GetLeagueTableResponse = z.object({
   league_table: z.array(
     z.object({
-      id: z.string(),
+      // play-cricket seems a touch... indecisive about this. we don't really care
+      id: z.union([z.string(), z.number()]),
       name: z.string(),
       headings: z.record(z.string()),
       values: z.array(
