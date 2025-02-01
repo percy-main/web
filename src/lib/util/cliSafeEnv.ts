@@ -5,6 +5,9 @@ export const cliSafeEnv = <K extends string, T>(
   if (process.env.CLI === "true") {
     return cliValue ?? getter(process.env as Record<K, string>);
   } else {
-    return getter(import.meta.env as Record<K, string>);
+    return (
+      getter(import.meta.env as Record<K, string>) ??
+      getter(process.env as Record<K, string>)
+    );
   }
 };
