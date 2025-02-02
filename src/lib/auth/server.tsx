@@ -4,6 +4,7 @@ import { render } from "@react-email/render";
 import { betterAuth } from "better-auth";
 import { twoFactor } from "better-auth/plugins";
 import { passkey } from "better-auth/plugins/passkey";
+import { ResetPassword } from "~/emails/ResetPassword";
 import { VerifyEmail } from "~/emails/VerifyEmail";
 
 const baseURL = await (
@@ -31,6 +32,22 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    sendResetPassword: async ({ user, url }) => {
+      await email.send({
+        to: user.email,
+        subject: ResetPassword.subject,
+        html: await render(
+          <ResetPassword.component
+            url={url}
+            imageBaseUrl={`${baseURL}/images`}
+            name={user.name}
+          />,
+          {
+            pretty: true,
+          },
+        ),
+      });
+    },
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {

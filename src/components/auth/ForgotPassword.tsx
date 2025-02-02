@@ -32,7 +32,7 @@ export const ForgotPassword: FC = () => {
       </h1>
       {match(forgetPassword)
         .with({ data: { data: P.not(P.nullish) } }, () => (
-          <p>We've sent you and email with a link to reset your password.</p>
+          <p>We've sent you an email with a link to reset your password.</p>
         ))
         .otherwise(() => (
           <form
