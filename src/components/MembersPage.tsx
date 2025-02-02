@@ -27,12 +27,23 @@ export const MembersPage = () => {
       <div className="flex flex-col items-center gap-4">
         <div className="flex w-full flex-row items-start justify-between">
           <h1>Members Area</h1>
-          <a
-            className="text-dark justify-self-start rounded border-1 border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
-            href="/auth/logout"
-          >
-            Sign Out
-          </a>
+          <div className="flex flex-row flex-wrap gap-4">
+            {session.data.user.role === "admin" ? (
+              <a
+                className="text-dark justify-self-start rounded border-1 border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
+                href="#"
+              >
+                Admin Panel
+              </a>
+            ) : null}
+
+            <a
+              className="text-dark justify-self-start rounded border-1 border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
+              href="/auth/logout"
+            >
+              Sign Out
+            </a>
+          </div>
         </div>
         <Tabs defaultValue="membership">
           <TabsList className="w-full max-w-2xl">

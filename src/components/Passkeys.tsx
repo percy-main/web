@@ -1,4 +1,4 @@
-import { reactClient } from "@/lib/auth/client";
+import { authClient } from "@/lib/auth/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDate } from "date-fns";
 import { useState } from "react";
@@ -11,18 +11,18 @@ export const Passkeys = () => {
 
   const query = useQuery({
     queryKey: ["passkeys"],
-    queryFn: () => reactClient.passkey.listUserPasskeys(),
+    queryFn: () => authClient.passkey.listUserPasskeys(),
   });
 
   const deletePasskey = useMutation({
-    mutationFn: (id: string) => reactClient.passkey.deletePasskey({ id }),
+    mutationFn: (id: string) => authClient.passkey.deletePasskey({ id }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["passkeys"] });
     },
   });
 
   const addPasskey = useMutation({
-    mutationFn: (name?: string) => reactClient.passkey.addPasskey({ name }),
+    mutationFn: (name?: string) => authClient.passkey.addPasskey({ name }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["passkeys"] });
       setNewPasskeyName("");

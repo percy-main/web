@@ -1,6 +1,9 @@
-import { createAuthClient } from "better-auth/client";
-import { passkeyClient, twoFactorClient } from "better-auth/client/plugins";
-import { createAuthClient as createReactClient } from "better-auth/react";
+import {
+  adminClient,
+  passkeyClient,
+  twoFactorClient,
+} from "better-auth/client/plugins";
+import { createAuthClient } from "better-auth/react";
 
 const baseURL = await (
   import.meta.env.CLI === "true"
@@ -14,33 +17,13 @@ const baseURL = await (
       }
 )();
 
-export const authClient = createAuthClient({
+const clientConfig = {
   baseURL,
-  plugins: [passkeyClient(), twoFactorClient()],
-});
+  plugins: [passkeyClient(), twoFactorClient(), adminClient()],
+};
 
-export const reactClient = createReactClient({
-  baseURL,
-  plugins: [passkeyClient(), twoFactorClient()],
-});
-
-export const register = ({
-  name,
-  email,
-  password,
-}: {
-  name: string;
-  email: string;
-  password: string;
-}) =>
-  authClient.signUp.email({
-    name,
-    email,
-    password,
-    callbackURL: "/auth/email-confirmed/",
-  });
-
-export const { useSession } = reactClient;
+export const authClient = createAuthClient(clientConfig);
+export const { useSession } = authClient;
 
 // needed for CLI
 export default authClient;

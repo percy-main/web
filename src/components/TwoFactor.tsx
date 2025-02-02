@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useCallback, useState, type FC } from "react";
 import QRCode from "react-qr-code";
 import { match, P } from "ts-pattern";
-import { reactClient } from "../lib/auth/client";
+import { authClient } from "../lib/auth/client";
 import { SimpleInput } from "./form/SimpleInput";
 
 type Props = {
@@ -18,17 +18,16 @@ export const TwoFactor: FC<Props> = ({ user }) => {
   const [verifyCode, setVerifyCode] = useState("");
 
   const enable2FA = useMutation({
-    mutationFn: (password: string) =>
-      reactClient.twoFactor.enable({ password }),
+    mutationFn: (password: string) => authClient.twoFactor.enable({ password }),
   });
 
   const disable2FA = useMutation({
     mutationFn: (password: string) =>
-      reactClient.twoFactor.disable({ password }),
+      authClient.twoFactor.disable({ password }),
   });
 
   const verifyTotp = useMutation({
-    mutationFn: (code: string) => reactClient.twoFactor.verifyTotp({ code }),
+    mutationFn: (code: string) => authClient.twoFactor.verifyTotp({ code }),
     onSuccess: () => {
       setVerifyCode("");
     },

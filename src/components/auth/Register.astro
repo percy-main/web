@@ -69,7 +69,7 @@ import LinkButton from "../LinkButton.astro";
 <section></section>
 
 <script>
-  import { register } from "@/lib/auth/client";
+  import { authClient } from "@/lib/auth/client";
   const form: HTMLFormElement = document.getElementById(
     "register-form",
   ) as HTMLFormElement;
@@ -83,7 +83,12 @@ import LinkButton from "../LinkButton.astro";
     const email = data.get("email")?.toString() ?? "";
     const password = data.get("password")?.toString() ?? "";
 
-    const tmp = await register({ name, email, password });
+    const tmp = await authClient.signUp.email({
+      name,
+      email,
+      password,
+      callbackURL: "/auth/email-confirmed/",
+    });
 
     if (Boolean(tmp.error) === false) window.location.href = "/auth/registered";
   });

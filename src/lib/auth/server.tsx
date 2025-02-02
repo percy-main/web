@@ -2,7 +2,7 @@ import * as db from "@/lib/db/client";
 import * as email from "@/lib/email/send";
 import { render } from "@react-email/render";
 import { betterAuth } from "better-auth";
-import { twoFactor } from "better-auth/plugins";
+import { admin, twoFactor } from "better-auth/plugins";
 import { passkey } from "better-auth/plugins/passkey";
 import { ResetPassword } from "~/emails/ResetPassword";
 import { VerifyEmail } from "~/emails/VerifyEmail";
@@ -28,6 +28,7 @@ export const auth = betterAuth({
       rpName: import.meta.env.BETTER_AUTH_RP_NAME as string,
     }),
     twoFactor(),
+    admin(),
   ],
   emailAndPassword: {
     enabled: true,
