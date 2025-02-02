@@ -23,7 +23,7 @@ export const Membership: FC<Props> = ({ email }) => {
   return (
     <section>
       <h2 className="text-h4">Your Membership</h2>
-      <div className="rounded-2xl border border-gray-500 bg-blue-100 p-4">
+      <div className="max-w-max rounded-2xl border border-gray-500 bg-blue-100 p-4">
         {membership ? (
           <>
             <div className="mb-2 font-semibold">
