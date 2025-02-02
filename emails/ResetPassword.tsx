@@ -23,7 +23,7 @@ interface Props {
 const Component: FC<Props> = ({ url, name, imageBaseUrl }) => (
   <Html>
     <Head />
-    <Preview>Percy Main Cricket and Sports Club - Verify Your Email</Preview>
+    <Preview>Percy Main Cricket and Sports Club - Reset Your Password</Preview>
     <Body style={styles.main}>
       <Container style={styles.container}>
         <Img
@@ -35,18 +35,14 @@ const Component: FC<Props> = ({ url, name, imageBaseUrl }) => (
         />
         <Text style={styles.paragraph}>Hi {name},</Text>
         <Text style={styles.paragraph}>
-          Thanks for signing up to Percy Main Cricket and Sports Club.
+          You requested to change your password to login to Percy Main Cricket
+          and Sports Club.
         </Text>
         <Section style={styles.btnContainer}>
           <Button style={styles.button} href={url}>
-            Verify Your Email
+            Reset My Password
           </Button>
         </Section>
-        <Text style={styles.paragraph}>
-          Best,
-          <br />
-          The Trustees
-        </Text>
         <Hr style={styles.hr} />
         <Text style={styles.footer}>
           Percy Main Cricket Club, St. Johns Terrace, North Shields, NE29 6HS
@@ -56,12 +52,12 @@ const Component: FC<Props> = ({ url, name, imageBaseUrl }) => (
   </Html>
 );
 
-export const VerifyEmail = email<Props>("Verify your email address", {
+export const ResetPassword = email<Props>("Reset Your Password", {
   preview: {
-    url: "http://localhost:4321/auth/email-confirmed",
+    url: "http://localhost:4321/auth/reset-password",
     imageBaseUrl: "http://localhost:4321/images",
     name: "Alex",
   },
 })(Component);
 
-export default VerifyEmail.component;
+export default ResetPassword.component;
