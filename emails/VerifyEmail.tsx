@@ -10,6 +10,9 @@ import {
   Section,
   Text,
 } from "@react-email/components";
+import type { FC } from "react";
+import { email } from "./email";
+import * as styles from "./styles";
 
 interface Props {
   imageBaseUrl: string;
@@ -17,35 +20,35 @@ interface Props {
   name: string;
 }
 
-export const VerifyEmail = ({ url, name, imageBaseUrl }: Props) => (
+const Component: FC<Props> = ({ url, name, imageBaseUrl }) => (
   <Html>
     <Head />
     <Preview>Percy Main Cricket and Sports Club - Verify Your Email</Preview>
-    <Body style={main}>
-      <Container style={container}>
+    <Body style={styles.main}>
+      <Container style={styles.container}>
         <Img
           src={`${imageBaseUrl}/club_logo.png`}
           width="100"
           height="100"
           alt="Percy Main Club Logo"
-          style={logo}
+          style={styles.logo}
         />
-        <Text style={paragraph}>Hi {name},</Text>
-        <Text style={paragraph}>
+        <Text style={styles.paragraph}>Hi {name},</Text>
+        <Text style={styles.paragraph}>
           Thanks for signing up to Percy Main Cricket and Sports Club.
         </Text>
-        <Section style={btnContainer}>
-          <Button style={button} href={url}>
+        <Section style={styles.btnContainer}>
+          <Button style={styles.button} href={url}>
             Verify Your Email
           </Button>
         </Section>
-        <Text style={paragraph}>
+        <Text style={styles.paragraph}>
           Best,
           <br />
           The Trustees
         </Text>
-        <Hr style={hr} />
-        <Text style={footer}>
+        <Hr style={styles.hr} />
+        <Text style={styles.footer}>
           Percy Main Cricket Club, St. Johns Terrace, North Shields, NE29 6HS
         </Text>
       </Container>
@@ -53,55 +56,12 @@ export const VerifyEmail = ({ url, name, imageBaseUrl }: Props) => (
   </Html>
 );
 
-VerifyEmail.PreviewProps = {
-  url: "http://localhost:4321/auth/email-confirmed",
-  imageBaseUrl: "http://localhost:4321/images",
-  name: "Alex",
-} as Props;
+export const VerifyEmail = email<Props>("Verify your email address", {
+  preview: {
+    url: "http://localhost:4321/auth/email-confirmed",
+    imageBaseUrl: "http://localhost:4321/images",
+    name: "Alex",
+  },
+})(Component);
 
-const main = {
-  backgroundColor: "#ffffff",
-  fontFamily:
-    '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
-};
-
-const container = {
-  margin: "0 auto",
-  padding: "20px 0 48px",
-};
-
-const logo = {
-  margin: "0 auto",
-};
-
-const paragraph = {
-  fontSize: "16px",
-  lineHeight: "26px",
-};
-
-const btnContainer = {
-  textAlign: "center" as const,
-};
-
-const button = {
-  backgroundColor: "#5F51E8",
-  borderRadius: "3px",
-  color: "#fff",
-  fontSize: "16px",
-  textDecoration: "none",
-  textAlign: "center" as const,
-  display: "block",
-  padding: "12px",
-};
-
-const hr = {
-  borderColor: "#cccccc",
-  margin: "20px 0",
-};
-
-const footer = {
-  color: "#8898aa",
-  fontSize: "12px",
-};
-
-export default VerifyEmail;
+export default VerifyEmail.component;

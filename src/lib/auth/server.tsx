@@ -36,9 +36,9 @@ export const auth = betterAuth({
     sendVerificationEmail: async ({ user, url }) => {
       await email.send({
         to: user.email,
-        subject: "Verify your email address",
+        subject: VerifyEmail.subject,
         html: await render(
-          <VerifyEmail
+          <VerifyEmail.component
             url={url}
             imageBaseUrl={`${baseURL}/images`}
             name={user.name}
