@@ -34,8 +34,8 @@ export const MembersPage = () => {
             Sign Out
           </a>
         </div>
-        <Tabs defaultValue="membership" className="w-full max-w-2xl">
-          <TabsList>
+        <Tabs defaultValue="membership">
+          <TabsList className="w-full max-w-2xl">
             <TabsTrigger value="membership">Membership</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
