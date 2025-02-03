@@ -24,7 +24,7 @@ export const MembersPage = () => {
 
   return (
     <QueryClientProvider client={new QueryClient()}>
-      <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col items-start justify-stretch gap-4">
         <div className="flex w-full flex-row items-start justify-between">
           <h1>Members Area</h1>
           <div className="flex flex-row flex-wrap gap-4">
@@ -45,8 +45,8 @@ export const MembersPage = () => {
             </a>
           </div>
         </div>
-        <Tabs defaultValue="membership">
-          <TabsList className="w-full max-w-2xl">
+        <Tabs defaultValue="membership" className="w-full">
+          <TabsList>
             <TabsTrigger value="membership">Membership</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
