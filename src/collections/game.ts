@@ -1,64 +1,110 @@
-import {
-  type TypeGameSkeleton,
-  type TypeLeagueSkeleton,
-  type TypeSponsorSkeleton,
-  type TypeTeamSkeleton,
-} from "@/__generated__";
 import * as location from "@/collections/location";
-import { contentClient } from "@/lib/contentful/client";
-import { fromFields } from "@/lib/contentful/from-fields";
 import { defineCollection, z } from "astro:content";
-import type { Entry } from "contentful";
+import { PLAY_CRICKET_SITE_ID } from "astro:env/server";
 import * as df from "date-fns";
+import { getMatchesSummary } from "../lib/play-cricket";
+
+export const team = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+export const club = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+export const league = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
+export const competition = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.string(),
+});
 
 export const schema = z.object({
   type: z.literal("game"),
-  opposition: z.string(),
-  home: z.boolean(),
-  when: z.date(),
-  team: z.string(),
-  league: z.string(),
-  hasSponsor: z.boolean(),
-  sponsor: z
-    .object({
-      name: z.string(),
-      logo: z.string().optional(),
-    })
-    .optional(),
-  finish: z.date().optional(),
-  location: location.schema.optional(),
+  id: z.string(),
   createdAt: z.date(),
+  home: z.boolean(),
+  opposition: z.object({
+    club,
+    team,
+  }),
+  team,
+  when: z.date(),
+  finish: z.date().optional(),
+  league,
+  competition,
+  location: location.schema.optional(),
 });
 
 export type Game = z.TypeOf<typeof schema>;
 
 export const loader = async () => {
-  const response = await contentClient.getEntries<TypeGameSkeleton>({
-    content_type: "game",
-  });
+  const response = await getMatchesSummary({ season: 2025 });
 
-  return response.items.map((item) => {
+  return response.matches.map((match) => {
+    const home = match.home_club_id === PLAY_CRICKET_SITE_ID;
+
+    const opposition = home
+      ? {
+          club: {
+            id: match.away_club_id,
+            name: match.away_club_name,
+          },
+          team: {
+            id: match.away_team_id,
+            name: match.away_team_name,
+          },
+        }
+      : {
+          club: {
+            id: match.home_club_id,
+            name: match.home_club_name,
+          },
+          team: {
+            id: match.home_team_id,
+            name: match.home_team_name,
+          },
+        };
+
+    const team = home
+      ? {
+          id: match.home_team_id,
+          name: match.home_team_name,
+        }
+      : {
+          id: match.away_team_id,
+          name: match.away_team_name,
+        };
+
+    const when = df.parse(
+      `${match.match_date}-${match.match_time}`,
+      "dd/MM/yyyy-HH:mm",
+      new Date(),
+    );
+
     return {
-      id: item.sys.id,
-      createdAt: df.parseISO(item.sys.createdAt),
       type: "game",
-      opposition: item.fields.opposition,
-      home: item.fields.home,
-      when: df.parseISO(item.fields.when),
-      team: (item.fields.team as Entry<TypeTeamSkeleton>).fields.name,
-      league: (item.fields.league as Entry<TypeLeagueSkeleton>).fields.name,
-      hasSponsor: item.fields.hasSponsor,
-      sponsor: item.fields.sponsor
-        ? {
-            name: (item.fields.sponsor as Entry<TypeSponsorSkeleton>).fields
-              .name,
-          }
-        : undefined,
-      finish: item.fields.finish && df.parseISO(item.fields.finish),
-      location:
-        item.fields.location && "fields" in item.fields.location
-          ? location.schema.parse(fromFields(item.fields.location))
-          : undefined,
+      id: match.id.toString(),
+      createdAt: df.parse(match.last_updated, "dd/MM/yyyy", new Date()),
+      home,
+      opposition,
+      team,
+      when,
+      league: {
+        id: match.league_id,
+        name: match.league_name,
+      },
+      competition: {
+        id: match.competition_id,
+        name: match.competition_name,
+        type: match.competition_type,
+      },
     };
   });
 };

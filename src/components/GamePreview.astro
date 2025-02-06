@@ -30,11 +30,13 @@ const { id, game } = Astro.props;
   </div>
   <div class="flex flex-row justify-between gap-4">
     <div class="text-xs">
-      <p>
-        {game.team} vs. {game.opposition}{" "}
+      <p class="mb-4">
+        {game.team.name} vs. {game.opposition.club.name}
+        {game.opposition.team.name}
         {game.home ? "(H)" : "(A)"}
       </p>
-      <p>{game.league}</p>
+      <p>{game.league.name}</p>
+      <p>{game.competition.name}</p>
     </div>
     <a
       href={`/calendar/event/${id}`}
