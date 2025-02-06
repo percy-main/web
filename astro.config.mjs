@@ -94,7 +94,7 @@ export default defineConfig({
       }),
       SLACK_TRUSTEES_HOOK: envField.string({
         context: "server",
-        access: "public",
+        access: "secret",
       }),
     },
   },
