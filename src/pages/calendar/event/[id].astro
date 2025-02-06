@@ -24,7 +24,7 @@ const title = match(calendarItem)
   .with(
     { data: { type: "game" } },
     (game) =>
-      `${game.data.team} vs. ${game.data.opposition} ${game.data.home ? "(H)" : "(A)"}`,
+      `${game.data.team.name} vs. ${game.data.opposition.club.name} ${game.data.opposition.team.name} ${game.data.home ? "(H)" : "(A)"}`,
   )
   .with({ data: { type: "event" } }, (event) => event.data.name)
   .exhaustive();
@@ -54,23 +54,23 @@ const month = formatDate(calendarItem.data.when, "MMMM");
         name: "Percy Main Cricket and Sports Club",
         url: "https://www.percymain.org",
       },
-      ...(calendarItem.data.location && {
+      ...("location" in calendarItem.data && {
         location: {
           "@type": "Place",
-          ...ifSet(calendarItem.data.location.name, "name"),
+          ...ifSet(calendarItem.data.location?.name, "name"),
           address: {
             "@type": "PostalAddress",
-            ...ifSet(calendarItem.data.location.street, "streetAddress"),
-            ...ifSet(calendarItem.data.location.city, "addressLocality"),
-            ...ifSet(calendarItem.data.location.postcode, "postalCode"),
-            ...ifSet(calendarItem.data.location.county, "addressRegion"),
-            ...ifSet(calendarItem.data.location.country, "addressCountry"),
+            ...ifSet(calendarItem.data.location?.street, "streetAddress"),
+            ...ifSet(calendarItem.data.location?.city, "addressLocality"),
+            ...ifSet(calendarItem.data.location?.postcode, "postalCode"),
+            ...ifSet(calendarItem.data.location?.county, "addressRegion"),
+            ...ifSet(calendarItem.data.location?.country, "addressCountry"),
           },
         },
       }),
       ...match(calendarItem.data)
         .with({ type: "game" }, (game) => ({
-          description: `Cricket match between Percy Main ${game.team} and ${game.opposition}`,
+          description: `Cricket match between Percy Main ${game.team.name} and ${game.opposition.club.name} ${game.opposition.team.name}`,
         }))
         .with({ type: "event" }, (event) => ({
           description: htmlToText(documentToHtmlString(event.description)),

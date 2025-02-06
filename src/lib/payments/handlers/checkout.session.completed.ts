@@ -1,11 +1,10 @@
-import { type TypeGameFields } from "@/__generated__";
-import { patchEntry } from "@/lib/contentful/patch-entry";
 import { stripe } from "@/lib/payments/client";
 import { stripeDate } from "@/lib/util/stripeDate";
 import _ from "lodash/fp";
 import type { Stripe } from "stripe";
 import { match, P } from "ts-pattern";
 import { updateMembership } from "../../db/service/updateMembership";
+import { sendMessage } from "../../slack/sendMessage";
 import { invoiceLinesToDuration } from "../../util/invoiceLinesToDuration";
 import { is } from "../metadata";
 
@@ -27,10 +26,7 @@ export const checkoutSessionCompleted = async (
         payment_status: "paid",
         metadata: P.when(is("sponsorGame")),
       },
-      ({ metadata: { gameId } }) =>
-        patchEntry<TypeGameFields>(gameId, (entry) => !entry.fields.sponsor, [
-          { op: "replace", path: "/fields/hasSponsor/en-US", value: true },
-        ]),
+      ({ metadata: { gameId } }) => sendMessage(`Game ${gameId} was sponsored`),
     )
     .with(
       {

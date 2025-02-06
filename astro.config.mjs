@@ -84,6 +84,18 @@ export default defineConfig({
         context: "server",
         access: "secret",
       }),
+      PLAY_CRICKET_1XI_ID: envField.string({
+        context: "server",
+        access: "public",
+      }),
+      PLAY_CRICKET_2XI_ID: envField.string({
+        context: "server",
+        access: "public",
+      }),
+      SLACK_TRUSTEES_HOOK: envField.string({
+        context: "server",
+        access: "public",
+      }),
     },
   },
 
