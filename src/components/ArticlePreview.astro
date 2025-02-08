@@ -12,20 +12,22 @@ const { id, title, when, summary, author } = Astro.props;
 <article
   class="rounded-lg border border-gray-200 bg-white p-6 shadow-md dark:border-gray-700 dark:bg-gray-800"
 >
-  <div class="mb-5 flex items-center justify-between text-gray-500">
-    <span
-      class="bg-primary-100 text-primary-800 dark:bg-primary-200 dark:text-primary-800 inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-medium"
+  <div class="flex-row flex-wrap">
+    <div class="mb-5 flex items-center justify-between text-gray-500">
+      <span
+        class="bg-primary-100 text-primary-800 dark:bg-primary-200 dark:text-primary-800 inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-medium"
+      >
+        <IoNewspaperOutline size={24} className="mr-4" />
+        News
+      </span>
+      <span class="text-sm">{formatDate(when, "PPPP")}</span>
+    </div>
+    <h2
+      class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
     >
-      <IoNewspaperOutline size={24} className="mr-4" />
-      News
-    </span>
-    <span class="text-sm">{formatDate(when, "PPPP")}</span>
+      <a href={`/news/article/${id}`}>{title}</a>
+    </h2>
   </div>
-  <h2
-    class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
-  >
-    <a href={`/news/article/${id}`}>{title}</a>
-  </h2>
   <p class="mb-5 font-light text-gray-500 dark:text-gray-400">
     <RichText page="" document={summary} />
   </p>
