@@ -1,9 +1,7 @@
 ---
-export const prerender = false;
-
 import { getCollection } from "astro:content";
 import Logo from "@/components/Logo.astro";
-import { MenuItem } from "@/components/MenuItem";
+import { MenuItem, type TMenuItem } from "@/components/MenuItem";
 import { AuthNav } from "@/components/auth/Nav";
 import { urlMatch } from "@/lib/util/url-match";
 import { paymentData } from "@/lib/payments/config";
@@ -20,15 +18,15 @@ const pagesMenu = pages
     match: {
       start: `/${page.data.slug}`,
     },
-    style: "menu" as const,
+    purpose: "menu" as const,
   }));
 
-const menu: MenuItem[] = [
+const menu: Array<TMenuItem & { purpose: "cta" | "menu" }> = [
   {
     name: "Home",
     url: "/",
     match: "exact",
-    style: "menu",
+    purpose: "menu",
   },
   {
     name: "News",
@@ -36,7 +34,7 @@ const menu: MenuItem[] = [
     match: {
       start: "/news",
     },
-    style: "menu",
+    purpose: "menu",
   },
   {
     name: "Calendar",
@@ -44,7 +42,7 @@ const menu: MenuItem[] = [
     match: {
       start: "/calendar",
     },
-    style: "menu",
+    purpose: "menu",
   },
   {
     name: "People",
@@ -52,14 +50,14 @@ const menu: MenuItem[] = [
     match: {
       start: "/person",
     },
-    style: "menu",
+    purpose: "menu",
   },
   ...pagesMenu,
   {
     name: "Donate Now",
     url: `/purchase/${paymentData.prices.donation}`,
     match: "never",
-    style: "cta",
+    purpose: "cta",
   },
 ];
 ---
@@ -104,14 +102,18 @@ const menu: MenuItem[] = [
       class="order-3 hidden w-full text-center peer-checked:block lg:order-1 lg:flex lg:w-auto lg:space-x-2 lg:text-left lg:peer-checked:flex"
     >
       {
-        menu.map((item) => (
+        menu.map(({ purpose, ...item }) => (
           <li>
-            <MenuItem item={item} isActive={urlMatch(pathname, item)} />
+            <MenuItem
+              item={item}
+              purpose={purpose}
+              isActive={urlMatch(pathname, item)}
+            />
           </li>
         ))
       }
       <li>
-        <AuthNav client:only="react" pathname={pathname} />
+        <AuthNav client:load pathname={pathname} />
       </li>
     </ul>
   </nav>
