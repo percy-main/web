@@ -1,6 +1,7 @@
 import * as db from "@/lib/db/client";
 import { randomUUID } from "crypto";
 import { add, type Duration } from "date-fns";
+import { NoMemberWithEmailError } from "./errors";
 
 export const updateMembership = async ({
   membershipType,
@@ -26,7 +27,7 @@ export const updateMembership = async ({
       2,
     ),
   );
-  const customer = await db.client
+  const member = await db.client
     .selectFrom("member")
     .leftJoin("membership", (join) =>
       join
@@ -37,48 +38,61 @@ export const updateMembership = async ({
       "member.id as member_id",
       "membership.id as membership_id",
       "membership.paid_until as paid_until",
+      "member.name as name",
     ])
     .where("member.email", "=", email)
     .executeTakeFirst();
 
-  if (!customer) {
-    console.log(`No customer with email`, { email });
-    return;
+  if (!member) {
+    throw new NoMemberWithEmailError({ email });
   }
 
   console.log("Adding membership duration", addedDuration);
 
-  if (!customer.membership_id) {
+  if (!member.membership_id) {
     console.log("No existing membership for customer, creating membership ");
 
     const paid_until = add(paidAt, addedDuration).toISOString();
 
-    await db.client
+    const membership = await db.client
       .insertInto("membership")
       .values({
         id: randomUUID(),
         type: membershipType,
-        member_id: customer.member_id,
+        member_id: member.member_id,
         paid_until,
       })
-      .returning(["id"])
+      .returningAll()
       .executeTakeFirstOrThrow();
+
+    return {
+      ...membership,
+      name: member.name,
+      isNew: true,
+    };
   } else {
     console.log(
       "Existing membership for customer, adding duration to previous paid_until ",
     );
 
     const paid_until = add(
-      customer.paid_until ? new Date(customer.paid_until) : paidAt,
+      member.paid_until ? new Date(member.paid_until) : paidAt,
       addedDuration,
     ).toISOString();
 
-    await db.client
+    const membership = await db.client
       .updateTable("membership")
       .set({
         paid_until,
       })
-      .where("id", "=", customer.membership_id)
-      .execute();
+      .where("id", "=", member.membership_id)
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    return {
+      ...membership,
+      name: member.name,
+      isNew: false,
+    };
   }
 };
