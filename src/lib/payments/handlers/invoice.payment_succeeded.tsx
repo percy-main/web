@@ -1,9 +1,13 @@
+import { invoiceLinesToDuration } from "@/lib//util/invoiceLinesToDuration";
 import { updateMembership } from "@/lib/db/service/updateMembership";
+import { send } from "@/lib/email/send";
 import { stripeDate } from "@/lib/util/stripeDate";
+import { render } from "@react-email/render";
+import { BASE_URL } from "astro:env/client";
 import _ from "lodash/fp";
 import type Stripe from "stripe";
 import { match, P } from "ts-pattern";
-import { invoiceLinesToDuration } from "../../util/invoiceLinesToDuration";
+import { MembershipCreated } from "~/emails/MembershipUpdated";
 import { stripe } from "../client";
 import { is } from "../metadata";
 
@@ -40,11 +44,28 @@ export const invoicePaymentSucceeded = async (
           object: { metadata },
         },
       }) => {
-        await updateMembership({
+        const membership = await updateMembership({
           membershipType: metadata.membership,
           email,
           addedDuration: invoiceLinesToDuration(event.data.object.lines.data),
           paidAt: stripeDate(event.created),
+        });
+
+        await send({
+          to: email,
+          subject: MembershipCreated.subject,
+          html: await render(
+            <MembershipCreated.component
+              imageBaseUrl={`${BASE_URL}/images`}
+              name={membership.name}
+              type={membership.type ?? undefined}
+              paid_until={membership.paid_until}
+              isNew={membership.isNew}
+            />,
+            {
+              pretty: true,
+            },
+          ),
         });
       },
     )
