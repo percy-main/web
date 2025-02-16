@@ -5,10 +5,11 @@ import type { FC } from "react";
 import { match } from "ts-pattern";
 
 type Props = {
+  name: string;
   email: string;
 };
 
-export const Membership: FC<Props> = ({ email }) => {
+export const Membership: FC<Props> = ({ name, email }) => {
   const query = useQuery({
     queryKey: ["membership"],
     queryFn: actions.membership,
@@ -21,7 +22,11 @@ export const Membership: FC<Props> = ({ email }) => {
   const { membership } = query.data.data;
 
   return (
-    <section>
+    <section className="flex flex-col gap-4">
+      <div>
+        <h2>{name}</h2>
+        <p>{email}</p>
+      </div>
       <h2 className="text-h4">Your Membership</h2>
       <div className="max-w-max rounded-2xl border border-gray-500 bg-blue-100 p-4">
         {membership ? (

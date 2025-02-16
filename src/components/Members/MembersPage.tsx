@@ -2,11 +2,10 @@ import { useSession } from "@/lib/auth/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/Tabs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
-import { Membership } from "./Membership";
-import { Passkeys } from "./Passkeys";
-import { Payments } from "./Payments";
-import { Subscriptions } from "./Subscriptions";
-import { TwoFactor } from "./TwoFactor";
+import { Juniors } from "./tabs/Juniors/Juniors";
+import { Membership } from "./tabs/Membership/Membership";
+import { Payments } from "./tabs/Payments/Payments";
+import { Security } from "./tabs/Security/Security";
 
 export const MembersPage = () => {
   const session = useSession();
@@ -48,29 +47,21 @@ export const MembersPage = () => {
         <Tabs defaultValue="membership" className="w-full">
           <TabsList>
             <TabsTrigger value="membership">Membership</TabsTrigger>
+            <TabsTrigger value="juniors">Juniors</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
           </TabsList>
           <TabsContent value="membership">
-            <div className="flex flex-col gap-4">
-              <div>
-                <h2>{user.name}</h2>
-                <p>{user.email}</p>
-              </div>
-              <Membership email={user.email} />
-            </div>
+            <Membership name={user.name} email={user.email} />
+          </TabsContent>
+          <TabsContent value="juniors">
+            <Juniors />
           </TabsContent>
           <TabsContent value="security">
-            <div className="flex flex-col gap-4">
-              <Passkeys />
-              <TwoFactor user={user} />
-            </div>
+            <Security user={user} />
           </TabsContent>
           <TabsContent value="payments">
-            <div className="flex flex-col gap-8">
-              <Subscriptions />
-              <Payments />
-            </div>
+            <Payments />
           </TabsContent>
         </Tabs>
       </div>

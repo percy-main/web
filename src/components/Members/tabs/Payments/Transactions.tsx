@@ -2,9 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { formatDate } from "date-fns";
 
-export const Payments = () => {
+export const Transactions = () => {
   const query = useQuery({
-    queryKey: ["payments"],
+    queryKey: ["transactions"],
     queryFn: actions.payments,
   });
 
@@ -21,7 +21,7 @@ export const Payments = () => {
 
   return (
     <>
-      <h2 className="text-h4 mb-0">Payment History</h2>
+      <h2 className="text-h4 mb-0">Transaction History</h2>
       <div className="w-full">
         {query.data.data.charges.length === 0 && (
           <p>You are yet to make any purchases.</p>

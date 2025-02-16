@@ -1,9 +1,9 @@
+import { SimpleInput } from "@/components/form/SimpleInput";
 import { authClient } from "@/lib/auth/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDate } from "date-fns";
 import { useState } from "react";
 import { IoTrashBinOutline } from "react-icons/io5";
-import { SimpleInput } from "./form/SimpleInput";
 
 export const Passkeys = () => {
   const [newPasskeyName, setNewPasskeyName] = useState("");

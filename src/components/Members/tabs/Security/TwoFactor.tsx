@@ -1,9 +1,9 @@
+import { SimpleInput } from "@/components/form/SimpleInput";
+import { authClient } from "@/lib/auth/client";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useState, type FC } from "react";
 import QRCode from "react-qr-code";
 import { match, P } from "ts-pattern";
-import { authClient } from "../lib/auth/client";
-import { SimpleInput } from "./form/SimpleInput";
 
 type Props = {
   user: {
