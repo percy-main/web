@@ -23,7 +23,7 @@ interface Props {
 const Component: FC<Props> = ({ url, name, imageBaseUrl }) => (
   <Html>
     <Head />
-    <Preview>Percy Main Cricket and Sports Club - Reset Your Password</Preview>
+    <Preview>Percy Main Community Sports Club - Reset Your Password</Preview>
     <Body style={styles.main}>
       <Container style={styles.container}>
         <Img

@@ -1,4 +1,4 @@
-# Percy Main Cricket and Sports Club - Website
+# Percy Main Community Sports Club - Website
 
 Built with astro.build
 
