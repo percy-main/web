@@ -48,10 +48,13 @@ const month = formatDate(calendarItem.data.when, "MMMM");
       "@type": "Event",
       name: title,
       startDate: calendarItem.data.when.toISOString(),
+      ...(calendarItem.data.finish && {
+        endDate: calendarItem.data.finish.toISOString(),
+      }),
       eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
       organizer: {
         "@type": "Organization",
-        name: "Percy Main Cricket and Sports Club",
+        name: "Percy Main Community Sports Club",
         url: "https://www.percymain.org",
       },
       ...("location" in calendarItem.data && {

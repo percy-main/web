@@ -34,7 +34,7 @@ const Component: FC<Props> = ({
 }) => (
   <Html>
     <Head />
-    <Preview>Percy Main Cricket and Sports Club - Verify Your Email</Preview>
+    <Preview>Percy Main Community Sports Club - Verify Your Email</Preview>
     <Body style={styles.main}>
       <Container style={styles.container}>
         <Img

@@ -40,7 +40,7 @@ const style = cva(
         menu: null,
       },
       width: {
-        fixed: ["min-w-32"],
+        fixed: ["min-w-28", "text-center"],
       },
     },
   },
