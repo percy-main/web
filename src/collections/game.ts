@@ -82,11 +82,27 @@ export const loader = async () => {
           name: match.away_team_name,
         };
 
+    const location = home
+      ? {
+          name: "Percy Main Community Sports Club",
+          street: "St Johns Terract",
+          city: "North Shields",
+          postcode: "NE29 6HS",
+          county: "Tyne and Wear",
+          country: "United Kingdom",
+        }
+      : {
+          name: match.home_club_name,
+        };
+
     const when = df.parse(
       `${match.match_date}-${match.match_time}`,
       "dd/MM/yyyy-HH:mm",
       new Date(),
     );
+
+    // adjust this based on game type when we have more information
+    const finish = df.add(when, { hours: 5 });
 
     return {
       type: "game",
@@ -96,6 +112,7 @@ export const loader = async () => {
       opposition,
       team,
       when,
+      finish,
       league: {
         id: match.league_id,
         name: match.league_name,
@@ -105,6 +122,7 @@ export const loader = async () => {
         name: match.competition_name,
         type: match.competition_type,
       },
+      location,
     };
   });
 };

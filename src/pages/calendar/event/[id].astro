@@ -48,6 +48,9 @@ const month = formatDate(calendarItem.data.when, "MMMM");
       "@type": "Event",
       name: title,
       startDate: calendarItem.data.when.toISOString(),
+      ...(calendarItem.data.finish && {
+        endDate: calendarItem.data.finish.toISOString(),
+      }),
       eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
       organizer: {
         "@type": "Organization",
