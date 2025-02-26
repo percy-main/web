@@ -107,6 +107,9 @@ const renderOptions = (page: string): Options => ({
         </ul>
       );
     },
+    [BLOCKS.OL_LIST]: (node, children) => {
+      return <ol className="rich">{children}</ol>;
+    },
     [BLOCKS.PARAGRAPH]: (node, children) => {
       return <div>{children}</div>;
     },
