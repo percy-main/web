@@ -1,7 +1,14 @@
 import * as location from "@/collections/location";
+import { contentClient } from "@/lib/contentful/client";
 import { defineCollection, z } from "astro:content";
 import { PLAY_CRICKET_SITE_ID } from "astro:env/server";
+import type { Entry } from "contentful";
 import * as df from "date-fns";
+import _ from "lodash";
+import type {
+  TypeGameDetailSkeleton,
+  TypeSponsorSkeleton,
+} from "../__generated__";
 import { getMatchesSummary } from "../lib/play-cricket";
 
 export const team = z.object({
@@ -40,6 +47,11 @@ export const schema = z.object({
   league,
   competition,
   location: location.schema.optional(),
+  sponsor: z
+    .object({
+      name: z.string(),
+    })
+    .optional(),
 });
 
 export type Game = z.TypeOf<typeof schema>;
@@ -47,8 +59,22 @@ export type Game = z.TypeOf<typeof schema>;
 export const loader = async () => {
   const response = await getMatchesSummary({ season: 2025 });
 
+  const cfGamesResponse =
+    await contentClient.getEntries<TypeGameDetailSkeleton>({
+      content_type: "gameDetail",
+    });
+
+  const gamesByGameId = _.keyBy(
+    cfGamesResponse.items,
+    (g) => g.fields.playCricketId,
+  );
+
   return response.matches.map((match) => {
     const home = match.home_club_id === PLAY_CRICKET_SITE_ID;
+
+    const sponsor = gamesByGameId[match.id.toString()]?.fields.sponsor as
+      | Entry<TypeSponsorSkeleton, undefined>
+      | undefined;
 
     const opposition = home
       ? {
@@ -123,6 +149,7 @@ export const loader = async () => {
         type: match.competition_type,
       },
       location,
+      sponsor: sponsor?.fields,
     };
   });
 };

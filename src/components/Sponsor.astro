@@ -12,10 +12,13 @@ const { id, game } = Astro.props;
 ---
 
 {
-  game.hasSponsor ? (
-    <p class="text-dark mt-2 justify-self-start rounded-sm bg-green-500 px-4 py-2 text-sm">
-      Sponsor: {game.sponsor?.name ?? "Pending"}
-    </p>
+  game.sponsor ? (
+    <div class="flex flex-col items-start">
+      <p class="text-dark justify-self-startpx-4 mt-2 py-2 text-sm">
+        Sponsored by
+      </p>
+      <p class="font-bold">{game.sponsor.name}</p>
+    </div>
   ) : (
     <div class="mt-4 justify-self-start rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-700">
       <PaymentLink
