@@ -4,6 +4,8 @@ import type { TypeSponsorSkeleton } from "./TypeSponsor";
 export interface TypeGameDetailFields {
     playCricketId: EntryFieldTypes.Symbol;
     sponsor?: EntryFieldTypes.EntryLink<TypeSponsorSkeleton>;
+    description?: EntryFieldTypes.RichText;
+    report?: EntryFieldTypes.RichText;
 }
 
 export type TypeGameDetailSkeleton = EntrySkeletonType<TypeGameDetailFields, "gameDetail">;

@@ -52,6 +52,7 @@ export const schema = z.object({
       name: z.string(),
     })
     .optional(),
+  description: z.any().optional(),
 });
 
 export type Game = z.TypeOf<typeof schema>;
@@ -75,6 +76,9 @@ export const loader = async () => {
     const sponsor = gamesByGameId[match.id.toString()]?.fields.sponsor as
       | Entry<TypeSponsorSkeleton, undefined>
       | undefined;
+
+    const description = gamesByGameId[match.id.toString()]?.fields
+      .description as unknown;
 
     const opposition = home
       ? {
@@ -150,6 +154,7 @@ export const loader = async () => {
       },
       location,
       sponsor: sponsor?.fields,
+      description,
     };
   });
 };

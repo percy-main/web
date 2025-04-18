@@ -61,6 +61,29 @@ const { id, title, calendarItem } = Astro.props;
   </div>
 
   {
+    match(calendarItem)
+      .with({ type: "game" }, (game) => (
+        <div class="flex flex-col gap-2">
+          <h4 class="text-h6 md:text-h4">Match Details</h4>
+          <ul class="flex flex-col gap-2">
+            <li>
+              <strong>Team:</strong> {game.team.name}
+            </li>
+            <li>
+              <strong>Opposition:</strong> {game.opposition.club.name}{" "}
+              {game.opposition.team.name}
+            </li>
+            <li>
+              <strong>Competition:</strong> {game.competition.name}
+            </li>
+          </ul>
+          <RichText page={`calendar/event/${id}`} document={game.description} />
+        </div>
+      ))
+      .with({ type: "event" }, () => null)
+      .exhaustive()
+  }
+  {
     calendarItem.location?.coordinates && (
       <Map
         client:only="react"
@@ -78,8 +101,4 @@ const { id, title, calendarItem } = Astro.props;
       </Map>
     )
   }
-
-  <p class="pb-1 text-sm text-gray-500 md:pb-4">
-    Published on {formatDate(calendarItem.createdAt, "PPPP")}
-  </p>
 </div>
