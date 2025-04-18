@@ -7,6 +7,7 @@ import { When } from "./When";
 import { AddToCalendarButton } from "add-to-calendar-button-react";
 import { match } from "ts-pattern";
 import type { CalendarItem } from "../collections/calendarItem";
+import { CollectEmailWithProvider } from "./CollectEmail";
 
 type Props = {
   id: string;
@@ -80,7 +81,17 @@ const { id, title, calendarItem } = Astro.props;
           <RichText page={`calendar/event/${id}`} document={game.description} />
         </div>
       ))
-      .with({ type: "event" }, () => null)
+      .with({ type: "event" }, () => (
+        <CollectEmailWithProvider
+          client:only="react
+          "
+          title="Count Me In!"
+          description="Let us know you'd like to come, and we'll keep you updated about the event"
+          meta={{
+            eventId: id,
+          }}
+        />
+      ))
       .exhaustive()
   }
   {

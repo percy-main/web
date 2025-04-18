@@ -25,6 +25,12 @@ export interface Account {
   userId: string;
 }
 
+export interface EventSubscriber {
+  email: string;
+  id: string;
+  meta: string;
+}
+
 export interface Member {
   address: string;
   dob: string;
@@ -63,6 +69,7 @@ export interface Session {
   createdAt: string;
   expiresAt: string;
   id: string;
+  impersonatedBy: string | null;
   ipAddress: string | null;
   token: string;
   updatedAt: string;
@@ -78,12 +85,16 @@ export interface TwoFactor {
 }
 
 export interface User {
+  banExpires: string | null;
+  banned: number | null;
+  banReason: string | null;
   createdAt: string;
   email: string;
   emailVerified: number;
   id: string;
   image: string | null;
   name: string;
+  role: string | null;
   twoFactorEnabled: number | null;
   updatedAt: string;
 }
@@ -99,6 +110,7 @@ export interface Verification {
 
 export interface DB {
   account: Account;
+  event_subscriber: EventSubscriber;
   member: Member;
   membership: Membership;
   passkey: Passkey;
