@@ -9,7 +9,7 @@ import type {
   TypeGameDetailSkeleton,
   TypeSponsorSkeleton,
 } from "../__generated__";
-import { getMatchesSummary } from "../lib/play-cricket";
+import * as playCricket from "../lib/play-cricket";
 
 export const team = z.object({
   id: z.string(),
@@ -57,7 +57,7 @@ export const schema = z.object({
 export type Game = z.TypeOf<typeof schema>;
 
 export const loader = async () => {
-  const response = await getMatchesSummary({ season: 2025 });
+  const response = await playCricket.getMatchesSummary({ season: 2025 });
 
   const cfGamesResponse =
     await contentClient.getEntries<TypeGameDetailSkeleton>({
