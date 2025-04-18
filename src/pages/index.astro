@@ -3,7 +3,7 @@ import { getCollection } from "astro:content";
 import Base from "@/layouts/Base.astro";
 import ArticlePreview from "@/components/ArticlePreview.astro";
 import GamePreview from "@/components/GamePreview.astro";
-import EventPreview from "@/components/EventPreview.astro";
+import { EventPreview } from "@/components/EventPreview";
 import { getDate, compareDesc, compareAsc, isAfter } from "date-fns";
 import { match } from "ts-pattern";
 import Hero from "@/components/Hero/Hero.astro";

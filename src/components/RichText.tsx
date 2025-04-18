@@ -12,6 +12,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Asset } from "contentful";
 import type { FC, ReactNode } from "react";
 import { slugup } from "../lib/util/slug";
+import { EventPreview } from "./EventPreview";
 import { Person } from "./Person";
 
 const resolvePageData = (
@@ -95,6 +96,20 @@ const renderOptions = (page: string): Options => ({
         );
       } else if (node.data.target.sys.contentType.sys.id === "location") {
         return "location";
+      } else if (node.data.target.sys.contentType.sys.id === "event") {
+        return (
+          <div className="mb-2 h-full max-w-sm rounded-none bg-white p-4 shadow-md lg:rounded-lg">
+            <EventPreview
+              event={{
+                name: node.data.target.fields.name,
+                description: node.data.target.fields.description,
+                when: node.data.target.fields.when,
+                finish: node.data.target.fields.finish,
+              }}
+              id={node.data.target.sys.id}
+            />
+          </div>
+        );
       }
     },
     [BLOCKS.EMBEDDED_ASSET]: (node) => {
