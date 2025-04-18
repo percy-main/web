@@ -1,8 +1,4 @@
-import {
-  QueryClient,
-  QueryClientProvider,
-  useMutation,
-} from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { useCallback, useState, type FC } from "react";
 
@@ -10,14 +6,6 @@ type Props = {
   title: string;
   description?: string;
   meta: Record<string, string>;
-};
-
-export const CollectEmailWithProvider: FC<Props> = (props) => {
-  return (
-    <QueryClientProvider client={new QueryClient()}>
-      <CollectEmail {...props} />
-    </QueryClientProvider>
-  );
 };
 
 export const CollectEmail: FC<Props> = ({ title, description, meta }) => {
