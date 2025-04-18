@@ -12,6 +12,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Asset } from "contentful";
 import type { FC, ReactNode } from "react";
 import { slugup } from "../lib/util/slug";
+import { CollectEmail } from "./CollectEmail";
 import { EventPreview } from "./EventPreview";
 import { Person } from "./Person";
 
@@ -110,6 +111,8 @@ const renderOptions = (page: string): Options => ({
             />
           </div>
         );
+      } else if (node.data.target.sys.contentType.sys.id === "emailCollector") {
+        return <CollectEmail {...node.data.target.fields} />;
       }
     },
     [BLOCKS.EMBEDDED_ASSET]: (node) => {

@@ -1,4 +1,5 @@
 import { checkout } from "./checkout";
+import { createEventSubscriber } from "./create-event-subscriber";
 import { join } from "./join";
 import { membership } from "./membership";
 import { payments } from "./payments";
@@ -12,4 +13,5 @@ export const server = {
   subscriptions,
   playCricket,
   membership,
+  createEventSubscriber,
 };
