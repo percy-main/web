@@ -24,6 +24,8 @@ const GetLeagueTableResponse = z.object({
           column_10: z.string(),
           column_11: z.string(),
           column_12: z.string(),
+          column_13: z.string(),
+          column_14: z.string(),
         }),
       ),
     }),
