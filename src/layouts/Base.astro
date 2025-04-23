@@ -17,7 +17,7 @@ const { title, description, image, author } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" class="min-w-full">
   <head>
     <slot name="ldjson" />
     <link
@@ -98,7 +98,7 @@ const { title, description, image, author } = Astro.props;
     <title>{title} :: Percy Main Community Sports Club</title>
   </head>
   <body
-    class="bg-creamy font-primary text-text min-h-svh bg-[url('/images/body-bg.svg')] bg-repeat leading-relaxed font-normal"
+    class="bg-creamy font-primary text-text min-h-svh min-w-full bg-[url('/images/body-bg.svg')] bg-repeat leading-relaxed font-normal"
   >
     <Header />
     <main>

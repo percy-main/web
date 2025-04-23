@@ -87,18 +87,22 @@ const next5calendarItems = calendarItems
       </section>
       <section class="flex max-w-160 flex-col items-center">
         <h3 class="text-h4 mt-4">Latest News</h3>
-        <ul class="flex flex-col flex-wrap items-stretch justify-between gap-4">
+        <ul
+          class="flex w-full flex-col flex-wrap items-stretch justify-between gap-4"
+        >
           {
             top5.map((article) => (
-              <li>
-                <ArticlePreview
-                  id={article.id}
-                  title={article.data.title}
-                  when={article.data.when}
-                  summary={article.data.summary}
-                  author={article.data.author}
-                  pages={article.data.pages}
-                />
+              <li class="w-full">
+                <div class="mb-2 h-full rounded-none bg-white p-4 shadow-md lg:rounded-lg">
+                  <ArticlePreview
+                    id={article.id}
+                    title={article.data.title}
+                    when={article.data.when}
+                    summary={article.data.summary}
+                    author={article.data.author}
+                    pages={article.data.pages}
+                  />
+                </div>
               </li>
             ))
           }

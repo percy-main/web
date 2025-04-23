@@ -9,48 +9,44 @@ type Props = News & { id: string };
 const { id, title, when, summary, author } = Astro.props;
 ---
 
-<article
-  class="rounded-lg border border-gray-200 bg-white p-6 shadow-md dark:border-gray-700 dark:bg-gray-800"
->
-  <div class="flex-row flex-wrap">
-    <div class="mb-5 flex items-center justify-between text-gray-500">
-      <span
-        class="bg-primary-100 text-primary-800 dark:bg-primary-200 dark:text-primary-800 inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-medium"
-      >
-        <IoNewspaperOutline size={24} className="mr-4" />
-        News
-      </span>
-      <span class="text-sm">{formatDate(when, "PPPP")}</span>
-    </div>
-    <h2
-      class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
+<div class="flex h-full flex-col items-stretch justify-between">
+  <div class="mb-5 flex items-center justify-between text-gray-500">
+    <span
+      class="bg-primary-100 text-primary-800 dark:bg-primary-200 dark:text-primary-800 inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-medium"
     >
-      <a href={`/news/article/${id}`}>{title}</a>
-    </h2>
+      <IoNewspaperOutline size={24} className="mr-4" />
+      News
+    </span>
+    <span class="text-sm">{formatDate(when, "PPPP")}</span>
   </div>
-  <p class="mb-5 font-light text-gray-500 dark:text-gray-400">
-    <RichText page="" document={summary} />
-  </p>
-  <div class="flex flex-col items-center justify-between gap-4 md:flex-row">
-    <a class="flex items-center space-x-4" href={`/person/${author.slug}`}>
-      {
-        author.photo && (
-          <img
-            class="h-7 w-7 rounded-full"
-            src={author.photo.url}
-            alt={author.photo?.title}
-          />
-        )
-      }
-      <span class="font-medium dark:text-white">
-        {author.name}
-      </span>
-    </a>
-    <a
-      href={`/news/article/${id}`}
-      class="text-primary-600 dark:text-primary-500 inline-flex items-center font-medium hover:underline"
-      >Read the full article
-      <IoArrowForward size={24} className="ml-2" />
-    </a>
-  </div>
-</article>
+  <h2
+    class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
+  >
+    <a href={`/news/article/${id}`}>{title}</a>
+  </h2>
+</div>
+<p class="mb-5 font-light text-gray-500 dark:text-gray-400">
+  <RichText page="" document={summary} />
+</p>
+<div class="flex flex-col items-center justify-between gap-4 md:flex-row">
+  <a class="flex items-center space-x-4" href={`/person/${author.slug}`}>
+    {
+      author.photo && (
+        <img
+          class="h-7 w-7 rounded-full"
+          src={author.photo.url}
+          alt={author.photo?.title}
+        />
+      )
+    }
+    <span class="font-medium dark:text-white">
+      {author.name}
+    </span>
+  </a>
+  <a
+    href={`/news/article/${id}`}
+    class="text-primary-600 dark:text-primary-500 inline-flex items-center font-medium hover:underline"
+    >Read the full article
+    <IoArrowForward size={24} className="ml-2" />
+  </a>
+</div>
