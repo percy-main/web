@@ -2,6 +2,7 @@
 import type { Game } from "@/collections/game";
 import { paymentData } from "@/lib/payments/config";
 import { PaymentLink } from "@/components/PaymentLink";
+import { isAfter } from "date-fns";
 
 type Props = {
   id: string;
@@ -20,7 +21,7 @@ const { id, game } = Astro.props;
         <span class="text-lg font-bold">{game.sponsor.name}</span>
       </p>
     </div>
-  ) : (
+  ) : isAfter(game.when, new Date()) ? (
     <div class="mt-4 justify-self-start rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-700">
       <PaymentLink
         priceId={paymentData.prices.sponsorship}
@@ -29,5 +30,5 @@ const { id, game } = Astro.props;
         Sponsor This Game
       </PaymentLink>
     </div>
-  )
+  ) : null
 }
