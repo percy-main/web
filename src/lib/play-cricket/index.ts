@@ -25,7 +25,7 @@ const GetLeagueTableResponse = z.object({
           column_11: z.string(),
           column_12: z.string(),
           column_13: z.string(),
-          column_14: z.string(),
+          column_14: z.string().default(""),
         }),
       ),
     }),
@@ -41,7 +41,16 @@ export const getLeagueTable = async ({
     `http://play-cricket.com/api/v2/league_table.json?division_id=${divisionId}&api_token=${PLAY_CRICKET_API_KEY}`,
   );
 
-  return await res.json().then((data) => GetLeagueTableResponse.parse(data));
+  return await res
+    .json()
+    .then((data) => GetLeagueTableResponse.parse(data))
+    .catch((err) => {
+      console.error(
+        "Error parsing league table response:",
+        JSON.stringify(err, null, 2),
+      );
+      throw new Error("Failed to parse league table response");
+    });
 };
 
 const GetMatchSummaryResponse = z.object({
@@ -98,5 +107,8 @@ export const getMatchesSummary = async ({
     `http://play-cricket.com/api/v2/matches.json?site_id=${PLAY_CRICKET_SITE_ID}&season=${season}&api_token=${PLAY_CRICKET_API_KEY}`,
   );
 
-  return await res.json().then((data) => GetMatchSummaryResponse.parse(data));
+  return await res.json().then((data) => {
+    console.log(JSON.stringify(data, null, 2));
+    return GetMatchSummaryResponse.parse(data);
+  });
 };
