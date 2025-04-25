@@ -8,18 +8,17 @@ import {
   getDate,
   getYear,
   getMonth,
+  isSameDay,
 } from "date-fns";
 import { generateCalendar } from "@/lib/calendar";
 import { IoCalendar, IoChevronBack, IoChevronForward } from "react-icons/io5";
 import { getCollection } from "astro:content";
 import _ from "lodash";
-import { match } from "ts-pattern";
 import { Image } from "astro:assets";
-import GamePreview from "../../../components/GamePreview.astro";
-import { EventPreview } from "../../../components/EventPreview";
 import { Breadcrumbs } from "astro-breadcrumbs";
 import { PLAY_CRICKET_1XI_ID } from "astro:env/server";
 import { PLAY_CRICKET_2XI_ID } from "astro:env/server";
+import CalendarPreview from "../../../components/CalendarPreview.astro";
 
 export const getStaticPaths = (async () => {
   const calendarItems = await getCollection("calendarItem");
@@ -109,7 +108,7 @@ const { year, month, calendar, previous, next, items } = Astro.props;
     </Breadcrumbs>
   </div>
 
-  <section>
+  <section id="calendar-wrapper">
     <div class="z-10 w-full">
       <div class="w-full max-w-7xl">
         <div class="grid max-w-4xl grid-cols-12 gap-8 xl:max-w-full">
@@ -177,7 +176,8 @@ const { year, month, calendar, previous, next, items } = Astro.props;
               <div class="grid grid-cols-7 rounded-b-xl">
                 {
                   calendar.map(({ date, isExtra, items }) => (
-                    <div
+                    <button
+                      id={`calendar-${formatDate(date, "dd-MM-yyyy")}`}
                       class="flex items-start justify-between border-r border-b border-indigo-200 p-3.5 transition-all duration-300 hover:bg-indigo-100 max-xl:min-h-[60px] xl:aspect-square"
                       class:list={[isExtra ? "bg-gray-50" : "bg-gray-100"]}
                     >
@@ -198,41 +198,29 @@ const { year, month, calendar, previous, next, items } = Astro.props;
                       {items.some((item) => item.data.type === "event") ? (
                         <IoCalendar title="Event" fontSize={24} />
                       ) : null}
-                    </div>
+                    </button>
                   ))
                 }
               </div>
             </div>
           </div>
 
-          <div class="col-span-12 xl:col-span-5">
-            <ul class="flex flex-col gap-5">
+          <div class="col-span-12 max-h-160 overflow-auto xl:col-span-5">
+            <ul class="flex flex-col">
               {
-                Object.values(
-                  _.groupBy(items, (item) => getDate(item.data.when)),
-                ).map((games) => (
-                  <li>
-                    <ul class="flex flex-col">
-                      {games.map((item) => (
-                        <li class="w-full md:w-auto">
-                          <div class="mb-0 h-full rounded-none border bg-white p-4 shadow-md md:mb-4 lg:rounded-lg">
-                            {match(item)
-                              .with({ data: { type: "game" } }, (game) => (
-                                <GamePreview game={game.data} id={game.id} />
-                              ))
-                              .with({ data: { type: "event" } }, (event) => (
-                                <EventPreview
-                                  event={event.data}
-                                  id={event.id}
-                                />
-                              ))
-                              .exhaustive()}
-                          </div>
+                calendar.map(({ date }) => (
+                  <ul
+                    id={`list-${formatDate(date, "dd-MM-yyyy")}`}
+                    class="flex flex-col"
+                  >
+                    {items
+                      .filter((g) => isSameDay(g.data.when, date))
+                      .map((item) => (
+                        <li>
+                          <CalendarPreview id={item.id} item={item.data} />
                         </li>
                       ))}
-                      ,
-                    </ul>
-                  </li>
+                  </ul>
                 ))
               }
             </ul>
@@ -242,3 +230,25 @@ const { year, month, calendar, previous, next, items } = Astro.props;
     </div>
   </section>
 </Container>
+
+<script>
+  function scrollToElement(id: string) {
+    const element = document.getElementById(id);
+
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  }
+
+  const links = document.querySelectorAll("button[id^='calendar-']");
+
+  links.forEach((link) => {
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      const targetId = link.getAttribute("id")?.replace("calendar-", "list-");
+      if (targetId) {
+        scrollToElement(targetId);
+      }
+    });
+  });
+</script>

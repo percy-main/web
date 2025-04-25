@@ -1,0 +1,28 @@
+---
+import { match } from "ts-pattern";
+import { EventPreview } from "./EventPreview";
+import GamePreview from "./GamePreview.astro";
+import type { CalendarItem } from "../collections/calendarItem";
+
+type Props = {
+  id: string;
+  item: CalendarItem;
+};
+
+const { id, item } = Astro.props;
+---
+
+<li class="w-full md:w-auto">
+  <div
+    class="mb-0 h-full rounded-none border bg-white p-4 shadow-md md:mb-4 lg:rounded-lg"
+  >
+    {
+      match(item)
+        .with({ type: "game" }, (game) => <GamePreview game={game} id={id} />)
+        .with({ type: "event" }, (event) => (
+          <EventPreview event={event} id={id} />
+        ))
+        .exhaustive()
+    }
+  </div>
+</li>
