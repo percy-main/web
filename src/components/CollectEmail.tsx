@@ -37,7 +37,10 @@ export const CollectEmail: FC<Props> = ({ title, description, meta }) => {
           {description ? (
             <p className="mt-4 text-lg text-gray-300">{description}</p>
           ) : null}
-          <form className="mt-6 flex max-w-md gap-x-4" onSubmit={handleSubmit}>
+          <form
+            className="mt-6 flex max-w-md flex-col gap-4 sm:flex-row"
+            onSubmit={handleSubmit}
+          >
             <label htmlFor="email-address" className="sr-only">
               Email address
             </label>
