@@ -83,7 +83,7 @@ const month = formatDate(calendarItem.data.when, "MMMM");
   />
 
   <div
-    class="text-h4 mb-4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2"
+    class="text-h4 mb-4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2 [&_ol>li:not(:last-child)]:hidden md:[&_ol>li:not(:last-child)]:flex"
     slot="breadcrumbs"
   >
     <Breadcrumbs
