@@ -108,7 +108,6 @@ export const getMatchesSummary = async ({
   );
 
   return await res.json().then((data) => {
-    console.log(JSON.stringify(data, null, 2));
     return GetMatchSummaryResponse.parse(data);
   });
 };
