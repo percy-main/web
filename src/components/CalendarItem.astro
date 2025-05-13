@@ -1,12 +1,15 @@
 ---
 import { formatDate } from "date-fns";
 import { RichText } from "@/components/RichText";
-import Sponsor from "@/components/Sponsor.astro";
+import { Sponsor } from "@/components/Sponsor";
 import { Map } from "@/components/Map";
 import { When } from "./When";
 import { AddToCalendarButton } from "add-to-calendar-button-react";
 import { match } from "ts-pattern";
 import type { CalendarItem } from "../collections/calendarItem";
+import { getCollection } from "astro:content";
+
+const games = await getCollection("game");
 
 type Props = {
   id: string;
@@ -28,6 +31,9 @@ const { id, title, calendarItem } = Astro.props;
           <RichText
             page={`calendar/event/${id}`}
             document={event.description}
+            games={games
+              .filter((g) => g.data.type === "game")
+              .map((g) => g.data)}
           />
         ))
         .exhaustive()
@@ -74,10 +80,17 @@ const { id, title, calendarItem } = Astro.props;
               {game.opposition.team.name}
             </li>
             <li>
-              <strong>Competition:</strong> {game.competition.name}
+              <strong>Competition:</strong>{" "}
+              {game.competition.name || "Friendly"}
             </li>
           </ul>
-          <RichText page={`calendar/event/${id}`} document={game.description} />
+          <RichText
+            page={`calendar/event/${id}`}
+            document={game.description}
+            games={games
+              .filter((g) => g.data.type === "game")
+              .map((g) => g.data)}
+          />
         </div>
       ))
       .with({ type: "event" }, () => null)

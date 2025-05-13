@@ -20,6 +20,8 @@ export async function getStaticPaths() {
   }));
 }
 
+const games = await getCollection("game");
+
 const { article, description } = Astro.props;
 ---
 
@@ -77,6 +79,7 @@ const { article, description } = Astro.props;
       <RichText
         page={`news/article/${article.id}`}
         document={article.data.content}
+        games={games.filter((g) => g.data.type === "game").map((g) => g.data)}
       />
     </div>
     <div class="min-w-min text-nowrap">

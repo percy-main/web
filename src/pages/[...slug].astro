@@ -94,6 +94,8 @@ export async function getStaticPaths() {
   return [...parentRoutes, ...childRoutes];
 }
 
+const games = await getCollection("game");
+
 const { page, menu } = Astro.props;
 const { pathname } = Astro.url;
 ---
@@ -183,6 +185,10 @@ const { pathname } = Astro.url;
   </div>
 
   <div class="container flex grow flex-col">
-    <RichText document={page.data.content} page={pathname} client:load />
+    <RichText
+      document={page.data.content}
+      page={pathname}
+      games={games.filter((g) => g.data.type === "game").map((g) => g.data)}
+    />
   </div>
 </Page>

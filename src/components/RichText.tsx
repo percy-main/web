@@ -11,9 +11,11 @@ import { BLOCKS, INLINES, type Document } from "@contentful/rich-text-types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Asset } from "contentful";
 import type { FC, ReactNode } from "react";
+import type { Game } from "../collections/game";
 import { slugup } from "../lib/util/slug";
 import { CollectEmail } from "./CollectEmail";
 import { EventPreview } from "./EventPreview";
+import { GamePreview } from "./GamePreview";
 import { Person } from "./Person";
 
 const resolvePageData = (
@@ -58,7 +60,7 @@ const renderEmbeddedAsset = ({ fields, metadata }: Asset<undefined>) => {
   );
 };
 
-const renderOptions = (page: string): Options => ({
+const renderOptions = (page: string, games: Game[]): Options => ({
   renderNode: {
     [INLINES.EMBEDDED_ENTRY]: (node) => {
       if (node.data.target.sys.contentType.sys.id === "trustee") {
@@ -109,6 +111,18 @@ const renderOptions = (page: string): Options => ({
               }}
               id={node.data.target.sys.id}
             />
+          </div>
+        );
+      } else if (node.data.target.sys.contentType.sys.id === "gameDetail") {
+        const game = games.find(
+          (game) => game.id === node.data.target.fields.playCricketId,
+        );
+        if (!game) {
+          return null;
+        }
+        return (
+          <div className="mb-2 h-full max-w-sm rounded-none bg-white p-4 shadow-md lg:rounded-lg">
+            <GamePreview game={game} id={game.id} />
           </div>
         );
       } else if (node.data.target.sys.contentType.sys.id === "emailCollector") {
@@ -162,13 +176,14 @@ type Props = {
   document: Document;
   components?: Components<RenderNode>;
   page: string;
+  games: Game[];
 };
 
-export const RichText: FC<Props> = ({ document, page }) => {
+export const RichText: FC<Props> = ({ document, page, games }) => {
   return (
     <QueryClientProvider client={new QueryClient()}>
       <div className="flex flex-col *:mb-4">
-        {documentToReactComponents(document, renderOptions(page))}
+        {documentToReactComponents(document, renderOptions(page, games))}
       </div>
     </QueryClientProvider>
   );
