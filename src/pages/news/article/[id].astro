@@ -77,6 +77,7 @@ const { article, description } = Astro.props;
         Published on {formatDate(article.data.when, "PPPP")}
       </p>
       <RichText
+        client:load
         page={`news/article/${article.id}`}
         document={article.data.content}
         games={games.filter((g) => g.data.type === "game").map((g) => g.data)}

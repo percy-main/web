@@ -3,6 +3,9 @@ import { RichText } from "@/components/RichText";
 import { formatDate } from "date-fns";
 import type { News } from "../collections/news";
 import { IoArrowForward, IoNewspaperOutline } from "react-icons/io5";
+import { getCollection } from "astro:content";
+
+const games = await getCollection("game");
 
 type Props = News & { id: string };
 
@@ -26,7 +29,12 @@ const { id, title, when, summary, author } = Astro.props;
   </h2>
 </div>
 <p class="mb-5 font-light text-gray-500 dark:text-gray-400">
-  <RichText page="" document={summary} />
+  <RichText
+    client:load
+    page=""
+    document={summary}
+    games={games.filter((g) => g.data.type === "game").map((g) => g.data)}
+  />
 </p>
 <div class="flex flex-col items-center justify-between gap-4 md:flex-row">
   <a class="flex items-center space-x-4" href={`/person/${author.slug}`}>

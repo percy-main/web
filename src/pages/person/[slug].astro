@@ -18,6 +18,8 @@ export async function getStaticPaths() {
   })) satisfies GetStaticPathsResult;
 }
 
+const games = await getCollection("game");
+
 const {
   person: { data: person },
 } = Astro.props;
@@ -78,7 +80,12 @@ const pageData = Object.entries(person.pageData);
   {
     person.bio && (
       <section>
-        <RichText document={person.bio} page={pathname} />
+        <RichText
+          client:load
+          document={person.bio}
+          page={pathname}
+          games={games.filter((g) => g.data.type === "game").map((g) => g.data)}
+        />
       </section>
     )
   }

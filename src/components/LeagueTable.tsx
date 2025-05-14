@@ -38,13 +38,16 @@ export const LeagueTable: FC<Props> = ({ name, divisionId }) => {
               </tr>
             </thead>
             <tbody className="border border-red-50">
-              {rows.map((row) => (
-                <tr className="border-b border-b-gray-200 odd:bg-red-50">
+              {rows.map((row, i) => (
+                <tr
+                  key={i}
+                  className="border-b border-b-gray-200 odd:bg-red-50"
+                >
                   <td className="px-3 py-2 text-left">
                     <span>{row.position}</span>
                   </td>
-                  {columns.map((cell) => (
-                    <td className="px-3 py-2 text-left">
+                  {columns.map((cell, i) => (
+                    <td key={i} className="px-3 py-2 text-left">
                       <span>{row[cell]}</span>
                     </td>
                   ))}

@@ -186,6 +186,7 @@ const { pathname } = Astro.url;
 
   <div class="container flex grow flex-col">
     <RichText
+      client:load
       document={page.data.content}
       page={pathname}
       games={games.filter((g) => g.data.type === "game").map((g) => g.data)}

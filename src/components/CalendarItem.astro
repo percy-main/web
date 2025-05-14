@@ -29,6 +29,7 @@ const { id, title, calendarItem } = Astro.props;
         .with({ type: "game" }, (game) => <Sponsor id={id} game={game} />)
         .with({ type: "event" }, (event) => (
           <RichText
+            client:load
             page={`calendar/event/${id}`}
             document={event.description}
             games={games
@@ -85,6 +86,7 @@ const { id, title, calendarItem } = Astro.props;
             </li>
           </ul>
           <RichText
+            client:load
             page={`calendar/event/${id}`}
             document={game.description}
             games={games

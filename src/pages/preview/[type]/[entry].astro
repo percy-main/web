@@ -6,6 +6,7 @@ import { Preview } from "@/components/Preview";
 import Page from "@/layouts/Page.astro";
 import { ContentfulLivePreviewProvider } from "@contentful/live-preview/react";
 import { previewClient } from "@/lib/contentful/client";
+import { getCollection } from "astro:content";
 
 const { entry } = Astro.params;
 
@@ -14,10 +15,15 @@ if (!entry) {
 }
 
 const response = await previewClient.getEntry<TypePageSkeleton>(entry);
+const games = await getCollection("game");
 ---
 
 <Page title={response.fields.title}>
   <ContentfulLivePreviewProvider client:load locale="en-US">
-    <Preview client:load entry={response} />
+    <Preview
+      client:load
+      entry={response}
+      games={games.filter((g) => g.data.type === "game").map((g) => g.data)}
+    />
   </ContentfulLivePreviewProvider>
 </Page>
