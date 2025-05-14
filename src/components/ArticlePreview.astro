@@ -30,7 +30,7 @@ const { id, title, when, summary, author } = Astro.props;
 </div>
 <p class="mb-5 font-light text-gray-500 dark:text-gray-400">
   <RichText
-    client:load
+    client:only="react"
     page=""
     document={summary}
     games={games.filter((g) => g.data.type === "game").map((g) => g.data)}
