@@ -41,6 +41,7 @@ const style = cva(
       },
       width: {
         fixed: ["min-w-28", "text-center"],
+        maxContent: ["max-w-max", "text-center"],
       },
     },
   },

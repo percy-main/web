@@ -9,7 +9,11 @@ export type GameSponsored = z.TypeOf<typeof gameSponsoredSchema>;
 
 export const membershipSchema = z.object({
   type: z.literal("membership"),
-  membership: z.union([z.literal("social"), z.literal("senior_player")]),
+  membership: z.union([
+    z.literal("social"),
+    z.literal("senior_player"),
+    z.literal("senior_women_player"),
+  ]),
 });
 
 export const metadata = z.union([
