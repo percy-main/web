@@ -33,6 +33,12 @@ if (
   !socialMonthly ||
   !socialAnnual
 ) {
+  console.error("Missing price data for membership options", {
+    seniorPlayerMonthly,
+    seniorPlayerAnnual,
+    socialMonthly,
+    socialAnnual,
+  });
   throw new Error("Missing price data");
 }
 
