@@ -23,6 +23,7 @@ export type Price = z.TypeOf<typeof schema>;
 const loader = async () => {
   const prices = await client.prices.list({
     expand: ["data.product"],
+    limit: 100,
   });
 
   const coupons = await client.coupons.list({
