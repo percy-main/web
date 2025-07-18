@@ -9,6 +9,7 @@ import {
   getYear,
   getMonth,
   isSameDay,
+  differenceInMonths,
 } from "date-fns";
 import { generateCalendar } from "@/lib/calendar";
 import { IoCalendar, IoChevronBack, IoChevronForward } from "react-icons/io5";
@@ -50,7 +51,11 @@ export const getStaticPaths = (async () => {
   );
 
   const now = new Date();
-  const past12Months = Array.from(Array(12), (_, i) => addMonths(now, -i));
+  const calendarStart = new Date("2024-01-01");
+  const historicalMonthCount = differenceInMonths(now, calendarStart) + 1;
+  const past12Months = Array.from(Array(historicalMonthCount), (_, i) =>
+    addMonths(now, -i),
+  ).reverse();
   const next12Months = Array.from(Array(12), (_, i) => addMonths(now, i));
 
   const paths = [...past12Months, ...next12Months].map((date, i, arr) => {
