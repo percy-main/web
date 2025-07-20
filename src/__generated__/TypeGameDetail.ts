@@ -2,10 +2,12 @@ import type { ChainModifiers, Entry, EntryFieldTypes, EntrySkeletonType, LocaleC
 import type { TypeSponsorSkeleton } from "./TypeSponsor";
 
 export interface TypeGameDetailFields {
+    name?: EntryFieldTypes.Symbol;
     playCricketId: EntryFieldTypes.Symbol;
     sponsor?: EntryFieldTypes.EntryLink<TypeSponsorSkeleton>;
     description?: EntryFieldTypes.RichText;
     report?: EntryFieldTypes.RichText;
+    slug?: EntryFieldTypes.Symbol;
 }
 
 export type TypeGameDetailSkeleton = EntrySkeletonType<TypeGameDetailFields, "gameDetail">;

@@ -24,6 +24,7 @@ const newsSchema = z.object({
       .optional(),
     slug: z.string(),
   }),
+  slug: z.string().optional(),
 });
 
 export type News = z.TypeOf<typeof newsSchema>;
@@ -76,6 +77,7 @@ export const news = defineCollection({
               };
           }) ?? [],
         author,
+        slug: item.fields.slug,
       };
     });
   },

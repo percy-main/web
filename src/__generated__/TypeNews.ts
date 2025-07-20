@@ -8,6 +8,7 @@ export interface TypeNewsFields {
     summary: EntryFieldTypes.RichText;
     author?: EntryFieldTypes.EntryLink<TypeTrusteeSkeleton>;
     pages?: EntryFieldTypes.Array<EntryFieldTypes.EntryLink<TypePageSkeleton>>;
+    slug: EntryFieldTypes.Symbol;
 }
 
 export type TypeNewsSkeleton = EntrySkeletonType<TypeNewsFields, "news">;

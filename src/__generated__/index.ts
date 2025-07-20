@@ -1,5 +1,7 @@
 export { isTypeAssetLink } from "./TypeAssetLink";
 export type { TypeAssetLink, TypeAssetLinkFields, TypeAssetLinkSkeleton, TypeAssetLinkWithAllLocalesAndWithoutLinkResolutionResponse, TypeAssetLinkWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeAssetLinkWithAllLocalesResponse, TypeAssetLinkWithoutLinkResolutionResponse, TypeAssetLinkWithoutUnresolvableLinksResponse } from "./TypeAssetLink";
+export { isTypeEmailCollector } from "./TypeEmailCollector";
+export type { TypeEmailCollector, TypeEmailCollectorFields, TypeEmailCollectorSkeleton, TypeEmailCollectorWithAllLocalesAndWithoutLinkResolutionResponse, TypeEmailCollectorWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeEmailCollectorWithAllLocalesResponse, TypeEmailCollectorWithoutLinkResolutionResponse, TypeEmailCollectorWithoutUnresolvableLinksResponse } from "./TypeEmailCollector";
 export { isTypeEvent } from "./TypeEvent";
 export type { TypeEvent, TypeEventFields, TypeEventSkeleton, TypeEventWithAllLocalesAndWithoutLinkResolutionResponse, TypeEventWithAllLocalesAndWithoutUnresolvableLinksResponse, TypeEventWithAllLocalesResponse, TypeEventWithoutLinkResolutionResponse, TypeEventWithoutUnresolvableLinksResponse } from "./TypeEvent";
 export { isTypeFixtureList } from "./TypeFixtureList";
