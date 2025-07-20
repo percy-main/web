@@ -78,14 +78,7 @@ const { articles, page, tags } = Astro.props;
         {
           articles.map((article) => (
             <li class="w-full">
-              <ArticlePreview
-                id={article.id}
-                title={article.title}
-                when={article.when}
-                summary={article.summary}
-                author={article.author}
-                pages={article.pages}
-              />
+              <ArticlePreview {...article} />
             </li>
           ))
         }
