@@ -24,7 +24,7 @@ const newsSchema = z.object({
       .optional(),
     slug: z.string(),
   }),
-  slug: z.string().optional(),
+  slug: z.string(),
 });
 
 export type News = z.TypeOf<typeof newsSchema>;

@@ -94,14 +94,7 @@ const next5calendarItems = calendarItems
             top5.map((article) => (
               <li class="w-full">
                 <div class="mb-2 h-full rounded-none bg-white p-4 shadow-md lg:rounded-lg">
-                  <ArticlePreview
-                    id={article.id}
-                    title={article.data.title}
-                    when={article.data.when}
-                    summary={article.data.summary}
-                    author={article.data.author}
-                    pages={article.data.pages}
-                  />
+                  <ArticlePreview {...article.data} />
                 </div>
               </li>
             ))

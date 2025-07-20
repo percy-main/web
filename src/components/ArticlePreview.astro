@@ -7,9 +7,9 @@ import { getCollection } from "astro:content";
 
 const games = await getCollection("game");
 
-type Props = News & { id: string };
+type Props = News;
 
-const { id, title, when, summary, author } = Astro.props;
+const { title, when, summary, author, slug } = Astro.props;
 ---
 
 <div class="flex h-full flex-col items-stretch justify-between">
@@ -25,7 +25,7 @@ const { id, title, when, summary, author } = Astro.props;
   <h2
     class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white"
   >
-    <a href={`/news/article/${id}`}>{title}</a>
+    <a href={`/news/article/${slug}`}>{title}</a>
   </h2>
 </div>
 <p class="mb-5 font-light text-gray-500 dark:text-gray-400">
@@ -52,7 +52,7 @@ const { id, title, when, summary, author } = Astro.props;
     </span>
   </a>
   <a
-    href={`/news/article/${id}`}
+    href={`/news/article/${slug}`}
     class="text-primary-600 dark:text-primary-500 inline-flex items-center font-medium hover:underline"
     >Read the full article
     <IoArrowForward size={24} className="ml-2" />
