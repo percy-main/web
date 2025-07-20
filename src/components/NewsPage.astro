@@ -2,7 +2,7 @@
 import ArticlePreview from "@/components/ArticlePreview.astro";
 import type { Page } from "astro";
 import type { InferEntrySchema } from "astro:content";
-import { IoChevronBack } from "react-icons/io5";
+import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 
 type Props = {
   articles: Array<{ id: string } & InferEntrySchema<"news">>;
@@ -51,22 +51,19 @@ const { articles, page, tags } = Astro.props;
       (page.url.prev || page.url.next) && (
         <nav>
           <div class="flex w-full items-center justify-between gap-4">
-            {page.url.prev && (
-              <a href={page.url.prev} title="Previous Page">
-                <IoChevronBack
-                  className="text-gray-700 hover:text-gray-400"
-                  fontSize={32}
-                />
-              </a>
-            )}
-            {page.url.next && (
-              <a href={page.url.next} title="Next Page">
-                <IoChevronBack
-                  className="text-gray-700 hover:text-gray-400"
-                  fontSize={32}
-                />
-              </a>
-            )}
+            <a href={page.url.next ?? "#"} title="Previous Page">
+              <IoChevronBack
+                className="text-gray-700 hover:text-gray-400"
+                fontSize={32}
+              />
+            </a>
+
+            <a href={page.url.prev ?? "#"} title="Next Page">
+              <IoChevronForward
+                className="text-gray-700 hover:text-gray-400"
+                fontSize={32}
+              />
+            </a>
           </div>
         </nav>
       )
@@ -88,22 +85,19 @@ const { articles, page, tags } = Astro.props;
       (page.url.prev || page.url.next) && (
         <nav>
           <div class="flex w-full items-center justify-between gap-4">
-            {page.url.prev && (
-              <a href={page.url.prev} title="Previous Page">
-                <IoChevronBack
-                  className="text-gray-700 hover:text-gray-400"
-                  fontSize={32}
-                />
-              </a>
-            )}
-            {page.url.next && (
-              <a href={page.url.next} title="Next Page">
-                <IoChevronBack
-                  className="text-gray-700 hover:text-gray-400"
-                  fontSize={32}
-                />
-              </a>
-            )}
+            <a href={page.url.next ?? "#"} title="Previous Page">
+              <IoChevronBack
+                className="text-gray-700 hover:text-gray-400"
+                fontSize={32}
+              />
+            </a>
+
+            <a href={page.url.prev ?? "#"} title="Next Page">
+              <IoChevronForward
+                className="text-gray-700 hover:text-gray-400"
+                fontSize={32}
+              />
+            </a>
           </div>
         </nav>
       )
