@@ -4,7 +4,7 @@ import Base from "@/layouts/Base.astro";
 import ArticlePreview from "@/components/ArticlePreview.astro";
 import { GamePreview } from "@/components/GamePreview";
 import { EventPreview } from "@/components/EventPreview";
-import { getDate, compareDesc, compareAsc, isAfter } from "date-fns";
+import { compareDesc, compareAsc, isAfter, isSameDay } from "date-fns";
 import { match } from "ts-pattern";
 import Hero from "@/components/Hero/Hero.astro";
 import LDJson from "../components/LDJson.astro";
@@ -24,10 +24,7 @@ const teamOrder: Record<string, number> = {
 
 const next5calendarItems = calendarItems
   .sort(({ data: g1 }, { data: g2 }) => {
-    const g1D = getDate(g1.when);
-    const g2D = getDate(g2.when);
-
-    if (g1D === g2D) {
+    if (isSameDay(g1.when, g2.when)) {
       if (g1.type === "game" && g2.type === "game") {
         const t1 = teamOrder[g1.team.id] ?? 0;
         const t2 = teamOrder[g2.team.id] ?? 0;
