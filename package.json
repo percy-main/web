@@ -43,7 +43,7 @@
     "astro": "^5.13.2",
     "astro-breadcrumbs": "^3.3.1",
     "astro-font": "^0.1.81",
-    "better-auth": "^1.1.21",
+    "better-auth": "^1.4.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "contentful": "^11.3.4",
