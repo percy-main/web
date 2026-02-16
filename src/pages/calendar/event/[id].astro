@@ -37,8 +37,8 @@ const ifSet = (val: string | undefined, key: string) => {
   };
 };
 
-const year = formatDate(calendarItem.data.when, "yyyy");
-const month = formatDate(calendarItem.data.when, "MMMM");
+const year = calendarItem.data.when ? formatDate(calendarItem.data.when, "yyyy") : undefined;
+const month = calendarItem.data.when ? formatDate(calendarItem.data.when, "MMMM") : undefined;
 ---
 
 <Container title={title}>
@@ -47,7 +47,9 @@ const month = formatDate(calendarItem.data.when, "MMMM");
     content={{
       "@type": "Event",
       name: title,
-      startDate: calendarItem.data.when.toISOString(),
+      ...(calendarItem.data.when && {
+        startDate: calendarItem.data.when.toISOString(),
+      }),
       ...(calendarItem.data.finish && {
         endDate: calendarItem.data.finish.toISOString(),
       }),
@@ -93,10 +95,10 @@ const month = formatDate(calendarItem.data.when, "MMMM");
           text: "Calendar",
           href: "#",
         },
-        {
+        ...(month && year ? [{
           text: `${month} ${year}`,
           href: `/calendar/${year}/${month.toLowerCase()}`,
-        },
+        }] : []),
         {
           text: title,
           href: "#",
