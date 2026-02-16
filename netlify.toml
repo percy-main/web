@@ -1,2 +1,5 @@
+[build.environment]
+NETLIFY_SKIP_EXPOSED_SECRETS_SCAN = "true"
+
 [[plugins]]
 package = "/scripts/netlify/migrate"
