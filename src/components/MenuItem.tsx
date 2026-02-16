@@ -23,19 +23,16 @@ const style = cva(
         cta: [
           "text-white",
           "hover:text-white",
-          "bg-blue-700",
-          "hover:bg-blue-800",
+          "bg-primary",
+          "hover:bg-orange-600",
           "focus:ring-4",
-          "focus:ring-blue-300",
+          "focus:ring-orange-200",
           "font-medium",
           "rounded-lg",
           "text-sm",
           "px-5",
           "py-2.5",
-          "dark:bg-blue-600",
-          "dark:hover:bg-blue-700",
           "focus:outline-hidden",
-          "dark:focus:ring-blue-800",
         ],
         menu: null,
       },
@@ -54,7 +51,7 @@ export const MenuItem: FC<Props> = ({ item, isActive, purpose, width }) => {
         {item.name}
       </a>
       {isActive && (
-        <div className="right-2 left-2 h-0.5 bg-linear-to-tl from-green-400 to-blue-400" />
+        <div className="right-2 left-2 h-0.5 bg-primary" />
       )}
     </>
   );

@@ -107,64 +107,59 @@ const { pathname } = Astro.url;
     menu && (
       <aside
         slot="menu"
-        class="mb-4 w-full border-b-2 border-gray-400 pb-2 sm:w-60 md:mb-0 md:border-0 md:pb-0 dark:bg-gray-50 dark:text-gray-800"
+        class="mb-4 w-full border-b-2 border-gray-300 pb-2 sm:w-64 md:mb-0 md:border-0 md:pb-0"
       >
         <nav class="space-y-8 text-sm">
           <div class="space-y-2">
-            <di class="flex flex-col">
+            <div class="flex flex-col">
               {menu.items.map(({ title, link, children }) => {
+                const isActive = urlMatch(pathname, {
+                  url: link,
+                  match: { start: link },
+                });
                 return (
                   <>
                     <a
                       href={link}
                       class="py-1"
                       class:list={[
-                        urlMatch(pathname, {
-                          url: link,
-                          match: { start: link },
-                        })
-                          ? "text-bold ml-[-0.76rem] border-l-4 border-gray-500 pl-2 text-orange-900"
-                          : "",
+                        isActive
+                          ? "font-medium ml-[-0.76rem] border-l-4 border-primary pl-2 text-primary"
+                          : "text-gray-700 hover:text-primary",
                       ]}
                     >
                       {title}
                     </a>
 
                     <div class="ml-4 flex flex-col">
-                      {children.map(({ title, link }) => (
-                        <>
+                      {children.map(({ title, link }) => {
+                        const isChildActive = urlMatch(pathname, {
+                          url: link,
+                          match: { start: link },
+                        });
+                        return (
                           <a
                             href={link}
                             class="py-1"
                             class:list={[
-                              urlMatch(pathname, {
-                                url: link,
-                                match: { start: link },
-                              })
-                                ? "text-bold ml-[-1.76rem] border-l-4 border-gray-500 pl-4 text-orange-900"
-                                : "",
+                              isChildActive
+                                ? "font-medium ml-[-1.76rem] border-l-4 border-primary pl-4 text-primary"
+                                : "text-gray-600 hover:text-primary",
                             ]}
                           >
                             <span
-                              class:list={
-                                urlMatch(pathname, {
-                                  url: link,
-                                  match: { start: link },
-                                })
-                                  ? ["pl-2"]
-                                  : []
-                              }
+                              class:list={isChildActive ? ["pl-2"] : []}
                             >
                               {title}
                             </span>
                           </a>
-                        </>
-                      ))}
+                        );
+                      })}
                     </div>
                   </>
                 );
               })}
-            </di>
+            </div>
           </div>
         </nav>
       </aside>

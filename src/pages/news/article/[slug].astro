@@ -55,7 +55,7 @@ const { article, description } = Astro.props;
   </div>
 
   <div class="flex flex-col gap-4 md:flex-row md:gap-8">
-    <div class="grow">
+    <div class="grow max-w-prose">
       <a
         class="flex items-center space-x-4"
         href={`/person/${article.data.author.slug}`}
@@ -73,7 +73,7 @@ const { article, description } = Astro.props;
           {article.data.author.name}
         </span>
       </a>
-      <p class="pb-4 text-sm text-gray-500">
+      <p class="pb-4 text-sm text-gray-600">
         Published on {formatDate(article.data.when, "PPPP")}
       </p>
       <RichText

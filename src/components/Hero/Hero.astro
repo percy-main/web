@@ -3,17 +3,17 @@ import { Picture } from "astro:assets";
 import pitchImg from "./pitch.png";
 ---
 
-<section class="bg-white dark:bg-gray-900">
+<section>
   <div class="relative">
     <Picture
-      class="h-64 w-full object-cover md:h-96"
+      class="h-80 w-full object-cover md:h-[28rem]"
       src={pitchImg}
       formats={["avif", "webp"]}
       alt="The cricket pitch at Percy Main"
       priority
       loading="eager"
     />
-    <div class="absolute inset-0 rounded-md bg-gray-700 opacity-60"></div>
+    <div class="absolute inset-0 bg-gray-700 opacity-45"></div>
     <div class="absolute inset-0 flex items-center justify-center text-white">
       <div class="mx-auto max-w-(--breakpoint-xl) px-4 py-6 lg:px-6">
         <div class="mx-auto max-w-(--breakpoint-sm) text-center">
@@ -26,6 +26,12 @@ import pitchImg from "./pitch.png";
             We are a community sports club providing facilities for cricket,
             football, and boxing.
           </p>
+          <a
+            href="/calendar"
+            class="inline-block rounded-lg bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-orange-600"
+          >
+            See What's On
+          </a>
         </div>
       </div>
     </div>

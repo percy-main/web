@@ -57,32 +57,40 @@ const next5calendarItems = calendarItems
   <div class="flex flex-col gap-12">
     <Hero />
     <div
-      class="flex w-full flex-row flex-wrap items-start justify-center gap-8"
+      class:list={[
+        "flex w-full flex-row flex-wrap items-start justify-center gap-8",
+        next5calendarItems.length === 0 && "max-w-3xl mx-auto",
+      ]}
     >
-      <section class="flex flex-shrink-0 flex-col items-center">
-        <h3 class="text-h4 mt-4">Upcoming Events</h3>
-        <ul
-          class="flex w-full flex-col flex-wrap items-stretch justify-between gap-4"
-        >
-          {
-            next5calendarItems.map((calendarItem) => (
-              <li class="w-full">
-                <div class="mb-2 h-full rounded-none bg-white p-4 shadow-md lg:rounded-lg">
-                  {match(calendarItem)
-                    .with({ data: { type: "event" } }, (event) => (
-                      <EventPreview id={event.id} event={event.data} />
-                    ))
-                    .with({ data: { type: "game" } }, (game) => (
-                      <GamePreview id={game.id} game={game.data} />
-                    ))
-                    .exhaustive()}
-                </div>
-              </li>
-            ))
-          }
-        </ul>
-      </section>
-      <section class="flex max-w-160 flex-col items-center">
+      {
+        next5calendarItems.length > 0 && (
+          <section class="flex flex-shrink-0 flex-col items-center">
+            <h3 class="text-h4 mt-4">Upcoming Events</h3>
+            <ul class="flex w-full flex-col flex-wrap items-stretch justify-between gap-4">
+              {next5calendarItems.map((calendarItem) => (
+                <li class="w-full">
+                  <div class="mb-2 h-full rounded-lg bg-white p-4 shadow-md">
+                    {match(calendarItem)
+                      .with({ data: { type: "event" } }, (event) => (
+                        <EventPreview id={event.id} event={event.data} />
+                      ))
+                      .with({ data: { type: "game" } }, (game) => (
+                        <GamePreview id={game.id} game={game.data} />
+                      ))
+                      .exhaustive()}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }
+      <section
+        class:list={[
+          "flex flex-col items-center",
+          next5calendarItems.length > 0 ? "max-w-160" : "w-full",
+        ]}
+      >
         <h3 class="text-h4 mt-4">Latest News</h3>
         <ul
           class="flex w-full flex-col flex-wrap items-stretch justify-between gap-4"
@@ -90,7 +98,7 @@ const next5calendarItems = calendarItems
           {
             top5.map((article) => (
               <li class="w-full">
-                <div class="mb-2 h-full rounded-none bg-white p-4 shadow-md lg:rounded-lg">
+                <div class="mb-2 h-full rounded-lg bg-white p-4 shadow-md">
                   <ArticlePreview {...article.data} />
                 </div>
               </li>

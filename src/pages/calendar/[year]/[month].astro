@@ -121,59 +121,62 @@ const { year, month, calendar, previous, next, items } = Astro.props;
             class="col-span-12 px-2.5 py-5 max-xl:row-start-1 sm:p-8 xl:col-span-7"
           >
             <div
-              class="mb-5 flex flex-col items-center justify-between gap-4 md:flex-row"
+              class="mb-5 flex items-center justify-between gap-4"
             >
-              <div class="flex w-full items-center justify-between gap-4">
-                <a href={previous ?? "#"} title="Previous Month">
+              {previous ? (
+                <a href={previous} title="Previous Month">
                   <IoChevronBack
-                    className="text-gray-700 hover:text-gray-400"
-                    fontSize={32}
+                    className="text-gray-700 hover:text-primary"
+                    fontSize={28}
                   />
                 </a>
-                <a href={next ?? "#"} title="Next Month">
+              ) : <div class="w-7" />}
+              <h3 class="mb-0 text-lg font-semibold text-gray-800">{month} {year}</h3>
+              {next ? (
+                <a href={next} title="Next Month">
                   <IoChevronForward
-                    className="text-gray-700 hover:text-gray-400"
-                    fontSize={32}
+                    className="text-gray-700 hover:text-primary"
+                    fontSize={28}
                   />
                 </a>
-              </div>
+              ) : <div class="w-7" />}
             </div>
-            <div class="rounded-xl border-t border-l border-indigo-200">
+            <div class="rounded-xl border-t border-l border-gray-200">
               <div
-                class="grid grid-cols-7 rounded-t-3xl border-b border-indigo-200"
+                class="grid grid-cols-7 rounded-t-3xl border-b border-gray-200"
               >
                 <div
-                  class="flex items-center justify-center rounded-tl-xl border-r border-indigo-200 bg-indigo-50 py-3.5 text-sm font-medium text-indigo-600"
+                  class="flex items-center justify-center rounded-tl-xl border-r border-gray-200 bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
                 >
                   Mon
                 </div>
                 <div
-                  class="flex items-center justify-center border-r border-indigo-200 bg-indigo-50 py-3.5 text-sm font-medium text-indigo-600"
+                  class="flex items-center justify-center border-r border-gray-200 bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
                 >
                   Tue
                 </div>
                 <div
-                  class="flex items-center justify-center border-r border-indigo-200 bg-indigo-50 py-3.5 text-sm font-medium text-indigo-600"
+                  class="flex items-center justify-center border-r border-gray-200 bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
                 >
                   Wed
                 </div>
                 <div
-                  class="flex items-center justify-center border-r border-indigo-200 bg-indigo-50 py-3.5 text-sm font-medium text-indigo-600"
+                  class="flex items-center justify-center border-r border-gray-200 bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
                 >
                   Thu
                 </div>
                 <div
-                  class="flex items-center justify-center border-r border-indigo-200 bg-indigo-50 py-3.5 text-sm font-medium text-indigo-600"
+                  class="flex items-center justify-center border-r border-gray-200 bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
                 >
                   Fri
                 </div>
                 <div
-                  class="flex items-center justify-center bg-indigo-50 py-3.5 text-sm font-medium text-indigo-600"
+                  class="flex items-center justify-center bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
                 >
                   Sat
                 </div>
                 <div
-                  class="flex items-center justify-center rounded-tr-xl border-r border-indigo-200 bg-indigo-50 py-3.5 text-sm font-medium text-indigo-600"
+                  class="flex items-center justify-center rounded-tr-xl border-r border-gray-200 bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
                 >
                   Sun
                 </div>
@@ -183,8 +186,8 @@ const { year, month, calendar, previous, next, items } = Astro.props;
                   calendar.map(({ date, isExtra, items }) => (
                     <button
                       id={`calendar-${formatDate(date, "dd-MM-yyyy")}`}
-                      class="flex items-start justify-between border-r border-b border-indigo-200 p-3.5 transition-all duration-300 hover:bg-indigo-100 max-xl:min-h-[60px] xl:aspect-square"
-                      class:list={[isExtra ? "bg-gray-50" : "bg-gray-100"]}
+                      class="flex items-start justify-between border-r border-b border-gray-200 p-3.5 transition-all duration-300 hover:bg-orange-50 max-xl:min-h-[60px] xl:aspect-square"
+                      class:list={[isExtra ? "bg-gray-100" : "bg-white"]}
                     >
                       <span class="text-xs font-semibold text-gray-400">
                         {formatDate(date, "dd")}
@@ -211,24 +214,32 @@ const { year, month, calendar, previous, next, items } = Astro.props;
           </div>
 
           <div class="col-span-12 max-h-160 overflow-auto xl:col-span-5">
-            <ul class="flex flex-col">
-              {
-                calendar.map(({ date }) => (
-                  <ul
-                    id={`list-${formatDate(date, "dd-MM-yyyy")}`}
-                    class="flex flex-col"
-                  >
-                    {items
-                      .filter((g) => isSameDay(g.data.when, date))
-                      .map((item) => (
-                        <li>
-                          <CalendarPreview id={item.id} item={item.data} />
-                        </li>
-                      ))}
-                  </ul>
-                ))
-              }
-            </ul>
+            {items.length === 0 ? (
+              <div class="flex flex-col items-center justify-center rounded-lg bg-white p-8 text-center shadow-sm">
+                <IoCalendar className="mb-3 text-gray-300" fontSize={48} />
+                <p class="text-gray-600 font-medium">No events scheduled for {month}</p>
+                <p class="mt-1 text-sm text-gray-500">Check nearby months or <a href="mailto:trustees@percymain.org" class="text-primary hover:underline">contact the club</a></p>
+              </div>
+            ) : (
+              <ul class="flex flex-col">
+                {
+                  calendar.map(({ date }) => (
+                    <ul
+                      id={`list-${formatDate(date, "dd-MM-yyyy")}`}
+                      class="flex flex-col"
+                    >
+                      {items
+                        .filter((g) => isSameDay(g.data.when, date))
+                        .map((item) => (
+                          <li>
+                            <CalendarPreview id={item.id} item={item.data} />
+                          </li>
+                        ))}
+                    </ul>
+                  ))
+                }
+              </ul>
+            )}
           </div>
         </div>
       </div>

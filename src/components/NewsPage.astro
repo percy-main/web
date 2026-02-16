@@ -6,7 +6,7 @@ import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 
 type Props = {
   articles: Array<{ id: string } & InferEntrySchema<"news">>;
-  page: Pick<Page, "url">;
+  page: Pick<Page, "url" | "currentPage" | "lastPage">;
   tags: Array<{
     id: string;
     slug: string;
@@ -21,7 +21,7 @@ const { articles, page, tags } = Astro.props;
 
 <div class="flex flex-col-reverse md:flex-row">
   <aside
-    class="mb-4 w-full border-b-2 border-gray-400 pb-2 sm:w-60 md:mb-0 md:border-0 md:pb-0 dark:bg-gray-50 dark:text-gray-800"
+    class="mb-4 w-full border-b-2 border-gray-300 pb-2 sm:w-64 md:mb-0 md:border-0 md:pb-0"
   >
     <nav class="flex flex-col text-sm">
       <h5>Filter By Tag</h5>
@@ -33,8 +33,8 @@ const { articles, page, tags } = Astro.props;
               class="py-1"
               class:list={[
                 isActive
-                  ? "text-bold ml-[-1.76rem] border-l-4 border-gray-500 pl-4 text-orange-900"
-                  : "",
+                  ? "font-medium ml-[-1.76rem] border-l-4 border-primary pl-4 text-primary"
+                  : "text-gray-700 hover:text-primary",
               ]}
             >
               <span class:list={isActive ? ["pl-2"] : []}>
@@ -51,19 +51,19 @@ const { articles, page, tags } = Astro.props;
       (page.url.prev || page.url.next) && (
         <nav>
           <div class="flex w-full items-center justify-between gap-4">
-            <a href={page.url.next ?? "#"} title="Previous Page">
-              <IoChevronBack
-                className="text-gray-700 hover:text-gray-400"
-                fontSize={32}
-              />
-            </a>
-
-            <a href={page.url.prev ?? "#"} title="Next Page">
-              <IoChevronForward
-                className="text-gray-700 hover:text-gray-400"
-                fontSize={32}
-              />
-            </a>
+            {page.url.next ? (
+              <a href={page.url.next} title="Newer" class="flex items-center gap-1 text-sm text-gray-700 hover:text-primary">
+                <IoChevronBack fontSize={20} />
+                <span>Newer</span>
+              </a>
+            ) : <div />}
+            <span class="text-sm text-gray-500">Page {page.currentPage} of {page.lastPage}</span>
+            {page.url.prev ? (
+              <a href={page.url.prev} title="Older" class="flex items-center gap-1 text-sm text-gray-700 hover:text-primary">
+                <span>Older</span>
+                <IoChevronForward fontSize={20} />
+              </a>
+            ) : <div />}
           </div>
         </nav>
       )
@@ -75,7 +75,9 @@ const { articles, page, tags } = Astro.props;
         {
           articles.map((article) => (
             <li class="w-full">
-              <ArticlePreview {...article} />
+              <div class="rounded-lg bg-white p-5 shadow-sm">
+                <ArticlePreview {...article} />
+              </div>
             </li>
           ))
         }
@@ -85,19 +87,19 @@ const { articles, page, tags } = Astro.props;
       (page.url.prev || page.url.next) && (
         <nav>
           <div class="flex w-full items-center justify-between gap-4">
-            <a href={page.url.next ?? "#"} title="Previous Page">
-              <IoChevronBack
-                className="text-gray-700 hover:text-gray-400"
-                fontSize={32}
-              />
-            </a>
-
-            <a href={page.url.prev ?? "#"} title="Next Page">
-              <IoChevronForward
-                className="text-gray-700 hover:text-gray-400"
-                fontSize={32}
-              />
-            </a>
+            {page.url.next ? (
+              <a href={page.url.next} title="Newer" class="flex items-center gap-1 text-sm text-gray-700 hover:text-primary">
+                <IoChevronBack fontSize={20} />
+                <span>Newer</span>
+              </a>
+            ) : <div />}
+            <span class="text-sm text-gray-500">Page {page.currentPage} of {page.lastPage}</span>
+            {page.url.prev ? (
+              <a href={page.url.prev} title="Older" class="flex items-center gap-1 text-sm text-gray-700 hover:text-primary">
+                <span>Older</span>
+                <IoChevronForward fontSize={20} />
+              </a>
+            ) : <div />}
           </div>
         </nav>
       )

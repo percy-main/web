@@ -51,7 +51,7 @@ const renderEmbeddedAsset = ({ fields, metadata }: Asset<undefined>) => {
       {metadata.tags.some(
         (tag: { sys: { id: string } }) => tag.sys.id === "nocaption",
       ) ? null : (
-        <figcaption className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+        <figcaption className="mt-2 text-sm text-gray-600">
           <h6>{title}</h6>
           {description && <p>{description}</p>}
         </figcaption>
@@ -134,7 +134,7 @@ const renderOptions = (page: string, games: Game[]): Options => ({
     },
     [BLOCKS.UL_LIST]: (node, children) => {
       return (
-        <ul className="ml-4 list-disc has-[div.person]:ml-0 has-[div.person]:flex has-[div.person]:w-full has-[div.person]:list-none has-[div.person]:flex-col has-[div.person]:flex-wrap has-[div.person]:justify-around has-[div.person]:gap-4 lg:has-[div.person]:flex-row [&>li]:mb-6 [&>li]:basis-1/5 [&>li>ul]:list-[circle]">
+        <ul className="ml-4 list-disc has-[div.person]:ml-0 has-[div.person]:grid has-[div.person]:w-full has-[div.person]:list-none has-[div.person]:grid-cols-1 has-[div.person]:gap-4 sm:has-[div.person]:grid-cols-2 lg:has-[div.person]:grid-cols-4 [&>li]:mb-6 [&>li>ul]:list-[circle]">
           {children}
         </ul>
       );

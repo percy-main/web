@@ -32,11 +32,11 @@ const people = _.sortBy(
 
   <div class="my-auto flex flex-col items-center">
     <ul
-      class="mt-4 flex flex-row flex-wrap items-stretch justify-around gap-8 [&>li]:basis-1/5"
+      class="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
     >
       {
         people.map((person) => (
-          <li class="min-w-64">
+          <li>
             <Person
               person={{
                 name: person.data.name,
