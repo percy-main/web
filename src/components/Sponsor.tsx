@@ -17,7 +17,7 @@ export const Sponsor = ({ id, game }: Props) => {
         <span className="text-lg font-bold">{game.sponsor.name}</span>
       </p>
     </div>
-  ) : isAfter(game.when, new Date()) ? (
+  ) : game.when && isAfter(game.when, new Date()) ? (
     <div className="mt-4 justify-self-start rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-700">
       <PaymentLink
         priceId={paymentData.prices.sponsorship}

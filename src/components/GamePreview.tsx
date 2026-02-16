@@ -21,7 +21,7 @@ export const GamePreview = ({ id, game }: Props) => (
         className="mt-1 self-start"
       />
       <h4 className="text-lg font-semibold">
-        {formatDate(game.when, "dd/MM/yyyy")}
+        {game.when ? formatDate(game.when, "dd/MM/yyyy") : "TBC"}
       </h4>
     </div>
     <div className="flex flex-row justify-between gap-4">
