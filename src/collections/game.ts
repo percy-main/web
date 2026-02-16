@@ -42,8 +42,8 @@ export const schema = z.object({
     team,
   }),
   team,
-  when: z.date(),
-  finish: z.date().optional(),
+  when: z.date().optional().nullable(),
+  finish: z.date().optional().nullable(),
   league,
   competition,
   location: location.schema.optional(),
@@ -125,14 +125,17 @@ export const loader = async () => {
           name: match.home_club_name,
         };
 
-    const when = df.parse(
-      `${match.match_date}-${match.match_time}`,
-      "dd/MM/yyyy-HH:mm",
-      new Date(),
-    );
+    const when =
+      match.match_date && match.match_time
+        ? df.parse(
+            `${match.match_date}-${match.match_time}`,
+            "dd/MM/yyyy-HH:mm",
+            new Date(),
+          )
+        : null;
 
     // adjust this based on game type when we have more information
-    const finish = df.add(when, { hours: 5 });
+    const finish = when ? df.add(when, { hours: 5 }) : null;
 
     return {
       type: "game",
