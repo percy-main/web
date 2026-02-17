@@ -1,0 +1,26 @@
+---
+type Props = {
+  name: string;
+  description: string;
+  href: string;
+  icon: string;
+  external?: boolean;
+};
+
+const { name, description, href, icon, external = false } = Astro.props;
+---
+
+<a
+  href={href}
+  class="group flex flex-col items-center rounded-lg bg-white p-6 text-center shadow-sm transition hover:shadow-md"
+  {...external ? { target: "_blank", rel: "noopener noreferrer" } : {}}
+>
+  <span class="mb-3 text-4xl">{icon}</span>
+  <h4 class="mb-2 text-lg font-bold text-dark">{name}</h4>
+  <p class="text-sm text-gray-600">{description}</p>
+  <span
+    class="mt-3 text-sm font-medium text-primary transition group-hover:text-primary-light"
+  >
+    Learn more &rarr;
+  </span>
+</a>

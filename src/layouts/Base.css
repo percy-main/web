@@ -10,11 +10,14 @@
 
   h1,
   h2,
-  h3,
+  h3 {
+    @apply font-secondary text-dark leading-tight font-bold;
+  }
+
   h4,
   h5,
   h6 {
-    @apply font-secondary text-dark leading-tight font-bold;
+    @apply font-primary text-dark leading-tight font-bold;
   }
 
   h1,

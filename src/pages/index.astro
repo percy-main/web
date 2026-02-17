@@ -2,18 +2,20 @@
 import { getCollection } from "astro:content";
 import Base from "@/layouts/Base.astro";
 import ArticlePreview from "@/components/ArticlePreview.astro";
-import { GamePreview } from "@/components/GamePreview";
-import { EventPreview } from "@/components/EventPreview";
+import CalendarStripCard from "@/components/CalendarStripCard.astro";
+import SportCard from "@/components/SportCard.astro";
+import QuoteCard from "@/components/QuoteCard.astro";
 import { compareDesc, compareAsc, isAfter, isSameDay } from "date-fns";
 import { match } from "ts-pattern";
 import Hero from "@/components/Hero/Hero.astro";
 import LDJson from "../components/LDJson.astro";
 import { PLAY_CRICKET_1XI_ID, PLAY_CRICKET_2XI_ID } from "astro:env/server";
+import { paymentData } from "@/lib/payments/config";
 
 const news = await getCollection("news");
 const top5 = news
   .sort(({ data: g1 }, { data: g2 }) => compareDesc(g1.when, g2.when))
-  .slice(0, 6);
+  .slice(0, 5);
 
 const calendarItems = await getCollection("calendarItem");
 
@@ -39,6 +41,8 @@ const next5calendarItems = calendarItems
   })
   .filter(({ data }) => isAfter(data.when, new Date()))
   .slice(0, 5);
+
+const donateUrl = `/purchase/${paymentData.prices.donation}`;
 ---
 
 <Base
@@ -54,58 +58,138 @@ const next5calendarItems = calendarItems
     }}
   />
 
-  <div class="flex flex-col gap-12">
-    <Hero />
-    <div
-      class:list={[
-        "flex w-full flex-row flex-wrap items-start justify-center gap-8",
-        next5calendarItems.length === 0 && "max-w-3xl mx-auto",
-      ]}
-    >
-      {
-        next5calendarItems.length > 0 && (
-          <section class="flex flex-shrink-0 flex-col items-center">
-            <h3 class="text-h4 mt-4">Upcoming Events</h3>
-            <ul class="flex w-full flex-col flex-wrap items-stretch justify-between gap-4">
-              {next5calendarItems.map((calendarItem) => (
-                <li class="w-full">
-                  <div class="mb-2 h-full rounded-lg bg-white p-4 shadow-md">
-                    {match(calendarItem)
-                      .with({ data: { type: "event" } }, (event) => (
-                        <EventPreview id={event.id} event={event.data} />
-                      ))
-                      .with({ data: { type: "game" } }, (game) => (
-                        <GamePreview id={game.id} game={game.data} />
-                      ))
-                      .exhaustive()}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )
-      }
-      <section
-        class:list={[
-          "flex flex-col items-center",
-          next5calendarItems.length > 0 ? "max-w-160" : "w-full",
-        ]}
-      >
-        <h3 class="text-h4 mt-4">Latest News</h3>
-        <ul
-          class="flex w-full flex-col flex-wrap items-stretch justify-between gap-4"
-        >
-          {
-            top5.map((article) => (
-              <li class="w-full">
-                <div class="mb-2 h-full rounded-lg bg-white p-4 shadow-md">
+  <!-- 1. Hero -->
+  <Hero />
+
+  <!-- 2. Calendar Strip -->
+  {
+    next5calendarItems.length > 0 && (
+      <section class="bg-white py-10">
+        <div class="container">
+          <h3 class="text-h4 mb-6 text-center">What's On This Week</h3>
+          <div class="flex snap-x gap-4 overflow-x-auto pb-2 md:justify-center md:overflow-x-visible">
+            {next5calendarItems.map((calendarItem) => (
+              <CalendarStripCard id={calendarItem.id} item={calendarItem.data} />
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- 3. Featured News -->
+  {
+    top5.length > 0 && (
+      <section class="py-10">
+        <div class="container">
+          <h3 class="text-h4 mb-6 text-center">Latest News</h3>
+
+          {/* Top row: 2 articles */}
+          <div class="grid gap-6 md:grid-cols-2">
+            {top5.slice(0, 2).map((article) => (
+              <div class="rounded-lg bg-white p-6 shadow-sm">
+                <ArticlePreview {...article.data} />
+              </div>
+            ))}
+          </div>
+
+          {/* Bottom row: up to 3 articles */}
+          {top5.length > 2 && (
+            <div class="mt-6 grid gap-6 md:grid-cols-3">
+              {top5.slice(2, 5).map((article) => (
+                <div class="rounded-lg bg-white p-6 shadow-sm">
                   <ArticlePreview {...article.data} />
                 </div>
-              </li>
-            ))
-          }
-        </ul>
+              ))}
+            </div>
+          )}
+
+          <div class="mt-8 text-center">
+            <a
+              href="/news/1"
+              class="text-sm font-medium text-primary transition hover:text-primary-light"
+            >
+              View all news &rarr;
+            </a>
+          </div>
+        </div>
       </section>
+    )
+  }
+
+  <!-- 4. Sport Identity -->
+  <section class="bg-primary/5 py-12">
+    <div class="container">
+      <h3 class="text-h4 mb-8 text-center">Our Sports</h3>
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <SportCard
+          name="Cricket"
+          description="Men's, women's, and junior teams competing in the Northumberland & Tyneside Cricket League"
+          href="/cricket"
+          icon="🏏"
+        />
+        <SportCard
+          name="Football"
+          description="Grassroots football for the local community with Percy Main Amateurs FC"
+          href="https://www.pitchero.com/clubs/percymainamateursfc/"
+          icon="⚽"
+          external
+        />
+        <SportCard
+          name="Boxing"
+          description="Amateur boxing training and development with BKFC Gym Percy Main"
+          href="https://www.facebook.com/people/BKFC-GYM-Newcastle/61585700673380/"
+          icon="🥊"
+          external
+        />
+        <SportCard
+          name="Running"
+          description="Social running group for all abilities"
+          href="/running"
+          icon="🏃"
+        />
+      </div>
     </div>
-  </div>
+  </section>
+
+  <!-- 5. Member Quotes (TODO: add real quotes) -->
+  <!-- <section class="py-12">
+    <div class="container">
+      <h3 class="text-h4 mb-8 text-center">From Our Community</h3>
+      <div class="grid gap-6 md:grid-cols-3">
+        <QuoteCard
+          quote="This club is the heart of our community. It's where friendships are made and kids learn the value of teamwork."
+          name="Sarah Thompson"
+          role="Parent & Volunteer"
+        />
+        <QuoteCard
+          quote="Whether you're a seasoned cricketer or just starting out, everyone is welcome here. That's what makes The Main special."
+          name="James Wilson"
+          role="1st XI Captain"
+        />
+        <QuoteCard
+          quote="The boxing programme has given young people a positive outlet and real discipline. It's changing lives."
+          name="Michael Brown"
+          role="Boxing Coach"
+        />
+      </div>
+    </div>
+  </section> -->
+
+  <!-- 6. Support CTA -->
+  <section class="bg-primary py-16">
+    <div class="container text-center">
+      <h3 class="text-h3 mb-4 text-white">Support Your Local Sports Club</h3>
+      <p class="mx-auto mb-8 max-w-2xl text-lg text-white/80">
+        As a registered charity, we rely on the generosity of our community to
+        maintain our facilities and keep sport accessible for everyone.
+      </p>
+      <a
+        href={donateUrl}
+        class="inline-block rounded-lg bg-cta px-8 py-3.5 text-lg font-medium text-white transition-colors hover:bg-cta-dark"
+      >
+        Donate Now
+      </a>
+    </div>
+  </section>
 </Base>

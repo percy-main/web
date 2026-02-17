@@ -15,7 +15,7 @@ export const Person: FC<PropsWithChildren<Props>> = ({
 }) => {
   return (
     <div className="person mx-4 h-full max-w-2xl rounded-lg bg-white pb-4 text-gray-900 shadow-md sm:mx-auto sm:max-w-sm md:mx-auto md:max-w-sm lg:mx-auto lg:max-w-sm xl:mx-auto xl:max-w-sm">
-      <div className="h-2 rounded-t-lg bg-gradient-to-r from-primary to-orange-400" />
+      <div className="h-2 rounded-t-lg bg-gradient-to-r from-cta to-orange-400" />
       <div className="mx-auto mt-4 h-24 w-24 overflow-hidden rounded-full border-4 border-gray-100">
         <img
           className="h-24 w-24 object-cover object-center"

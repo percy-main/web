@@ -5,6 +5,7 @@ import { MenuItem, type TMenuItem } from "@/components/MenuItem";
 import { AuthNav } from "@/components/auth/Nav";
 import { urlMatch } from "@/lib/util/url-match";
 import { paymentData } from "@/lib/payments/config";
+import { Image } from "astro:assets";
 
 const { pathname } = Astro.url;
 
@@ -53,68 +54,219 @@ const menu: Array<TMenuItem & { purpose: "cta" | "menu" }> = [
     purpose: "menu",
   },
   ...pagesMenu,
-  {
-    name: "Donate Now",
-    url: `/purchase/${paymentData.prices.donation}`,
-    match: "never",
-    purpose: "cta",
-  },
 ];
+
+const donateUrl = `/purchase/${paymentData.prices.donation}`;
 ---
 
-<header
-  class="to-creamy sticky top-0 z-50 bg-linear-to-t from-blue-100 py-3 pl-[calc(100vw-100%)] shadow-md transition-all duration-300"
->
-  <nav class="relative flex flex-wrap items-center justify-between px-4">
-    <div class="flex flex-row items-center gap-4">
-      <div class="order-0">
-        <Logo />
-      </div>
-
-      <h1 class="text-h4 mb-0 hidden lg:block">
-        Percy Main Community Sports Club
-      </h1>
+<!-- Row 1: Utility Bar -->
+<div class="bg-primary text-white">
+  <div class="container flex items-center justify-between py-1.5 text-sm">
+    <span class="text-white/80">Registered Charity 1206787</span>
+    <div class="flex items-center gap-4">
+      <AuthNav client:load pathname={pathname} variant="utility" />
+      <a
+        href={donateUrl}
+        class="rounded-full bg-cta px-4 py-1 text-sm font-medium text-white transition hover:bg-cta-dark"
+      >
+        Donate
+      </a>
     </div>
+  </div>
+</div>
 
-    <input id="nav-toggle" type="checkbox" class="peer hidden" />
-    <label
-      for="nav-toggle"
-      class="order-2 flex cursor-pointer items-center peer-checked:hidden lg:order-1 lg:hidden"
-    >
-      <svg class="h-6 fill-current" viewBox="0 0 20 20">
-        <title>Menu Open</title>
-        <path d="M0 3h20v2H0V3z m0 6h20v2H0V9z m0 6h20v2H0V0z"></path>
-      </svg>
-    </label>
-    <label
-      for="nav-toggle"
-      class="order-2 hidden cursor-pointer items-center peer-checked:flex lg:order-1 lg:peer-checked:hidden"
-    >
-      <svg class="h-6 fill-current" viewBox="0 0 20 20">
-        <title>Menu Close</title>
-        <polygon
-          points="11 9 22 9 22 11 11 11 11 22 9 22 9 11 -2 11 -2 9 9 9 9 -2 11 -2"
-          transform="rotate(45 10 10)"></polygon>
-      </svg>
-    </label>
+<!-- Row 2: Masthead Band -->
+<div id="masthead" class="bg-creamy py-6 md:py-8">
+  <div class="container flex flex-col items-center justify-center gap-3">
+    <Logo size="lg" />
+    <h1 class="text-h4 md:text-h3 mb-0 text-center font-bold text-dark">
+      Percy Main Community Sports Club
+    </h1>
+  </div>
+</div>
 
-    <ul
-      class="order-3 hidden w-full text-center peer-checked:block lg:order-1 lg:flex lg:w-auto lg:space-x-2 lg:text-left lg:peer-checked:flex"
+<!-- Row 3: Navigation (Desktop) -->
+<nav class="hidden border-t border-b border-gray-200 bg-white lg:block">
+  <div class="container">
+    <ul class="flex items-center justify-center gap-1">
+      {
+        menu.map(({ purpose, ...item }, i) => (
+          <>
+            {i > 0 && (
+              <li class="text-gray-300" aria-hidden="true">
+                &middot;
+              </li>
+            )}
+            <li>
+              <MenuItem
+                item={item}
+                purpose={purpose}
+                isActive={urlMatch(pathname, item)}
+              />
+            </li>
+          </>
+        ))
+      }
+    </ul>
+  </div>
+</nav>
+
+<!-- Mobile Header Bar (always visible on mobile) -->
+<div class="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2 lg:hidden">
+  <div class="flex items-center gap-3">
+    <Logo size="sm" />
+    <span class="font-secondary text-lg font-bold text-dark">Percy Main</span>
+  </div>
+  <button
+    id="mobile-menu-toggle"
+    class="flex items-center p-2 text-dark"
+    aria-label="Open menu"
+  >
+    <svg class="h-6 w-6 fill-current" viewBox="0 0 20 20">
+      <path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z"></path>
+    </svg>
+  </button>
+</div>
+
+<!-- Sticky Collapsed Bar (desktop, shown on scroll) -->
+<header
+  id="sticky-bar"
+  class="fixed top-0 right-0 left-0 z-50 hidden -translate-y-full border-b border-gray-200 bg-white shadow-sm transition-transform duration-300"
+>
+  <div class="container flex items-center justify-between py-2">
+    <div class="flex items-center gap-3">
+      <Logo size="sm" />
+      <span class="font-secondary text-lg font-bold text-dark">Percy Main</span>
+    </div>
+    <ul class="hidden items-center gap-1 lg:flex">
+      {
+        menu.map(({ purpose, ...item }, i) => (
+          <>
+            {i > 0 && (
+              <li class="text-gray-300" aria-hidden="true">
+                &middot;
+              </li>
+            )}
+            <li>
+              <MenuItem
+                item={item}
+                purpose={purpose}
+                isActive={urlMatch(pathname, item)}
+              />
+            </li>
+          </>
+        ))
+      }
+    </ul>
+    <a
+      href={donateUrl}
+      class="rounded-full bg-cta px-4 py-1.5 text-sm font-medium text-white transition hover:bg-cta-dark"
     >
+      Donate
+    </a>
+  </div>
+</header>
+
+<!-- Mobile Drawer Overlay -->
+<div
+  id="mobile-drawer-overlay"
+  class="fixed inset-0 z-50 hidden bg-black/50 transition-opacity"
+>
+  <div
+    id="mobile-drawer"
+    class="absolute top-0 right-0 h-full w-72 translate-x-full bg-white shadow-xl transition-transform duration-300"
+  >
+    <div class="flex items-center justify-between border-b border-gray-200 px-4 py-4">
+      <span class="font-secondary text-lg font-bold text-dark">Menu</span>
+      <button id="mobile-menu-close" class="p-2 text-dark" aria-label="Close menu">
+        <svg class="h-5 w-5 fill-current" viewBox="0 0 20 20">
+          <polygon
+            points="11 9 22 9 22 11 11 11 11 22 9 22 9 11 -2 11 -2 9 9 9 9 -2 11 -2"
+            transform="rotate(45 10 10)"></polygon>
+        </svg>
+      </button>
+    </div>
+    <ul class="flex flex-col px-4 py-4">
       {
         menu.map(({ purpose, ...item }) => (
-          <li>
+          <li class="border-b border-gray-100">
             <MenuItem
               item={item}
-              purpose={purpose}
+              purpose="menu"
               isActive={urlMatch(pathname, item)}
             />
           </li>
         ))
       }
-      <li>
+      <li class="mt-4">
+        <a
+          href={donateUrl}
+          class="block rounded-lg bg-cta px-5 py-2.5 text-center text-sm font-medium text-white transition hover:bg-cta-dark"
+        >
+          Donate Now
+        </a>
+      </li>
+      <li class="mt-3">
         <AuthNav client:load pathname={pathname} />
       </li>
     </ul>
-  </nav>
-</header>
+  </div>
+</div>
+
+<script>
+  // Sticky bar: IntersectionObserver on masthead
+  const masthead = document.getElementById("masthead");
+  const stickyBar = document.getElementById("sticky-bar");
+
+  if (masthead && stickyBar) {
+    stickyBar.classList.remove("hidden");
+    stickyBar.classList.add("block");
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) {
+          stickyBar.classList.remove("-translate-y-full");
+          stickyBar.classList.add("translate-y-0");
+        } else {
+          stickyBar.classList.remove("translate-y-0");
+          stickyBar.classList.add("-translate-y-full");
+        }
+      },
+      { threshold: 0 }
+    );
+
+    observer.observe(masthead);
+  }
+
+  // Mobile drawer toggle
+  const toggleBtn = document.getElementById("mobile-menu-toggle");
+  const closeBtn = document.getElementById("mobile-menu-close");
+  const overlay = document.getElementById("mobile-drawer-overlay");
+  const drawer = document.getElementById("mobile-drawer");
+
+  function openDrawer() {
+    if (overlay && drawer) {
+      overlay.classList.remove("hidden");
+      requestAnimationFrame(() => {
+        drawer.classList.remove("translate-x-full");
+        drawer.classList.add("translate-x-0");
+      });
+    }
+  }
+
+  function closeDrawer() {
+    if (overlay && drawer) {
+      drawer.classList.remove("translate-x-0");
+      drawer.classList.add("translate-x-full");
+      setTimeout(() => {
+        overlay.classList.add("hidden");
+      }, 300);
+    }
+  }
+
+  toggleBtn?.addEventListener("click", openDrawer);
+  closeBtn?.addEventListener("click", closeDrawer);
+  overlay?.addEventListener("click", (e) => {
+    if (e.target === overlay) closeDrawer();
+  });
+</script>

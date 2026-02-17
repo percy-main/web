@@ -33,13 +33,16 @@ export const theme = {
       text: "#444",
       light: "#ceced0",
       dark: "#222",
-      primary: "#FE6019",
+      primary: "#1B3D2F",
+      "primary-light": "#2D4A3E",
+      cta: "#FE6019",
+      "cta-dark": "#E5540F",
       secondary: "#FEE140",
-      body: "#fafafa",
+      body: "#FAF8F3",
       border: "#EBEBEB",
       "theme-light": "#E5E5E5",
       "theme-dark": "#1a202c",
-      creamy: "#F1F1F1",
+      creamy: "#FAF8F3",
       input: "hsl(var(--input))",
       ring: "hsl(var(--ring))",
       background: "hsl(var(--background))",
@@ -79,7 +82,7 @@ export const theme = {
     },
     fontFamily: {
       primary: ["var(--font-primary)", "sans-serif"],
-      secondary: ["var(--font-secondary)", "sans-serif"],
+      secondary: ["var(--font-secondary)", "serif"],
     },
 
     keyframes: {

@@ -1,0 +1,17 @@
+---
+type Props = {
+  quote: string;
+  name: string;
+  role: string;
+};
+
+const { quote, name, role } = Astro.props;
+---
+
+<blockquote class="rounded-lg border-l-4 border-cta bg-white p-6 shadow-sm">
+  <p class="mb-4 text-gray-700 italic leading-relaxed">"{quote}"</p>
+  <footer class="text-sm">
+    <span class="font-semibold text-dark">{name}</span>
+    <span class="text-gray-500"> &mdash; {role}</span>
+  </footer>
+</blockquote>

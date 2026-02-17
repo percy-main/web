@@ -35,3 +35,5 @@ local.db*
 .sample
 .emails
 .better-auth
+screenshots/
+ISSUES.md
