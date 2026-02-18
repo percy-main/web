@@ -63,7 +63,9 @@ const renderEmbeddedAsset = ({ fields, metadata }: Asset<undefined>) => {
 const renderOptions = (page: string, games: Game[]): Options => ({
   renderNode: {
     [INLINES.EMBEDDED_ENTRY]: (node) => {
-      if (node.data.target.sys.contentType.sys.id === "trustee") {
+      const contentTypeId = node.data.target.sys.contentType?.sys.id;
+      if (!contentTypeId) return null;
+      if (contentTypeId === "trustee") {
         return (
           <Person
             person={{
@@ -80,14 +82,14 @@ const renderOptions = (page: string, games: Game[]): Options => ({
             )}
           />
         );
-      } else if (node.data.target.sys.contentType.sys.id === "league") {
+      } else if (contentTypeId === "league") {
         return (
           <LeagueTable
             divisionId={node.data.target.fields.divisionId}
             name={node.data.target.fields.name}
           />
         );
-      } else if (node.data.target.sys.contentType.sys.id === "assetLink") {
+      } else if (contentTypeId === "assetLink") {
         return (
           <a
             href={node.data.target.fields.href}
@@ -97,9 +99,9 @@ const renderOptions = (page: string, games: Game[]): Options => ({
             {renderEmbeddedAsset(node.data.target.fields.asset)}
           </a>
         );
-      } else if (node.data.target.sys.contentType.sys.id === "location") {
+      } else if (contentTypeId === "location") {
         return "location";
-      } else if (node.data.target.sys.contentType.sys.id === "event") {
+      } else if (contentTypeId === "event") {
         return (
           <div className="mb-2 h-full max-w-sm rounded-none bg-white p-4 shadow-md lg:rounded-lg">
             <EventPreview
@@ -113,7 +115,7 @@ const renderOptions = (page: string, games: Game[]): Options => ({
             />
           </div>
         );
-      } else if (node.data.target.sys.contentType.sys.id === "gameDetail") {
+      } else if (contentTypeId === "gameDetail") {
         const game = games.find(
           (game) => game.id === node.data.target.fields.playCricketId,
         );
@@ -125,7 +127,7 @@ const renderOptions = (page: string, games: Game[]): Options => ({
             <GamePreview game={game} id={game.id} />
           </div>
         );
-      } else if (node.data.target.sys.contentType.sys.id === "emailCollector") {
+      } else if (contentTypeId === "emailCollector") {
         return <CollectEmail {...node.data.target.fields} />;
       }
     },

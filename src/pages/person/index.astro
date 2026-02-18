@@ -5,10 +5,95 @@ import _ from "lodash";
 import { Breadcrumbs } from "astro-breadcrumbs";
 import { IoChevronForward } from "react-icons/io5";
 import Container from "@/layouts/Container.astro";
+import { INLINES } from "@contentful/rich-text-types";
+import type { Node } from "@contentful/rich-text-types";
 
 const people = _.sortBy(
-  await getCollection("person"),
+  (await getCollection("person")).filter((p) => !p.data.hasLeftClub),
   (p) => p.data.name.split(" ")[1],
+);
+
+type PersonEntry = (typeof people)[number];
+
+// Walk richtext documents to find people who've appeared in team sheets
+const calendarItems = await getCollection("calendarItem");
+const playerIds = new Set<string>();
+
+function walkNodes(node: Node) {
+  if (
+    node.nodeType === INLINES.EMBEDDED_ENTRY &&
+    node.data.target?.sys?.contentType?.sys?.id === "trustee"
+  ) {
+    playerIds.add(node.data.target.sys.id);
+  }
+  if ("content" in node && Array.isArray(node.content)) {
+    for (const child of node.content) {
+      walkNodes(child);
+    }
+  }
+}
+
+for (const item of calendarItems) {
+  if (item.data.type === "game" && item.data.description) {
+    walkNodes(item.data.description);
+  }
+}
+
+const roleGroups = [
+  {
+    label: "Governance",
+    description:
+      "The trustees and committee members who keep the club running",
+    match: (role: string) =>
+      /trustee|chair|vice chair|secretary|treasurer|president|committee|safeguarding/i.test(
+        role,
+      ),
+  },
+  {
+    label: "Coaches",
+    description: "Developing players across all our teams",
+    match: (role: string) => /coach|head of.*section/i.test(role),
+  },
+  {
+    label: "Captains",
+    description: "Leading our teams on the pitch",
+    match: (role: string) => /captain|wicketkeeper/i.test(role),
+  },
+  {
+    label: "Grounds Team",
+    description: "Looking after our facilities",
+    match: (role: string) => /groundsman|grounds/i.test(role),
+  },
+  {
+    label: "Social Media",
+    description: "Sharing our story online",
+    match: (role: string) => /social media/i.test(role),
+  },
+];
+
+const grouped = new Map<string, { person: PersonEntry; roles: string[] }[]>();
+for (const group of roleGroups) {
+  grouped.set(group.label, []);
+}
+grouped.set("Players", []);
+
+for (const person of people) {
+  const allRoles = Object.values(person.data.pageData) as string[];
+
+  for (const group of roleGroups) {
+    const matchingRoles = allRoles.filter((r) => group.match(r));
+    if (matchingRoles.length > 0) {
+      grouped.get(group.label)!.push({ person, roles: matchingRoles });
+    }
+  }
+
+  if (playerIds.has(person.id)) {
+    grouped.get("Players")!.push({ person, roles: [] });
+  }
+}
+
+const sections = [...grouped.entries()].filter(
+  ([, members]) => members.length > 0,
 );
 ---
 
@@ -30,32 +115,41 @@ const people = _.sortBy(
     meet at Percy Main Community Sports Club
   </p>
 
-  <div class="my-auto flex flex-col items-center">
-    <ul
-      class="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-    >
-      {
-        people.map((person) => (
-          <li>
-            <Person
-              person={{
-                name: person.data.name,
-                photo: person.data.photo && {
-                  title: person.data.photo.title,
-                  url: person.data.photo.url,
-                },
-                slug: person.data.slug,
-              }}
-            >
-              <ul>
-                {Object.entries(person.data.pageData).map(([, role]) => (
-                  <li>{role}</li>
-                ))}
-              </ul>
-            </Person>
-          </li>
-        ))
-      }
-    </ul>
-  </div>
+  {
+    sections.map(([label, members]) => {
+      const groupDef = roleGroups.find((g) => g.label === label);
+      return (
+        <section class="mt-10">
+          <h3 class="text-h4 mb-1">{label}</h3>
+          {groupDef?.description && (
+            <p class="mb-4 text-sm text-gray-600">{groupDef.description}</p>
+          )}
+          <ul class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {members.map(({ person, roles }) => (
+              <li>
+                <Person
+                  person={{
+                    name: person.data.name,
+                    photo: person.data.photo && {
+                      title: person.data.photo.title,
+                      url: person.data.photo.url,
+                    },
+                    slug: person.data.slug,
+                  }}
+                >
+                  {roles.length > 0 && (
+                    <ul>
+                      {roles.map((role) => (
+                        <li>{role}</li>
+                      ))}
+                    </ul>
+                  )}
+                </Person>
+              </li>
+            ))}
+          </ul>
+        </section>
+      );
+    })
+  }
 </Container>

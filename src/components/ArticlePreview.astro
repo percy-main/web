@@ -12,10 +12,10 @@ type Props = News;
 const { title, when, summary, author, slug } = Astro.props;
 ---
 
-<div class="flex h-full flex-col items-stretch justify-between">
+<div class="flex h-full flex-col">
   <div class="mb-5 flex items-center justify-between text-gray-600">
     <span
-      class="bg-primary-100 text-primary-800 dark:bg-primary-200 dark:text-primary-800 inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-medium"
+      class="bg-green-100 text-green-800 dark:bg-green-200 dark:text-green-800 inline-flex items-center rounded-sm px-2.5 py-0.5 text-xs font-medium"
     >
       <IoNewspaperOutline size={24} className="mr-4" />
       News
@@ -27,34 +27,34 @@ const { title, when, summary, author, slug } = Astro.props;
   >
     <a href={`/news/article/${slug}`}>{title}</a>
   </h2>
-</div>
-<p class="mb-5 font-light text-gray-600">
-  <RichText
-    client:only="react"
-    page=""
-    document={summary}
-    games={games.filter((g) => g.data.type === "game").map((g) => g.data)}
-  />
-</p>
-<div class="flex flex-col items-center justify-between gap-4 md:flex-row">
-  <a class="flex items-center space-x-4" href={`/person/${author.slug}`}>
-    {
-      author.photo && (
-        <img
-          class="h-7 w-7 rounded-full"
-          src={author.photo.url}
-          alt={author.photo?.title}
-        />
-      )
-    }
-    <span class="font-medium dark:text-white">
-      {author.name}
-    </span>
-  </a>
-  <a
-    href={`/news/article/${slug}`}
-    class="text-primary-600 dark:text-primary-500 inline-flex items-center font-medium hover:underline"
-    >Read the full article
-    <IoArrowForward size={24} className="ml-2" />
-  </a>
+  <p class="mb-5 flex-grow font-light text-gray-600">
+    <RichText
+      client:only="react"
+      page=""
+      document={summary}
+      games={games.filter((g) => g.data.type === "game").map((g) => g.data)}
+    />
+  </p>
+  <div class="flex flex-col gap-3">
+    <a class="flex items-center space-x-4" href={`/person/${author.slug}`}>
+      {
+        author.photo && (
+          <img
+            class="h-7 w-7 rounded-full"
+            src={author.photo.url}
+            alt={author.photo?.title}
+          />
+        )
+      }
+      <span class="font-medium dark:text-white">
+        {author.name}
+      </span>
+    </a>
+    <a
+      href={`/news/article/${slug}`}
+      class="text-green-700 dark:text-green-500 inline-flex items-center font-medium hover:underline"
+      >Read the full article
+      <IoArrowForward size={24} className="ml-2" />
+    </a>
+  </div>
 </div>

@@ -5,12 +5,16 @@ import { type TMenuItem, MenuItem } from "../MenuItem";
 
 type Props = {
   pathname: string;
+  variant?: "nav" | "utility";
 };
 
-export const AuthNav: FC<Props> = ({ pathname }) => {
+export const AuthNav: FC<Props> = ({ pathname, variant = "nav" }) => {
   const session = useSession();
 
   if (session.isPending) {
+    if (variant === "utility") {
+      return <span className="text-sm text-white/70">...</span>;
+    }
     return (
       <MenuItem
         item={{
@@ -36,6 +40,17 @@ export const AuthNav: FC<Props> = ({ pathname }) => {
         url: "/auth/login",
         match: "exact",
       };
+
+  if (variant === "utility") {
+    return (
+      <a
+        href={menuItem.url}
+        className="text-sm text-white/90 transition hover:text-white"
+      >
+        {menuItem.name}
+      </a>
+    );
+  }
 
   return (
     <MenuItem

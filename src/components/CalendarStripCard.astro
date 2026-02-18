@@ -1,0 +1,40 @@
+---
+import { formatDate } from "date-fns";
+import type { CalendarItem } from "@/collections/calendarItem";
+
+type Props = {
+  id: string;
+  item: CalendarItem;
+};
+
+const { id, item } = Astro.props;
+
+const typeLabel = item.type === "game" ? "Match" : "Event";
+const displayName =
+  item.type === "game"
+    ? `${item.team.name} vs ${item.opposition.club.name}`
+    : item.name;
+const dateStr = item.when ? formatDate(item.when, "EEE dd MMM") : "TBC";
+const timeStr = item.when ? formatDate(item.when, "h:mm a") : "";
+---
+
+<a
+  href={`/calendar/event/${id}`}
+  class="flex min-w-[220px] snap-start flex-col rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+>
+  <div class="mb-2 flex items-center justify-between">
+    <span class="text-sm font-semibold text-primary">{dateStr}</span>
+    <span
+      class:list={[
+        "rounded-full px-2 py-0.5 text-xs font-medium",
+        item.type === "game"
+          ? "bg-green-100 text-green-800"
+          : "bg-blue-100 text-blue-800",
+      ]}
+    >
+      {typeLabel}
+    </span>
+  </div>
+  <p class="text-sm font-medium text-dark line-clamp-2">{displayName}</p>
+  {timeStr && <p class="mt-1 text-xs text-gray-500">{timeStr}</p>}
+</a>

@@ -35,3 +35,7 @@ local.db*
 .sample
 .emails
 .better-auth
+screenshots/
+ISSUES.md
+
+.mcp.json

@@ -5,20 +5,19 @@ import {
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
-const baseURL = await (
-  import.meta.env.CLI === "true"
-    ? () => import.meta.env.BASE_URL
-    : async () => {
-        if (import.meta.env.DEPLOY_URL) {
-          return import.meta.env.DEPLOY_URL as string;
-        }
-        const env = await import("astro:env/client");
-        return env.BASE_URL;
-      }
-)();
+const baseURL = await (async () => {
+  if (import.meta.env.CLI === "true") {
+    return import.meta.env.BASE_URL;
+  }
+  if (typeof window !== "undefined") {
+    return undefined;
+  }
+  const env = await import("astro:env/client");
+  return env.BASE_URL;
+})();
 
 const clientConfig = {
-  baseURL,
+  ...(baseURL && { baseURL }),
   plugins: [passkeyClient(), twoFactorClient(), adminClient()],
 };
 

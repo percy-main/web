@@ -6,64 +6,75 @@ import {
   IoLogoLinkedin,
   IoLogoTiktok,
 } from "react-icons/io5";
+
+type Props = {
+  variant?: "light" | "dark";
+};
+
+const { variant = "light" } = Astro.props;
+
+const linkClass =
+  variant === "dark"
+    ? "inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/20 text-center transition-all duration-200 hover:bg-cta [&_svg]:fill-white [&>svg]:text-xl"
+    : "hover:bg-primary [&>svg]:m-auto[&>svg]:h-11 [&_svg]:fill-dark inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-center transition-all duration-200 [&_path]:transition-all [&_path]:duration-200 hover:[&_svg]:fill-white [&>svg]:text-xl";
 ---
 
-<ul class="mt-4 lg:mt-6">
-  <li class="mr-2 inline-block">
+<ul class="mt-4 flex gap-2 lg:mt-6">
+  <li>
     <a
       aria-label="facebook"
       href="https://www.facebook.com/Percymaincricketclub"
       target="_blank"
       rel="noopener noreferrer nofollow"
-      class="hover:bg-primary [&>svg]:m-auto[&>svg]:h-11 [&_svg]:fill-dark inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-center transition-all duration-200 [&_path]:transition-all [&_path]:duration-200 hover:[&_svg]:fill-white [&>svg]:text-xl"
+      class={linkClass}
     >
       <IoLogoFacebook />
     </a>
   </li>
 
-  <li class="mr-2 inline-block">
+  <li>
     <a
       aria-label="location"
       href="https://maps.app.goo.gl/qQ5bFRqxoDYVvzdz9"
       target="_blank"
       rel="noopener noreferrer nofollow"
-      class="hover:bg-primary [&>svg]:m-auto[&>svg]:h-11 [&_svg]:fill-dark inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-center transition-all duration-200 [&_path]:transition-all [&_path]:duration-200 hover:[&_svg]:fill-white [&>svg]:text-xl"
+      class={linkClass}
     >
       <IoLocation />
     </a>
   </li>
 
-  <li class="mr-2 inline-block">
+  <li>
     <a
       aria-label="linkedin"
       href="https://www.linkedin.com/company/percy-main-cricket-and-sports-club"
       target="_blank"
       rel="noopener noreferrer nofollow"
-      class="hover:bg-primary [&>svg]:m-auto[&>svg]:h-11 [&_svg]:fill-dark inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-center transition-all duration-200 [&_path]:transition-all [&_path]:duration-200 hover:[&_svg]:fill-white [&>svg]:text-xl"
+      class={linkClass}
     >
       <IoLogoLinkedin />
     </a>
   </li>
 
-  <li class="mr-2 inline-block">
+  <li>
     <a
       aria-label="github"
       href="https://github.com/percy-main/web"
       target="_blank"
       rel="noopener noreferrer nofollow"
-      class="hover:bg-primary [&>svg]:m-auto[&>svg]:h-11 [&_svg]:fill-dark inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-center transition-all duration-200 [&_path]:transition-all [&_path]:duration-200 hover:[&_svg]:fill-white [&>svg]:text-xl"
+      class={linkClass}
     >
       <IoLogoGithub />
     </a>
   </li>
 
-  <li class="mr-2 inline-block">
+  <li>
     <a
       aria-label="tiktok"
       href="https://www.tiktok.com/@percymaincricketclub"
       target="_blank"
       rel="noopener noreferrer nofollow"
-      class="hover:bg-primary [&>svg]:m-auto[&>svg]:h-11 [&_svg]:fill-dark inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-center transition-all duration-200 [&_path]:transition-all [&_path]:duration-200 hover:[&_svg]:fill-white [&>svg]:text-xl"
+      class={linkClass}
     >
       <IoLogoTiktok />
     </a>

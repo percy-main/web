@@ -1,5 +1,6 @@
 import type { Match } from "@/lib/util/url-match";
 import { cva, type VariantProps } from "class-variance-authority";
+import { twMerge } from "tailwind-merge";
 import type { FC } from "react";
 
 export type TMenuItem = {
@@ -15,7 +16,7 @@ type Props = VariantProps<typeof style> & {
 
 const style = cva(
   [
-    "p-3 py-2 text-[15px] text-dark transition hover:text-primary md:px-2 inline-block lg:block",
+    "px-3 py-2 text-dark transition hover:text-primary inline-block lg:block",
   ],
   {
     variants: {
@@ -23,8 +24,8 @@ const style = cva(
         cta: [
           "text-white",
           "hover:text-white",
-          "bg-primary",
-          "hover:bg-orange-600",
+          "bg-cta",
+          "hover:bg-cta-dark",
           "focus:ring-4",
           "focus:ring-orange-200",
           "font-medium",
@@ -34,7 +35,14 @@ const style = cva(
           "py-2.5",
           "focus:outline-hidden",
         ],
-        menu: null,
+        menu: [
+          "uppercase",
+          "tracking-wider",
+          "text-sm",
+          "font-medium",
+          "border-b-2",
+          "border-transparent",
+        ],
       },
       width: {
         fixed: ["min-w-28", "text-center"],
@@ -46,13 +54,14 @@ const style = cva(
 
 export const MenuItem: FC<Props> = ({ item, isActive, purpose, width }) => {
   return (
-    <>
-      <a href={item.url} className={style({ purpose, width })}>
-        {item.name}
-      </a>
-      {isActive && (
-        <div className="right-2 left-2 h-0.5 bg-primary" />
+    <a
+      href={item.url}
+      className={twMerge(
+        style({ purpose, width }),
+        isActive && purpose !== "cta" && "border-primary/40 text-primary",
       )}
-    </>
+    >
+      {item.name}
+    </a>
   );
 };

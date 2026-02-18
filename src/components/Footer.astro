@@ -1,56 +1,88 @@
 ---
 import Social from "./Social.astro";
+import Logo from "./Logo.astro";
 ---
 
-<footer
-  class="footer to-creamy text-dark sticky top-full w-full bg-linear-to-t from-blue-100"
->
-  <div class="container">
-    <div class="gx-5 flex flex-col justify-between pt-8 pb-10 lg:flex-row">
+<footer class="bg-primary text-white">
+  <div class="container py-12">
+    <div class="grid gap-10 md:grid-cols-3">
+      <!-- Column 1: About -->
       <div>
-        <Social />
+        <Logo size="md" />
+        <p class="mt-4 text-sm leading-relaxed text-white/80">
+          Community sports club providing facilities for cricket, football,
+          boxing, and running in Percy Main and surrounding areas.
+        </p>
+        <p class="mt-3 text-sm text-white/60">
+          <a
+            href="https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/5231516/charity-overview"
+            class="text-cta transition hover:text-orange-300"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Registered Charity 1206787
+          </a>
+        </p>
       </div>
-      <div class="content">
-        <p>Percy Main Community Sports Club</p>
-        <p>St. Johns Terrace</p>
-        <p>North Shields</p>
-        <p>NE29 6HS</p>
-        <a href="mailto:trustees@percymain.org">trustees@percymain.org</a>
+
+      <!-- Column 2: Quick Links -->
+      <div>
+        <h4 class="mb-4 text-sm font-semibold uppercase tracking-wider text-white">
+          Quick Links
+        </h4>
+        <ul class="space-y-2 text-sm">
+          <li>
+            <a href="/calendar" class="text-white/80 transition hover:text-white">Calendar</a>
+          </li>
+          <li>
+            <a href="/news/1" class="text-white/80 transition hover:text-white">News</a>
+          </li>
+          <li>
+            <a href="/person" class="text-white/80 transition hover:text-white">People</a>
+          </li>
+          <li>
+            <a href="/cricket" class="text-white/80 transition hover:text-white">Cricket</a>
+          </li>
+          <li>
+            <a href="/legal/privacy" class="text-white/80 transition hover:text-white">Privacy Policy</a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Column 3: Contact -->
+      <div>
+        <h4 class="mb-4 text-sm font-semibold uppercase tracking-wider text-white">
+          Contact
+        </h4>
+        <address class="space-y-1 text-sm not-italic text-white/80">
+          <p>St. Johns Terrace</p>
+          <p>North Shields</p>
+          <p>NE29 6HS</p>
+        </address>
+        <a
+          href="mailto:trustees@percymain.org"
+          class="mt-3 inline-block text-sm text-cta transition hover:text-orange-300"
+        >
+          trustees@percymain.org
+        </a>
+        <Social variant="dark" />
       </div>
     </div>
   </div>
-  <div class="container max-w-[1440px]">
-    <div class="footer-copyright mx-autopt-7 text-center">
-      <a
-        href="https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/5231516/charity-overview"
-        class="content"
-      >
-        Registered Charity 1206787
-      </a>
-    </div>
-    <div
-      class="footer-copyright mx-auto flex flex-col items-center gap-4 pb-10"
-    >
-      <p class="content">Copyright 2024 Percy Main Community Sports Club</p>
-      <p>
-        <a
-          class="text-blue-950 underline hover:text-blue-600"
-          href="/legal/privacy"
-          title="Privacy Policy">Privacy Policy</a
-        >
-      </p>
 
-      <div slot="footer">
-        <a href="https://www.contentful.com/" rel="nofollow" target="_blank">
-          <img
-            class="w-28"
-            width="112"
-            height="36"
-            src="https://images.ctfassets.net/fo9twyrwpveg/44baP9Gtm8qE2Umm8CQwQk/c43325463d1cb5db2ef97fca0788ea55/PoweredByContentful_LightBackground.svg"
-            alt="PoweredbyContentful"
-          />
-        </a>
-      </div>
+  <!-- Bottom bar -->
+  <div class="border-t border-white/10">
+    <div class="container flex flex-col items-center justify-between gap-3 py-4 text-sm text-white/60 md:flex-row">
+      <p>&copy; {new Date().getFullYear()} Percy Main Community Sports Club</p>
+      <a href="https://www.contentful.com/" rel="nofollow" target="_blank" class="text-white/60 transition hover:text-white/80">
+        <img
+          class="w-24 brightness-0 invert opacity-60"
+          width="112"
+          height="36"
+          src="https://images.ctfassets.net/fo9twyrwpveg/44baP9Gtm8qE2Umm8CQwQk/c43325463d1cb5db2ef97fca0788ea55/PoweredByContentful_LightBackground.svg"
+          alt="Contentful"
+        />
+      </a>
     </div>
   </div>
 </footer>

@@ -14,7 +14,8 @@
   h4,
   h5,
   h6 {
-    @apply font-secondary text-dark leading-tight font-bold;
+    font-family: var(--font-secondary), serif;
+    @apply text-dark leading-tight font-bold;
   }
 
   h1,
@@ -112,7 +113,8 @@
       @apply border-border;
     }
     body {
-      @apply font-sans antialiased bg-background text-foreground;
+      font-family: var(--font-primary), sans-serif;
+      @apply antialiased bg-background text-foreground;
     }
     ol.rich {
         counter-reset: cupcake;
@@ -129,4 +131,5 @@
     float: left;
     margin-right: 12px;
     }
+
   }

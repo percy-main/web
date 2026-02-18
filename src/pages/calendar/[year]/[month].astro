@@ -186,7 +186,7 @@ const { year, month, calendar, previous, next, items } = Astro.props;
                   calendar.map(({ date, isExtra, items }) => (
                     <button
                       id={`calendar-${formatDate(date, "dd-MM-yyyy")}`}
-                      class="flex items-start justify-between border-r border-b border-gray-200 p-3.5 transition-all duration-300 hover:bg-orange-50 max-xl:min-h-[60px] xl:aspect-square"
+                      class="flex items-start justify-between border-r border-b border-gray-200 p-3.5 transition-all duration-300 hover:bg-green-50 max-xl:min-h-[60px] xl:aspect-square"
                       class:list={[isExtra ? "bg-gray-100" : "bg-white"]}
                     >
                       <span class="text-xs font-semibold text-gray-400">
