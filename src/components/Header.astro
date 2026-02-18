@@ -95,18 +95,16 @@ const donateUrl = `/purchase/${paymentData.prices.donation}`;
 </div>
 
 <!-- Row 3: Navigation (Desktop) -->
-<nav class="hidden border-t border-b border-gray-200 bg-white lg:block">
+<nav class="hidden border-t border-b border-gray-200 bg-white py-2 lg:block">
   <div class="container">
-    <ul class="flex items-center justify-center gap-1">
+    <ul class="flex items-center justify-center">
       {
         menu.map(({ purpose, ...item }, i) => (
           <>
             {i > 0 && (
-              <li class="text-gray-300" aria-hidden="true">
-                &middot;
-              </li>
+              <li class="h-4 w-px bg-gray-200" aria-hidden="true" />
             )}
-            <li>
+            <li class="px-1">
               <MenuItem
                 item={item}
                 purpose={purpose}
@@ -130,16 +128,14 @@ const donateUrl = `/purchase/${paymentData.prices.donation}`;
       <Logo size="sm" />
       <span class="font-secondary text-lg font-bold text-dark">Percy Main</span>
     </div>
-    <ul class="hidden items-center gap-1 lg:flex">
+    <ul class="hidden items-center lg:flex">
       {
         menu.map(({ purpose, ...item }, i) => (
           <>
             {i > 0 && (
-              <li class="text-gray-300" aria-hidden="true">
-                &middot;
-              </li>
+              <li class="h-4 w-px bg-gray-200" aria-hidden="true" />
             )}
-            <li>
+            <li class="px-1">
               <MenuItem
                 item={item}
                 purpose={purpose}

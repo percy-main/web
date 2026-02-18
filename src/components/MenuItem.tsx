@@ -16,7 +16,7 @@ type Props = VariantProps<typeof style> & {
 
 const style = cva(
   [
-    "p-3 py-2 text-dark transition hover:text-primary inline-block lg:block",
+    "px-3 py-2 text-dark transition hover:text-primary inline-block lg:block",
   ],
   {
     variants: {
@@ -58,7 +58,7 @@ export const MenuItem: FC<Props> = ({ item, isActive, purpose, width }) => {
       href={item.url}
       className={twMerge(
         style({ purpose, width }),
-        isActive && purpose !== "cta" && "border-primary",
+        isActive && purpose !== "cta" && "border-primary/40 text-primary",
       )}
     >
       {item.name}
