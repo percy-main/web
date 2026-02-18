@@ -6,7 +6,7 @@ import { Kysely, Migrator } from "kysely";
 import * as path from "path";
 import ts from "typescript";
 
-export const onPostBuild = async ({ utils }) => {
+export const onPreBuild = async ({ utils }) => {
   let db;
   try {
     const url = process.env.DB_SYNC_URL;
