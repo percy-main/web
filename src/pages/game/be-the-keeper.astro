@@ -1,0 +1,10 @@
+---
+import Container from "@/layouts/Container.astro";
+import BeTheKeeper from "@/components/be-the-keeper/BeTheKeeper";
+---
+
+<Container title="Be The Keeper">
+  <div class="mx-auto max-w-4xl py-4 text-center">
+    <BeTheKeeper client:only="react" />
+  </div>
+</Container>
