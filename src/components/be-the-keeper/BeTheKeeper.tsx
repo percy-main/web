@@ -1,4 +1,6 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
+import { useSession } from "@/lib/auth/client";
+import { actions } from "astro:actions";
 
 // ══════════════════════════════════════════════════════════════
 //  BE THE KEEPER — Percy Main CC Wicketkeeper Catching Game
@@ -84,6 +86,14 @@ interface PopText {
   size: number;
 }
 
+interface LeaderboardEntry {
+  name: string;
+  score: number;
+  level: number;
+  catches: number;
+  bestStreak: number;
+}
+
 interface GS {
   phase: "menu" | "play" | "over";
   score: number;
@@ -109,6 +119,8 @@ interface GS {
   batSwing: number;
   overPause: number;
   gameOverTime: number;
+  leaderboard: LeaderboardEntry[];
+  scoreSaved: boolean;
 }
 
 // ── State ───────────────────────────────────────────────────
@@ -143,6 +155,8 @@ function initState(): GS {
     batSwing: 0,
     overPause: 0,
     gameOverTime: 0,
+    leaderboard: [],
+    scoreSaved: false,
   };
 }
 
@@ -739,7 +753,7 @@ function drawHelmet(ctx: CanvasRenderingContext2D, w: number, h: number) {
 
 // ── Scene drawing ───────────────────────────────────────────
 
-function drawScene(ctx: CanvasRenderingContext2D, s: GS, w: number, h: number) {
+function drawScene(ctx: CanvasRenderingContext2D, s: GS, w: number, h: number, isLoggedIn: boolean) {
   ctx.save();
   ctx.translate(s.shakeX, s.shakeY);
 
@@ -889,7 +903,7 @@ function drawScene(ctx: CanvasRenderingContext2D, s: GS, w: number, h: number) {
   // HUD / overlays
   if (s.phase === "play") drawHUD(ctx, s, w, h);
   if (s.phase === "menu") drawMenu(ctx, s, w, h);
-  if (s.phase === "over") drawGameOver(ctx, s, w, h);
+  if (s.phase === "over") drawGameOver(ctx, s, w, h, isLoggedIn);
 
   ctx.restore();
 }
@@ -1054,38 +1068,113 @@ function drawMenu(ctx: CanvasRenderingContext2D, s: GS, w: number, h: number) {
 
 // ── Game over ───────────────────────────────────────────────
 
-function drawGameOver(ctx: CanvasRenderingContext2D, s: GS, w: number, h: number) {
+function drawGameOver(
+  ctx: CanvasRenderingContext2D, s: GS, w: number, h: number,
+  isLoggedIn: boolean,
+) {
   ctx.fillStyle = "rgba(20,20,40,0.88)";
   ctx.fillRect(0, 0, w, h);
 
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  ctx.font = `bold ${Math.min(w * 0.065, 38)}px 'Lora', serif`;
+  // Compact layout: title + score
+  ctx.font = `bold ${Math.min(w * 0.055, 32)}px 'Lora', serif`;
   ctx.fillStyle = P.white;
-  ctx.fillText("INNINGS OVER", w / 2, h * 0.15);
+  ctx.fillText("INNINGS OVER", w / 2, h * 0.1);
 
-  ctx.font = `bold ${Math.min(w * 0.1, 52)}px 'Lora', serif`;
+  ctx.font = `bold ${Math.min(w * 0.085, 44)}px 'Lora', serif`;
   ctx.fillStyle = P.gold;
-  ctx.fillText(String(s.score), w / 2, h * 0.27);
+  ctx.fillText(String(s.score), w / 2, h * 0.19);
 
   if (s.score >= s.hi && s.score > 0) {
-    ctx.font = `bold ${Math.min(w * 0.032, 16)}px 'Source Sans 3', sans-serif`;
+    ctx.font = `bold ${Math.min(w * 0.028, 14)}px 'Source Sans 3', sans-serif`;
     ctx.fillStyle = P.cta;
-    ctx.fillText("NEW HIGH SCORE!", w / 2, h * 0.35);
+    ctx.fillText("NEW HIGH SCORE!", w / 2, h * 0.26);
   }
 
+  // Stats row
   const bowler = BOWLERS[Math.min(s.level - 1, BOWLERS.length - 1)];
-  ctx.font = `${Math.min(w * 0.026, 14)}px 'Source Sans 3', sans-serif`;
-  ctx.fillStyle = "rgba(255,255,255,0.65)";
-  ctx.fillText(`Bowler: ${bowler.name}`, w / 2, h * 0.44);
-  ctx.fillText(`Catches: ${s.catches} / ${s.totalBalls}`, w / 2, h * 0.50);
-  ctx.fillText(`Best streak: ${s.bestStreak}`, w / 2, h * 0.56);
+  ctx.font = `${Math.min(w * 0.024, 13)}px 'Source Sans 3', sans-serif`;
+  ctx.fillStyle = "rgba(255,255,255,0.6)";
+  ctx.fillText(
+    `Bowler: ${bowler.name}  |  Catches: ${s.catches}/${s.totalBalls}  |  Best streak: ${s.bestStreak}`,
+    w / 2, h * 0.32,
+  );
 
+  // Leaderboard section
+  const lbTop = h * 0.38;
+  if (s.leaderboard.length > 0) {
+    ctx.font = `bold ${Math.min(w * 0.028, 14)}px 'Source Sans 3', sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.45)";
+    ctx.fillText("TOP SCORES", w / 2, lbTop);
+
+    const rowH = Math.min(h * 0.05, 22);
+    const startY = lbTop + rowH * 1.2;
+    const colName = w * 0.35;
+    const colScore = w * 0.72;
+    ctx.font = `${Math.min(w * 0.024, 13)}px 'Source Sans 3', sans-serif`;
+
+    for (let i = 0; i < Math.min(s.leaderboard.length, 5); i++) {
+      const entry = s.leaderboard[i];
+      const y = startY + i * rowH;
+      const isTop = i === 0;
+
+      ctx.fillStyle = isTop ? P.gold : "rgba(255,255,255,0.65)";
+      ctx.textAlign = "left";
+      ctx.fillText(`${i + 1}.`, w * 0.28, y);
+      ctx.fillText(entry.name.length > 16 ? entry.name.slice(0, 15) + "\u2026" : entry.name, colName, y);
+      ctx.textAlign = "right";
+      ctx.fillText(String(entry.score), colScore, y);
+    }
+    ctx.textAlign = "center";
+  }
+
+  // Auth prompt or saved status
+  const promptY = s.leaderboard.length > 0
+    ? lbTop + Math.min(h * 0.05, 22) * 1.2 + Math.min(s.leaderboard.length, 5) * Math.min(h * 0.05, 22) + 10
+    : lbTop + 20;
+
+  if (!isLoggedIn) {
+    ctx.font = `${Math.min(w * 0.024, 13)}px 'Source Sans 3', sans-serif`;
+    ctx.fillStyle = P.cta;
+    const signUpText = "Sign up to save your score \u2192";
+    ctx.fillText(signUpText, w / 2, promptY);
+    // Store bounds for click detection
+    const metrics = ctx.measureText(signUpText);
+    (s as GS & { _signUpBounds?: { x: number; y: number; w: number; h: number } })._signUpBounds = {
+      x: w / 2 - metrics.width / 2,
+      y: promptY - 10,
+      w: metrics.width,
+      h: 20,
+    };
+  } else if (s.scoreSaved) {
+    ctx.font = `${Math.min(w * 0.022, 12)}px 'Source Sans 3', sans-serif`;
+    ctx.fillStyle = P.caught;
+    ctx.fillText("Score saved!", w / 2, promptY);
+  }
+
+  // Leaderboard link
+  if (s.leaderboard.length > 0) {
+    const lbLinkY = promptY + 22;
+    ctx.font = `${Math.min(w * 0.022, 12)}px 'Source Sans 3', sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.4)";
+    const lbLinkText = "View full leaderboard \u2192";
+    ctx.fillText(lbLinkText, w / 2, lbLinkY);
+    const lbMetrics = ctx.measureText(lbLinkText);
+    (s as GS & { _lbLinkBounds?: { x: number; y: number; w: number; h: number } })._lbLinkBounds = {
+      x: w / 2 - lbMetrics.width / 2,
+      y: lbLinkY - 10,
+      w: lbMetrics.width,
+      h: 20,
+    };
+  }
+
+  // Play again button
   const btnW = Math.min(w * 0.45, 210);
   const btnH = 44;
   const btnX = w / 2 - btnW / 2;
-  const btnY = h * 0.65;
+  const btnY = h * 0.85;
   const ready = s.gameOverTime > 1.5;
   const btnAlpha = ready ? 1 : Math.min(s.gameOverTime / 1.5, 0.3);
   ctx.globalAlpha = btnAlpha;
@@ -1262,6 +1351,47 @@ export default function BeTheKeeper() {
   const stateRef = useRef<GS>(initState());
   const rafRef = useRef(0);
   const lastRef = useRef(0);
+  const isLoggedInRef = useRef(false);
+  const gameOverHandledRef = useRef(false);
+
+  const { data: session } = useSession();
+  const isLoggedIn = !!session?.user;
+
+  // Keep ref in sync
+  useEffect(() => {
+    isLoggedInRef.current = isLoggedIn;
+  }, [isLoggedIn]);
+
+  const handleGameOver = useCallback(async (s: GS) => {
+    // Fetch leaderboard (always)
+    try {
+      const result = await actions.gameScore.leaderboard({ game: "be-the-keeper", limit: 5 });
+      if (result.data) {
+        s.leaderboard = result.data.entries;
+      }
+    } catch { /* leaderboard fetch failed silently */ }
+
+    // Submit score if logged in
+    if (isLoggedInRef.current && s.score > 0) {
+      try {
+        const result = await actions.gameScore.submitScore({
+          game: "be-the-keeper",
+          score: s.score,
+          level: s.level,
+          catches: s.catches,
+          bestStreak: s.bestStreak,
+        });
+        if (result.data?.saved) {
+          s.scoreSaved = true;
+          // Re-fetch leaderboard to reflect new score
+          const lb = await actions.gameScore.leaderboard({ game: "be-the-keeper", limit: 5 });
+          if (lb.data) {
+            s.leaderboard = lb.data.entries;
+          }
+        }
+      } catch { /* score submit failed silently */ }
+    }
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1299,11 +1429,55 @@ export default function BeTheKeeper() {
       s.mx = clamp((t.clientX - rect.left) / rect.width, 0.08, 0.92);
       s.my = clamp((t.clientY - rect.top) / rect.height, 0.5, 0.92);
       // Also handle tap-to-start on mobile (preventDefault blocks click)
-      if (e.type === "touchstart") startGame();
+      if (e.type === "touchstart") handleClick(e);
     }
 
-    function startGame() {
+    function handleClick(e: MouseEvent | TouchEvent) {
       const s = stateRef.current;
+
+      if (s.phase === "over") {
+        // Check sign-up link click
+        const bounds = (s as GS & { _signUpBounds?: { x: number; y: number; w: number; h: number } })._signUpBounds;
+        if (bounds && !isLoggedInRef.current) {
+          const rect = canvas!.getBoundingClientRect();
+          let cx: number, cy: number;
+          if ("touches" in e && e.touches[0]) {
+            cx = (e.touches[0].clientX - rect.left) / rect.width * lw;
+            cy = (e.touches[0].clientY - rect.top) / rect.height * lh;
+          } else if ("clientX" in e) {
+            cx = (e.clientX - rect.left) / rect.width * lw;
+            cy = (e.clientY - rect.top) / rect.height * lh;
+          } else {
+            cx = 0; cy = 0;
+          }
+          if (cx >= bounds.x && cx <= bounds.x + bounds.w && cy >= bounds.y && cy <= bounds.y + bounds.h) {
+            window.location.href = "/auth/register";
+            return;
+          }
+        }
+
+        // Check leaderboard link click
+        const lbBounds = (s as GS & { _lbLinkBounds?: { x: number; y: number; w: number; h: number } })._lbLinkBounds;
+        if (lbBounds) {
+          const rect = canvas!.getBoundingClientRect();
+          let cx: number, cy: number;
+          if ("touches" in e && e.touches[0]) {
+            cx = (e.touches[0].clientX - rect.left) / rect.width * lw;
+            cy = (e.touches[0].clientY - rect.top) / rect.height * lh;
+          } else if ("clientX" in e) {
+            cx = (e.clientX - rect.left) / rect.width * lw;
+            cy = (e.clientY - rect.top) / rect.height * lh;
+          } else {
+            cx = 0; cy = 0;
+          }
+          if (cx >= lbBounds.x && cx <= lbBounds.x + lbBounds.w && cy >= lbBounds.y && cy <= lbBounds.y + lbBounds.h) {
+            window.location.href = "/game/be-the-keeper/leaderboard";
+            return;
+          }
+        }
+      }
+
+      // Start / restart game
       if (s.phase === "menu") {
         const hi = s.hi;
         Object.assign(s, initState());
@@ -1311,6 +1485,7 @@ export default function BeTheKeeper() {
         s.phase = "play";
         s.overPause = 3.0;
         s.gap = 1.2;
+        gameOverHandledRef.current = false;
       } else if (s.phase === "over" && s.gameOverTime > 1.5) {
         const hi = s.hi;
         Object.assign(s, initState());
@@ -1318,24 +1493,33 @@ export default function BeTheKeeper() {
         s.phase = "play";
         s.overPause = 3.0;
         s.gap = 1.2;
+        gameOverHandledRef.current = false;
       }
     }
 
     function loop(ts: number) {
       const dt = lastRef.current ? (ts - lastRef.current) / 1000 : 0.016;
       lastRef.current = ts;
-      update(stateRef.current, dt, lw, lh);
-      drawScene(ctx!, stateRef.current, lw, lh);
+      const s = stateRef.current;
+      update(s, dt, lw, lh);
+      drawScene(ctx!, s, lw, lh, isLoggedInRef.current);
       // Show cursor on menu/over, hide during play
-      const wantCursor = stateRef.current.phase !== "play";
+      const wantCursor = s.phase !== "play";
       canvas!.style.cursor = wantCursor ? "pointer" : "none";
+
+      // Trigger game-over handling once
+      if (s.phase === "over" && !gameOverHandledRef.current) {
+        gameOverHandledRef.current = true;
+        handleGameOver(s);
+      }
+
       rafRef.current = requestAnimationFrame(loop);
     }
 
     canvas.addEventListener("mousemove", onMouse);
     canvas.addEventListener("touchmove", onTouch, { passive: false });
     canvas.addEventListener("touchstart", onTouch, { passive: false });
-    canvas.addEventListener("click", startGame);
+    canvas.addEventListener("click", handleClick);
     window.addEventListener("resize", resize);
     rafRef.current = requestAnimationFrame(loop);
 
@@ -1344,10 +1528,10 @@ export default function BeTheKeeper() {
       canvas.removeEventListener("mousemove", onMouse);
       canvas.removeEventListener("touchmove", onTouch);
       canvas.removeEventListener("touchstart", onTouch);
-      canvas.removeEventListener("click", startGame);
+      canvas.removeEventListener("click", handleClick);
       window.removeEventListener("resize", resize);
     };
-  }, []);
+  }, [handleGameOver]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPortrait, setIsPortrait] = useState(false);
