@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState } from "react";
 
 // ══════════════════════════════════════════════════════════════
 //  BE THE KEEPER — Percy Main CC Wicketkeeper Catching Game
@@ -108,6 +108,7 @@ interface GS {
   bowlerAnnounce: number;
   batSwing: number;
   overPause: number;
+  gameOverTime: number;
 }
 
 // ── State ───────────────────────────────────────────────────
@@ -141,6 +142,7 @@ function initState(): GS {
     bowlerAnnounce: 0,
     batSwing: 0,
     overPause: 0,
+    gameOverTime: 0,
   };
 }
 
@@ -1084,17 +1086,22 @@ function drawGameOver(ctx: CanvasRenderingContext2D, s: GS, w: number, h: number
   const btnH = 44;
   const btnX = w / 2 - btnW / 2;
   const btnY = h * 0.65;
-  ctx.fillStyle = P.cta;
+  const ready = s.gameOverTime > 1.5;
+  const btnAlpha = ready ? 1 : Math.min(s.gameOverTime / 1.5, 0.3);
+  ctx.globalAlpha = btnAlpha;
+  ctx.fillStyle = ready ? P.cta : "#666";
   roundRect(ctx, btnX, btnY, btnW, btnH, 10);
   ctx.fill();
   ctx.font = `bold ${Math.min(w * 0.04, 20)}px 'Source Sans 3', sans-serif`;
   ctx.fillStyle = P.white;
   ctx.fillText("Play Again", w / 2, btnY + btnH / 2);
+  ctx.globalAlpha = 1;
 }
 
 // ── Game update ─────────────────────────────────────────────
 
 function update(s: GS, dt: number, w: number, h: number) {
+  if (s.phase === "over") s.gameOverTime += Math.min(dt, 0.1);
   if (s.phase !== "play") return;
   dt = Math.min(dt, 0.1);
 
@@ -1304,7 +1311,7 @@ export default function BeTheKeeper() {
         s.phase = "play";
         s.overPause = 3.0;
         s.gap = 1.2;
-      } else if (s.phase === "over") {
+      } else if (s.phase === "over" && s.gameOverTime > 1.5) {
         const hi = s.hi;
         Object.assign(s, initState());
         s.hi = hi;
@@ -1343,27 +1350,43 @@ export default function BeTheKeeper() {
   }, []);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isPortrait, setIsPortrait] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const toggleFullscreen = useCallback(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      el.requestFullscreen().catch(() => {});
-    }
-  }, []);
-
+  // Detect mobile + portrait
   useEffect(() => {
+    const checkMobile = () => "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    const checkOrientation = () => {
+      setIsMobile(checkMobile());
+      setIsPortrait(checkMobile() && window.innerHeight > window.innerWidth);
+    };
+    checkOrientation();
+
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", () => {
+      // delay for orientation to settle
+      setTimeout(checkOrientation, 150);
+    });
+
     const onFsChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
-      // Give browser a frame to settle new dimensions then trigger canvas resize
       requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
     };
     document.addEventListener("fullscreenchange", onFsChange);
-    return () => document.removeEventListener("fullscreenchange", onFsChange);
+
+    return () => {
+      window.removeEventListener("resize", checkOrientation);
+      document.removeEventListener("fullscreenchange", onFsChange);
+    };
   }, []);
+
+  // Auto-enter fullscreen when mobile goes landscape
+  useEffect(() => {
+    if (isMobile && !isPortrait && !document.fullscreenElement && containerRef.current) {
+      containerRef.current.requestFullscreen().catch(() => {});
+    }
+  }, [isMobile, isPortrait]);
 
   return (
     <div ref={containerRef} style={{ position: "relative", width: "100%", maxWidth: isFullscreen ? "none" : 900, margin: "0 auto", background: isFullscreen ? "#000" : undefined }}>
@@ -1383,45 +1406,50 @@ export default function BeTheKeeper() {
           background: "#000",
         }}
       />
-      <button
-        onClick={toggleFullscreen}
-        style={{
-          position: "absolute",
-          top: isFullscreen ? 12 : -44,
-          right: isFullscreen ? 12 : 0,
-          background: isFullscreen ? "rgba(0,0,0,0.5)" : "#1B3D2F",
-          color: "#fff",
-          border: "none",
-          borderRadius: 8,
-          padding: "8px 16px",
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: "pointer",
-          zIndex: 10,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-        }}
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          {isFullscreen ? (
-            <>
-              <polyline points="4 1 1 1 1 4" />
-              <polyline points="12 1 15 1 15 4" />
-              <polyline points="4 15 1 15 1 12" />
-              <polyline points="12 15 15 15 15 12" />
-            </>
-          ) : (
-            <>
-              <polyline points="5 1 1 1 1 5" />
-              <polyline points="11 1 15 1 15 5" />
-              <polyline points="5 15 1 15 1 11" />
-              <polyline points="11 15 15 15 15 11" />
-            </>
-          )}
-        </svg>
-        {isFullscreen ? "Exit Fullscreen" : "Play Fullscreen"}
-      </button>
+      {isMobile && isPortrait && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(27,61,47,0.95)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: isFullscreen ? 0 : 12,
+            zIndex: 20,
+            gap: 16,
+            padding: 24,
+          }}
+        >
+          <svg
+            width="64"
+            height="64"
+            viewBox="0 0 64 64"
+            fill="none"
+            style={{ animation: "keeper-rotate 2s ease-in-out infinite" }}
+          >
+            <rect x="16" y="8" width="32" height="48" rx="4" stroke="#FEE140" strokeWidth="2.5" fill="none" />
+            <circle cx="32" cy="50" r="2" fill="#FEE140" />
+            <path d="M52 28 L58 22" stroke="#FEE140" strokeWidth="2" strokeLinecap="round" />
+            <path d="M52 36 L58 42" stroke="#FEE140" strokeWidth="2" strokeLinecap="round" />
+            <path d="M54 32 L60 32" stroke="#FEE140" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <p style={{ color: "#fff", fontSize: 20, fontWeight: 700, textAlign: "center", margin: 0, fontFamily: "'Lora', serif" }}>
+            Turn Your Phone to Landscape
+          </p>
+          <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 14, textAlign: "center", margin: 0 }}>
+            The game will start in fullscreen
+          </p>
+          <style>{`
+            @keyframes keeper-rotate {
+              0%, 100% { transform: rotate(0deg); }
+              25% { transform: rotate(90deg); }
+              50%, 75% { transform: rotate(90deg); }
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 }
