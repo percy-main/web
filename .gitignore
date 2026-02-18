@@ -37,3 +37,5 @@ local.db*
 .better-auth
 screenshots/
 ISSUES.md
+
+.mcp.json

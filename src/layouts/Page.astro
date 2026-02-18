@@ -22,7 +22,9 @@ const { title } = Astro.props;
 >
   <slot slot="ldjson" name="ldjson" />
   <div class="flex flex-col">
-    <slot name="breadcrumbs" />
+    <div style="font-family: var(--font-secondary), serif;">
+      <slot name="breadcrumbs" />
+    </div>
     <div class="flex flex-col md:flex-row">
       <slot name="menu" />
       <slot />
