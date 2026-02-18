@@ -5,8 +5,16 @@ import {
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
-const baseURL =
-  import.meta.env.CLI === "true" ? import.meta.env.BASE_URL : undefined;
+const baseURL = await (async () => {
+  if (import.meta.env.CLI === "true") {
+    return import.meta.env.BASE_URL;
+  }
+  if (typeof window !== "undefined") {
+    return undefined;
+  }
+  const env = await import("astro:env/client");
+  return env.BASE_URL;
+})();
 
 const clientConfig = {
   ...(baseURL && { baseURL }),
