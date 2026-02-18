@@ -144,6 +144,13 @@ const renderOptions = (page: string, games: Game[]): Options => ({
     [BLOCKS.OL_LIST]: (node, children) => {
       return <ol className="rich">{children}</ol>;
     },
+    [BLOCKS.QUOTE]: (node, children) => {
+      return (
+        <blockquote className="rounded-lg border-l-4 border-cta bg-white p-6 shadow-sm [&>div:last-child]:mt-2 [&>div:last-child]:text-sm [&>div:last-child]:not-italic">
+          {children}
+        </blockquote>
+      );
+    },
     [BLOCKS.PARAGRAPH]: (node, children) => {
       return <div>{children}</div>;
     },
