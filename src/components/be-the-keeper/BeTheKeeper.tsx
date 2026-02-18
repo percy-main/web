@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 
 // ══════════════════════════════════════════════════════════════
 //  BE THE KEEPER — Percy Main CC Wicketkeeper Catching Game
@@ -1291,9 +1291,11 @@ export default function BeTheKeeper() {
       const s = stateRef.current;
       s.mx = clamp((t.clientX - rect.left) / rect.width, 0.08, 0.92);
       s.my = clamp((t.clientY - rect.top) / rect.height, 0.5, 0.92);
+      // Also handle tap-to-start on mobile (preventDefault blocks click)
+      if (e.type === "touchstart") startGame();
     }
 
-    function onClick() {
+    function startGame() {
       const s = stateRef.current;
       if (s.phase === "menu") {
         const hi = s.hi;
@@ -1326,7 +1328,7 @@ export default function BeTheKeeper() {
     canvas.addEventListener("mousemove", onMouse);
     canvas.addEventListener("touchmove", onTouch, { passive: false });
     canvas.addEventListener("touchstart", onTouch, { passive: false });
-    canvas.addEventListener("click", onClick);
+    canvas.addEventListener("click", startGame);
     window.addEventListener("resize", resize);
     rafRef.current = requestAnimationFrame(loop);
 
@@ -1335,26 +1337,92 @@ export default function BeTheKeeper() {
       canvas.removeEventListener("mousemove", onMouse);
       canvas.removeEventListener("touchmove", onTouch);
       canvas.removeEventListener("touchstart", onTouch);
-      canvas.removeEventListener("click", onClick);
+      canvas.removeEventListener("click", startGame);
       window.removeEventListener("resize", resize);
     };
   }, []);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      el.requestFullscreen().catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    const onFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+      // Give browser a frame to settle new dimensions then trigger canvas resize
+      requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        width: "100%",
-        maxWidth: 900,
-        aspectRatio: "16/10",
-        display: "block",
-        margin: "0 auto",
-        cursor: "pointer",
-        touchAction: "none",
-        borderRadius: 12,
-        boxShadow: "0 8px 32px rgba(0,0,0,0.25)",
-      }}
-    />
+    <div ref={containerRef} style={{ position: "relative", width: "100%", maxWidth: isFullscreen ? "none" : 900, margin: "0 auto", background: isFullscreen ? "#000" : undefined }}>
+      <canvas
+        ref={canvasRef}
+        style={{
+          width: "100%",
+          maxWidth: isFullscreen ? "none" : 900,
+          aspectRatio: isFullscreen ? undefined : "16/10",
+          height: isFullscreen ? "100vh" : undefined,
+          display: "block",
+          margin: "0 auto",
+          cursor: "pointer",
+          touchAction: "none",
+          borderRadius: isFullscreen ? 0 : 12,
+          boxShadow: isFullscreen ? "none" : "0 8px 32px rgba(0,0,0,0.25)",
+          background: "#000",
+        }}
+      />
+      <button
+        onClick={toggleFullscreen}
+        style={{
+          position: "absolute",
+          top: isFullscreen ? 12 : -44,
+          right: isFullscreen ? 12 : 0,
+          background: isFullscreen ? "rgba(0,0,0,0.5)" : "#1B3D2F",
+          color: "#fff",
+          border: "none",
+          borderRadius: 8,
+          padding: "8px 16px",
+          fontSize: 14,
+          fontWeight: 600,
+          cursor: "pointer",
+          zIndex: 10,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          {isFullscreen ? (
+            <>
+              <polyline points="4 1 1 1 1 4" />
+              <polyline points="12 1 15 1 15 4" />
+              <polyline points="4 15 1 15 1 12" />
+              <polyline points="12 15 15 15 15 12" />
+            </>
+          ) : (
+            <>
+              <polyline points="5 1 1 1 1 5" />
+              <polyline points="11 1 15 1 15 5" />
+              <polyline points="5 15 1 15 1 11" />
+              <polyline points="11 15 15 15 15 11" />
+            </>
+          )}
+        </svg>
+        {isFullscreen ? "Exit Fullscreen" : "Play Fullscreen"}
+      </button>
+    </div>
   );
 }
 
