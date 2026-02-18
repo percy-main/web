@@ -1352,57 +1352,65 @@ export default function BeTheKeeper() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPortrait, setIsPortrait] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Detect mobile + portrait
+  // On mobile landscape, expand canvas to fill viewport (no Fullscreen API needed — iOS doesn't support it)
+  const expanded = isMobile && !isPortrait;
+
   useEffect(() => {
     const checkMobile = () => "ontouchstart" in window || navigator.maxTouchPoints > 0;
     const checkOrientation = () => {
-      setIsMobile(checkMobile());
-      setIsPortrait(checkMobile() && window.innerHeight > window.innerWidth);
+      const mobile = checkMobile();
+      setIsMobile(mobile);
+      setIsPortrait(mobile && window.innerHeight > window.innerWidth);
     };
     checkOrientation();
 
     window.addEventListener("resize", checkOrientation);
-    window.addEventListener("orientationchange", () => {
-      // delay for orientation to settle
-      setTimeout(checkOrientation, 150);
-    });
-
-    const onFsChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-      requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
-    };
-    document.addEventListener("fullscreenchange", onFsChange);
+    const onOrientationChange = () => setTimeout(checkOrientation, 200);
+    window.addEventListener("orientationchange", onOrientationChange);
 
     return () => {
       window.removeEventListener("resize", checkOrientation);
-      document.removeEventListener("fullscreenchange", onFsChange);
+      window.removeEventListener("orientationchange", onOrientationChange);
     };
   }, []);
 
-  // Auto-enter fullscreen when mobile goes landscape
+  // Scroll to top of game when going landscape on mobile to maximize visible area
   useEffect(() => {
-    if (isMobile && !isPortrait && !document.fullscreenElement && containerRef.current) {
-      containerRef.current.requestFullscreen().catch(() => {});
+    if (expanded && containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior: "instant", block: "start" });
+      // Hide address bar on mobile browsers
+      window.scrollTo(0, 1);
     }
-  }, [isMobile, isPortrait]);
+  }, [expanded]);
 
   return (
-    <div ref={containerRef} style={{ position: "relative", width: "100%", maxWidth: isFullscreen ? "none" : 900, margin: "0 auto", background: isFullscreen ? "#000" : undefined }}>
+    <div
+      ref={containerRef}
+      style={{
+        position: expanded ? "fixed" : "relative",
+        inset: expanded ? 0 : undefined,
+        width: expanded ? "100vw" : "100%",
+        height: expanded ? "100vh" : undefined,
+        maxWidth: expanded ? "none" : 900,
+        margin: expanded ? 0 : "0 auto",
+        background: expanded ? "#000" : undefined,
+        zIndex: expanded ? 9999 : undefined,
+      }}
+    >
       <canvas
         ref={canvasRef}
         style={{
           width: "100%",
-          maxWidth: isFullscreen ? "none" : 900,
-          aspectRatio: isFullscreen ? undefined : "16/10",
-          height: isFullscreen ? "100vh" : undefined,
+          height: expanded ? "100%" : undefined,
+          maxWidth: expanded ? "none" : 900,
+          aspectRatio: expanded ? undefined : "16/10",
           display: "block",
           margin: "0 auto",
           cursor: "pointer",
           touchAction: "none",
-          borderRadius: isFullscreen ? 0 : 12,
-          boxShadow: isFullscreen ? "none" : "0 8px 32px rgba(0,0,0,0.25)",
+          borderRadius: expanded ? 0 : 12,
+          boxShadow: expanded ? "none" : "0 8px 32px rgba(0,0,0,0.25)",
           background: "#000",
         }}
       />
@@ -1416,7 +1424,7 @@ export default function BeTheKeeper() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            borderRadius: isFullscreen ? 0 : 12,
+            borderRadius: 12,
             zIndex: 20,
             gap: 16,
             padding: 24,
@@ -1439,7 +1447,7 @@ export default function BeTheKeeper() {
             Turn Your Phone to Landscape
           </p>
           <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 14, textAlign: "center", margin: 0 }}>
-            The game will start in fullscreen
+            For the best experience
           </p>
           <style>{`
             @keyframes keeper-rotate {
