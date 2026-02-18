@@ -7,6 +7,7 @@ export interface TypeTrusteeFields {
     bio?: EntryFieldTypes.RichText;
     slug?: EntryFieldTypes.Symbol;
     dbsChecked?: EntryFieldTypes.Boolean;
+    hasLeftClub?: EntryFieldTypes.Boolean;
 }
 
 export type TypeTrusteeSkeleton = EntrySkeletonType<TypeTrusteeFields, "trustee">;

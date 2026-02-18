@@ -19,6 +19,7 @@ export const schema = z.object({
   slug: z.string(),
   pageData: z.object({}).passthrough(),
   isDBSChecked: z.boolean(),
+  hasLeftClub: z.boolean().optional(),
 });
 
 export type Person = z.TypeOf<typeof schema>;
@@ -45,6 +46,7 @@ export const loader = async () => {
       slug: item.fields.slug,
       pageData: item.fields.pageData ?? {},
       isDBSChecked: item.fields.dbsChecked ?? false,
+      hasLeftClub: item.fields.hasLeftClub,
     };
   });
 };
