@@ -125,8 +125,15 @@ const donateUrl = `/purchase/${paymentData.prices.donation}`;
 >
   <div class="container flex items-center justify-between py-2">
     <div class="flex items-center gap-3">
+      <button
+        class="sticky-menu-toggle flex items-center p-1 text-dark lg:hidden"
+        aria-label="Open menu"
+      >
+        <svg class="h-5 w-5 fill-current" viewBox="0 0 20 20">
+          <path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z"></path>
+        </svg>
+      </button>
       <Logo size="sm" />
-      <span class="font-secondary text-lg font-bold text-dark">Percy Main</span>
     </div>
     <ul class="hidden items-center lg:flex">
       {
@@ -207,14 +214,14 @@ const donateUrl = `/purchase/${paymentData.prices.donation}`;
   const stickyBar = document.getElementById("sticky-bar");
 
   if (masthead && stickyBar) {
-    stickyBar.classList.remove("hidden");
-    stickyBar.classList.add("block");
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) {
-          stickyBar.classList.remove("-translate-y-full");
-          stickyBar.classList.add("translate-y-0");
+          stickyBar.classList.remove("hidden");
+          requestAnimationFrame(() => {
+            stickyBar.classList.remove("-translate-y-full");
+            stickyBar.classList.add("translate-y-0");
+          });
         } else {
           stickyBar.classList.remove("translate-y-0");
           stickyBar.classList.add("-translate-y-full");
@@ -256,5 +263,10 @@ const donateUrl = `/purchase/${paymentData.prices.donation}`;
   closeBtn?.addEventListener("click", closeDrawer);
   overlay?.addEventListener("click", (e) => {
     if (e.target === overlay) closeDrawer();
+  });
+
+  // Sticky bar hamburger also opens the drawer
+  document.querySelectorAll(".sticky-menu-toggle").forEach((btn) => {
+    btn.addEventListener("click", openDrawer);
   });
 </script>
