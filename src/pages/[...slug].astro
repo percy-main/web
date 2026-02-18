@@ -95,9 +95,14 @@ export async function getStaticPaths() {
 }
 
 const games = await getCollection("game");
+const allPages = await getCollection("page");
 
 const { page, menu } = Astro.props;
 const { pathname } = Astro.url;
+
+const sectionSlug = pathname.split("/").filter(Boolean)[0];
+const sectionPage = allPages.find((p) => p.data.slug === sectionSlug);
+const sectionTitle = sectionPage?.data.title ?? page.data.title;
 ---
 
 <Page title={page.data.title} menu={menu}>
@@ -107,9 +112,56 @@ const { pathname } = Astro.url;
     menu && (
       <aside
         slot="menu"
-        class="mb-4 w-full border-b-2 border-gray-300 pb-2 sm:w-64 md:mb-0 md:border-0 md:pb-0"
+        class="mb-4 w-full sm:w-64 md:mb-0"
       >
-        <nav class="space-y-8 text-sm">
+        {/* Mobile: dropdown panel only (toggle is in breadcrumbs row) */}
+        <nav id="section-nav-panel" class="section-nav-content hidden text-sm md:hidden">
+          <div class="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md">
+            {menu.items.map(({ title, link, children }) => {
+              const isActive = urlMatch(pathname, {
+                url: link,
+                match: { start: link },
+              });
+              return (
+                <>
+                  <a
+                    href={link}
+                    class:list={[
+                      "border-b border-gray-100 px-4 py-2.5 font-medium transition-colors last:border-b-0",
+                      isActive
+                        ? "bg-primary/5 text-primary"
+                        : "text-gray-800 hover:bg-gray-50 hover:text-primary",
+                    ]}
+                  >
+                    {title}
+                  </a>
+                  {children.map(({ title, link }) => {
+                    const isChildActive = urlMatch(pathname, {
+                      url: link,
+                      match: { start: link },
+                    });
+                    return (
+                      <a
+                        href={link}
+                        class:list={[
+                          "border-b border-gray-100 py-2.5 pl-9 pr-4 transition-colors last:border-b-0",
+                          isChildActive
+                            ? "bg-primary/5 font-medium text-primary"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-primary",
+                        ]}
+                      >
+                        {title}
+                      </a>
+                    );
+                  })}
+                </>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* Desktop: always-visible sidebar */}
+        <nav class="hidden space-y-8 text-sm md:block">
           <div class="space-y-2">
             <div class="flex flex-col">
               {menu.items.map(({ title, link, children }) => {
@@ -168,8 +220,19 @@ const { pathname } = Astro.url;
 
   <div
     slot="breadcrumbs"
-    class="text-h4 mb-4 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2"
+    class="text-h4 mb-4 flex items-center gap-2 [&_ol]:flex [&_ol]:items-center [&_ol]:gap-2 [&_ol>li]:flex [&_ol>li]:items-center [&_ol>li]:gap-2"
   >
+    {menu && (
+      <button
+        id="section-nav-toggle"
+        class="flex cursor-pointer items-center p-1 text-dark md:hidden"
+        aria-label="Toggle section menu"
+      >
+        <svg class="h-5 w-5 fill-current" viewBox="0 0 20 20">
+          <path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z"></path>
+        </svg>
+      </button>
+    )}
     <Breadcrumbs
       linkTextFormat="capitalized"
       customizeListElements={[{ index: 0, remove: true }]}
@@ -188,3 +251,29 @@ const { pathname } = Astro.url;
     />
   </div>
 </Page>
+
+<style is:global>
+  .section-nav-content:not(.hidden) {
+    animation: section-nav-reveal 200ms ease-out;
+  }
+
+  @keyframes section-nav-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<script>
+  const toggle = document.getElementById("section-nav-toggle");
+  const panel = document.getElementById("section-nav-panel");
+
+  toggle?.addEventListener("click", () => {
+    panel?.classList.toggle("hidden");
+  });
+</script>
