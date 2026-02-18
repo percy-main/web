@@ -1,5 +1,6 @@
 import { checkout } from "./checkout";
 import { createEventSubscriber } from "./create-event-subscriber";
+import { gameScore } from "./game-score";
 import { join } from "./join";
 import { membership } from "./membership";
 import { payments } from "./payments";
@@ -14,4 +15,5 @@ export const server = {
   playCricket,
   membership,
   createEventSubscriber,
+  gameScore,
 };

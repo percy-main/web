@@ -25,6 +25,17 @@ export interface Account {
   userId: string;
 }
 
+export interface GameScore {
+  best_streak: number;
+  catches: number;
+  game: Generated<string>;
+  id: string;
+  level: number;
+  score: number;
+  updated_at: string;
+  user_id: string;
+}
+
 export interface EventSubscriber {
   email: string;
   id: string;
@@ -111,6 +122,7 @@ export interface Verification {
 export interface DB {
   account: Account;
   event_subscriber: EventSubscriber;
+  game_score: GameScore;
   member: Member;
   membership: Membership;
   passkey: Passkey;
