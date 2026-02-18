@@ -223,8 +223,12 @@ const donateUrl = `/purchase/${paymentData.prices.donation}`;
             stickyBar.classList.add("translate-y-0");
           });
         } else {
+          stickyBar.style.transition = "none";
           stickyBar.classList.remove("translate-y-0");
-          stickyBar.classList.add("-translate-y-full");
+          stickyBar.classList.add("-translate-y-full", "hidden");
+          requestAnimationFrame(() => {
+            stickyBar.style.transition = "";
+          });
         }
       },
       { threshold: 0 }
