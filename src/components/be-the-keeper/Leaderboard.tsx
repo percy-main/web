@@ -1,34 +1,21 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { actions } from "astro:actions";
-
-interface Entry {
-  name: string;
-  score: number;
-  level: number;
-  catches: number;
-  bestStreak: number;
-}
 
 const medals = ["🥇", "🥈", "🥉"];
 
 export default function Leaderboard() {
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const query = useQuery({
+    queryKey: ["leaderboard", "be-the-keeper"],
+    queryFn: () => actions.leaderboard.get({ game: "be-the-keeper", limit: 25 }),
+  });
 
-  useEffect(() => {
-    actions.gameScore
-      .leaderboard({ game: "be-the-keeper", limit: 25 })
-      .then((res) => {
-        if (res.data) setEntries(res.data.entries);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const entries = query.data?.data?.entries;
 
-  if (loading) {
+  if (query.isLoading) {
     return <p className="py-12 text-center text-gray-400">Loading scores...</p>;
   }
 
-  if (entries.length === 0) {
+  if (!entries || entries.length === 0) {
     return (
       <p className="rounded-lg bg-gray-50 p-8 text-center text-gray-500">
         No scores yet.{" "}

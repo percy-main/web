@@ -1365,7 +1365,7 @@ export default function BeTheKeeper() {
   const handleGameOver = useCallback(async (s: GS) => {
     // Fetch leaderboard (always)
     try {
-      const result = await actions.gameScore.leaderboard({ game: "be-the-keeper", limit: 5 });
+      const result = await actions.leaderboard.get({ game: "be-the-keeper", limit: 5 });
       if (result.data) {
         s.leaderboard = result.data.entries;
       }
@@ -1384,7 +1384,7 @@ export default function BeTheKeeper() {
         if (result.data?.saved) {
           s.scoreSaved = true;
           // Re-fetch leaderboard to reflect new score
-          const lb = await actions.gameScore.leaderboard({ game: "be-the-keeper", limit: 5 });
+          const lb = await actions.leaderboard.get({ game: "be-the-keeper", limit: 5 });
           if (lb.data) {
             s.leaderboard = lb.data.entries;
           }

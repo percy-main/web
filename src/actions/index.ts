@@ -2,6 +2,7 @@ import { checkout } from "./checkout";
 import { createEventSubscriber } from "./create-event-subscriber";
 import { gameScore } from "./game-score";
 import { join } from "./join";
+import { leaderboard } from "./leaderboard";
 import { membership } from "./membership";
 import { payments } from "./payments";
 import { playCricket } from "./play-cricket";
@@ -16,4 +17,5 @@ export const server = {
   membership,
   createEventSubscriber,
   gameScore,
+  leaderboard,
 };
