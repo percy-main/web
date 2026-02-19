@@ -1,21 +1,6 @@
 ---
 import Container from "@/layouts/Container.astro";
-import { client } from "@/lib/db/client";
-
-const rows = await client
-  .selectFrom("game_score")
-  .innerJoin("user", "user.id", "game_score.user_id")
-  .select([
-    "user.name",
-    "game_score.score",
-    "game_score.level",
-    "game_score.catches",
-    "game_score.best_streak",
-  ])
-  .where("game_score.game", "=", "be-the-keeper")
-  .orderBy("game_score.score", "desc")
-  .limit(25)
-  .execute();
+import Leaderboard from "@/components/be-the-keeper/Leaderboard";
 ---
 
 <Container title="Leaderboard — Be The Keeper">
@@ -29,43 +14,6 @@ const rows = await client
     </h1>
     <p class="mb-8 text-gray-600">Top 25 keepers at Percy Main CC</p>
 
-    {rows.length === 0 ? (
-      <p class="rounded-lg bg-gray-50 p-8 text-center text-gray-500">
-        No scores yet. <a href="/game/be-the-keeper" class="text-green-800 underline">Be the first!</a>
-      </p>
-    ) : (
-      <div class="overflow-x-auto rounded-lg border border-gray-200">
-        <table class="w-full text-left text-sm">
-          <thead>
-            <tr class="bg-[#1B3D2F] text-white">
-              <th class="px-4 py-3 font-semibold">#</th>
-              <th class="px-4 py-3 font-semibold">Name</th>
-              <th class="px-4 py-3 text-right font-semibold">Score</th>
-              <th class="hidden px-4 py-3 text-right font-semibold sm:table-cell">Level</th>
-              <th class="hidden px-4 py-3 text-right font-semibold sm:table-cell">Catches</th>
-              <th class="hidden px-4 py-3 text-right font-semibold md:table-cell">Best Streak</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, i) => (
-              <tr class:list={[
-                "border-t border-gray-100",
-                i % 2 === 0 ? "bg-white" : "bg-gray-50",
-                i < 3 && "font-semibold",
-              ]}>
-                <td class="px-4 py-3">
-                  {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
-                </td>
-                <td class="px-4 py-3">{row.name}</td>
-                <td class="px-4 py-3 text-right tabular-nums">{row.score}</td>
-                <td class="hidden px-4 py-3 text-right tabular-nums sm:table-cell">{row.level}</td>
-                <td class="hidden px-4 py-3 text-right tabular-nums sm:table-cell">{row.catches}</td>
-                <td class="hidden px-4 py-3 text-right tabular-nums md:table-cell">{row.best_streak}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    )}
+    <Leaderboard client:load />
   </div>
 </Container>
