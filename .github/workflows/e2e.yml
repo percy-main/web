@@ -1,0 +1,57 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check E2E
+        run: npx tsc --noEmit -p e2e/tsconfig.json
+
+      - name: Lint
+        run: npx eslint e2e/
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npx playwright test
+        env:
+          # Secrets (must be configured in GitHub repository settings)
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          CDN_TOKEN: ${{ secrets.CDN_TOKEN }}
+          CDN_CMA_TOKEN: ${{ secrets.CDN_CMA_TOKEN }}
+          CDN_SPACE_ID: ${{ secrets.CDN_SPACE_ID }}
+          CDN_PREVIEW_TOKEN: ${{ secrets.CDN_PREVIEW_TOKEN }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          MAILGUN_API_KEY: ${{ secrets.MAILGUN_API_KEY }}
+          PLAY_CRICKET_API_KEY: ${{ secrets.PLAY_CRICKET_API_KEY }}
+          SLACK_TRUSTEES_HOOK: ${{ secrets.SLACK_TRUSTEES_HOOK }}
+          # Non-sensitive values loaded from .env.test via playwright.config.ts
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

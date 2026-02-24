@@ -31,6 +31,8 @@ pnpm-debug.log*
 
 local.db
 local.db*
+e2e-template.db
+e2e-test-*.db*
 .temp
 .sample
 .emails
@@ -39,3 +41,10 @@ screenshots/
 ISSUES.md
 
 .mcp.json
+
+# worktrees
+.worktrees/
+
+# playwright
+test-results/
+playwright-report/
