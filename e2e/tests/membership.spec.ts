@@ -148,7 +148,10 @@ test.describe("Membership", () => {
       baseURL,
       session,
     );
-    expect(webhookResponse.ok).toBe(true);
+    if (!webhookResponse.ok) {
+      const body = await webhookResponse.text();
+      throw new Error(`Webhook failed (${webhookResponse.status}): ${body}`);
+    }
 
     // ─── 15. Verify membership is now active ───
     await page.goto("/members");
