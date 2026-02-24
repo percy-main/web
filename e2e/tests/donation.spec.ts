@@ -1,8 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { createRequire } from "module";
 import { findRecentCheckoutSession } from "../helpers/stripe";
 
-// Dev donation price from stripe.json
-const DONATION_PRICE_ID = "price_1PHSBTIoYmCDxYlkBoo86Xdb";
+const require = createRequire(import.meta.url);
+const stripeConfig = require("../../stripe.json");
+const DONATION_PRICE_ID = stripeConfig.dev.prices.donation;
 const TEST_EMAIL = `test-e2e-donate-${Date.now()}@example.com`;
 
 test.describe("Donation Checkout", () => {
