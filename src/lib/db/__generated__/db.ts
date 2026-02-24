@@ -25,6 +25,12 @@ export interface Account {
   userId: string;
 }
 
+export interface EventSubscriber {
+  email: string;
+  id: string;
+  meta: string;
+}
+
 export interface GameScore {
   best_streak: number;
   catches: number;
@@ -34,12 +40,6 @@ export interface GameScore {
   score: number;
   updated_at: string;
   user_id: string;
-}
-
-export interface EventSubscriber {
-  email: string;
-  id: string;
-  meta: string;
 }
 
 export interface Member {
