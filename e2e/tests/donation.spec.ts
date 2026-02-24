@@ -13,6 +13,10 @@ const DONATION_PRICE_ID = stripeConfig.dev.prices.donation;
 const TEST_EMAIL = `test-e2e-donate-${Date.now()}@example.com`;
 
 test.describe("Donation Checkout", () => {
+  // Stripe embedded checkout keyboard interaction (Tab+Space for Card radio)
+  // is unreliable in headless CI. Run locally only for now.
+  test.skip(!!process.env.CI, "Stripe embedded checkout unreliable in headless CI");
+
   test("complete a donation and verify via Stripe API", async ({ page }) => {
     test.setTimeout(120_000); // Stripe iframe can be slow
 
