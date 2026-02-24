@@ -1,21 +1,9 @@
-import { readFileSync } from "fs";
-import { join } from "path";
 import { expect, test } from "../fixtures/base";
 import { extractVerificationUrl, getLatestEmail } from "../helpers/email";
 import {
   findRecentCheckoutSession,
   simulateCheckoutWebhook,
 } from "../helpers/stripe";
-
-interface StripeConfig {
-  dev: {
-    prices: { donation: string };
-    product: { subs_player: string; subs_social: string };
-  };
-}
-const stripeConfig: StripeConfig = JSON.parse(
-  readFileSync(join(process.cwd(), "stripe.json"), "utf-8"),
-) as StripeConfig;
 
 test.describe("Membership", () => {
   const testPassword = "TestPassword123!";
@@ -148,13 +136,14 @@ test.describe("Membership", () => {
     // ─── 13. Verify via Stripe API ───
     await page.waitForTimeout(3000);
     const session = await findRecentCheckoutSession(testEmail);
-    expect(session).toBeDefined();
-    expect(session!.payment_status).toBe("paid");
+    if (!session) throw new Error("Checkout session not found");
+    expect(session.payment_status).toBe("paid");
 
     // ─── 14. Simulate webhook ───
+    if (!baseURL) throw new Error("baseURL not set");
     const webhookResponse = await simulateCheckoutWebhook(
-      baseURL!,
-      session!,
+      baseURL,
+      session,
     );
     expect(webhookResponse.ok).toBe(true);
 
