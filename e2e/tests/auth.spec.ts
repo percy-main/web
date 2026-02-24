@@ -26,7 +26,7 @@ test.describe("Registration + Email Verification + Login", () => {
     await page.locator('button[type="submit"]').click();
 
     // 3. Should land on /auth/registered
-    await expect(page).toHaveURL("/auth/registered/");
+    await expect(page).toHaveURL(/\/auth\/registered/);
     await expect(page.getByText("Thanks for joining!")).toBeVisible();
 
     // 4. Read verification email
@@ -37,7 +37,7 @@ test.describe("Registration + Email Verification + Login", () => {
 
     // 5. Visit verification URL
     await page.goto(verificationUrl);
-    await page.waitForURL("**/auth/email-confirmed/**");
+    await page.waitForURL(/\/auth\/email-confirmed/);
 
     // 6. Go to login, fill credentials
     await page.goto("/auth/login");
@@ -46,7 +46,7 @@ test.describe("Registration + Email Verification + Login", () => {
     await page.locator('button[type="submit"]').click();
 
     // 7. Should redirect to /members
-    await page.waitForURL("**/members/**");
+    await page.waitForURL(/\/members/);
     await expect(page.getByText("Members Area")).toBeVisible();
   });
 });
@@ -146,7 +146,7 @@ test.describe("Forgot Password", () => {
     await page.locator("#password").fill(newPassword);
     await page.locator('button[type="submit"]').click();
 
-    await page.waitForURL("**/members/**");
+    await page.waitForURL(/\/members/);
     await expect(page.getByText("Members Area")).toBeVisible();
   });
 });
