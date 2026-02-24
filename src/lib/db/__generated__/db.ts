@@ -9,15 +9,6 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
-export interface ContactSubmission {
-  created_at: Generated<string>;
-  email: string;
-  id: string;
-  message: string;
-  name: string;
-  page: string;
-}
-
 export interface Account {
   accessToken: string | null;
   accessTokenExpiresAt: string | null;
@@ -32,6 +23,15 @@ export interface Account {
   scope: string | null;
   updatedAt: string;
   userId: string;
+}
+
+export interface ContactSubmission {
+  created_at: Generated<string>;
+  email: string;
+  id: string;
+  message: string;
+  name: string;
+  page: string;
 }
 
 export interface EventSubscriber {
