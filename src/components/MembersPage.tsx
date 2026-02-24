@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/Tabs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
 import { Membership } from "./Membership";
+import { ChangePassword } from "./ChangePassword";
 import { Passkeys } from "./Passkeys";
 import { Payments } from "./Payments";
 import { Subscriptions } from "./Subscriptions";
@@ -62,6 +63,7 @@ export const MembersPage = () => {
           </TabsContent>
           <TabsContent value="security">
             <div className="flex flex-col gap-4">
+              <ChangePassword />
               <Passkeys />
               <TwoFactor user={user} />
             </div>
