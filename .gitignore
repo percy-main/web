@@ -31,6 +31,8 @@ pnpm-debug.log*
 
 local.db
 local.db*
+e2e-template.db
+e2e-test-*.db*
 .temp
 .sample
 .emails

@@ -6,7 +6,6 @@ dotenv.config({ path: ".env.test" });
 dotenv.config({ path: ".env" });
 
 export default defineConfig({
-  globalSetup: "./e2e/global-setup.ts",
   testDir: "./e2e/tests",
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
@@ -14,7 +13,6 @@ export default defineConfig({
   workers: 1,
   reporter: [["html", { open: "never" }]],
   use: {
-    baseURL: "http://localhost:4321",
     trace: "on-first-retry",
   },
   projects: [
@@ -23,10 +21,6 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "npm run dev",
-    url: "http://localhost:4321",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  // Dev server is started per-test by e2e/fixtures/base.ts
+  // Each test gets its own server + fresh DB file
 });

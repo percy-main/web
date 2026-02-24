@@ -1,7 +1,6 @@
 import { expect, test } from "../fixtures/base";
 import { test as authTest } from "../fixtures/auth";
 import {
-  clearEmails,
   extractResetUrl,
   extractVerificationUrl,
   getLatestEmail,
@@ -10,12 +9,7 @@ import {
 test.describe("Registration + Email Verification + Login", () => {
   const testPassword = "TestPassword123!";
 
-  test.beforeEach(async () => {
-    await clearEmails();
-  });
-
   test("full registration flow", async ({ page }) => {
-    // Generate unique email per attempt so retries don't collide
     const testEmail = `test-e2e-reg-${Date.now()}@example.com`;
 
     // 1. Go to registration with pre-filled name/email
@@ -23,31 +17,33 @@ test.describe("Registration + Email Verification + Login", () => {
       `/auth/register?name=Test+E2E+User&email=${encodeURIComponent(testEmail)}`,
     );
 
-    // 2. Fill password and submit
+    // 2. Wait for React hydration (name/email are client:only="react" hidden inputs)
+    await page.locator("#name").waitFor({ state: "attached" });
+
+    // 3. Fill password and submit
     await page.locator("#password").fill(testPassword);
     await page.locator('button[type="submit"]').click();
 
-    // 3. Should land on /auth/registered
+    // 4. Should land on /auth/registered
     await expect(page).toHaveURL(/\/auth\/registered/, { timeout: 10_000 });
     await expect(page.getByText("Thanks for joining!")).toBeVisible();
 
-    // 4. Read verification email
-    // Wait a moment for email to be written to disk
+    // 5. Read verification email
     await page.waitForTimeout(2000);
     const { html } = await getLatestEmail();
     const verificationUrl = extractVerificationUrl(html);
 
-    // 5. Visit verification URL
+    // 6. Visit verification URL
     await page.goto(verificationUrl);
     await page.waitForURL(/\/auth\/email-confirmed/);
 
-    // 6. Go to login, fill credentials
+    // 7. Go to login, fill credentials
     await page.goto("/auth/login");
     await page.locator("#email").fill(testEmail);
     await page.locator("#password").fill(testPassword);
     await page.locator('button[type="submit"]').click();
 
-    // 7. Should redirect to /members
+    // 8. Should redirect to /members
     await page.waitForURL(/\/members/);
     await expect(page.getByText("Members Area")).toBeVisible();
   });
@@ -86,8 +82,6 @@ test.describe("Forgot Password", () => {
   const newPassword = "NewPassword456!";
 
   test("forgot password flow", async ({ page }) => {
-    await clearEmails();
-
     // Seed a verified user for this test
     await page.request.post("/api/auth/sign-up/email", {
       data: {
@@ -112,8 +106,6 @@ test.describe("Forgot Password", () => {
       .execute();
     await db.destroy();
 
-    await clearEmails();
-
     // 1. Go to login, click forgot password
     await page.goto("/auth/login");
     await page.getByText("Forgot password?").click();
@@ -127,7 +119,8 @@ test.describe("Forgot Password", () => {
       page.getByText("We've sent you an email with a link"),
     ).toBeVisible({ timeout: 10_000 });
 
-    // 4. Read reset email
+    // 4. Read reset email (the sign-up verification email is also in the dir,
+    //    but reset email comes later so it's the "latest")
     await page.waitForTimeout(2000);
     const { html } = await getLatestEmail();
     const resetUrl = extractResetUrl(html);
