@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../fixtures/base";
 import { test as authTest } from "../fixtures/auth";
 import {
   clearEmails,
@@ -85,9 +85,11 @@ test.describe("Forgot Password", () => {
   const originalPassword = "OriginalPass123!";
   const newPassword = "NewPassword456!";
 
-  test.beforeAll(async ({ request }) => {
+  test("forgot password flow", async ({ page }) => {
+    await clearEmails();
+
     // Seed a verified user for this test
-    await request.post("http://localhost:4321/api/auth/sign-up/email", {
+    await page.request.post("/api/auth/sign-up/email", {
       data: {
         name: "Forgot Test User",
         email: testEmail,
@@ -95,7 +97,6 @@ test.describe("Forgot Password", () => {
       },
     });
 
-    // Mark as verified in DB
     const { LibsqlDialect } = await import("@libsql/kysely-libsql");
     const { Kysely } = await import("kysely");
     const db = new Kysely<Record<string, Record<string, unknown>>>({
@@ -110,9 +111,7 @@ test.describe("Forgot Password", () => {
       .where("email", "=", testEmail)
       .execute();
     await db.destroy();
-  });
 
-  test("forgot password flow", async ({ page }) => {
     await clearEmails();
 
     // 1. Go to login, click forgot password
