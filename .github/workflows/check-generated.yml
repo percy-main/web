@@ -1,0 +1,68 @@
+name: Check Generated Files
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-generated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # --- Contentful types ---
+      - name: Regenerate Contentful types
+        run: npx cf-content-types-generator -s "$CDN_SPACE_ID" -e "$CDN_ENVIRONMENT" -t "$CDN_CMA_TOKEN" -o src/__generated__ -Xrg
+        env:
+          CDN_SPACE_ID: ${{ secrets.CDN_SPACE_ID }}
+          CDN_ENVIRONMENT: ${{ vars.CDN_ENVIRONMENT || 'master' }}
+          CDN_CMA_TOKEN: ${{ secrets.CDN_CMA_TOKEN }}
+
+      # --- DB types ---
+      # The DB types generator (kysely-codegen) needs a database with the
+      # schema applied. We first run all Kysely migrations against a local
+      # SQLite file, then point kysely-codegen at it.
+      - name: Run database migrations
+        run: npx tsx scripts/migrate-up.ts
+        env:
+          CLI: "true"
+          DB_SYNC_URL: file:local.db
+
+      - name: Regenerate DB types
+        run: npx kysely-codegen --out-file ./src/lib/db/__generated__/db.ts
+        env:
+          DATABASE_URL: ./local.db
+
+      # --- Diff check ---
+      - name: Check generated files are up to date
+        run: |
+          if ! git diff --exit-code src/__generated__/ src/lib/db/__generated__/; then
+            echo ""
+            echo "=========================================="
+            echo "ERROR: Generated files are out of date!"
+            echo "=========================================="
+            echo ""
+            echo "The committed generated types do not match what the generators produce."
+            echo "Please run the following commands locally and commit the results:"
+            echo ""
+            echo "  npm run contentful:types"
+            echo "  npm run db:types"
+            echo ""
+            exit 1
+          fi
+          echo "All generated files are up to date."
