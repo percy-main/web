@@ -39,6 +39,7 @@ jobs:
           CDN_CMA_TOKEN: ${{ secrets.CDN_CMA_TOKEN }}
           CDN_SPACE_ID: ${{ secrets.CDN_SPACE_ID }}
           CDN_PREVIEW_TOKEN: ${{ secrets.CDN_PREVIEW_TOKEN }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
           MAILGUN_API_KEY: ${{ secrets.MAILGUN_API_KEY }}
           PLAY_CRICKET_API_KEY: ${{ secrets.PLAY_CRICKET_API_KEY }}
           SLACK_TRUSTEES_HOOK: ${{ secrets.SLACK_TRUSTEES_HOOK }}
