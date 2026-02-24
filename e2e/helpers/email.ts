@@ -26,7 +26,7 @@ export async function getLatestEmail(): Promise<{
   const html = await readFile(join(dir, `${baseName}.html`), "utf-8");
   const json = JSON.parse(
     await readFile(join(dir, `${baseName}.json`), "utf-8"),
-  );
+  ) as Record<string, unknown>;
 
   return { html, json };
 }

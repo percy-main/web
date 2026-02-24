@@ -22,11 +22,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint e2e/
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-
-      - name: Create .emails directory
-        run: mkdir -p .emails
 
       - name: Run E2E tests
         run: npx playwright test
