@@ -36,7 +36,7 @@ export function extractUrl(html: string, pattern: RegExp): string {
   if (!match?.[0]) {
     throw new Error(`No URL matching ${pattern} found in email`);
   }
-  return match[0];
+  return match[0].replace(/&amp;/g, "&");
 }
 
 export function extractVerificationUrl(html: string): string {

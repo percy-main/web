@@ -7,9 +7,9 @@ import { match, P } from "ts-pattern";
 export const ForgotPassword: FC = () => {
   const [email, setEmail] = useState("");
 
-  const forgetPassword = useMutation({
+  const requestReset = useMutation({
     mutationFn: () =>
-      authClient.forgetPassword({
+      authClient.requestPasswordReset({
         email,
         redirectTo: "/auth/reset-password",
       }),
@@ -18,19 +18,19 @@ export const ForgotPassword: FC = () => {
   const handleSubmit = useCallback(
     (event: FormEvent) => {
       event.preventDefault();
-      forgetPassword.mutate();
+      requestReset.mutate();
     },
-    [forgetPassword],
+    [requestReset],
   );
 
-  const error = forgetPassword.error ?? forgetPassword.data?.error;
+  const error = requestReset.error ?? requestReset.data?.error;
 
   return (
     <section>
       <h1 className="text-xl leading-tight font-bold tracking-tight text-gray-900 md:text-2xl dark:text-white">
         Forgotten your password?
       </h1>
-      {match(forgetPassword)
+      {match(requestReset)
         .with({ data: { data: P.not(P.nullish) } }, () => (
           <p>We've sent you an email with a link to reset your password.</p>
         ))
