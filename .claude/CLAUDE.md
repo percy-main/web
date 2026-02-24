@@ -32,6 +32,11 @@ CI runs a `check-generated` workflow that diffs these files — your PR will fai
 - After creating a new migration, run `npm run db:types` to pick up new tables/columns
 - The generator needs a local DB with migrations applied — it introspects the schema from `local.db`
 
+## Coding Standards
+
+- **Never type-assert API responses** — always validate with zod schemas (e.g. `schema.parse(await res.json())`) instead of `as SomeType`
+- **Use react-query for data fetching in React components** — no raw `fetch` in `useEffect`/`useCallback`. Use `useQuery`/`useMutation` from `@tanstack/react-query`.
+
 ## Local Data
 
 When running locally, Contentful data is cached in `.astro/data-store.json`. This file can be examined directly to inspect the raw data structure (e.g. richtext documents, field values) without needing to add debug logging.
