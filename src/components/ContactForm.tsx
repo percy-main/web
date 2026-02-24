@@ -26,21 +26,21 @@ export const ContactForm: FC<Props> = ({ title, description, page }) => {
   );
 
   return (
-    <div className="flex w-full flex-col items-center justify-center rounded-lg bg-gray-900 p-8">
-      <h2 className="text-center text-2xl font-semibold tracking-tight text-white">
+    <div className="mx-auto max-w-md rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+      <h2 className="text-lg font-semibold tracking-tight text-gray-900">
         {title}
       </h2>
       {mutation.isSuccess ? (
-        <p className="mt-4 text-lg text-gray-300">
+        <p className="mt-3 text-sm text-gray-600">
           Thanks for getting in touch! We'll get back to you soon.
         </p>
       ) : (
         <>
           {description ? (
-            <p className="mt-4 text-lg text-gray-300">{description}</p>
+            <p className="mt-1 text-sm text-gray-500">{description}</p>
           ) : null}
           <form
-            className="mt-6 flex w-full max-w-md flex-col gap-4"
+            className="mt-4 flex flex-col gap-3"
             onSubmit={handleSubmit}
           >
             <label htmlFor="contact-name" className="sr-only">
@@ -52,7 +52,7 @@ export const ContactForm: FC<Props> = ({ title, description, page }) => {
               type="text"
               autoComplete="name"
               required
-              className="min-w-0 flex-auto rounded-md bg-white/5 px-3.5 py-2 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6"
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
               placeholder="Your name"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -66,7 +66,7 @@ export const ContactForm: FC<Props> = ({ title, description, page }) => {
               type="email"
               autoComplete="email"
               required
-              className="min-w-0 flex-auto rounded-md bg-white/5 px-3.5 py-2 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6"
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
               placeholder="Your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -79,21 +79,21 @@ export const ContactForm: FC<Props> = ({ title, description, page }) => {
               name="message"
               required
               rows={4}
-              className="min-w-0 flex-auto rounded-md bg-white/5 px-3.5 py-2 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6"
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
               placeholder="Your message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
             <button
               type="submit"
-              className="flex-none rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+              className="rounded-md border border-gray-800 bg-gray-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={mutation.isPending}
             >
               {mutation.isPending ? "Sending..." : "Send Message"}
             </button>
           </form>
           {mutation.isError ? (
-            <p className="mt-4 text-red-500">
+            <p className="mt-3 text-sm text-red-600">
               Sorry, something went wrong. Please try again.
             </p>
           ) : null}
