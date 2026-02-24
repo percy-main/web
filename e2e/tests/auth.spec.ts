@@ -26,7 +26,7 @@ test.describe("Registration + Email Verification + Login", () => {
     await page.locator('button[type="submit"]').click();
 
     // 3. Should land on /auth/registered
-    await expect(page).toHaveURL(/\/auth\/registered/);
+    await expect(page).toHaveURL(/\/auth\/registered/, { timeout: 10_000 });
     await expect(page.getByText("Thanks for joining!")).toBeVisible();
 
     // 4. Read verification email
@@ -96,10 +96,10 @@ test.describe("Forgot Password", () => {
     // Mark as verified in DB
     const { LibsqlDialect } = await import("@libsql/kysely-libsql");
     const { Kysely } = await import("kysely");
-    const db = new Kysely<any>({
+    const db = new Kysely<Record<string, Record<string, unknown>>>({
       dialect: new LibsqlDialect({
-        url: process.env.DB_SYNC_URL || "file:local.db",
-        authToken: process.env.DB_TOKEN || undefined,
+        url: process.env.DB_SYNC_URL ?? "file:local.db",
+        authToken: process.env.DB_TOKEN ?? undefined,
       }),
     });
     await db

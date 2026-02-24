@@ -1,9 +1,14 @@
+import { readFileSync } from "fs";
+import { join } from "path";
 import { expect, test } from "@playwright/test";
-import { createRequire } from "module";
 import { findRecentCheckoutSession } from "../helpers/stripe";
 
-const require = createRequire(import.meta.url);
-const stripeConfig = require("../../stripe.json");
+interface StripeConfig {
+  dev: { prices: { donation: string } };
+}
+const stripeConfig: StripeConfig = JSON.parse(
+  readFileSync(join(process.cwd(), "stripe.json"), "utf-8"),
+) as StripeConfig;
 const DONATION_PRICE_ID = stripeConfig.dev.prices.donation;
 const TEST_EMAIL = `test-e2e-donate-${Date.now()}@example.com`;
 
@@ -18,7 +23,8 @@ test.describe("Donation Checkout", () => {
     const checkoutDiv = page.locator("#checkout");
     await expect(checkoutDiv).toBeVisible({ timeout: 30_000 });
 
-    const stripeFrame = checkoutDiv.frameLocator("iframe").first();
+    const stripeIframe = checkoutDiv.locator("iframe").first();
+    const stripeFrame = stripeIframe.contentFrame();
 
     // 3. Fill in donation amount (masked currency input — type "5" for £5.00)
     const amountInput = stripeFrame.locator("#customUnitAmount");
@@ -57,6 +63,6 @@ test.describe("Donation Checkout", () => {
     await page.waitForTimeout(3000);
     const session = await findRecentCheckoutSession(TEST_EMAIL);
     expect(session).toBeDefined();
-    expect(session!.payment_status).toBe("paid");
+    expect(session?.payment_status).toBe("paid");
   });
 });

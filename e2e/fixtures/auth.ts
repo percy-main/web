@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import { test as base, type Page } from "@playwright/test";
 import { LibsqlDialect } from "@libsql/kysely-libsql";
 import { Kysely } from "kysely";
@@ -8,6 +9,7 @@ type AuthFixtures = {
 };
 
 export const test = base.extend<AuthFixtures>({
+  // eslint-disable-next-line no-empty-pattern
   testUser: async ({}, use) => {
     const id = Math.random().toString(36).slice(2, 8);
     await use({
@@ -32,10 +34,10 @@ export const test = base.extend<AuthFixtures>({
     }
 
     // Mark email as verified directly in DB
-    const db = new Kysely<any>({
+    const db = new Kysely<Record<string, Record<string, unknown>>>({
       dialect: new LibsqlDialect({
-        url: process.env.DB_SYNC_URL || "file:local.db",
-        authToken: process.env.DB_TOKEN || undefined,
+        url: process.env.DB_SYNC_URL ?? "file:local.db",
+        authToken: process.env.DB_TOKEN ?? undefined,
       }),
     });
 
