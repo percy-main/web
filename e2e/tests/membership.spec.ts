@@ -105,13 +105,16 @@ test.describe("Membership", () => {
     await stripeFrame.locator("#email").waitFor({ timeout: 30_000 });
     await stripeFrame.locator("#email").fill(testEmail);
 
-    // Select Card payment
-    await stripeFrame
-      .locator('[data-testid="card-accordion-item"]')
-      .click();
+    // Select Card payment (accordion may not exist if card is the only/default method)
+    const cardAccordion = stripeFrame.locator(
+      '[data-testid="card-accordion-item"]',
+    );
+    if (await cardAccordion.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await cardAccordion.click();
+    }
 
     // Fill card details
-    await stripeFrame.locator("#cardNumber").waitFor({ timeout: 10_000 });
+    await stripeFrame.locator("#cardNumber").waitFor({ timeout: 30_000 });
     await stripeFrame.locator("#cardNumber").fill("4242424242424242");
     await stripeFrame.locator("#cardExpiry").fill("12/30");
     await stripeFrame.locator("#cardCvc").fill("123");
