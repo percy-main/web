@@ -28,6 +28,12 @@ export const auth = betterAuth({
     type: "sqlite",
     dialect: db.dialect,
   },
+  socialProviders: {
+    google: {
+      clientId: import.meta.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: import.meta.env.GOOGLE_CLIENT_SECRET as string,
+    },
+  },
   plugins: [
     passkey({
       rpID: import.meta.env.BETTER_AUTH_RP_ID as string,
