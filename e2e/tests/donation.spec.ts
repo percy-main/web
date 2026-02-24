@@ -47,6 +47,12 @@ test.describe("Donation Checkout", () => {
     await stripeFrame.locator("#cardExpiry").fill("12/30");
     await stripeFrame.locator("#cardCvc").fill("123");
     await stripeFrame.locator("#billingName").fill("Test E2E Donor");
+
+    // 6b. Select United Kingdom before filling postcode (CI defaults to US)
+    await stripeFrame
+      .getByRole("combobox", { name: "Country or region" })
+      .selectOption({ label: "United Kingdom" });
+
     await stripeFrame.locator("#billingPostalCode").fill("NE1 1AA");
 
     // 7. Click Pay button
