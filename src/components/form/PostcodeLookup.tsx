@@ -18,14 +18,25 @@ type LookupResponse = {
 
 type Status = "idle" | "loading" | "valid" | "invalid";
 
+const inputClass =
+  "peer block w-full appearance-none border-0 border-b-2 border-gray-300 bg-transparent text-sm text-gray-900 focus:border-blue-600 focus:ring-0 focus:outline-none dark:border-gray-600 dark:text-white dark:focus:border-blue-500";
+
+const labelClass =
+  "absolute top-3 origin-[0] -translate-y-7 scale-75 transform text-sm text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:start-0 peer-focus:-translate-y-7 peer-focus:scale-75 peer-focus:font-medium peer-focus:text-blue-600 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4 dark:text-gray-400 peer-focus:dark:text-blue-500";
+
 export const PostcodeLookup: React.FC = () => {
   const [postcode, setPostcode] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
-  const [areaInfo, setAreaInfo] = useState("");
-  const [address, setAddress] = useState("");
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
+
+  const [houseNumber, setHouseNumber] = useState("");
+  const [street, setStreet] = useState("");
+  const [town, setTown] = useState("");
+
+  const [addressRevealed, setAddressRevealed] = useState(false);
+  const [manualEntry, setManualEntry] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -71,7 +82,6 @@ export const PostcodeLookup: React.FC = () => {
 
   const validatePostcode = useCallback(async (pc: string) => {
     setStatus("loading");
-    setAreaInfo("");
     try {
       const res = await fetch(
         `https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`,
@@ -79,10 +89,10 @@ export const PostcodeLookup: React.FC = () => {
       const data = (await res.json()) as LookupResponse;
       if (data.status === 200 && data.result) {
         const result = data.result;
-        const parts = [result.admin_district, result.admin_county, result.region]
-          .filter(Boolean);
-        setAreaInfo(parts.join(", "));
+        const townValue = result.admin_district || result.admin_county || "";
+        setTown(townValue);
         setStatus("valid");
+        setAddressRevealed(true);
       } else {
         setStatus("invalid");
       }
@@ -95,7 +105,10 @@ export const PostcodeLookup: React.FC = () => {
     const value = e.target.value.toUpperCase();
     setPostcode(value);
     setStatus("idle");
-    setAreaInfo("");
+    if (!manualEntry) {
+      setAddressRevealed(false);
+      setTown("");
+    }
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -115,7 +128,7 @@ export const PostcodeLookup: React.FC = () => {
     setTimeout(() => {
       setShowSuggestions(false);
       const trimmed = postcode.trim();
-      if (trimmed.length >= 5 && status === "idle") {
+      if (trimmed.length >= 5 && status === "idle" && !manualEntry) {
         void validatePostcode(trimmed);
       }
     }, 200);
@@ -142,15 +155,49 @@ export const PostcodeLookup: React.FC = () => {
     }
   };
 
+  const handleManualEntry = () => {
+    setManualEntry(true);
+    setAddressRevealed(true);
+    setStatus("idle");
+  };
+
+  // Combine address parts for the hidden form field
+  const combinedAddress = [houseNumber, street, town]
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join(", ");
+
+  const showAddressFields = addressRevealed || manualEntry;
+
   return (
     <div className="space-y-1">
-      {/* Postcode field */}
+      {/* Hidden inputs for form submission */}
+      <input type="hidden" name="address" value={combinedAddress} />
+      <input type="hidden" name="postcode" value={postcode.trim()} />
+
+      {/* House Number / Name */}
+      <div className="group relative z-0 mt-2 mb-5 w-full">
+        <input
+          id="house-number"
+          type="text"
+          required
+          autoComplete="address-line1"
+          value={houseNumber}
+          onChange={(e) => setHouseNumber(e.target.value)}
+          className={inputClass}
+          placeholder=" "
+        />
+        <label htmlFor="house-number" className={labelClass}>
+          House Number / Name
+        </label>
+      </div>
+
+      {/* Postcode field with autocomplete */}
       <div ref={wrapperRef} className="relative">
         <div className="group relative z-0 mt-2 mb-5 w-full">
           <div className="relative">
             <input
-              id="postcode"
-              name="postcode"
+              id="postcode-input"
               type="text"
               required
               autoComplete="postal-code"
@@ -161,14 +208,10 @@ export const PostcodeLookup: React.FC = () => {
               aria-autocomplete="list"
               aria-expanded={showSuggestions}
               aria-controls="postcode-suggestions"
-              aria-describedby={areaInfo ? "postcode-area" : undefined}
-              className="peer block w-full appearance-none border-0 border-b-2 border-gray-300 bg-transparent pr-8 text-sm text-gray-900 focus:border-blue-600 focus:ring-0 focus:outline-none dark:border-gray-600 dark:text-white dark:focus:border-blue-500"
+              className={`${inputClass} pr-8`}
               placeholder=" "
             />
-            <label
-              htmlFor="postcode"
-              className="absolute top-3 origin-[0] -translate-y-7 scale-75 transform text-sm text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:start-0 peer-focus:-translate-y-7 peer-focus:scale-75 peer-focus:font-medium peer-focus:text-blue-600 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4 dark:text-gray-400 peer-focus:dark:text-blue-500"
-            >
+            <label htmlFor="postcode-input" className={labelClass}>
               Postcode
             </label>
             {/* Status indicator */}
@@ -263,37 +306,62 @@ export const PostcodeLookup: React.FC = () => {
         )}
       </div>
 
-      {/* Area info */}
-      {status === "valid" && areaInfo && (
-        <p id="postcode-area" className="mt-[-12px] mb-4 text-sm text-green-600">
-          {areaInfo}
-        </p>
-      )}
+      {/* Status messages */}
       {status === "invalid" && (
         <p className="mt-[-12px] mb-4 text-sm text-red-600">
           Postcode not recognised. Please check and try again.
         </p>
       )}
 
-      {/* Address field */}
-      <div className="group relative z-0 mb-5 w-full">
-        <textarea
-          id="address"
-          name="address"
-          required
-          rows={4}
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          placeholder=" "
-          className="peer block w-full appearance-none border-0 border-b-2 border-gray-300 bg-transparent text-sm text-gray-900 focus:border-blue-600 focus:ring-0 focus:outline-hidden dark:border-gray-600 dark:text-white dark:focus:border-blue-500"
-        />
-        <label
-          htmlFor="address"
-          className="absolute top-3 origin-[0] -translate-y-7 scale-75 transform text-sm text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:start-0 peer-focus:-translate-y-7 peer-focus:scale-75 peer-focus:font-medium peer-focus:text-blue-600 peer-focus:rtl:left-auto peer-focus:rtl:translate-x-1/4 dark:text-gray-400 dark:peer-focus:text-blue-500"
+      {/* Enter address manually link */}
+      {!showAddressFields && (
+        <button
+          type="button"
+          onClick={handleManualEntry}
+          className="mb-4 text-sm text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
         >
-          Address
-        </label>
-      </div>
+          Enter address manually
+        </button>
+      )}
+
+      {/* Address fields - revealed after postcode validation or manual entry */}
+      {showAddressFields && (
+        <div className="space-y-1">
+          {/* Street Address */}
+          <div className="group relative z-0 mt-2 mb-5 w-full">
+            <input
+              id="street-address"
+              type="text"
+              required
+              autoComplete="address-line2"
+              value={street}
+              onChange={(e) => setStreet(e.target.value)}
+              className={inputClass}
+              placeholder=" "
+            />
+            <label htmlFor="street-address" className={labelClass}>
+              Street Address
+            </label>
+          </div>
+
+          {/* Town / City */}
+          <div className="group relative z-0 mt-2 mb-5 w-full">
+            <input
+              id="town-city"
+              type="text"
+              required
+              autoComplete="address-level2"
+              value={town}
+              onChange={(e) => setTown(e.target.value)}
+              className={inputClass}
+              placeholder=" "
+            />
+            <label htmlFor="town-city" className={labelClass}>
+              Town / City
+            </label>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
