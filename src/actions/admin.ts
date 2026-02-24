@@ -6,22 +6,50 @@ import { stripeDate } from "@/lib/util/stripeDate";
 import { ActionError } from "astro:actions";
 import { z } from "astro:schema";
 
-function assertAdmin(role: string | null | undefined) {
-  if (role !== "admin") {
-    throw new ActionError({ code: "UNAUTHORIZED" });
+async function fetchStripeCharges(email: string): Promise<
+  {
+    id: string;
+    created: string;
+    amount: number;
+    description: string | null;
+  }[]
+> {
+  try {
+    const customers = await stripe.customers.search({
+      query: `email:"${email}"`,
+    });
+
+    const customer = customers.data[0];
+
+    if (customers.data.length !== 1 || !customer) {
+      return [];
+    }
+
+    const stripeCharges = await stripe.charges.search({
+      query: `customer:"${customer.id}"`,
+    });
+
+    return stripeCharges.data.map((charge) => ({
+      id: charge.id,
+      created: stripeDate(charge.created).toISOString(),
+      amount: charge.amount,
+      description: charge.description,
+    }));
+  } catch (err) {
+    console.error("Failed to fetch Stripe charges for", email, err);
+    return [];
   }
 }
 
 export const admin = {
   listUsers: defineAuthAction({
+    roles: ["admin"],
     input: z.object({
       page: z.number().int().min(1),
       pageSize: z.number().int().min(1).max(100),
       search: z.string().optional(),
     }),
     handler: async ({ page, pageSize, search }, session) => {
-      assertAdmin(session.user.role);
-
       let baseQuery = client
         .selectFrom("user")
         .leftJoin("member", "member.email", "user.email")
@@ -97,12 +125,11 @@ export const admin = {
   }),
 
   getUserDetail: defineAuthAction({
+    roles: ["admin"],
     input: z.object({
       userId: z.string(),
     }),
     handler: async ({ userId }, session) => {
-      assertAdmin(session.user.role);
-
       const user = await client
         .selectFrom("user")
         .where("user.id", "=", userId)
@@ -155,35 +182,7 @@ export const admin = {
             .executeTakeFirst()) ?? null;
       }
 
-      let charges: {
-        id: string;
-        created: string;
-        amount: number;
-        description: string | null;
-      }[] = [];
-
-      try {
-        const customers = await stripe.customers.search({
-          query: `email:"${user.email}"`,
-        });
-
-        const customer = customers.data[0];
-
-        if (customers.data.length === 1 && customer) {
-          const stripeCharges = await stripe.charges.search({
-            query: `customer:"${customer.id}"`,
-          });
-
-          charges = stripeCharges.data.map((charge) => ({
-            id: charge.id,
-            created: stripeDate(charge.created).toISOString(),
-            amount: charge.amount,
-            description: charge.description,
-          }));
-        }
-      } catch (err) {
-        console.error("Failed to fetch Stripe charges for user", userId, err);
-      }
+      const charges = await fetchStripeCharges(user.email);
 
       return {
         user: {
@@ -202,13 +201,12 @@ export const admin = {
   }),
 
   setUserRole: defineAuthAction({
+    roles: ["admin"],
     input: z.object({
       userId: z.string(),
       role: z.enum(["user", "admin"]),
     }),
     handler: async ({ userId, role }, session, context) => {
-      assertAdmin(session.user.role);
-
       await auth.api.setRole({
         headers: context.request.headers,
         body: {
