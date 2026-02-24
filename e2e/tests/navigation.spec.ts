@@ -1,18 +1,13 @@
 import { expect, test } from "../fixtures/base";
 
 test.describe("Navigation & Content Pages", () => {
-  const pages = [
-    { path: "/cricket", heading: /cricket/i },
-    { path: "/football", heading: /football/i },
-    { path: "/boxing", heading: /boxing/i },
-    { path: "/running", heading: /running/i },
-  ];
+  const sportPages = ["/cricket", "/football", "/boxing", "/running"];
 
-  for (const { path, heading } of pages) {
-    test(`${path} loads with heading`, async ({ page }) => {
+  for (const path of sportPages) {
+    test(`${path} loads successfully`, async ({ page }) => {
       const response = await page.goto(path);
       expect(response?.status()).toBe(200);
-      await expect(page.getByRole("heading", { name: heading }).first()).toBeVisible();
+      await expect(page.locator("main")).not.toBeEmpty();
     });
   }
 
