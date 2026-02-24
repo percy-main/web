@@ -13,10 +13,6 @@ const DONATION_PRICE_ID = stripeConfig.dev.prices.donation;
 const TEST_EMAIL = `test-e2e-donate-${Date.now()}@example.com`;
 
 test.describe("Donation Checkout", () => {
-  // Stripe embedded checkout keyboard interaction (Tab+Space for Card radio)
-  // is unreliable in headless CI. Run locally only for now.
-  test.skip(!!process.env.CI, "Stripe embedded checkout unreliable in headless CI");
-
   test("complete a donation and verify via Stripe API", async ({ page }) => {
     test.setTimeout(120_000); // Stripe iframe can be slow
 
@@ -40,13 +36,13 @@ test.describe("Donation Checkout", () => {
     // 4. Fill in email
     await stripeFrame.locator("#email").fill(TEST_EMAIL);
 
-    // 5. Select Card payment method — Tab to the Card radio, press Space to expand
-    await stripeFrame.locator("#email").press("Tab");
-    await page.waitForTimeout(500);
-    await page.keyboard.press("Space");
-    await page.waitForTimeout(2000);
+    // 5. Select Card payment method by clicking the accordion item directly
+    await stripeFrame
+      .locator('[data-testid="card-accordion-item"]')
+      .click();
 
-    // 6. Fill card details (now visible as regular inputs)
+    // 6. Wait for card fields to appear then fill them
+    await stripeFrame.locator("#cardNumber").waitFor({ timeout: 10_000 });
     await stripeFrame.locator("#cardNumber").fill("4242424242424242");
     await stripeFrame.locator("#cardExpiry").fill("12/30");
     await stripeFrame.locator("#cardCvc").fill("123");
