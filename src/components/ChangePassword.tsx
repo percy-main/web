@@ -26,6 +26,8 @@ export const ChangePassword = () => {
         setConfirmPassword("");
         setValidationError("");
         setSuccess(true);
+      } else {
+        setSuccess(false);
       }
     },
   });
@@ -66,6 +68,8 @@ export const ChangePassword = () => {
           value={currentPassword}
           onChange={(e) => {
             setCurrentPassword(e.currentTarget.value);
+            setSuccess(false);
+            setValidationError("");
           }}
           required
           minLength={MIN_PASSWORD_LENGTH}
@@ -78,6 +82,8 @@ export const ChangePassword = () => {
           value={newPassword}
           onChange={(e) => {
             setNewPassword(e.currentTarget.value);
+            setSuccess(false);
+            setValidationError("");
           }}
           required
           minLength={MIN_PASSWORD_LENGTH}
@@ -90,6 +96,8 @@ export const ChangePassword = () => {
           value={confirmPassword}
           onChange={(e) => {
             setConfirmPassword(e.currentTarget.value);
+            setSuccess(false);
+            setValidationError("");
           }}
           required
           minLength={MIN_PASSWORD_LENGTH}
