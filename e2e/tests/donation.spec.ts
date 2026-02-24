@@ -6,9 +6,7 @@ const DONATION_PRICE_ID = "price_1PHSBTIoYmCDxYlkBoo86Xdb";
 const TEST_EMAIL = `test-e2e-donate-${Date.now()}@example.com`;
 
 test.describe("Donation Checkout", () => {
-  // Skip: donation price uses custom_unit_amount which conflicts with adjustable_quantity
-  // in src/actions/checkout.ts. Remove skip once the Stripe config issue is resolved.
-  test.skip("complete a donation and verify via Stripe API", async ({ page }) => {
+  test("complete a donation and verify via Stripe API", async ({ page }) => {
     test.setTimeout(120_000); // Stripe iframe can be slow
 
     // 1. Navigate to checkout page
@@ -18,48 +16,42 @@ test.describe("Donation Checkout", () => {
     const checkoutDiv = page.locator("#checkout");
     await expect(checkoutDiv).toBeVisible({ timeout: 30_000 });
 
-    // Wait for iframe to appear inside #checkout
     const stripeFrame = checkoutDiv.frameLocator("iframe").first();
 
-    // 3. Fill in email
-    await stripeFrame.locator('[name="email"]').waitFor({ timeout: 30_000 });
-    await stripeFrame.locator('[name="email"]').fill(TEST_EMAIL);
+    // 3. Fill in donation amount (masked currency input — type "5" for £5.00)
+    const amountInput = stripeFrame.locator("#customUnitAmount");
+    await amountInput.waitFor({ timeout: 30_000 });
+    await amountInput.click();
+    await amountInput.press("Control+a");
+    await amountInput.pressSequentially("5");
 
-    // 4. Fill in card details
-    // Stripe may nest card inputs in a sub-iframe or use direct inputs
-    // depending on the checkout mode. Embedded checkout typically has direct inputs.
-    await stripeFrame.locator('[name="cardNumber"]').fill("4242424242424242");
-    await stripeFrame.locator('[name="cardExpiry"]').fill("12/30");
-    await stripeFrame.locator('[name="cardCvc"]').fill("123");
+    // 4. Fill in email
+    await stripeFrame.locator("#email").fill(TEST_EMAIL);
 
-    // 5. Fill in name on card (if present)
-    const nameField = stripeFrame.locator('[name="billingName"]');
-    if (await nameField.isVisible().catch(() => false)) {
-      await nameField.fill("Test E2E Donor");
-    }
+    // 5. Select Card payment method — Tab to the Card radio, press Space to expand
+    await stripeFrame.locator("#email").press("Tab");
+    await page.waitForTimeout(500);
+    await page.keyboard.press("Space");
+    await page.waitForTimeout(2000);
 
-    // 6. Fill in country/postal if required
-    const postalField = stripeFrame.locator('[name="billingPostalCode"]');
-    if (await postalField.isVisible().catch(() => false)) {
-      await postalField.fill("NE1 1AA");
-    }
+    // 6. Fill card details (now visible as regular inputs)
+    await stripeFrame.locator("#cardNumber").fill("4242424242424242");
+    await stripeFrame.locator("#cardExpiry").fill("12/30");
+    await stripeFrame.locator("#cardCvc").fill("123");
+    await stripeFrame.locator("#billingName").fill("Test E2E Donor");
+    await stripeFrame.locator("#billingPostalCode").fill("NE1 1AA");
 
     // 7. Click Pay button
     await stripeFrame
       .locator('button[data-testid="hosted-payment-submit-button"]')
       .click();
 
-    // 8. Wait for success state — Stripe shows a confirmation within the iframe
-    // The embedded checkout with redirect_on_completion: "never" shows a
-    // success message inside the iframe after payment completes.
+    // 8. Wait for success state
     await expect(
-      stripeFrame.locator("text=Your payment was successful").or(
-        stripeFrame.locator('[data-testid="payment-success"]'),
-      ),
+      stripeFrame.getByText("Thanks for your payment"),
     ).toBeVisible({ timeout: 60_000 });
 
     // 9. Verify via Stripe API
-    // Give Stripe a moment to process
     await page.waitForTimeout(3000);
     const session = await findRecentCheckoutSession(TEST_EMAIL);
     expect(session).toBeDefined();
