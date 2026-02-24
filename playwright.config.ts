@@ -1,5 +1,9 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import { defineConfig, devices } from "@playwright/test";
+
+// Load .env.test first (committed, non-sensitive defaults), then .env (local overrides/secrets)
+dotenv.config({ path: ".env.test" });
+dotenv.config({ path: ".env" });
 
 export default defineConfig({
   globalSetup: "./e2e/global-setup.ts",

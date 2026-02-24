@@ -8,7 +8,6 @@ import {
 } from "../helpers/email";
 
 test.describe("Registration + Email Verification + Login", () => {
-  const testEmail = `test-e2e-reg-${Date.now()}@example.com`;
   const testPassword = "TestPassword123!";
 
   test.beforeEach(async () => {
@@ -16,6 +15,9 @@ test.describe("Registration + Email Verification + Login", () => {
   });
 
   test("full registration flow", async ({ page }) => {
+    // Generate unique email per attempt so retries don't collide
+    const testEmail = `test-e2e-reg-${Date.now()}@example.com`;
+
     // 1. Go to registration with pre-filled name/email
     await page.goto(
       `/auth/register?name=Test+E2E+User&email=${encodeURIComponent(testEmail)}`,
