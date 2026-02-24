@@ -19,7 +19,8 @@
     "db:types": "DATABASE_URL=./local.db kysely-codegen --out-file ./src/lib/db/__generated__/db.ts",
     "db:migration": "zx ./scripts/create-migration.mjs",
     "db:up": "CLI=true set -a && source .env && set +a && tsx ./scripts/migrate-up",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@astrojs/netlify": "^6.3.1",
@@ -68,6 +69,7 @@
   "devDependencies": {
     "@better-auth/cli": "^1.1.21",
     "@eslint/js": "^9.19.0",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.0.0",
     "@tailwindcss/vite": "^4.0.0",
     "@total-typescript/ts-reset": "^0.6.1",
