@@ -1,4 +1,5 @@
 import { checkout } from "./checkout";
+import { createContactSubmission } from "./create-contact-submission";
 import { createEventSubscriber } from "./create-event-subscriber";
 import { gameScore } from "./game-score";
 import { join } from "./join";
@@ -10,6 +11,7 @@ import { subscriptions } from "./subscriptions";
 
 export const server = {
   checkout,
+  createContactSubmission,
   join,
   payments,
   subscriptions,
