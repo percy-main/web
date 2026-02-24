@@ -39,3 +39,6 @@ screenshots/
 ISSUES.md
 
 .mcp.json
+
+# worktrees
+.worktrees/
