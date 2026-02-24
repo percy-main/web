@@ -1,8 +1,5 @@
-import {
-  adminClient,
-  passkeyClient,
-  twoFactorClient,
-} from "better-auth/client/plugins";
+import { adminClient, twoFactorClient } from "better-auth/client/plugins";
+import { passkeyClient } from "@better-auth/passkey/client";
 import { createAuthClient } from "better-auth/react";
 
 const baseURL = await (async () => {

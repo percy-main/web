@@ -3,7 +3,7 @@ import * as email from "@/lib/email/send";
 import { render } from "@react-email/render";
 import { betterAuth } from "better-auth";
 import { admin, twoFactor } from "better-auth/plugins";
-import { passkey } from "better-auth/plugins/passkey";
+import { passkey } from "@better-auth/passkey";
 import { ResetPassword } from "~/emails/ResetPassword";
 import { VerifyEmail } from "~/emails/VerifyEmail";
 
