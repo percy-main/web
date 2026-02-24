@@ -1,0 +1,8 @@
+---
+import { AdminPanel } from "@/components/admin/AdminPanel";
+import Container from "@/layouts/Container.astro";
+---
+
+<Container title="Admin Panel">
+  <AdminPanel client:only="react" />
+</Container>

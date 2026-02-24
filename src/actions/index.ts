@@ -1,3 +1,4 @@
+import { admin } from "./admin";
 import { checkout } from "./checkout";
 import { createContactSubmission } from "./create-contact-submission";
 import { createEventSubscriber } from "./create-event-subscriber";
@@ -10,6 +11,7 @@ import { playCricket } from "./play-cricket";
 import { subscriptions } from "./subscriptions";
 
 export const server = {
+  admin,
   checkout,
   createContactSubmission,
   join,

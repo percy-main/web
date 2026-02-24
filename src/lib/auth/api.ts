@@ -48,11 +48,13 @@ export function defineAuthAction<
   input,
   handler,
   requireVerifiedEmail,
+  roles,
 }: {
   input?: TInputSchema;
   accept?: TAccept;
   handler: AuthActionHandler<TInputSchema, TOutput>;
   requireVerifiedEmail?: boolean;
+  roles?: string[];
 }) {
   return defineAction({
     accept,
@@ -67,6 +69,10 @@ export function defineAuthAction<
       }
 
       if (requireVerifiedEmail && !isAuthed.user.emailVerified) {
+        throw new ActionError({ code: "UNAUTHORIZED" });
+      }
+
+      if (roles && !roles.includes(isAuthed.user.role as string)) {
         throw new ActionError({ code: "UNAUTHORIZED" });
       }
 
