@@ -5,7 +5,7 @@ import { checkoutSessionCompleted } from "@/lib/payments/handlers/checkout.sessi
 import { invoicePaymentSucceeded } from "@/lib/payments/handlers/invoice.payment_succeeded";
 import type { APIContext } from "astro";
 import { STRIPE_WEBHOOK_SECRET } from "astro:env/server";
-import { writeFileSync } from "fs";
+import { mkdirSync, writeFileSync } from "fs";
 import _ from "lodash/fp";
 import path from "path";
 import { match, P } from "ts-pattern";
@@ -26,9 +26,11 @@ export async function POST({ request }: APIContext): Promise<Response> {
     );
 
     if (import.meta.env.DEV) {
+      const sampleDir = path.join(".sample");
+      mkdirSync(sampleDir, { recursive: true });
       writeFileSync(
         path.join(
-          ".sample",
+          sampleDir,
           `${new Date().toISOString()}-stripe-event-${event.type}-${event.created}`,
         ),
         JSON.stringify(event, null, 2),
