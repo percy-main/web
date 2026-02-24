@@ -5,10 +5,10 @@ import { z } from "astro:schema";
 import { randomUUID } from "crypto";
 
 const input = z.object({
-  name: z.string(),
+  name: z.string().min(1).max(200),
   email: z.string().email(),
-  message: z.string(),
-  page: z.string(),
+  message: z.string().min(1).max(5000),
+  page: z.string().min(1).max(500),
 });
 
 export const handler = async ({
@@ -30,9 +30,13 @@ export const handler = async ({
     })
     .executeTakeFirst();
 
-  await sendMessage(
-    `New contact form submission from ${name} (${email}) on ${page}:\n${message}`,
-  );
+  try {
+    await sendMessage(
+      `New contact form submission from ${name} (${email}) on ${page}:\n${message}`,
+    );
+  } catch {
+    // Slack notification failed, but submission was saved successfully
+  }
 
   return { id };
 };
