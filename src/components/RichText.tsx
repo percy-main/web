@@ -14,6 +14,7 @@ import type { FC, ReactNode } from "react";
 import type { Game } from "../collections/game";
 import { slugup } from "../lib/util/slug";
 import { CollectEmail } from "./CollectEmail";
+import { ContactForm } from "./ContactForm";
 import { EventPreview } from "./EventPreview";
 import { GamePreview } from "./GamePreview";
 import { Person } from "./Person";
@@ -129,6 +130,10 @@ const renderOptions = (page: string, games: Game[]): Options => ({
         );
       } else if (contentTypeId === "emailCollector") {
         return <CollectEmail {...node.data.target.fields} />;
+      } else if (contentTypeId === "contactForm") {
+        return (
+          <ContactForm {...node.data.target.fields} page={page} />
+        );
       }
     },
     [BLOCKS.EMBEDDED_ASSET]: (node) => {

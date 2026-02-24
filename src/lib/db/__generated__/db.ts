@@ -25,6 +25,15 @@ export interface Account {
   userId: string;
 }
 
+export interface ContactSubmission {
+  created_at: Generated<string>;
+  email: string;
+  id: string;
+  message: string;
+  name: string;
+  page: string;
+}
+
 export interface EventSubscriber {
   email: string;
   id: string;
@@ -121,6 +130,7 @@ export interface Verification {
 
 export interface DB {
   account: Account;
+  contact_submission: ContactSubmission;
   event_subscriber: EventSubscriber;
   game_score: GameScore;
   member: Member;
