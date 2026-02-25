@@ -6,10 +6,96 @@ import { Kysely, Migrator } from "kysely";
 import * as path from "path";
 import ts from "typescript";
 
-export const onPreBuild = async ({ utils }) => {
+/**
+ * Sanitise a git branch name into a valid Turso database name.
+ * Turso names: lowercase alphanumeric + hyphens, max 64 chars.
+ * We prefix with "preview-" (8 chars) so the branch part is capped at 46.
+ */
+function sanitizeBranchName(branch) {
+  return branch
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .substring(0, 46);
+}
+
+/**
+ * Create (or reuse) a Turso database branched from the deploy-preview DB.
+ * TURSO_DB_NAME should be set to the shared preview database name.
+ * Returns the libsql:// URL for the branch, or null if branching is
+ * not configured / fails.
+ */
+async function ensureBranchDatabase(branch) {
+  const apiToken = process.env.TURSO_API_TOKEN;
+  const org = process.env.TURSO_ORG;
+  const parentDb = process.env.TURSO_DB_NAME;
+  const group = process.env.TURSO_GROUP || "default";
+
+  if (!apiToken || !org || !parentDb) {
+    console.log(
+      "Turso branching env vars not configured (TURSO_API_TOKEN, TURSO_ORG, TURSO_DB_NAME) — using shared preview DB",
+    );
+    return null;
+  }
+
+  const dbName = `preview-${sanitizeBranchName(branch)}`;
+  const baseUrl = `https://api.turso.tech/v1/organizations/${org}/databases`;
+  const headers = {
+    Authorization: `Bearer ${apiToken}`,
+    "Content-Type": "application/json",
+  };
+
+  // Check if branch DB already exists
+  console.log(`Checking for existing branch database: ${dbName}`);
+  const checkRes = await fetch(`${baseUrl}/${dbName}`, { headers });
+
+  if (checkRes.ok) {
+    const data = await checkRes.json();
+    const hostname = data.database?.Hostname || data.database?.hostname;
+    console.log(`Reusing existing branch database: ${hostname}`);
+    return `libsql://${hostname}`;
+  }
+
+  // Create branch DB seeded from the shared deploy-preview DB
+  console.log(`Creating branch database "${dbName}" from "${parentDb}"...`);
+  const createRes = await fetch(baseUrl, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      name: dbName,
+      group,
+      seed: { type: "database", name: parentDb },
+    }),
+  });
+
+  if (!createRes.ok) {
+    const errText = await createRes.text();
+    console.error(
+      `Failed to create branch database (${createRes.status}): ${errText}`,
+    );
+    return null;
+  }
+
+  const data = await createRes.json();
+  const hostname = data.database?.Hostname || data.database?.hostname;
+
+  if (!hostname) {
+    console.error(
+      "Branch database created but no hostname in response:",
+      JSON.stringify(data),
+    );
+    return null;
+  }
+
+  console.log(`Created branch database: ${hostname}`);
+  return `libsql://${hostname}`;
+}
+
+export const onPreBuild = async ({ utils, netlifyConfig }) => {
   let db;
   try {
-    const url = process.env.DB_SYNC_URL;
+    let url = process.env.DB_SYNC_URL;
     const authToken = process.env.DB_TOKEN;
 
     if (!url) {
@@ -18,6 +104,21 @@ export const onPreBuild = async ({ utils }) => {
 
     if (!authToken) {
       throw new Error("DB_TOKEN not set");
+    }
+
+    // For deploy previews, create/reuse a per-PR branch database so that
+    // migrations from different PRs can't interfere with each other.
+    const context = process.env.CONTEXT;
+    const branch = process.env.BRANCH;
+
+    if (context === "deploy-preview" && branch) {
+      const branchUrl = await ensureBranchDatabase(branch);
+      if (branchUrl) {
+        url = branchUrl;
+        // Propagate to the Astro build so the app uses the branch DB too
+        netlifyConfig.build.environment.DB_SYNC_URL = branchUrl;
+        console.log(`Deploy preview will use branch database: ${branchUrl}`);
+      }
     }
 
     const dialect = new LibsqlDialect({

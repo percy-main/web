@@ -1,0 +1,42 @@
+name: Cleanup Preview Database
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Delete preview database branch
+        env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
+          TURSO_ORG: percymain
+        run: |
+          BRANCH="${{ github.head_ref }}"
+
+          # Sanitise to match the naming convention in the Netlify build plugin
+          SANITIZED=$(echo "$BRANCH" \
+            | tr '[:upper:]' '[:lower:]' \
+            | sed 's/[^a-z0-9-]/-/g' \
+            | sed 's/-\+/-/g' \
+            | sed 's/^-\|-$//g' \
+            | cut -c1-46)
+
+          DB_NAME="preview-${SANITIZED}"
+
+          echo "Deleting preview database: ${DB_NAME}"
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
+            "https://api.turso.tech/v1/organizations/${TURSO_ORG}/databases/${DB_NAME}" \
+            -H "Authorization: Bearer ${TURSO_API_TOKEN}")
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "Deleted preview database: ${DB_NAME}"
+          elif [ "$HTTP_CODE" = "404" ]; then
+            echo "Preview database not found (may not have been created): ${DB_NAME}"
+          else
+            echo "::warning::Unexpected response deleting ${DB_NAME}: HTTP ${HTTP_CODE}"
+          fi
