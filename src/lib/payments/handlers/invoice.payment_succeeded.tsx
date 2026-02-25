@@ -4,12 +4,48 @@ import { send } from "@/lib/email/send";
 import { stripeDate } from "@/lib/util/stripeDate";
 import { render } from "@react-email/render";
 import { BASE_URL } from "astro:env/client";
-import _ from "lodash/fp";
 import type Stripe from "stripe";
-import { match, P } from "ts-pattern";
+import { z } from "astro:schema";
 import { MembershipCreated } from "~/emails/MembershipUpdated";
 import { stripe } from "../client";
-import { is } from "../metadata";
+import { membershipSchema } from "../metadata";
+
+/**
+ * Resolve membership metadata from an invoice event.
+ *
+ * 1. Check the invoice's own metadata (set for first-time checkout payments).
+ * 2. If not found and the invoice is linked to a subscription, retrieve the
+ *    subscription from Stripe and check its metadata (covers renewals).
+ */
+const resolveMembershipMetadata = async (
+  invoice: Stripe.Invoice,
+): Promise<z.infer<typeof membershipSchema> | undefined> => {
+  // Try invoice-level metadata first
+  const invoiceParsed = membershipSchema.safeParse(invoice.metadata);
+  if (invoiceParsed.success) {
+    return invoiceParsed.data;
+  }
+
+  // For subscription renewals, metadata lives on the subscription object
+  if (invoice.subscription) {
+    const subscriptionId =
+      typeof invoice.subscription === "string"
+        ? invoice.subscription
+        : invoice.subscription.id;
+
+    const subscription =
+      await stripe.subscriptions.retrieve(subscriptionId);
+
+    const subscriptionParsed = membershipSchema.safeParse(
+      subscription.metadata,
+    );
+    if (subscriptionParsed.success) {
+      return subscriptionParsed.data;
+    }
+  }
+
+  return undefined;
+};
 
 export const invoicePaymentSucceeded = async (
   event: Stripe.InvoicePaymentSucceededEvent,
@@ -36,38 +72,31 @@ export const invoicePaymentSucceeded = async (
     throw new Error("Customer missing email");
   }
 
-  await match(event)
-    .with(
-      { data: { object: { metadata: P.when(is("membership")) } } },
-      async ({
-        data: {
-          object: { metadata },
-        },
-      }) => {
-        const membership = await updateMembership({
-          membershipType: metadata.membership,
-          email,
-          addedDuration: invoiceLinesToDuration(event.data.object.lines.data),
-          paidAt: stripeDate(event.created),
-        });
+  const metadata = await resolveMembershipMetadata(event.data.object);
 
-        await send({
-          to: email,
-          subject: MembershipCreated.subject,
-          html: await render(
-            <MembershipCreated.component
-              imageBaseUrl={`${BASE_URL}/images`}
-              name={membership.name}
-              type={membership.type ?? undefined}
-              paid_until={membership.paid_until}
-              isNew={membership.isNew}
-            />,
-            {
-              pretty: true,
-            },
-          ),
-        });
-      },
-    )
-    .otherwise(_.noop);
+  if (metadata) {
+    const membership = await updateMembership({
+      membershipType: metadata.membership,
+      email,
+      addedDuration: invoiceLinesToDuration(event.data.object.lines.data),
+      paidAt: stripeDate(event.created),
+    });
+
+    await send({
+      to: email,
+      subject: MembershipCreated.subject,
+      html: await render(
+        <MembershipCreated.component
+          imageBaseUrl={`${BASE_URL}/images`}
+          name={membership.name}
+          type={membership.type ?? undefined}
+          paid_until={membership.paid_until}
+          isNew={membership.isNew}
+        />,
+        {
+          pretty: true,
+        },
+      ),
+    });
+  }
 };
