@@ -112,7 +112,6 @@
     "zx": "^8.3.0"
   },
   "overrides": {
-    "zod": "$zod",
     "kysely-codegen": {
       "@libsql/kysely-libsql": "^0.4.1"
     }
