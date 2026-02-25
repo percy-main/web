@@ -26,6 +26,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Astro types
+        run: npx astro sync
+        env:
+          CDN_TOKEN: ${{ secrets.CDN_TOKEN }}
+          CDN_CMA_TOKEN: ${{ secrets.CDN_CMA_TOKEN }}
+          CDN_SPACE_ID: ${{ secrets.CDN_SPACE_ID }}
+          CDN_PREVIEW_TOKEN: ${{ secrets.CDN_PREVIEW_TOKEN }}
+          CDN_ENVIRONMENT: ${{ vars.CDN_ENVIRONMENT || 'master' }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          STRIPE_PUBLIC_KEY: ${{ vars.STRIPE_PUBLIC_KEY || 'pk_test_placeholder' }}
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+          MAPS_MAP_ID: ${{ vars.MAPS_MAP_ID || 'placeholder' }}
+          MAILGUN_API_KEY: ${{ secrets.MAILGUN_API_KEY }}
+          MAILGUN_DOMAIN: ${{ vars.MAILGUN_DOMAIN || 'notifications.percymain.org' }}
+          MAILGUN_URL: ${{ vars.MAILGUN_URL || 'https://api.eu.mailgun.net' }}
+          PLAY_CRICKET_API_KEY: ${{ secrets.PLAY_CRICKET_API_KEY }}
+          PLAY_CRICKET_URL: ${{ vars.PLAY_CRICKET_URL || 'http://play-cricket.com/api/v2' }}
+          PLAY_CRICKET_SITE_ID: ${{ vars.PLAY_CRICKET_SITE_ID || '134' }}
+          PLAY_CRICKET_1XI_ID: ${{ vars.PLAY_CRICKET_1XI_ID || '68498' }}
+          PLAY_CRICKET_2XI_ID: ${{ vars.PLAY_CRICKET_2XI_ID || '71066' }}
+          SLACK_TRUSTEES_HOOK: ${{ secrets.SLACK_TRUSTEES_HOOK }}
+
       - name: Lint
         run: npm run lint
 
