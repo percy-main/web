@@ -50,6 +50,8 @@ function AddressLookupInner() {
   const [fieldsRevealed, setFieldsRevealed] = useState(false);
   const [manualEntry, setManualEntry] = useState(false);
 
+  const [placesLoaded, setPlacesLoaded] = useState(false);
+
   // Initialise the Autocomplete widget once the Places library loads
   useEffect(() => {
     if (!places || !inputRef.current || autocompleteRef.current) return;
@@ -73,7 +75,19 @@ function AddressLookupInner() {
     });
 
     autocompleteRef.current = autocomplete;
+    setPlacesLoaded(true);
   }, [places]);
+
+  // If Places API doesn't load within 3 seconds, fall back to manual entry
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!placesLoaded) {
+        setManualEntry(true);
+        setFieldsRevealed(true);
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [placesLoaded]);
 
   const handleManualEntry = useCallback(() => {
     setManualEntry(true);
@@ -94,30 +108,34 @@ function AddressLookupInner() {
       <input type="hidden" name="address" value={combinedAddress} />
       <input type="hidden" name="postcode" value={postcode.trim()} />
 
-      {/* Search input with Google Places Autocomplete */}
-      <div className="group relative z-0 mt-2 mb-5 w-full">
-        <input
-          ref={inputRef}
-          id="address-search"
-          type="text"
-          autoComplete="off"
-          className={inputClass}
-          placeholder=" "
-        />
-        <label htmlFor="address-search" className={labelClass}>
-          Start typing your address...
-        </label>
-      </div>
+      {/* Search input with Google Places Autocomplete — hidden in manual mode */}
+      {!manualEntry && (
+        <>
+          <div className="group relative z-0 mt-2 mb-5 w-full">
+            <input
+              ref={inputRef}
+              id="address-search"
+              type="text"
+              autoComplete="off"
+              className={inputClass}
+              placeholder=" "
+            />
+            <label htmlFor="address-search" className={labelClass}>
+              Start typing your address...
+            </label>
+          </div>
 
-      {/* Enter address manually link */}
-      {!showFields && (
-        <button
-          type="button"
-          onClick={handleManualEntry}
-          className="mb-4 text-sm text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-        >
-          Enter address manually
-        </button>
+          {/* Enter address manually link */}
+          {!showFields && (
+            <button
+              type="button"
+              onClick={handleManualEntry}
+              className="mb-4 text-sm text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              Enter address manually
+            </button>
+          )}
+        </>
       )}
 
       {/* Address fields - revealed after place selection or manual entry */}

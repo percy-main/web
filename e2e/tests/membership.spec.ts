@@ -26,8 +26,14 @@ test.describe("Membership", () => {
 
     await page.locator("#title").fill("Mr");
     await page.locator("#name").fill(testName);
-    await page.locator("#address").fill("123 Test Street\nNorth Shields");
-    await page.locator("#postcode").fill("NE29 6HS");
+
+    // Address lookup — use manual entry mode (no Google API key in E2E)
+    await page.getByText("Enter address manually").click();
+    await page.locator("#house-number").fill("123");
+    await page.locator("#street-address").fill("Test Street");
+    await page.locator("#town-city").fill("North Shields");
+    await page.locator("#postcode-input").fill("NE29 6HS");
+
     await page.locator("#dob").fill("1990-01-15");
     await page.locator("#telephone").fill("07700900000");
     await page.locator("#email").fill(testEmail);
