@@ -13,12 +13,12 @@ import { formatDate } from "date-fns";
 import { ChargeNotification } from "~/emails/ChargeNotification";
 
 async function fetchStripeCharges(email: string): Promise<
-  {
+  Array<{
     id: string;
     created: string;
     amount: number;
     description: string | null;
-  }[]
+  }>
 > {
   try {
     const customers = await stripe.customers.search({
@@ -55,7 +55,7 @@ export const admin = {
       pageSize: z.number().int().min(1).max(100),
       search: z.string().optional(),
     }),
-    handler: async ({ page, pageSize, search }, session) => {
+    handler: async ({ page, pageSize, search }) => {
       let baseQuery = client
         .selectFrom("user")
         .leftJoin("member", "member.email", "user.email")
@@ -135,7 +135,7 @@ export const admin = {
     input: z.object({
       userId: z.string(),
     }),
-    handler: async ({ userId }, session) => {
+    handler: async ({ userId }) => {
       const user = await client
         .selectFrom("user")
         .where("user.id", "=", userId)

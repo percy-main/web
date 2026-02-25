@@ -42,10 +42,10 @@ function extractAddressFields(
   }
 
   return addressComponentsSchema.parse({
-    houseNumber: raw["street_number"] ?? "",
-    street: raw["route"] ?? "",
-    town: raw["postal_town"] ?? raw["locality"] ?? "",
-    postcode: raw["postal_code"] ?? "",
+    houseNumber: raw.street_number ?? "",
+    street: raw.route ?? "",
+    town: raw.postal_town ?? raw.locality ?? "",
+    postcode: raw.postal_code ?? "",
   });
 }
 
@@ -58,7 +58,7 @@ export function AddressLookupInner({
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
-  const hasDefaults = !!(defaultAddress || defaultPostcode);
+  const hasDefaults = !!(defaultAddress ?? defaultPostcode);
 
   const [houseNumber, setHouseNumber] = useState(defaultAddress ?? "");
   const [street, setStreet] = useState("");

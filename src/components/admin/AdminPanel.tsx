@@ -18,12 +18,12 @@ export function AdminPanel() {
   }
 
   if (!session.data) {
-    navigate("/auth/login");
+    void navigate("/auth/login");
     return null;
   }
 
   if (session.data.user.role !== "admin") {
-    navigate("/members");
+    void navigate("/members");
     return null;
   }
 

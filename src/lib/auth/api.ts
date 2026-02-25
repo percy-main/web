@@ -72,7 +72,7 @@ export function defineAuthAction<
         throw new ActionError({ code: "UNAUTHORIZED" });
       }
 
-      if (roles && !roles.includes(isAuthed.user.role as string)) {
+      if (roles && !roles.includes(isAuthed.user.role ?? "user")) {
         throw new ActionError({ code: "UNAUTHORIZED" });
       }
 
