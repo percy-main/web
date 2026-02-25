@@ -14,9 +14,9 @@
   "dev": {
     "stripeEnv": "test",
     "prices": {
-      "sponsorship": "prod_RfHOaraAKcZuwT",
-      "donation": "prod_Q7haiZOrmj6GN9",
-      "nets": "prod_RgrNLQY4olgtjH"
+      "sponsorship": "price_1QlwpNIoYmCDxYlk50mvNJ6R",
+      "donation": "price_1PHSBTIoYmCDxYlkBoo86Xdb",
+      "nets": "price_1QnTf1IoYmCDxYlkLJelFvkH"
     },
     "product": {
       "subs_player": "prod_RfHLa2wMmBDJcK",
