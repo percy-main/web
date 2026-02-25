@@ -41,15 +41,6 @@ export interface Charge {
   stripe_payment_intent_id: string | null;
 }
 
-export interface Dependent {
-  created_at: Generated<string>;
-  dob: string;
-  id: string;
-  member_id: string;
-  name: string;
-  sex: string;
-}
-
 export interface ContactSubmission {
   created_at: Generated<string>;
   email: string;
@@ -57,6 +48,15 @@ export interface ContactSubmission {
   message: string;
   name: string;
   page: string;
+}
+
+export interface Dependent {
+  created_at: Generated<string>;
+  dob: string;
+  id: string;
+  member_id: string;
+  name: string;
+  sex: string;
 }
 
 export interface EventSubscriber {
