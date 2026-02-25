@@ -111,8 +111,8 @@ const JuniorRegistrationInner: FC = () => {
             Your junior members have been registered and a charge has been
             created. Head to the payments tab in the members area to pay.
           </p>
-          <a href="/members" className={btnPrimary + " inline-block"}>
-            Go to Members Area
+          <a href="/members?tab=payments" className={btnPrimary + " inline-block"}>
+            Go to Payments
           </a>
         </div>
       </div>
