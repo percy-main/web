@@ -106,7 +106,7 @@ export const Charges = () => {
                 {charge.paid_at ? (
                   <Badge variant="success">Paid</Badge>
                 ) : charge.payment_confirmed_at ? (
-                  <Badge variant="default">Pending</Badge>
+                  <Badge variant="info">Pending</Badge>
                 ) : (
                   <Badge variant="warning">Unpaid</Badge>
                 )}
