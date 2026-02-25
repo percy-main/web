@@ -113,20 +113,25 @@ export async function fillPaymentElement(page: Page) {
     'iframe[title="Secure payment input frame"]',
   );
 
-  // Wait for the PaymentElement iframe to load
-  await stripeFrame
-    .locator('[role="tablist"]')
-    .waitFor({ timeout: 30_000 });
+  // Wait for either the tablist (multi-method mode) or the card input
+  // (card-only mode) to appear — Stripe only renders tabs when multiple
+  // payment methods are configured.
+  const tabList = stripeFrame.locator('[role="tablist"]');
+  const cardInput = stripeFrame.locator("#payment-numberInput");
+  await Promise.race([
+    tabList.waitFor({ timeout: 30_000 }),
+    cardInput.waitFor({ timeout: 30_000 }),
+  ]);
 
-  // Ensure the Card tab is selected (another method may be active by default)
-  const cardTab = stripeFrame.locator('[role="tab"]').filter({ hasText: "Card" });
+  // If tabs are present, click the Card tab to ensure it is selected
+  const cardTab = stripeFrame
+    .locator('[role="tab"]')
+    .filter({ hasText: "Card" });
   if ((await cardTab.count()) > 0) {
     await cardTab.click();
   }
 
-  await stripeFrame
-    .locator("#payment-numberInput")
-    .waitFor({ timeout: 15_000 });
+  await cardInput.waitFor({ timeout: 15_000 });
   await stripeFrame
     .locator("#payment-numberInput")
     .fill("4242424242424242");
