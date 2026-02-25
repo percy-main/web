@@ -224,6 +224,131 @@ export function MemberDetailModal({
               )}
             </section>
 
+            {/* Dependents / Juniors */}
+            {detail.dependents && detail.dependents.length > 0 && (
+              <section>
+                <h3 className="mb-2 text-lg font-medium">
+                  Junior Members ({detail.dependents.length})
+                </h3>
+                <div className="flex flex-col gap-4">
+                  {detail.dependents.map(
+                    (dep: {
+                      id: string;
+                      name: string;
+                      sex: string;
+                      dob: string;
+                      school_year: string | null;
+                      photo_consent: number | null;
+                      has_disability: number | null;
+                      disability_type: string | null;
+                      medical_info: string | null;
+                      gp_surgery: string | null;
+                      gp_phone: string | null;
+                      alt_contact_name: string | null;
+                      alt_contact_phone: string | null;
+                      emergency_medical_consent: number | null;
+                      paid_until: string | null;
+                    }) => (
+                      <div
+                        key={dep.id}
+                        className="rounded border border-gray-200 bg-gray-50 p-3"
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="font-semibold">{dep.name}</span>
+                          {dep.paid_until ? (
+                            <StatusPill variant="green">
+                              Paid until{" "}
+                              {formatDate(dep.paid_until, "dd/MM/yyyy")}
+                            </StatusPill>
+                          ) : (
+                            <StatusPill variant="yellow">Unpaid</StatusPill>
+                          )}
+                        </div>
+                        <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                          <dt className="font-medium text-gray-500">DOB</dt>
+                          <dd>{formatDate(dep.dob, "dd/MM/yyyy")}</dd>
+                          <dt className="font-medium text-gray-500">Gender</dt>
+                          <dd className="capitalize">
+                            {dep.sex === "prefer_not_to_say"
+                              ? "Prefer not to say"
+                              : dep.sex}
+                          </dd>
+                          {dep.school_year && (
+                            <>
+                              <dt className="font-medium text-gray-500">
+                                School Year
+                              </dt>
+                              <dd>{dep.school_year}</dd>
+                            </>
+                          )}
+                          {dep.photo_consent !== null && (
+                            <>
+                              <dt className="font-medium text-gray-500">
+                                Photo Consent
+                              </dt>
+                              <dd>{dep.photo_consent ? "Yes" : "No"}</dd>
+                            </>
+                          )}
+                          {dep.gp_surgery && (
+                            <>
+                              <dt className="font-medium text-gray-500">
+                                GP Surgery
+                              </dt>
+                              <dd>
+                                {dep.gp_surgery}
+                                {dep.gp_phone ? ` (${dep.gp_phone})` : ""}
+                              </dd>
+                            </>
+                          )}
+                          {dep.alt_contact_name && (
+                            <>
+                              <dt className="font-medium text-gray-500">
+                                Alt Contact
+                              </dt>
+                              <dd>
+                                {dep.alt_contact_name}
+                                {dep.alt_contact_phone
+                                  ? ` (${dep.alt_contact_phone})`
+                                  : ""}
+                              </dd>
+                            </>
+                          )}
+                          {dep.emergency_medical_consent !== null && (
+                            <>
+                              <dt className="font-medium text-gray-500">
+                                Emergency Consent
+                              </dt>
+                              <dd>
+                                {dep.emergency_medical_consent ? "Yes" : "No"}
+                              </dd>
+                            </>
+                          )}
+                          {dep.has_disability === 1 && (
+                            <>
+                              <dt className="font-medium text-gray-500">
+                                Disability
+                              </dt>
+                              <dd>{dep.disability_type ?? "Yes"}</dd>
+                            </>
+                          )}
+                          {dep.medical_info && (
+                            <>
+                              <dt className="font-medium text-gray-500">
+                                Medical Info
+                              </dt>
+                              <dd className="whitespace-pre-wrap">
+                                {dep.medical_info}
+                              </dd>
+                            </>
+                          )}
+                        </dl>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </section>
+            )}
+
             {/* Payments (charges) */}
             {detail.member && (
               <ChargesSection memberId={detail.member.id} />

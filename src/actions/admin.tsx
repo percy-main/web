@@ -152,6 +152,37 @@ export const admin = {
             .executeTakeFirst()) ?? null;
       }
 
+      // Fetch dependents if the user is a member
+      const dependents = member
+        ? await client
+            .selectFrom("dependent")
+            .leftJoin("membership", (join) =>
+              join
+                .onRef("dependent.id", "=", "membership.dependent_id")
+                .on("membership.type", "=", "junior"),
+            )
+            .select([
+              "dependent.id",
+              "dependent.name",
+              "dependent.sex",
+              "dependent.dob",
+              "dependent.school_year",
+              "dependent.photo_consent",
+              "dependent.has_disability",
+              "dependent.disability_type",
+              "dependent.medical_info",
+              "dependent.gp_surgery",
+              "dependent.gp_phone",
+              "dependent.alt_contact_name",
+              "dependent.alt_contact_phone",
+              "dependent.emergency_medical_consent",
+              "membership.paid_until",
+            ])
+            .where("dependent.member_id", "=", member.id)
+            .execute()
+        : [];
+
+
       return {
         user: {
           id: user.id,
@@ -163,6 +194,7 @@ export const admin = {
         },
         member: member ?? null,
         membership,
+        dependents,
       };
     },
   }),
