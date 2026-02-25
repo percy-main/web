@@ -461,12 +461,14 @@ function ChargesSection({ memberId }: { memberId: string }) {
                   <td className="px-3 py-2">
                     {charge.paid_at ? (
                       <StatusPill variant="green">Paid</StatusPill>
+                    ) : charge.payment_confirmed_at ? (
+                      <StatusPill variant="blue">Pending</StatusPill>
                     ) : (
                       <StatusPill variant="yellow">Unpaid</StatusPill>
                     )}
                   </td>
                   <td className="px-3 py-2">
-                    {!charge.paid_at && (
+                    {!charge.paid_at && !charge.payment_confirmed_at && (
                       <>
                         {deleteTarget === charge.id ? (
                           <div className="flex flex-col gap-1">

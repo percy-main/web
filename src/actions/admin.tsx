@@ -398,6 +398,7 @@ export const admin = {
         })
         .where("id", "=", chargeId)
         .where("paid_at", "is", null)
+        .where("payment_confirmed_at", "is", null)
         .where("deleted_at", "is", null)
         .execute();
 
