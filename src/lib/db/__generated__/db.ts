@@ -9,21 +9,6 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
-export interface Charge {
-  amount_pence: number;
-  charge_date: string;
-  created_at: Generated<string>;
-  created_by: string;
-  deleted_at: string | null;
-  deleted_by: string | null;
-  deleted_reason: string | null;
-  description: string;
-  id: string;
-  member_id: string;
-  paid_at: string | null;
-  stripe_payment_intent_id: string | null;
-}
-
 export interface Account {
   accessToken: string | null;
   accessTokenExpiresAt: string | null;
@@ -38,6 +23,21 @@ export interface Account {
   scope: string | null;
   updatedAt: string;
   userId: string;
+}
+
+export interface Charge {
+  amount_pence: number;
+  charge_date: string;
+  created_at: Generated<string>;
+  created_by: string;
+  deleted_at: string | null;
+  deleted_by: string | null;
+  deleted_reason: string | null;
+  description: string;
+  id: string;
+  member_id: string;
+  paid_at: string | null;
+  stripe_payment_intent_id: string | null;
 }
 
 export interface ContactSubmission {
