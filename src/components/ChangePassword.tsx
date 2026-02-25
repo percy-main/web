@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { authClient } from "../lib/auth/client";
 import { SimpleInput } from "./form/SimpleInput";
@@ -11,6 +11,15 @@ export const ChangePassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [validationError, setValidationError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  const accounts = useQuery({
+    queryKey: ["accounts"],
+    queryFn: () => authClient.listAccounts(),
+  });
+
+  const hasPassword = accounts.data?.data?.some(
+    (a) => a.providerId === "credential",
+  );
 
   const changePassword = useMutation({
     mutationFn: (params: { currentPassword: string; newPassword: string }) =>
@@ -51,6 +60,19 @@ export const ChangePassword = () => {
 
     changePassword.mutate({ currentPassword, newPassword });
   };
+
+  if (accounts.isLoading) return null;
+
+  if (!hasPassword) {
+    return (
+      <section>
+        <h2 className="text-h4">Password</h2>
+        <p className="text-sm text-gray-600">
+          You sign in with Google. No password is required.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section>
