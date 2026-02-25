@@ -33,6 +33,18 @@ if (
   !socialMonthly ||
   !socialAnnual
 ) {
+  console.log(
+    "Missing price data",
+    prices,
+    "seniorPlayerMonthly",
+    seniorPlayerMonthly,
+    "seniorPlayerAnnual",
+    seniorPlayerAnnual,
+    "socialMonthly",
+    socialMonthly,
+    "socialAnnual",
+    socialAnnual,
+  );
   throw new Error("Missing price data");
 }
 
