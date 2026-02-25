@@ -41,6 +41,11 @@ export interface Charge {
   stripe_payment_intent_id: string | null;
 }
 
+export interface ChargeDependent {
+  charge_id: string;
+  dependent_id: string;
+}
+
 export interface ContactSubmission {
   created_at: Generated<string>;
   email: string;
@@ -51,6 +56,7 @@ export interface ContactSubmission {
 }
 
 export interface Dependent {
+  charge_id: string | null;
   created_at: Generated<string>;
   dob: string;
   id: string;
@@ -157,6 +163,7 @@ export interface Verification {
 export interface DB {
   account: Account;
   charge: Charge;
+  charge_dependent: ChargeDependent;
   contact_submission: ContactSubmission;
   dependent: Dependent;
   event_subscriber: EventSubscriber;

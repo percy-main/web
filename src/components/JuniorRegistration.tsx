@@ -2,13 +2,9 @@ import { SimpleInput } from "@/components/form/SimpleInput";
 import { RadioButtons } from "@/components/form/RadioButtons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { loadStripe, type StripeEmbeddedCheckout } from "@stripe/stripe-js";
 import { actions } from "astro:actions";
-import { STRIPE_PUBLIC_KEY } from "astro:env/client";
 import { differenceInYears, format } from "date-fns";
-import { useEffect, useRef, useState, type FC } from "react";
-
-const stripeClient = loadStripe(STRIPE_PUBLIC_KEY);
+import { useState, type FC } from "react";
 
 const FIRST_CHILD_PRICE = 50;
 const ADDITIONAL_CHILD_PRICE = 30;
@@ -49,7 +45,7 @@ const btnSecondary =
 const btnDanger =
   "rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:ring-2 focus:ring-red-300 focus:outline-none";
 
-type Step = "add" | "review" | "checkout";
+type Step = "add" | "review" | "done";
 
 const JuniorRegistrationInner: FC = () => {
   const [step, setStep] = useState<Step>("add");
@@ -57,7 +53,6 @@ const JuniorRegistrationInner: FC = () => {
     emptyDependent(),
   ]);
   const [errors, setErrors] = useState<Array<string | null>>([]);
-  const [clientSecret, setClientSecret] = useState<string>();
 
   const existingDepsQuery = useQuery({
     queryKey: ["dependents"],
@@ -68,20 +63,6 @@ const JuniorRegistrationInner: FC = () => {
   const addDependentsMutation = useMutation({
     mutationFn: async (deps: Dependent[]) => {
       const result = await actions.addDependents({ dependents: deps });
-      if (result.error) throw new Error(result.error.message);
-      return result.data;
-    },
-  });
-
-  const checkoutMutation = useMutation({
-    mutationFn: async ({
-      dependentIds,
-      memberId,
-    }: {
-      dependentIds: string[];
-      memberId: string;
-    }) => {
-      const result = await actions.juniorCheckout({ dependentIds, memberId });
       if (result.error) throw new Error(result.error.message);
       return result.data;
     },
@@ -116,18 +97,26 @@ const JuniorRegistrationInner: FC = () => {
     setStep("review");
   };
 
-  const handleProceedToCheckout = async () => {
-    const result = await addDependentsMutation.mutateAsync(dependents);
-    const checkout = await checkoutMutation.mutateAsync({
-      dependentIds: result.dependentIds,
-      memberId: result.memberId,
-    });
-    setClientSecret(checkout.clientSecret);
-    setStep("checkout");
+  const handleSubmit = async () => {
+    await addDependentsMutation.mutateAsync(dependents);
+    setStep("done");
   };
 
-  if (step === "checkout" && clientSecret) {
-    return <JuniorCheckoutEmbed clientSecret={clientSecret} />;
+  if (step === "done") {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <div className="rounded-lg border border-green-200 bg-green-50 p-6 text-center">
+          <h4 className="mb-2">Registration Complete</h4>
+          <p className="mb-4 text-sm text-gray-600">
+            Your junior members have been registered and a charge has been
+            created. Head to the payments tab in the members area to pay.
+          </p>
+          <a href="/members" className={btnPrimary + " inline-block"}>
+            Go to Members Area
+          </a>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -171,7 +160,7 @@ const JuniorRegistrationInner: FC = () => {
               />
               <RadioButtons
                 id={`dep-sex-${i}`}
-                value={dep.sex || undefined}
+                value={dep.sex ?? undefined}
                 onChange={(val) => updateDependent(i, "sex", val)}
                 options={[
                   { title: "Male", value: "male" },
@@ -250,10 +239,9 @@ const JuniorRegistrationInner: FC = () => {
             when it expires.
           </p>
 
-          {(addDependentsMutation.error ?? checkoutMutation.error) && (
+          {addDependentsMutation.error && (
             <p className="mb-4 text-sm text-red-600">
-              {addDependentsMutation.error?.message ??
-                checkoutMutation.error?.message}
+              {addDependentsMutation.error.message}
             </p>
           )}
 
@@ -268,14 +256,12 @@ const JuniorRegistrationInner: FC = () => {
             <button
               type="button"
               className={btnPrimary}
-              disabled={
-                addDependentsMutation.isPending || checkoutMutation.isPending
-              }
-              onClick={handleProceedToCheckout}
+              disabled={addDependentsMutation.isPending}
+              onClick={handleSubmit}
             >
-              {addDependentsMutation.isPending || checkoutMutation.isPending
+              {addDependentsMutation.isPending
                 ? "Processing..."
-                : "Pay Online"}
+                : "Confirm & Pay"}
             </button>
           </div>
         </>
@@ -309,47 +295,6 @@ const SocialMembershipUpsell: FC = () => {
       >
         Become a Social Member
       </a>
-    </div>
-  );
-};
-
-const JuniorCheckoutEmbed: FC<{ clientSecret: string }> = ({
-  clientSecret,
-}) => {
-  const checkout = useRef<StripeEmbeddedCheckout>(undefined);
-  const [error, setError] = useState<string>();
-
-  useEffect(() => {
-    async function onMount() {
-      const stripe = await stripeClient;
-      if (!stripe) {
-        setError("Failed to load payment processor.");
-        return;
-      }
-
-      const checkoutInstance = await stripe.initEmbeddedCheckout({
-        clientSecret,
-      });
-
-      checkout.current = checkoutInstance;
-      checkoutInstance.mount("#junior-checkout");
-    }
-
-    void onMount();
-
-    return () => {
-      checkout.current?.destroy();
-    };
-  }, [clientSecret]);
-
-  if (error) {
-    return <div>{error}</div>;
-  }
-
-  return (
-    <div className="mx-auto max-w-2xl">
-      <h4 className="mb-4">Junior Membership — Payment</h4>
-      <div id="junior-checkout" />
     </div>
   );
 };

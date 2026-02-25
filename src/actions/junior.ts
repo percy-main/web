@@ -1,4 +1,3 @@
-import { stripe } from "@/lib/payments/client";
 import { defineAuthAction } from "../lib/auth/api";
 import { client } from "../lib/db/client";
 import { ActionError } from "astro:actions";
@@ -16,8 +15,13 @@ const dependentSchema = z.object({
   dob: z.string().min(1),
 });
 
-const JUNIOR_FIRST_CHILD_PRICE = 5000; // £50 in pence
-const JUNIOR_ADDITIONAL_CHILD_PRICE = 3000; // £30 in pence
+const JUNIOR_FIRST_CHILD_PENCE = 5000; // £50
+const JUNIOR_ADDITIONAL_CHILD_PENCE = 3000; // £30
+
+const priceForChild = (existingCount: number, newIndex: number) =>
+  existingCount + newIndex === 0
+    ? JUNIOR_FIRST_CHILD_PENCE
+    : JUNIOR_ADDITIONAL_CHILD_PENCE;
 
 export const addDependents = defineAuthAction({
   requireVerifiedEmail: true,
@@ -55,6 +59,7 @@ export const addDependents = defineAuthAction({
       }
     }
 
+    // Count existing dependents registered this calendar year for pricing
     const existingCount = await client
       .selectFrom("dependent")
       .where("member_id", "=", member.id)
@@ -62,11 +67,14 @@ export const addDependents = defineAuthAction({
       .select(({ fn }) => fn.countAll<number>().as("count"))
       .executeTakeFirstOrThrow();
 
-    const ids: string[] = [];
+    // Create dependent rows
+    const dependentIds: string[] = [];
+    const names: string[] = [];
 
     for (const dep of dependents) {
       const id = randomUUID();
-      ids.push(id);
+      dependentIds.push(id);
+      names.push(dep.name);
 
       await client
         .insertInto("dependent")
@@ -80,102 +88,40 @@ export const addDependents = defineAuthAction({
         .executeTakeFirst();
     }
 
-    return {
-      dependentIds: ids,
-      memberId: member.id,
-      existingDependentCount: existingCount.count,
-    };
-  },
-});
+    // Calculate total charge amount
+    let totalPence = 0;
+    for (let i = 0; i < dependents.length; i++) {
+      totalPence += priceForChild(existingCount.count, i);
+    }
 
-export const juniorCheckout = defineAuthAction({
-  requireVerifiedEmail: true,
-  input: z.object({
-    dependentIds: z.array(z.string()).min(1),
-    memberId: z.string(),
-  }),
-  handler: async ({ dependentIds, memberId }, { user }) => {
-    const member = await client
-      .selectFrom("member")
-      .select(["id"])
-      .where("email", "=", user.email)
-      .where("id", "=", memberId)
+    // Create charge on the parent
+    const year = new Date().getFullYear();
+    const chargeId = randomUUID();
+
+    await client
+      .insertInto("charge")
+      .values({
+        id: chargeId,
+        member_id: member.id,
+        description: `Junior Membership (${names.join(", ")}) ${year}`,
+        amount_pence: totalPence,
+        charge_date: new Date().toISOString().slice(0, 10),
+        created_by: user.id,
+      })
       .executeTakeFirst();
 
-    if (!member) {
-      throw new ActionError({
-        code: "BAD_REQUEST",
-        message: "Member not found.",
-      });
+    // Link charge to dependents
+    for (const depId of dependentIds) {
+      await client
+        .insertInto("charge_dependent")
+        .values({
+          charge_id: chargeId,
+          dependent_id: depId,
+        })
+        .executeTakeFirst();
     }
 
-    const dependents = await client
-      .selectFrom("dependent")
-      .select(["id", "name"])
-      .where("member_id", "=", memberId)
-      .where("id", "in", dependentIds)
-      .execute();
-
-    if (dependents.length !== dependentIds.length) {
-      throw new ActionError({
-        code: "BAD_REQUEST",
-        message: "One or more dependents not found.",
-      });
-    }
-
-    // Only dependents registered this calendar year count towards the
-    // family discount — previous years' registrations don't carry over.
-    const existingCount = await client
-      .selectFrom("dependent")
-      .where("member_id", "=", memberId)
-      .where("id", "not in", dependentIds)
-      .where("created_at", ">=", currentYearStart())
-      .select(({ fn }) => fn.countAll<number>().as("count"))
-      .executeTakeFirstOrThrow();
-
-    const lineItems = dependents.map((dep, i) => ({
-      price_data: {
-        currency: "gbp" as const,
-        unit_amount:
-          existingCount.count + i === 0
-            ? JUNIOR_FIRST_CHILD_PRICE
-            : JUNIOR_ADDITIONAL_CHILD_PRICE,
-        product_data: {
-          name: `Junior Membership - ${dep.name}`,
-        },
-      },
-      quantity: 1,
-    }));
-
-    try {
-      const session = await stripe.checkout.sessions.create({
-        ui_mode: "embedded",
-        mode: "payment",
-        line_items: lineItems,
-        redirect_on_completion: "never",
-        metadata: {
-          type: "junior_membership",
-          member_id: memberId,
-          dependent_ids: dependentIds.join(","),
-        },
-        customer_email: user.email,
-      });
-
-      if (!session.client_secret) {
-        throw new ActionError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Could not generate checkout",
-        });
-      }
-
-      return { clientSecret: session.client_secret };
-    } catch (err) {
-      console.error(err);
-      throw new ActionError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Could not generate checkout",
-      });
-    }
+    return { dependentIds, memberId: member.id, chargeId };
   },
 });
 
@@ -189,7 +135,7 @@ export const dependents = defineAuthAction({
       .executeTakeFirst();
 
     if (!member) {
-      return { dependents: [] };
+      return { dependents: [], currentYearCount: 0 };
     }
 
     const deps = await client

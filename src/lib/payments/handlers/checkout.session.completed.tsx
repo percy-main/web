@@ -6,7 +6,7 @@ import { BASE_URL } from "astro:env/client";
 import _ from "lodash/fp";
 import type { Stripe } from "stripe";
 import { match, P } from "ts-pattern";
-import { createJuniorMemberships } from "../../db/service/createJuniorMemberships";
+
 import { MembershipCreated } from "~/emails/MembershipUpdated";
 import { updateMembership } from "../../db/service/updateMembership";
 import { sendMessage } from "../../slack/sendMessage";
@@ -63,20 +63,6 @@ export const checkoutSessionCompleted = async (
               pretty: true,
             },
           ),
-        });
-      },
-    )
-    .with(
-      {
-        payment_status: "paid",
-        metadata: P.when(is("junior_membership")),
-      },
-      async ({ metadata }) => {
-        const dependentIds = metadata.dependent_ids.split(",");
-        await createJuniorMemberships({
-          memberId: metadata.member_id,
-          dependentIds,
-          paidAt: stripeDate(event.created),
         });
       },
     )
