@@ -23,15 +23,17 @@ const currencyFormatter = new Intl.NumberFormat("en-GB", {
 interface PaymentFormProps {
   clientSecret: string;
   amount: number;
+  title?: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
 const CheckoutForm: FC<{
   amount: number;
+  title: string;
   onSuccess: () => void;
   onCancel: () => void;
-}> = ({ amount, onSuccess, onCancel }) => {
+}> = ({ amount, title, onSuccess, onCancel }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +73,7 @@ const CheckoutForm: FC<{
     <form onSubmit={handleSubmit}>
       <Card>
         <CardHeader>
-          <CardTitle>Pay Outstanding Balance</CardTitle>
+          <CardTitle>{title}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <PaymentElement />
@@ -99,6 +101,7 @@ const CheckoutForm: FC<{
 export const PaymentForm: FC<PaymentFormProps> = ({
   clientSecret,
   amount,
+  title = "Pay Outstanding Balance",
   onSuccess,
   onCancel,
 }) => {
@@ -110,7 +113,12 @@ export const PaymentForm: FC<PaymentFormProps> = ({
         appearance: { theme: "stripe" },
       }}
     >
-      <CheckoutForm amount={amount} onSuccess={onSuccess} onCancel={onCancel} />
+      <CheckoutForm
+        amount={amount}
+        title={title}
+        onSuccess={onSuccess}
+        onCancel={onCancel}
+      />
     </Elements>
   );
 };

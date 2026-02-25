@@ -9,6 +9,7 @@ export const schema = z.object({
   id: z.string(),
   mode: z.union([z.literal("payment"), z.literal("subscription")]),
   hasPromotion: z.boolean(),
+  unitAmount: z.number(),
   formattedPrice: z.string(),
   product: z.object({
     id: z.string(),
@@ -39,6 +40,7 @@ const loader = async () => {
       hasPromotion: !!coupons.data.find((c) =>
         c.applies_to?.products.includes(product.id),
       ),
+      unitAmount: price.unit_amount ?? 0,
       formattedPrice: price.unit_amount ? `£${price.unit_amount / 100}` : "",
       product: {
         id: product.id,

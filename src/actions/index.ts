@@ -11,6 +11,7 @@ import { getMemberDetails, updateMemberDetails } from "./member-details";
 import { membership } from "./membership";
 import { payments } from "./payments";
 import { playCricket } from "./play-cricket";
+import { purchase } from "./purchase";
 import { subscriptions } from "./subscriptions";
 
 export const server = {
@@ -23,6 +24,7 @@ export const server = {
   addDependents,
   dependents,
   payments,
+  purchase,
   subscriptions,
   playCricket,
   membership,
