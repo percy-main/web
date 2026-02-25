@@ -58,12 +58,28 @@ export interface ContactSubmission {
 }
 
 export interface Dependent {
+  alt_contact_name: string | null;
+  alt_contact_phone: string | null;
+  alt_contact_whatsapp_consent: number | null;
   created_at: Generated<string>;
+  data_protection_consent: number | null;
+  disability_type: string | null;
   dob: string;
+  emergency_medical_consent: number | null;
+  gp_phone: string | null;
+  gp_surgery: string | null;
+  has_disability: number | null;
   id: string;
+  medical_fitness_declaration: number | null;
+  medical_info: string | null;
   member_id: string;
   name: string;
+  photo_consent: number | null;
+  played_before: number | null;
+  previous_cricket: string | null;
+  school_year: string | null;
   sex: string;
+  whatsapp_consent: number | null;
 }
 
 export interface EventSubscriber {
