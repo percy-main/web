@@ -6,7 +6,7 @@ import {
   simulatePaymentIntentWebhook,
 } from "../helpers/stripe";
 
-test.describe.skip("Membership", () => {
+test.describe("Membership", () => {
   const testPassword = "TestPassword123!";
 
   test("full join, register, pay membership flow", async ({
@@ -79,8 +79,8 @@ test.describe.skip("Membership", () => {
       timeout: 10_000,
     });
 
-    // ─── 7. Navigate to pay membership ───
-    await page.goto("/membership/pay");
+    // ─── 7. Navigate to pay membership (include email so it propagates to payment metadata) ───
+    await page.goto(`/membership/pay?email=${encodeURIComponent(testEmail)}`);
     await expect(
       page.getByRole("heading", { name: /your membership/i }).first(),
     ).toBeVisible({ timeout: 10_000 });

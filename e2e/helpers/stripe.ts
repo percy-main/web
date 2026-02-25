@@ -106,15 +106,27 @@ export async function simulateInvoiceWebhook(
 /**
  * Fill the Stripe PaymentElement card fields within the iframe.
  * PaymentElement renders a single iframe with card number, expiry, and CVC inputs.
+ * Clicks the "Card" tab first in case another payment method is selected by default.
  */
 export async function fillPaymentElement(page: Page) {
   const stripeFrame = page.frameLocator(
     'iframe[title="Secure payment input frame"]',
   );
 
+  // Wait for the PaymentElement iframe to load
+  await stripeFrame
+    .locator('[role="tablist"]')
+    .waitFor({ timeout: 30_000 });
+
+  // Ensure the Card tab is selected (another method may be active by default)
+  const cardTab = stripeFrame.locator('[role="tab"]').filter({ hasText: "Card" });
+  if ((await cardTab.count()) > 0) {
+    await cardTab.click();
+  }
+
   await stripeFrame
     .locator("#payment-numberInput")
-    .waitFor({ timeout: 30_000 });
+    .waitFor({ timeout: 15_000 });
   await stripeFrame
     .locator("#payment-numberInput")
     .fill("4242424242424242");
