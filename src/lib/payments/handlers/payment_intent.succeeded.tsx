@@ -1,5 +1,6 @@
 import { client } from "@/lib/db/client";
 import { createJuniorMemberships } from "@/lib/db/service/createJuniorMemberships";
+import { createPaymentCharge } from "@/lib/db/service/createPaymentCharge";
 import { updateMembership } from "@/lib/db/service/updateMembership";
 import { send } from "@/lib/email/send";
 import { sendMessage } from "@/lib/slack/sendMessage";
@@ -61,6 +62,19 @@ const handleSponsorGame = async (
   gameId: string,
 ) => {
   await sendMessage(`Game ${gameId} was sponsored`);
+
+  const email = event.data.object.metadata.email ?? event.data.object.receipt_email;
+  if (email) {
+    await createPaymentCharge({
+      memberEmail: email,
+      description: `Game sponsorship`,
+      amountPence: event.data.object.amount,
+      chargeDate: stripeDate(event.created),
+      type: "sponsorship",
+      source: "webhook",
+      stripePaymentIntentId: event.data.object.id,
+    });
+  }
 };
 
 const handleMembership = async (
@@ -86,6 +100,16 @@ const handleMembership = async (
     email,
     addedDuration,
     paidAt: stripeDate(event.created),
+  });
+
+  await createPaymentCharge({
+    memberEmail: email,
+    description: `Membership payment - ${membershipType}`,
+    amountPence: event.data.object.amount,
+    chargeDate: stripeDate(event.created),
+    type: "membership",
+    source: "webhook",
+    stripePaymentIntentId: event.data.object.id,
   });
 
   await send({

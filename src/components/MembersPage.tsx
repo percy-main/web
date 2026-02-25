@@ -8,7 +8,6 @@ import { Charges } from "./Charges";
 import { MemberDetails, useMemberDetails } from "./MemberDetails";
 import { Membership } from "./Membership";
 import { Passkeys } from "./Passkeys";
-import { Payments } from "./Payments";
 import { Subscriptions } from "./Subscriptions";
 import { TwoFactor } from "./TwoFactor";
 
@@ -102,7 +101,6 @@ export const MembersPage = () => {
             <div className="flex flex-col gap-8">
               <Charges />
               <Subscriptions />
-              <Payments />
             </div>
           </TabsContent>
         </Tabs>

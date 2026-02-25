@@ -1,4 +1,5 @@
 import { invoiceLinesToDuration } from "@/lib//util/invoiceLinesToDuration";
+import { createPaymentCharge } from "@/lib/db/service/createPaymentCharge";
 import { updateMembership } from "@/lib/db/service/updateMembership";
 import { send } from "@/lib/email/send";
 import { stripeDate } from "@/lib/util/stripeDate";
@@ -100,6 +101,27 @@ export const invoicePaymentSucceeded = async (
       email,
       addedDuration: invoiceLinesToDuration(event.data.object.lines.data),
       paidAt: stripeDate(event.created),
+    });
+
+    const isRenewal = event.data.object.billing_reason === "subscription_cycle";
+    const description = isRenewal
+      ? `Membership renewal - ${metadata.membership}`
+      : `Membership payment - ${metadata.membership}`;
+
+    // Resolve the payment intent ID from the invoice
+    const paymentIntentId =
+      typeof event.data.object.payment_intent === "string"
+        ? event.data.object.payment_intent
+        : event.data.object.payment_intent?.id;
+
+    await createPaymentCharge({
+      memberEmail: email,
+      description,
+      amountPence: event.data.object.amount_paid,
+      chargeDate: stripeDate(event.created),
+      type: "membership",
+      source: "webhook",
+      stripePaymentIntentId: paymentIntentId,
     });
 
     // Send confirmation email for initial subscription payments

@@ -224,52 +224,10 @@ export function MemberDetailModal({
               )}
             </section>
 
-            {/* Member Charges */}
+            {/* Payments (charges) */}
             {detail.member && (
               <ChargesSection memberId={detail.member.id} />
             )}
-
-            {/* Stripe Charges */}
-            <section>
-              <h3 className="mb-2 text-lg font-medium">
-                Stripe Charge History
-              </h3>
-              {detail.charges.length === 0 ? (
-                <p className="text-sm text-gray-500">No charges found.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead className="border-b text-xs uppercase text-gray-500">
-                      <tr>
-                        <th className="px-3 py-2">Date</th>
-                        <th className="px-3 py-2">Amount</th>
-                        <th className="px-3 py-2">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detail.charges.map((charge) => (
-                        <tr key={charge.id} className="border-b">
-                          <td className="px-3 py-2">
-                            {formatDate(
-                              charge.created,
-                              "dd/MM/yyyy HH:mm",
-                            )}
-                          </td>
-                          <td className="px-3 py-2">
-                            {currencyFormatter.format(
-                              charge.amount / 100,
-                            )}
-                          </td>
-                          <td className="px-3 py-2">
-                            {charge.description ?? "-"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
           </div>
         )}
       </div>
@@ -341,12 +299,12 @@ function ChargesSection({ memberId }: { memberId: string }) {
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-lg font-medium">Charges</h3>
+        <h3 className="text-lg font-medium">Payments</h3>
         <button
           className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
           onClick={() => setShowAddForm(!showAddForm)}
         >
-          {showAddForm ? "Cancel" : "Add Charge"}
+          {showAddForm ? "Cancel" : "Add Payment"}
         </button>
       </div>
 
@@ -413,27 +371,27 @@ function ChargesSection({ memberId }: { memberId: string }) {
               disabled={addChargeMutation.isPending}
               className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              {addChargeMutation.isPending ? "Adding..." : "Add Charge"}
+              {addChargeMutation.isPending ? "Adding..." : "Add Payment"}
             </button>
           </div>
           {addChargeMutation.isError && (
             <p className="mt-2 text-sm text-red-600">
-              Failed to add charge.
+              Failed to add payment.
             </p>
           )}
         </form>
       )}
 
       {chargesQuery.isLoading && (
-        <p className="text-sm text-gray-500">Loading charges...</p>
+        <p className="text-sm text-gray-500">Loading payments...</p>
       )}
 
       {chargesQuery.isError && (
-        <p className="text-sm text-red-600">Failed to load charges.</p>
+        <p className="text-sm text-red-600">Failed to load payments.</p>
       )}
 
       {charges && charges.length === 0 && (
-        <p className="text-sm text-gray-500">No charges found.</p>
+        <p className="text-sm text-gray-500">No payments found.</p>
       )}
 
       {charges && charges.length > 0 && (
@@ -444,6 +402,7 @@ function ChargesSection({ memberId }: { memberId: string }) {
                 <th className="px-3 py-2">Date</th>
                 <th className="px-3 py-2">Description</th>
                 <th className="px-3 py-2">Amount</th>
+                <th className="px-3 py-2">Source</th>
                 <th className="px-3 py-2">Status</th>
                 <th className="px-3 py-2">Actions</th>
               </tr>
@@ -457,6 +416,13 @@ function ChargesSection({ memberId }: { memberId: string }) {
                   <td className="px-3 py-2">{charge.description}</td>
                   <td className="px-3 py-2">
                     {currencyFormatter.format(charge.amount_pence / 100)}
+                  </td>
+                  <td className="px-3 py-2">
+                    <StatusPill
+                      variant={charge.source === "admin" ? "gray" : "blue"}
+                    >
+                      {charge.source}
+                    </StatusPill>
                   </td>
                   <td className="px-3 py-2">
                     {charge.paid_at ? (
