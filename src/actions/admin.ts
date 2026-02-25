@@ -226,9 +226,22 @@ export const admin = {
       memberId: z.string(),
       description: z.string().min(1),
       amountPence: z.number().int().positive(),
-      chargeDate: z.string(),
+      chargeDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
     }),
     handler: async ({ memberId, description, amountPence, chargeDate }, session) => {
+      const member = await client
+        .selectFrom("member")
+        .where("id", "=", memberId)
+        .select(["id"])
+        .executeTakeFirst();
+
+      if (!member) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Member not found",
+        });
+      }
+
       const id = randomUUID();
 
       await client
@@ -278,27 +291,7 @@ export const admin = {
       reason: z.string().min(1),
     }),
     handler: async ({ chargeId, reason }, session) => {
-      const charge = await client
-        .selectFrom("charge")
-        .where("id", "=", chargeId)
-        .selectAll()
-        .executeTakeFirst();
-
-      if (!charge) {
-        throw new ActionError({
-          code: "NOT_FOUND",
-          message: "Charge not found",
-        });
-      }
-
-      if (charge.paid_at) {
-        throw new ActionError({
-          code: "BAD_REQUEST",
-          message: "Cannot delete a charge that has already been paid",
-        });
-      }
-
-      await client
+      const result = await client
         .updateTable("charge")
         .set({
           deleted_at: new Date().toISOString(),
@@ -306,7 +299,17 @@ export const admin = {
           deleted_reason: reason,
         })
         .where("id", "=", chargeId)
+        .where("paid_at", "is", null)
+        .where("deleted_at", "is", null)
         .execute();
+
+      if (result[0]?.numUpdatedRows === 0n) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message:
+            "Charge not found or has already been paid/deleted",
+        });
+      }
 
       return { success: true };
     },
