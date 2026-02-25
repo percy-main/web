@@ -1,5 +1,6 @@
 {
   "default": {
+    "stripeEnv": "live",
     "prices": {
       "sponsorship": "price_1QeNAEIoYmCDxYlku6fuUon5",
       "donation": "price_1Qg3v7IoYmCDxYlkVFuUKYXX",
@@ -11,6 +12,7 @@
     }
   },
   "dev": {
+    "stripeEnv": "test",
     "prices": {
       "sponsorship": "prod_RfHOaraAKcZuwT",
       "donation": "prod_Q7haiZOrmj6GN9",
