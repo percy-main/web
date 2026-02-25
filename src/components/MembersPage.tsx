@@ -2,6 +2,7 @@ import { useSession } from "@/lib/auth/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/Tabs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
+import { Charges } from "./Charges";
 import { Membership } from "./Membership";
 import { ChangePassword } from "./ChangePassword";
 import { Passkeys } from "./Passkeys";
@@ -70,6 +71,7 @@ export const MembersPage = () => {
           </TabsContent>
           <TabsContent value="payments">
             <div className="flex flex-col gap-8">
+              <Charges />
               <Subscriptions />
               <Payments />
             </div>

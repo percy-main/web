@@ -7,11 +7,6 @@ import * as path from "path";
 import ts from "typescript";
 
 export const onPreBuild = async ({ utils }) => {
-  if (process.env.CONTEXT !== "production") {
-    console.log(`Skipping migrations for ${process.env.CONTEXT} build`);
-    return;
-  }
-
   let db;
   try {
     const url = process.env.DB_SYNC_URL;
