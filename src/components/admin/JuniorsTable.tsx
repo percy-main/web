@@ -72,7 +72,7 @@ export function JuniorsTable() {
     queryFn: () => actions.admin.listJuniors(),
   });
 
-  const juniors: Junior[] = data?.data ?? [];
+  const juniors = useMemo<Junior[]>(() => data?.data ?? [], [data]);
 
   const filtered = useMemo(() => {
     return juniors.filter((j) => {
