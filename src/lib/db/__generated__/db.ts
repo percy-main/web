@@ -41,6 +41,11 @@ export interface Charge {
   stripe_payment_intent_id: string | null;
 }
 
+export interface ChargeDependent {
+  charge_id: string;
+  dependent_id: string;
+}
+
 export interface ContactSubmission {
   created_at: Generated<string>;
   email: string;
@@ -48,6 +53,15 @@ export interface ContactSubmission {
   message: string;
   name: string;
   page: string;
+}
+
+export interface Dependent {
+  created_at: Generated<string>;
+  dob: string;
+  id: string;
+  member_id: string;
+  name: string;
+  sex: string;
 }
 
 export interface EventSubscriber {
@@ -82,6 +96,7 @@ export interface Member {
 
 export interface Membership {
   created_at: Generated<string>;
+  dependent_id: string | null;
   id: string;
   member_id: string;
   paid_until: string;
@@ -147,7 +162,9 @@ export interface Verification {
 export interface DB {
   account: Account;
   charge: Charge;
+  charge_dependent: ChargeDependent;
   contact_submission: ContactSubmission;
+  dependent: Dependent;
   event_subscriber: EventSubscriber;
   game_score: GameScore;
   member: Member;

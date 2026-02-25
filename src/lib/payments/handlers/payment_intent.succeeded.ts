@@ -1,4 +1,5 @@
 import { client } from "@/lib/db/client";
+import { createJuniorMemberships } from "@/lib/db/service/createJuniorMemberships";
 import { stripeDate } from "@/lib/util/stripeDate";
 import type Stripe from "stripe";
 
@@ -12,14 +13,14 @@ export const paymentIntentSucceeded = async (
   }
 
   const paymentIntentId = event.data.object.id;
-  const paidAt = stripeDate(event.data.object.created).toISOString();
+  const paidAt = stripeDate(event.data.object.created);
 
   // Find charges linked to this payment intent
   const charges = await client
     .selectFrom("charge")
     .where("stripe_payment_intent_id", "=", paymentIntentId)
     .where("paid_at", "is", null)
-    .select(["id"])
+    .select(["id", "member_id"])
     .execute();
 
   if (charges.length === 0) {
@@ -34,9 +35,27 @@ export const paymentIntentSucceeded = async (
   for (const charge of charges) {
     await client
       .updateTable("charge")
-      .set({ paid_at: paidAt })
+      .set({ paid_at: paidAt.toISOString() })
       .where("id", "=", charge.id)
       .where("paid_at", "is", null)
       .execute();
+  }
+
+  // Check if any paid charges are linked to dependents — if so, create
+  // junior memberships for them.
+  for (const charge of charges) {
+    const linkedDependents = await client
+      .selectFrom("charge_dependent")
+      .where("charge_id", "=", charge.id)
+      .select(["dependent_id"])
+      .execute();
+
+    if (linkedDependents.length > 0) {
+      await createJuniorMemberships({
+        memberId: charge.member_id,
+        dependentIds: linkedDependents.map((d) => d.dependent_id),
+        paidAt,
+      });
+    }
   }
 };

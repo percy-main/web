@@ -14,11 +14,17 @@ export const Membership: FC<Props> = ({ email }) => {
     queryFn: actions.membership,
   });
 
+  const dependentsQuery = useQuery({
+    queryKey: ["dependents"],
+    queryFn: actions.dependents,
+  });
+
   if (!query.data?.data) {
     return null;
   }
 
   const { membership } = query.data.data;
+  const deps = dependentsQuery.data?.data?.dependents ?? [];
 
   return (
     <section>
@@ -30,6 +36,7 @@ export const Membership: FC<Props> = ({ email }) => {
               {match(membership.type)
                 .with("senior_player", () => "Playing Member (Senior)")
                 .with("social", () => "Social Member")
+                .with("junior", () => "Junior Member")
                 .otherwise(() => "Unknown membership type")}
             </div>
             <p className="text-sm">
@@ -52,6 +59,43 @@ export const Membership: FC<Props> = ({ email }) => {
             </a>
           </>
         )}
+      </div>
+
+      {deps.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-h5 mb-2">Junior Members</h3>
+          <div className="flex flex-col gap-3">
+            {deps.map((dep) => (
+              <div
+                key={dep.id}
+                className="max-w-max rounded-2xl border border-gray-500 bg-green-50 p-4"
+              >
+                <div className="mb-1 font-semibold">{dep.name}</div>
+                <p className="text-sm">
+                  <span className="font-semibold">Date of Birth: </span>
+                  {formatDate(dep.dob, "dd/MM/yyyy")}
+                </p>
+                {dep.paid_until ? (
+                  <p className="text-sm">
+                    <span className="font-semibold">Paid Until: </span>
+                    {formatDate(dep.paid_until, "dd/MM/yyyy")}
+                  </p>
+                ) : (
+                  <p className="text-sm text-amber-600">Awaiting payment</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mt-6">
+        <a
+          className="inline-block rounded-lg border border-blue-700 bg-white px-5 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-50 focus:ring-4 focus:ring-blue-300 focus:outline-none"
+          href="/membership/junior"
+        >
+          Register Junior Members
+        </a>
       </div>
     </section>
   );

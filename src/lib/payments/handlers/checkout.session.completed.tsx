@@ -6,6 +6,7 @@ import { BASE_URL } from "astro:env/client";
 import _ from "lodash/fp";
 import type { Stripe } from "stripe";
 import { match, P } from "ts-pattern";
+
 import { MembershipCreated } from "~/emails/MembershipUpdated";
 import { updateMembership } from "../../db/service/updateMembership";
 import { sendMessage } from "../../slack/sendMessage";

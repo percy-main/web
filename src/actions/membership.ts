@@ -9,6 +9,7 @@ export const membership = defineAuthAction({
         .selectFrom("membership")
         .leftJoin("member", "member.id", "membership.member_id")
         .where("member.email", "=", user.email)
+        .where("membership.dependent_id", "is", null)
         .select([
           "membership.id",
           "membership.type",

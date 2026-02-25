@@ -5,6 +5,10 @@ import { createContactSubmission } from "./create-contact-submission";
 import { createEventSubscriber } from "./create-event-subscriber";
 import { gameScore } from "./game-score";
 import { join } from "./join";
+import {
+  addDependents,
+  dependents,
+} from "./junior";
 import { leaderboard } from "./leaderboard";
 import { membership } from "./membership";
 import { payments } from "./payments";
@@ -13,9 +17,11 @@ import { subscriptions } from "./subscriptions";
 
 export const server = {
   admin,
+  addDependents,
   charges,
   checkout,
   createContactSubmission,
+  dependents,
   join,
   payments,
   subscriptions,
