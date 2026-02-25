@@ -26,8 +26,19 @@ test.describe("Membership", () => {
 
     await page.locator("#title").fill("Mr");
     await page.locator("#name").fill(testName);
-    await page.locator("#address").fill("123 Test Street\nNorth Shields");
-    await page.locator("#postcode").fill("NE29 6HS");
+
+    // Address lookup — use manual entry mode (no postcodes.io in E2E)
+    // Retry click until React hydration completes and fields appear
+    await expect(async () => {
+      const btn = page.getByText("Enter address manually");
+      if (await btn.isVisible()) await btn.click();
+      await expect(page.locator("#street-address")).toBeVisible();
+    }).toPass({ timeout: 15_000 });
+    await page.locator("#house-number").fill("123");
+    await page.locator("#street-address").fill("Test Street");
+    await page.locator("#town-city").fill("North Shields");
+    await page.locator("#postcode-input").fill("NE29 6HS");
+
     await page.locator("#dob").fill("1990-01-15");
     await page.locator("#telephone").fill("07700900000");
     await page.locator("#email").fill(testEmail);
