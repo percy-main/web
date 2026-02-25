@@ -49,6 +49,6 @@ export default [
     },
   },
   {
-    ignores: ["**/__tests__/*"],
+    ignores: ["**/__tests__/*", "**/be-the-keeper/*"],
   },
 ];

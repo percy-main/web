@@ -39,7 +39,7 @@ export const useMemberDetails = () =>
     queryFn: actions.getMemberDetails,
   });
 
-const fields: { key: keyof MemberData; label: string }[] = [
+const fields: Array<{ key: keyof MemberData; label: string }> = [
   { key: "title", label: "Title" },
   { key: "name", label: "Name" },
   { key: "address", label: "Address" },
@@ -246,7 +246,7 @@ export const MemberDetails: FC = () => {
   // No details yet — go straight to edit mode
   if (!member) {
     return (
-      <EditView member={null} onCancel={() => {}} onSaved={() => {}} />
+      <EditView member={null} onCancel={() => undefined} onSaved={() => undefined} />
     );
   }
 

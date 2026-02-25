@@ -3,7 +3,7 @@ import { getViteConfig } from "astro/config";
 
 export default getViteConfig({
   test: {
-    // Vitest configuration options
+    exclude: ["e2e/**", "node_modules/**"],
     env: {
       DB_SYNC_URL: "file:local.db",
     },

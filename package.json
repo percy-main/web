@@ -20,6 +20,7 @@
     "db:migration": "zx ./scripts/create-migration.mjs",
     "db:up": "CLI=true set -a && source .env && set +a && tsx ./scripts/migrate-up",
     "postinstall": "patch-package",
+    "test": "vitest run",
     "test:e2e": "playwright test"
   },
   "dependencies": {

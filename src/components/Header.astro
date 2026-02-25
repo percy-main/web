@@ -5,7 +5,7 @@ import { MenuItem, type TMenuItem } from "@/components/MenuItem";
 import { AuthNav } from "@/components/auth/Nav";
 import { urlMatch } from "@/lib/util/url-match";
 import { paymentData } from "@/lib/payments/config";
-import { Image } from "astro:assets";
+
 
 const { pathname } = Astro.url;
 
@@ -187,7 +187,7 @@ const donateUrl = `/purchase/${paymentData.prices.donation}`;
           <li class="border-b border-gray-100">
             <MenuItem
               item={item}
-              purpose="menu"
+              purpose={purpose}
               isActive={urlMatch(pathname, item)}
             />
           </li>

@@ -71,7 +71,7 @@ const roleGroups = [
   },
 ];
 
-const grouped = new Map<string, { person: PersonEntry; roles: string[] }[]>();
+const grouped = new Map<string, Array<{ person: PersonEntry; roles: string[] }>>();
 for (const group of roleGroups) {
   grouped.set(group.label, []);
 }
@@ -83,12 +83,12 @@ for (const person of people) {
   for (const group of roleGroups) {
     const matchingRoles = allRoles.filter((r) => group.match(r));
     if (matchingRoles.length > 0) {
-      grouped.get(group.label)!.push({ person, roles: matchingRoles });
+      grouped.get(group.label)?.push({ person, roles: matchingRoles });
     }
   }
 
   if (playerIds.has(person.id)) {
-    grouped.get("Players")!.push({ person, roles: [] });
+    grouped.get("Players")?.push({ person, roles: [] });
   }
 }
 

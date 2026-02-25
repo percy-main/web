@@ -95,14 +95,10 @@ export async function getStaticPaths() {
 }
 
 const games = await getCollection("game");
-const allPages = await getCollection("page");
 
 const { page, menu } = Astro.props;
 const { pathname } = Astro.url;
 
-const sectionSlug = pathname.split("/").filter(Boolean)[0];
-const sectionPage = allPages.find((p) => p.data.slug === sectionSlug);
-const sectionTitle = sectionPage?.data.title ?? page.data.title;
 ---
 
 <Page title={page.data.title} menu={menu}>
