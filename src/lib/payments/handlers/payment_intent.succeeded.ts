@@ -1,4 +1,5 @@
 import { client } from "@/lib/db/client";
+import { stripeDate } from "@/lib/util/stripeDate";
 import type Stripe from "stripe";
 
 export const paymentIntentSucceeded = async (
@@ -10,46 +11,32 @@ export const paymentIntentSucceeded = async (
     return;
   }
 
-  const chargeIds = metadata.chargeIds?.split(",").filter(Boolean);
+  const paymentIntentId = event.data.object.id;
+  const paidAt = stripeDate(event.data.object.created).toISOString();
 
-  if (!chargeIds || chargeIds.length === 0) {
+  // Find charges linked to this payment intent
+  const charges = await client
+    .selectFrom("charge")
+    .where("stripe_payment_intent_id", "=", paymentIntentId)
+    .where("paid_at", "is", null)
+    .select(["id"])
+    .execute();
+
+  if (charges.length === 0) {
     console.error(
-      "payment_intent.succeeded: missing chargeIds in metadata",
-      event.id,
+      "payment_intent.succeeded: no unpaid charges found for payment intent",
+      paymentIntentId,
     );
     return;
   }
 
-  const paymentIntentId = event.data.object.id;
-  const paidAt = new Date().toISOString();
-
-  for (const chargeId of chargeIds) {
-    // Idempotency: skip charges that are already paid
-    const charge = await client
-      .selectFrom("charge")
-      .where("id", "=", chargeId)
-      .select(["id", "paid_at"])
-      .executeTakeFirst();
-
-    if (!charge) {
-      console.error(
-        `payment_intent.succeeded: charge ${chargeId} not found`,
-      );
-      continue;
-    }
-
-    if (charge.paid_at) {
-      // Already paid, skip for idempotency
-      continue;
-    }
-
+  // Mark them as paid (idempotent via paid_at IS NULL guard)
+  for (const charge of charges) {
     await client
       .updateTable("charge")
-      .set({
-        paid_at: paidAt,
-        stripe_payment_intent_id: paymentIntentId,
-      })
-      .where("id", "=", chargeId)
+      .set({ paid_at: paidAt })
+      .where("id", "=", charge.id)
+      .where("paid_at", "is", null)
       .execute();
   }
 };
