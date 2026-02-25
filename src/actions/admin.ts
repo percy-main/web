@@ -5,6 +5,7 @@ import { stripe } from "@/lib/payments/client";
 import { stripeDate } from "@/lib/util/stripeDate";
 import { ActionError } from "astro:actions";
 import { z } from "astro:schema";
+import { randomUUID } from "crypto";
 
 async function fetchStripeCharges(email: string): Promise<
   {
@@ -214,6 +215,98 @@ export const admin = {
           role,
         },
       });
+
+      return { success: true };
+    },
+  }),
+
+  addCharge: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      memberId: z.string(),
+      description: z.string().min(1),
+      amountPence: z.number().int().positive(),
+      chargeDate: z.string(),
+    }),
+    handler: async ({ memberId, description, amountPence, chargeDate }, session) => {
+      const id = randomUUID();
+
+      await client
+        .insertInto("charge")
+        .values({
+          id,
+          member_id: memberId,
+          description,
+          amount_pence: amountPence,
+          charge_date: chargeDate,
+          created_by: session.user.id,
+        })
+        .execute();
+
+      const charge = await client
+        .selectFrom("charge")
+        .where("id", "=", id)
+        .selectAll()
+        .executeTakeFirstOrThrow();
+
+      return charge;
+    },
+  }),
+
+  getCharges: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      memberId: z.string(),
+    }),
+    handler: async ({ memberId }) => {
+      const charges = await client
+        .selectFrom("charge")
+        .where("member_id", "=", memberId)
+        .where("deleted_at", "is", null)
+        .selectAll()
+        .orderBy("charge_date", "desc")
+        .execute();
+
+      return charges;
+    },
+  }),
+
+  deleteCharge: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      chargeId: z.string(),
+      reason: z.string().min(1),
+    }),
+    handler: async ({ chargeId, reason }, session) => {
+      const charge = await client
+        .selectFrom("charge")
+        .where("id", "=", chargeId)
+        .selectAll()
+        .executeTakeFirst();
+
+      if (!charge) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Charge not found",
+        });
+      }
+
+      if (charge.paid_at) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Cannot delete a charge that has already been paid",
+        });
+      }
+
+      await client
+        .updateTable("charge")
+        .set({
+          deleted_at: new Date().toISOString(),
+          deleted_by: session.user.id,
+          deleted_reason: reason,
+        })
+        .where("id", "=", chargeId)
+        .execute();
 
       return { success: true };
     },
