@@ -2,7 +2,6 @@ import { defineAuthAction } from "@/lib/auth/api";
 import { client } from "@/lib/db/client";
 import { stripe } from "@/lib/payments/client";
 import { ActionError } from "astro:actions";
-import { STRIPE_SECRET_KEY } from "astro:env/server";
 import { z } from "astro:schema";
 
 export const charges = {
@@ -130,8 +129,6 @@ export const charges = {
         clientSecret: paymentIntent.client_secret,
         totalAmountPence,
         chargeIds,
-        _debug_sk_prefix: STRIPE_SECRET_KEY?.substring(0, 12),
-        _debug_pi_id: paymentIntent.id,
       };
     },
   }),
