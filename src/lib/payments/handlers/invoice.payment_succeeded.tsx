@@ -11,37 +11,50 @@ import { stripe } from "../client";
 import { membershipSchema } from "../metadata";
 
 /**
- * Resolve membership metadata from an invoice event.
+ * Resolve membership metadata for subscription renewal invoices.
  *
- * 1. Check the invoice's own metadata (set for first-time checkout payments).
- * 2. If not found and the invoice is linked to a subscription, retrieve the
- *    subscription from Stripe and check its metadata (covers renewals).
+ * For subscription invoices, the metadata lives on the subscription object,
+ * not the invoice itself. We retrieve the subscription and check its metadata.
+ *
+ * NOTE: We intentionally only handle subscription-linked invoices here.
+ * Initial subscription payments are handled by checkout.session.completed,
+ * and non-subscription invoices don't need this handler. This avoids a
+ * double-update where both checkout.session.completed and invoice.payment_succeeded
+ * would call updateMembership for the same initial payment.
  */
-const resolveMembershipMetadata = async (
+const resolveRenewalMembershipMetadata = async (
   invoice: Stripe.Invoice,
 ): Promise<z.infer<typeof membershipSchema> | undefined> => {
-  // Try invoice-level metadata first
-  const invoiceParsed = membershipSchema.safeParse(invoice.metadata);
-  if (invoiceParsed.success) {
-    return invoiceParsed.data;
+  // Only process subscription-linked invoices (renewals)
+  if (!invoice.subscription) {
+    return undefined;
   }
 
-  // For subscription renewals, metadata lives on the subscription object
-  if (invoice.subscription) {
-    const subscriptionId =
-      typeof invoice.subscription === "string"
-        ? invoice.subscription
-        : invoice.subscription.id;
+  // Skip the first invoice of a subscription — checkout.session.completed handles it
+  if (invoice.billing_reason === "subscription_create") {
+    return undefined;
+  }
 
-    const subscription =
-      await stripe.subscriptions.retrieve(subscriptionId);
+  const subscriptionId =
+    typeof invoice.subscription === "string"
+      ? invoice.subscription
+      : invoice.subscription.id;
 
-    const subscriptionParsed = membershipSchema.safeParse(
-      subscription.metadata,
+  let subscription: Stripe.Subscription;
+  try {
+    subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  } catch (err) {
+    console.error(
+      "Failed to retrieve subscription for renewal invoice",
+      subscriptionId,
+      err,
     );
-    if (subscriptionParsed.success) {
-      return subscriptionParsed.data;
-    }
+    throw err;
+  }
+
+  const parsed = membershipSchema.safeParse(subscription.metadata);
+  if (parsed.success) {
+    return parsed.data;
   }
 
   return undefined;
@@ -72,7 +85,7 @@ export const invoicePaymentSucceeded = async (
     throw new Error("Customer missing email");
   }
 
-  const metadata = await resolveMembershipMetadata(event.data.object);
+  const metadata = await resolveRenewalMembershipMetadata(event.data.object);
 
   if (metadata) {
     const membership = await updateMembership({
