@@ -1,5 +1,5 @@
+import { CONTEXT } from "astro:env/client";
 import stripeJson from "~/stripe.json";
 
-export const paymentData = import.meta.env.DEV
-  ? stripeJson.dev
-  : stripeJson.default;
+export const paymentData =
+  CONTEXT === "production" ? stripeJson.default : stripeJson.dev;

@@ -36,6 +36,12 @@ export const checkout = defineAction({
         redirect_on_completion: "never",
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         metadata,
+        ...(mode === "subscription" && metadata
+          ? {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              subscription_data: { metadata },
+            }
+          : {}),
         allow_promotion_codes: hasPromotion,
         customer_email: email,
       });
