@@ -3,7 +3,7 @@ export const prerender = false;
 
 import Container from "@/layouts/Container.astro";
 import { SimpleInput } from "@/components/form/SimpleInput";
-import { AddressLookup } from "@/components/form/AddressLookup";
+import { PostcodeLookup } from "@/components/form/PostcodeLookup";
 import { actions } from "astro:actions";
 
 const result = Astro.getActionResult(actions.join);
@@ -26,7 +26,7 @@ if (result?.error) {
           <h5 class="mb-4">Getting To Know You</h5>
           <SimpleInput id="title" label="Title" required transition:persist />
           <SimpleInput id="name" label="Name" required transition:persist />
-          <AddressLookup client:load />
+          <PostcodeLookup client:load />
           <SimpleInput
             id="dob"
             label="Date of Birth"
