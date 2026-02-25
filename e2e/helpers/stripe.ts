@@ -98,11 +98,16 @@ export async function fillPaymentElement(page: Page) {
   );
 
   await stripeFrame
-    .locator("#Field-numberInput")
+    .locator("#payment-numberInput")
     .waitFor({ timeout: 30_000 });
   await stripeFrame
-    .locator("#Field-numberInput")
+    .locator("#payment-numberInput")
     .fill("4242424242424242");
-  await stripeFrame.locator("#Field-expiryInput").fill("1230");
-  await stripeFrame.locator("#Field-cvcInput").fill("123");
+  await stripeFrame.locator("#payment-expiryInput").fill("1230");
+  await stripeFrame.locator("#payment-cvcInput").fill("123");
+  // Fill postal code if visible (required for UK cards)
+  const postalCode = stripeFrame.locator("#payment-postalCodeInput");
+  if ((await postalCode.count()) > 0) {
+    await postalCode.fill("NE29 6HS");
+  }
 }
