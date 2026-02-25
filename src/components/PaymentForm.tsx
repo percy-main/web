@@ -9,7 +9,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { STRIPE_PUBLIC_KEY } from "astro:env/client";
-import { type FC, type FormEvent, useState } from "react";
+import { type FC, useState } from "react";
 
 const stripePromise = loadStripe(STRIPE_PUBLIC_KEY);
 
@@ -23,23 +23,23 @@ const currencyFormatter = new Intl.NumberFormat("en-GB", {
 interface PaymentFormProps {
   clientSecret: string;
   amount: number;
+  title?: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
 const CheckoutForm: FC<{
   amount: number;
+  title: string;
   onSuccess: () => void;
   onCancel: () => void;
-}> = ({ amount, onSuccess, onCancel }) => {
+}> = ({ amount, title, onSuccess, onCancel }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-
+  const handlePay = async () => {
     if (!stripe || !elements) {
       return;
     }
@@ -56,6 +56,9 @@ const CheckoutForm: FC<{
 
     const { error: confirmError } = await stripe.confirmPayment({
       elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/payment/confirm`,
+      },
       redirect: "if_required",
     });
 
@@ -68,37 +71,36 @@ const CheckoutForm: FC<{
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Card>
-        <CardHeader>
-          <CardTitle>Pay Outstanding Balance</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <PaymentElement />
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-        <CardFooter className="flex justify-between">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={!stripe || processing}>
-            {processing
-              ? "Processing..."
-              : `Pay ${currencyFormatter.format(amount / 100)}`}
-          </Button>
-        </CardFooter>
-      </Card>
-    </form>
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <PaymentElement />
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+      <CardFooter className="flex justify-between">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="button" onClick={handlePay} disabled={!stripe || processing}>
+          {processing
+            ? "Processing..."
+            : `Pay ${currencyFormatter.format(amount / 100)}`}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 
 export const PaymentForm: FC<PaymentFormProps> = ({
   clientSecret,
   amount,
+  title = "Pay Outstanding Balance",
   onSuccess,
   onCancel,
 }) => {
@@ -110,7 +112,12 @@ export const PaymentForm: FC<PaymentFormProps> = ({
         appearance: { theme: "stripe" },
       }}
     >
-      <CheckoutForm amount={amount} onSuccess={onSuccess} onCancel={onCancel} />
+      <CheckoutForm
+        amount={amount}
+        title={title}
+        onSuccess={onSuccess}
+        onCancel={onCancel}
+      />
     </Elements>
   );
 };

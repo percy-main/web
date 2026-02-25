@@ -9,7 +9,15 @@ export const schema = z.object({
   id: z.string(),
   mode: z.union([z.literal("payment"), z.literal("subscription")]),
   hasPromotion: z.boolean(),
+  unitAmount: z.number(),
   formattedPrice: z.string(),
+  customAmount: z
+    .object({
+      min: z.number(),
+      max: z.number().optional(),
+      preset: z.number().optional(),
+    })
+    .optional(),
   product: z.object({
     id: z.string(),
     name: z.string(),
@@ -39,12 +47,20 @@ const loader = async () => {
       hasPromotion: !!coupons.data.find((c) =>
         c.applies_to?.products.includes(product.id),
       ),
+      unitAmount: price.unit_amount ?? 0,
       formattedPrice: price.unit_amount ? `£${price.unit_amount / 100}` : "",
+      customAmount: price.custom_unit_amount
+        ? {
+            min: price.custom_unit_amount.minimum ?? 0,
+            max: price.custom_unit_amount.maximum ?? undefined,
+            preset: price.custom_unit_amount.preset ?? undefined,
+          }
+        : undefined,
       product: {
         id: product.id,
         name: product.name,
       },
-      qtyAdjustable: product.metadata.adjustable === "false" ? false : true,
+      qtyAdjustable: product.metadata.adjustable === "true",
       maxQty: product.metadata.max_qty
         ? Number(product.metadata.max_qty)
         : undefined,

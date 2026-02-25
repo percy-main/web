@@ -1,6 +1,5 @@
 import { admin } from "./admin";
 import { charges } from "./charges";
-import { checkout } from "./checkout";
 import { createContactSubmission } from "./create-contact-submission";
 import { createEventSubscriber } from "./create-event-subscriber";
 import { gameScore } from "./game-score";
@@ -11,18 +10,21 @@ import { getMemberDetails, updateMemberDetails } from "./member-details";
 import { membership } from "./membership";
 import { payments } from "./payments";
 import { playCricket } from "./play-cricket";
+import { purchase } from "./purchase";
+import { subscribe } from "./subscribe";
 import { subscriptions } from "./subscriptions";
 
 export const server = {
   admin,
   charges,
-  checkout,
   createContactSubmission,
   getMemberDetails,
   join,
   addDependents,
   dependents,
   payments,
+  purchase,
+  subscribe,
   subscriptions,
   playCricket,
   membership,

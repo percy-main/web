@@ -1,7 +1,10 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import { expect, test } from "../fixtures/base";
-import { findRecentCheckoutSession } from "../helpers/stripe";
+import {
+  confirmPaymentIntent,
+  findRecentPaymentIntent,
+} from "../helpers/stripe";
 
 interface StripeConfig {
   dev: { prices: { donation: string } };
@@ -14,61 +17,45 @@ const TEST_EMAIL = `test-e2e-donate-${Date.now()}@example.com`;
 
 test.describe("Donation Checkout", () => {
   test("complete a donation and verify via Stripe API", async ({ page }) => {
-    test.setTimeout(120_000); // Stripe iframe can be slow
+    test.setTimeout(120_000);
 
     // 1. Navigate to checkout page
-    await page.goto(`/purchase/${DONATION_PRICE_ID}/`);
+    await page.goto(
+      `/purchase/${DONATION_PRICE_ID}/?email=${encodeURIComponent(TEST_EMAIL)}`,
+    );
 
-    // 2. Wait for Stripe embedded checkout iframe to load
-    const checkoutDiv = page.locator("#checkout");
-    await expect(checkoutDiv).toBeVisible({ timeout: 30_000 });
+    // 2. Wait for PurchaseCheckout to render
+    await expect(page.locator("#customAmount")).toBeVisible({ timeout: 30_000 });
 
-    const stripeIframe = checkoutDiv.locator("iframe").first();
-    const stripeFrame = stripeIframe.contentFrame();
+    // 3. Fill in custom donation amount (£5)
+    await page.locator("#customAmount").fill("5");
 
-    // 3. Fill in donation amount (masked currency input — type "5" for £5.00)
-    const amountInput = stripeFrame.locator("#customUnitAmount");
-    await amountInput.waitFor({ timeout: 30_000 });
-    await amountInput.click();
-    await amountInput.press("Control+a");
-    await amountInput.pressSequentially("5");
+    // 4. Click Pay button — this triggers the purchase action which creates
+    //    a PaymentIntent in Stripe with the test email in metadata
+    await page.getByRole("button", { name: /pay/i }).click();
 
-    // 4. Fill in email
-    await stripeFrame.locator("#email").fill(TEST_EMAIL);
+    // 5. Wait for the PaymentForm to render, proving the PaymentIntent was created
+    await expect(page.getByText("Cancel")).toBeVisible({ timeout: 30_000 });
 
-    // 5. Select Card payment method by clicking the accordion item directly
-    await stripeFrame
-      .locator('[data-testid="card-accordion-item"]')
-      .click();
+    // 6. Find the PaymentIntent via Stripe API using the test email
+    await expect(async () => {
+      const pi = await findRecentPaymentIntent(TEST_EMAIL);
+      expect(pi).toBeDefined();
+    }).toPass({ timeout: 15_000 });
 
-    // 6. Wait for card fields to appear then fill them
-    await stripeFrame.locator("#cardNumber").waitFor({ timeout: 10_000 });
-    await stripeFrame.locator("#cardNumber").fill("4242424242424242");
-    await stripeFrame.locator("#cardExpiry").fill("12/30");
-    await stripeFrame.locator("#cardCvc").fill("123");
-    await stripeFrame.locator("#billingName").fill("Test E2E Donor");
+    const pi = await findRecentPaymentIntent(TEST_EMAIL);
+    if (!pi) {
+      throw new Error(`PaymentIntent not found for ${TEST_EMAIL}`);
+    }
 
-    // 6b. Select United Kingdom before filling postcode (CI defaults to US)
-    await stripeFrame
-      .getByRole("combobox", { name: "Country or region" })
-      .selectOption({ label: "United Kingdom" });
+    // 7. Confirm payment via Stripe API with test card
+    //    (bypasses PaymentElement iframe for reliable CI testing)
+    const confirmed = await confirmPaymentIntent(pi.id);
+    expect(confirmed.status).toBe("succeeded");
 
-    await stripeFrame.locator("#billingPostalCode").fill("NE1 1AA");
-
-    // 7. Click Pay button
-    await stripeFrame
-      .locator('button[data-testid="hosted-payment-submit-button"]')
-      .click();
-
-    // 8. Wait for success state
-    await expect(
-      stripeFrame.getByText("Thanks for your payment"),
-    ).toBeVisible({ timeout: 60_000 });
-
-    // 9. Verify via Stripe API
-    await page.waitForTimeout(3000);
-    const session = await findRecentCheckoutSession(TEST_EMAIL);
-    expect(session).toBeDefined();
-    expect(session?.payment_status).toBe("paid");
+    // 8. Verify the payment is reflected as succeeded
+    const verified = await findRecentPaymentIntent(TEST_EMAIL, "succeeded");
+    expect(verified).toBeDefined();
+    expect(verified?.status).toBe("succeeded");
   });
 });

@@ -1,0 +1,10 @@
+---
+import { PaymentConfirm } from "@/components/PaymentConfirm";
+import Container from "@/layouts/Container.astro";
+---
+
+<Container title="Payment">
+  <div class="mx-auto max-w-md">
+    <PaymentConfirm client:only="react" />
+  </div>
+</Container>

@@ -1,5 +1,6 @@
 ---
-import { Checkout } from "@/components/Checkout";
+import { PurchaseCheckout } from "@/components/PurchaseCheckout";
+import { SubscriptionCheckout } from "@/components/SubscriptionCheckout";
 import Container from "@/layouts/Container.astro";
 import { getCollection } from "astro:content";
 
@@ -17,5 +18,13 @@ const { price } = Astro.props;
 ---
 
 <Container title={`${price.data.product.name} :: Checkout`}>
-  <Checkout client:only="react" price={price.data} />
+  <div class="mx-auto max-w-md">
+    {
+      price.data.mode === "subscription" ? (
+        <SubscriptionCheckout client:only="react" price={price.data} />
+      ) : (
+        <PurchaseCheckout client:only="react" price={price.data} />
+      )
+    }
+  </div>
 </Container>

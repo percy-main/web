@@ -58,7 +58,15 @@ export const schema = z.object({
 export type Game = z.TypeOf<typeof schema>;
 
 export const loader = async () => {
-  const response = await playCricket.getMatchesSummary({ season: 2025 });
+  const currentYear = new Date().getFullYear();
+  const seasons = Array.from(
+    { length: currentYear - 2025 + 1 },
+    (_, i) => 2025 + i,
+  );
+  const responses = await Promise.all(
+    seasons.map((season) => playCricket.getMatchesSummary({ season })),
+  );
+  const response = { matches: responses.flatMap((r) => r.matches) };
 
   const cfGamesResponse =
     await contentClient.getEntries<TypeGameDetailSkeleton>({

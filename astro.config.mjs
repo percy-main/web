@@ -11,6 +11,13 @@ export default defineConfig({
   integrations: [react(), sitemap()],
   vite: {
     plugins: [tailwindcss()],
+    optimizeDeps: {
+      include: [
+        "@stripe/stripe-js",
+        "@stripe/react-stripe-js",
+        "@tanstack/react-query",
+      ],
+    },
     define: {
       // Inlined at build time by the Netlify migration plugin for deploy
       // previews so the server bundle uses the per-PR branch database

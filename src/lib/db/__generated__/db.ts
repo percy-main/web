@@ -90,6 +90,7 @@ export interface Member {
   id: string;
   name: string;
   postcode: string;
+  stripe_customer_id: string | null;
   telephone: string;
   title: string;
 }

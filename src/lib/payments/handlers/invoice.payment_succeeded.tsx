@@ -1,33 +1,33 @@
 import { invoiceLinesToDuration } from "@/lib//util/invoiceLinesToDuration";
 import { updateMembership } from "@/lib/db/service/updateMembership";
+import { send } from "@/lib/email/send";
 import { stripeDate } from "@/lib/util/stripeDate";
+import { render } from "@react-email/render";
+import { BASE_URL } from "astro:env/client";
 import type Stripe from "stripe";
 import { z } from "astro:schema";
+import { MembershipCreated } from "~/emails/MembershipUpdated";
 import { stripe } from "../client";
 import { membershipSchema } from "../metadata";
 
 /**
- * Resolve membership metadata for subscription renewal invoices.
+ * Resolve membership metadata from a subscription invoice.
  *
  * For subscription invoices, the metadata lives on the subscription object,
  * not the invoice itself. We retrieve the subscription and check its metadata.
  *
- * NOTE: We intentionally only handle subscription-linked invoices here.
- * Initial subscription payments are handled by checkout.session.completed,
- * and non-subscription invoices don't need this handler. This avoids a
- * double-update where both checkout.session.completed and invoice.payment_succeeded
- * would call updateMembership for the same initial payment.
+ * Handles both:
+ * - Initial subscription invoices (billing_reason: subscription_create) created
+ *   via the direct subscription flow (source: "direct" in metadata)
+ * - Renewal invoices (billing_reason: subscription_cycle)
+ *
+ * Skips initial invoices for checkout-created subscriptions — those are handled
+ * by checkout.session.completed (legacy flow, kept for backward compatibility).
  */
-const resolveRenewalMembershipMetadata = async (
+const resolveSubscriptionMembershipMetadata = async (
   invoice: Stripe.Invoice,
 ): Promise<z.infer<typeof membershipSchema> | undefined> => {
-  // Only process subscription-linked invoices (renewals)
   if (!invoice.subscription) {
-    return undefined;
-  }
-
-  // Skip the first invoice of a subscription — checkout.session.completed handles it
-  if (invoice.billing_reason === "subscription_create") {
     return undefined;
   }
 
@@ -41,11 +41,20 @@ const resolveRenewalMembershipMetadata = async (
     subscription = await stripe.subscriptions.retrieve(subscriptionId);
   } catch (err) {
     console.error(
-      "Failed to retrieve subscription for renewal invoice",
+      "Failed to retrieve subscription for invoice",
       subscriptionId,
       err,
     );
     throw err;
+  }
+
+  // Skip initial invoices for checkout-created subscriptions
+  // (those are handled by checkout.session.completed)
+  if (
+    invoice.billing_reason === "subscription_create" &&
+    subscription.metadata.source !== "direct"
+  ) {
+    return undefined;
   }
 
   const parsed = membershipSchema.safeParse(subscription.metadata);
@@ -81,14 +90,36 @@ export const invoicePaymentSucceeded = async (
     throw new Error("Customer missing email");
   }
 
-  const metadata = await resolveRenewalMembershipMetadata(event.data.object);
+  const metadata = await resolveSubscriptionMembershipMetadata(
+    event.data.object,
+  );
 
   if (metadata) {
-    await updateMembership({
+    const membership = await updateMembership({
       membershipType: metadata.membership,
       email,
       addedDuration: invoiceLinesToDuration(event.data.object.lines.data),
       paidAt: stripeDate(event.created),
     });
+
+    // Send confirmation email for initial subscription payments
+    if (event.data.object.billing_reason === "subscription_create") {
+      await send({
+        to: email,
+        subject: MembershipCreated.subject,
+        html: await render(
+          <MembershipCreated.component
+            imageBaseUrl={`${BASE_URL}/images`}
+            name={membership.name}
+            type={membership.type ?? undefined}
+            paid_until={membership.paid_until}
+            isNew={membership.isNew}
+          />,
+          {
+            pretty: true,
+          },
+        ),
+      });
+    }
   }
 };
