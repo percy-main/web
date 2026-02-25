@@ -1,0 +1,324 @@
+import { SimpleInput } from "@/components/form/SimpleInput";
+import { RadioButtons } from "@/components/form/RadioButtons";
+import { useMutation } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { loadStripe, type StripeEmbeddedCheckout } from "@stripe/stripe-js";
+import { actions } from "astro:actions";
+import { STRIPE_PUBLIC_KEY } from "astro:env/client";
+import { differenceInYears, format } from "date-fns";
+import { useEffect, useRef, useState, type FC } from "react";
+
+const stripeClient = loadStripe(STRIPE_PUBLIC_KEY);
+
+const FIRST_CHILD_PRICE = 50;
+const ADDITIONAL_CHILD_PRICE = 30;
+
+type Dependent = {
+  name: string;
+  sex: string;
+  dob: string;
+};
+
+const emptyDependent = (): Dependent => ({ name: "", sex: "", dob: "" });
+
+const calculateTotal = (count: number) =>
+  count === 0
+    ? 0
+    : FIRST_CHILD_PRICE + (count - 1) * ADDITIONAL_CHILD_PRICE;
+
+const validateDependent = (dep: Dependent): string | null => {
+  if (!dep.name.trim()) return "Name is required.";
+  if (!dep.sex) return "Sex is required.";
+  if (!dep.dob) return "Date of birth is required.";
+  const age = differenceInYears(new Date(), new Date(dep.dob));
+  if (age >= 18) return `${dep.name} must be under 18.`;
+  if (age < 0) return `Invalid date of birth for ${dep.name}.`;
+  return null;
+};
+
+const btnPrimary =
+  "rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 focus:outline-none";
+const btnSecondary =
+  "rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-center text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-4 focus:ring-blue-300 focus:outline-none";
+const btnDanger =
+  "rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:ring-2 focus:ring-red-300 focus:outline-none";
+
+type Step = "add" | "review" | "checkout";
+
+const JuniorRegistrationInner: FC = () => {
+  const [step, setStep] = useState<Step>("add");
+  const [dependents, setDependents] = useState<Dependent[]>([
+    emptyDependent(),
+  ]);
+  const [errors, setErrors] = useState<Array<string | null>>([]);
+  const [clientSecret, setClientSecret] = useState<string>();
+
+  const addDependentsMutation = useMutation({
+    mutationFn: async (deps: Dependent[]) => {
+      const result = await actions.addDependents({ dependents: deps });
+      if (result.error) throw new Error(result.error.message);
+      return result.data;
+    },
+  });
+
+  const checkoutMutation = useMutation({
+    mutationFn: async ({
+      dependentIds,
+      memberId,
+    }: {
+      dependentIds: string[];
+      memberId: string;
+    }) => {
+      const result = await actions.juniorCheckout({ dependentIds, memberId });
+      if (result.error) throw new Error(result.error.message);
+      return result.data;
+    },
+  });
+
+  const updateDependent = (
+    index: number,
+    field: keyof Dependent,
+    value: string,
+  ) => {
+    setDependents((prev) =>
+      prev.map((d, i) => (i === index ? { ...d, [field]: value } : d)),
+    );
+    setErrors((prev) => prev.map((e, i) => (i === index ? null : e)));
+  };
+
+  const addChild = () => {
+    setDependents((prev) => [...prev, emptyDependent()]);
+    setErrors((prev) => [...prev, null]);
+  };
+
+  const removeChild = (index: number) => {
+    if (dependents.length <= 1) return;
+    setDependents((prev) => prev.filter((_, i) => i !== index));
+    setErrors((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleReview = () => {
+    const newErrors = dependents.map(validateDependent);
+    setErrors(newErrors);
+    if (newErrors.some(Boolean)) return;
+    setStep("review");
+  };
+
+  const handleProceedToCheckout = async () => {
+    const result = await addDependentsMutation.mutateAsync(dependents);
+    const checkout = await checkoutMutation.mutateAsync({
+      dependentIds: result.dependentIds,
+      memberId: result.memberId,
+    });
+    setClientSecret(checkout.clientSecret);
+    setStep("checkout");
+  };
+
+  if (step === "checkout" && clientSecret) {
+    return <JuniorCheckoutEmbed clientSecret={clientSecret} />;
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl">
+      <h4 className="mb-2">Junior Membership</h4>
+      <p className="mb-6 text-sm text-gray-600">
+        Register your children as junior members of the club. This is a one-off
+        annual payment — you will not be automatically charged again.
+      </p>
+
+      {step === "add" && (
+        <>
+          {dependents.map((dep, i) => (
+            <div
+              key={i}
+              className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+            >
+              <div className="mb-2 flex items-center justify-between">
+                <h5 className="text-sm font-semibold">
+                  Child {i + 1}
+                  {i === 0
+                    ? ` — £${FIRST_CHILD_PRICE}`
+                    : ` — £${ADDITIONAL_CHILD_PRICE}`}
+                </h5>
+                {dependents.length > 1 && (
+                  <button
+                    type="button"
+                    className={btnDanger}
+                    onClick={() => removeChild(i)}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+
+              <SimpleInput
+                id={`dep-name-${i}`}
+                label="Full Name"
+                required
+                value={dep.name}
+                onChange={(e) =>
+                  updateDependent(i, "name", e.currentTarget.value)
+                }
+              />
+              <RadioButtons
+                id={`dep-sex-${i}`}
+                value={dep.sex || undefined}
+                onChange={(val) => updateDependent(i, "sex", val)}
+                options={[
+                  { title: "Male", value: "male" },
+                  { title: "Female", value: "female" },
+                ]}
+              />
+              <SimpleInput
+                id={`dep-dob-${i}`}
+                label="Date of Birth"
+                type="date"
+                required
+                value={dep.dob}
+                onChange={(e) =>
+                  updateDependent(i, "dob", e.currentTarget.value)
+                }
+              />
+
+              {errors[i] && (
+                <p className="mt-1 text-sm text-red-600">{errors[i]}</p>
+              )}
+            </div>
+          ))}
+
+          <div className="mb-8 flex flex-wrap gap-3">
+            <button type="button" className={btnSecondary} onClick={addChild}>
+              + Add Another Child
+            </button>
+            <button type="button" className={btnPrimary} onClick={handleReview}>
+              Review & Pay
+            </button>
+          </div>
+        </>
+      )}
+
+      {step === "review" && (
+        <>
+          <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <h5 className="mb-4 font-semibold">Summary</h5>
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="pb-2">Name</th>
+                  <th className="pb-2">Date of Birth</th>
+                  <th className="pb-2 text-right">Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dependents.map((dep, i) => (
+                  <tr key={i} className="border-b last:border-0">
+                    <td className="py-2">{dep.name}</td>
+                    <td className="py-2">
+                      {format(new Date(dep.dob), "dd/MM/yyyy")}
+                    </td>
+                    <td className="py-2 text-right">
+                      £{i === 0 ? FIRST_CHILD_PRICE : ADDITIONAL_CHILD_PRICE}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="font-semibold">
+                  <td className="pt-3" colSpan={2}>
+                    Total
+                  </td>
+                  <td className="pt-3 text-right">
+                    £{calculateTotal(dependents.length)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <p className="mb-4 text-sm text-gray-600">
+            This is a one-off payment for 12 months of junior membership. You
+            will not be automatically charged when it expires.
+          </p>
+
+          {(addDependentsMutation.error ?? checkoutMutation.error) && (
+            <p className="mb-4 text-sm text-red-600">
+              {addDependentsMutation.error?.message ??
+                checkoutMutation.error?.message}
+            </p>
+          )}
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              className={btnSecondary}
+              onClick={() => setStep("add")}
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              className={btnPrimary}
+              disabled={
+                addDependentsMutation.isPending || checkoutMutation.isPending
+              }
+              onClick={handleProceedToCheckout}
+            >
+              {addDependentsMutation.isPending || checkoutMutation.isPending
+                ? "Processing..."
+                : "Pay Online"}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const JuniorCheckoutEmbed: FC<{ clientSecret: string }> = ({
+  clientSecret,
+}) => {
+  const checkout = useRef<StripeEmbeddedCheckout>(undefined);
+  const [error, setError] = useState<string>();
+
+  useEffect(() => {
+    async function onMount() {
+      const stripe = await stripeClient;
+      if (!stripe) {
+        setError("Failed to load payment processor.");
+        return;
+      }
+
+      const checkoutInstance = await stripe.initEmbeddedCheckout({
+        clientSecret,
+      });
+
+      checkout.current = checkoutInstance;
+      checkoutInstance.mount("#junior-checkout");
+    }
+
+    void onMount();
+
+    return () => {
+      checkout.current?.destroy();
+    };
+  }, [clientSecret]);
+
+  if (error) {
+    return <div>{error}</div>;
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl">
+      <h4 className="mb-4">Junior Membership — Payment</h4>
+      <div id="junior-checkout" />
+    </div>
+  );
+};
+
+const queryClient = new QueryClient();
+
+export const JuniorRegistration: FC = () => (
+  <QueryClientProvider client={queryClient}>
+    <JuniorRegistrationInner />
+  </QueryClientProvider>
+);

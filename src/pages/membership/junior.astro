@@ -1,0 +1,27 @@
+---
+export const prerender = false;
+
+import Container from "@/layouts/Container.astro";
+import { JuniorRegistration } from "@/components/JuniorRegistration";
+import { auth } from "@/lib/auth/server";
+
+const session = await auth.api.getSession({
+  headers: Astro.request.headers,
+});
+
+if (!session) {
+  return Astro.redirect("/auth/login");
+}
+
+if (!session.user.emailVerified) {
+  return Astro.redirect("/auth/registered");
+}
+---
+
+<Container title="Junior Membership">
+  <div class="flex w-full flex-col items-center">
+    <div class="flex w-full flex-col">
+      <JuniorRegistration client:load />
+    </div>
+  </div>
+</Container>

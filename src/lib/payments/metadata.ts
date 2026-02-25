@@ -16,9 +16,17 @@ export const membershipSchema = z.object({
   ]),
 });
 
+export const juniorMembershipSchema = z.object({
+  type: z.literal("junior_membership"),
+  member_id: z.string(),
+  dependent_ids: z.string(),
+});
+export type JuniorMembership = z.TypeOf<typeof juniorMembershipSchema>;
+
 export const metadata = z.union([
   gameSponsoredSchema,
   membershipSchema,
+  juniorMembershipSchema,
   z.undefined(),
 ]);
 export type Metadata = z.TypeOf<typeof metadata>;

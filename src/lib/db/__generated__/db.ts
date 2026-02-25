@@ -25,6 +25,15 @@ export interface Account {
   userId: string;
 }
 
+export interface Dependent {
+  created_at: Generated<string>;
+  dob: string;
+  id: string;
+  member_id: string;
+  name: string;
+  sex: string;
+}
+
 export interface ContactSubmission {
   created_at: Generated<string>;
   email: string;
@@ -66,6 +75,7 @@ export interface Member {
 
 export interface Membership {
   created_at: Generated<string>;
+  dependent_id: string | null;
   id: string;
   member_id: string;
   paid_until: string;
@@ -131,6 +141,7 @@ export interface Verification {
 export interface DB {
   account: Account;
   contact_submission: ContactSubmission;
+  dependent: Dependent;
   event_subscriber: EventSubscriber;
   game_score: GameScore;
   member: Member;

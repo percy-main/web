@@ -3,6 +3,7 @@ import { stripeDate } from "@/lib/util/stripeDate";
 import _ from "lodash/fp";
 import type { Stripe } from "stripe";
 import { match, P } from "ts-pattern";
+import { createJuniorMemberships } from "../../db/service/createJuniorMemberships";
 import { updateMembership } from "../../db/service/updateMembership";
 import { sendMessage } from "../../slack/sendMessage";
 import { invoiceLinesToDuration } from "../../util/invoiceLinesToDuration";
@@ -40,6 +41,20 @@ export const checkoutSessionCompleted = async (
           membershipType: metadata.membership,
           email,
           addedDuration: invoiceLinesToDuration(line_items.data ?? []),
+          paidAt: stripeDate(event.created),
+        });
+      },
+    )
+    .with(
+      {
+        payment_status: "paid",
+        metadata: P.when(is("junior_membership")),
+      },
+      async ({ metadata }) => {
+        const dependentIds = metadata.dependent_ids.split(",");
+        await createJuniorMemberships({
+          memberId: metadata.member_id,
+          dependentIds,
           paidAt: stripeDate(event.created),
         });
       },
