@@ -1,12 +1,8 @@
 import { invoiceLinesToDuration } from "@/lib//util/invoiceLinesToDuration";
 import { updateMembership } from "@/lib/db/service/updateMembership";
-import { send } from "@/lib/email/send";
 import { stripeDate } from "@/lib/util/stripeDate";
-import { render } from "@react-email/render";
-import { BASE_URL } from "astro:env/client";
 import type Stripe from "stripe";
 import { z } from "astro:schema";
-import { MembershipCreated } from "~/emails/MembershipUpdated";
 import { stripe } from "../client";
 import { membershipSchema } from "../metadata";
 
@@ -88,28 +84,11 @@ export const invoicePaymentSucceeded = async (
   const metadata = await resolveRenewalMembershipMetadata(event.data.object);
 
   if (metadata) {
-    const membership = await updateMembership({
+    await updateMembership({
       membershipType: metadata.membership,
       email,
       addedDuration: invoiceLinesToDuration(event.data.object.lines.data),
       paidAt: stripeDate(event.created),
-    });
-
-    await send({
-      to: email,
-      subject: MembershipCreated.subject,
-      html: await render(
-        <MembershipCreated.component
-          imageBaseUrl={`${BASE_URL}/images`}
-          name={membership.name}
-          type={membership.type ?? undefined}
-          paid_until={membership.paid_until}
-          isNew={membership.isNew}
-        />,
-        {
-          pretty: true,
-        },
-      ),
     });
   }
 };
