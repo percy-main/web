@@ -211,6 +211,7 @@ export function MemberDetailModal({
             <section>
               <h3 className="mb-2 text-lg font-medium">Membership</h3>
               {detail.membership ? (
+<<<<<<< HEAD
                 (() => {
                   const effectivePaidUntil = getEffectivePaidUntil(
                     detail.membership.paid_until,
@@ -243,6 +244,39 @@ export function MemberDetailModal({
                     </dl>
                   );
                 })()
+=======
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <dt className="font-medium text-gray-500">Type</dt>
+                  <dd>{detail.membership.type ?? "N/A"}</dd>
+                  <dt className="font-medium text-gray-500">Paid Until</dt>
+                  <dd>
+                    {formatDate(
+                      detail.membership.paid_until,
+                      "dd/MM/yyyy",
+                    )}
+                  </dd>
+                  <dt className="font-medium text-gray-500">Status</dt>
+                  <dd>
+                    {(() => {
+                      const status = getMembershipStatus(
+                        detail.membership.paid_until,
+                      );
+                      return (
+                        <StatusPill variant={status.variant}>
+                          {status.label}
+                        </StatusPill>
+                      );
+                    })()}
+                  </dd>
+                  <dt className="font-medium text-gray-500">Created</dt>
+                  <dd>
+                    {formatDate(
+                      detail.membership.created_at,
+                      "dd/MM/yyyy",
+                    )}
+                  </dd>
+                </dl>
+>>>>>>> main
               ) : (
                 <p className="text-sm text-gray-500">
                   No membership record found.
