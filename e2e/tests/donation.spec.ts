@@ -20,11 +20,15 @@ test.describe("Donation Checkout", () => {
     test.setTimeout(120_000);
 
     // 1. Navigate to checkout page (include email for Stripe API verification)
+    //    First load may trigger Vite dep optimization + full reload, so we
+    //    navigate, wait for the component, then reload to get a stable page.
     await page.goto(
       `/purchase/${DONATION_PRICE_ID}/?email=${encodeURIComponent(TEST_EMAIL)}`,
     );
+    await expect(page.locator("#customAmount")).toBeVisible({ timeout: 30_000 });
+    await page.reload();
 
-    // 2. Wait for PurchaseCheckout to render
+    // 2. Wait for PurchaseCheckout to render (stable after Vite optimization)
     await expect(page.locator("#customAmount")).toBeVisible({ timeout: 30_000 });
 
     // 3. Fill in custom donation amount (£5)
