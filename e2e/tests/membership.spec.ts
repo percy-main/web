@@ -27,8 +27,13 @@ test.describe("Membership", () => {
     await page.locator("#title").fill("Mr");
     await page.locator("#name").fill(testName);
 
-    // Address lookup — use manual entry mode (no Google API key in E2E)
-    await page.getByText("Enter address manually").click();
+    // Address lookup — use manual entry mode (no postcodes.io in E2E)
+    // Retry click until React hydration completes and fields appear
+    await expect(async () => {
+      const btn = page.getByText("Enter address manually");
+      if (await btn.isVisible()) await btn.click();
+      await expect(page.locator("#street-address")).toBeVisible();
+    }).toPass({ timeout: 15_000 });
     await page.locator("#house-number").fill("123");
     await page.locator("#street-address").fill("Test Street");
     await page.locator("#town-city").fill("North Shields");
