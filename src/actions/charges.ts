@@ -2,6 +2,8 @@ import { defineAuthAction } from "@/lib/auth/api";
 import { client } from "@/lib/db/client";
 import { stripe } from "@/lib/payments/client";
 import { ActionError } from "astro:actions";
+import { CONTEXT } from "astro:env/client";
+import { DEPLOY_PRIME_URL } from "astro:env/server";
 import { z } from "astro:schema";
 
 export const charges = {
@@ -99,13 +101,19 @@ export const charges = {
 
       const chargeIds = unpaidCharges.map((c) => c.id);
 
+      const metadata: Record<string, string> = {
+        type: "charges",
+        memberEmail: session.user.email,
+      };
+
+      if (CONTEXT !== "production" && DEPLOY_PRIME_URL) {
+        metadata.deployPreviewUrl = DEPLOY_PRIME_URL;
+      }
+
       const paymentIntent = await stripe.paymentIntents.create({
         amount: totalAmountPence,
         currency: "gbp",
-        metadata: {
-          type: "charges",
-          memberEmail: session.user.email,
-        },
+        metadata,
       });
 
       if (!paymentIntent.client_secret) {

@@ -2,6 +2,8 @@ import * as price from "@/collections/price";
 import { stripe } from "@/lib/payments/client";
 import { metadata } from "@/lib/payments/metadata";
 import { ActionError, defineAction } from "astro:actions";
+import { CONTEXT } from "astro:env/client";
+import { DEPLOY_PRIME_URL } from "astro:env/server";
 import { z } from "astro:schema";
 
 export const checkout = defineAction({
@@ -16,6 +18,17 @@ export const checkout = defineAction({
     email,
   }) => {
     try {
+      const previewMeta =
+        CONTEXT !== "production" && DEPLOY_PRIME_URL
+          ? { deployPreviewUrl: DEPLOY_PRIME_URL }
+          : {};
+
+      const enrichedMetadata = metadata
+        ? { ...metadata, ...previewMeta }
+        : Object.keys(previewMeta).length > 0
+          ? previewMeta
+          : undefined;
+
       const intent = await stripe.checkout.sessions.create({
         ui_mode: "embedded",
         mode,
@@ -35,11 +48,12 @@ export const checkout = defineAction({
         ],
         redirect_on_completion: "never",
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        metadata,
-        ...(mode === "subscription" && metadata
+        metadata: enrichedMetadata as Record<string, string> | undefined,
+        ...(mode === "subscription" && enrichedMetadata
           ? {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-              subscription_data: { metadata },
+              subscription_data: {
+                metadata: enrichedMetadata as Record<string, string>,
+              },
             }
           : {}),
         allow_promotion_codes: hasPromotion,

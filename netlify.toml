@@ -1,5 +1,9 @@
 [build.environment]
 NETLIFY_SKIP_EXPOSED_SECRETS_SCAN = "true"
 
+[[edge_functions]]
+path = "/api/stripe_proxy"
+function = "stripe-proxy"
+
 [[plugins]]
 package = "/scripts/netlify/migrate"
