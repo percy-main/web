@@ -2,6 +2,7 @@ import { useSession } from "@/lib/auth/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/Tabs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
+import { useState } from "react";
 import { ChangePassword } from "./ChangePassword";
 import { Charges } from "./Charges";
 import { MemberDetails, useMemberDetails } from "./MemberDetails";
@@ -11,10 +12,30 @@ import { Payments } from "./Payments";
 import { Subscriptions } from "./Subscriptions";
 import { TwoFactor } from "./TwoFactor";
 
+const TABS = ["membership", "details", "security", "payments"] as const;
+type Tab = (typeof TABS)[number];
+
+function getInitialTab(): Tab {
+  const param = new URLSearchParams(window.location.search).get("tab");
+  return TABS.includes(param as Tab) ? (param as Tab) : "membership";
+}
+
 const queryClient = new QueryClient();
 
 export const MembersPage = () => {
   const session = useSession();
+  const [tab, setTab] = useState<Tab>(getInitialTab);
+
+  const onTabChange = (value: string) => {
+    setTab(value as Tab);
+    const url = new URL(window.location.href);
+    if (value === "membership") {
+      url.searchParams.delete("tab");
+    } else {
+      url.searchParams.set("tab", value);
+    }
+    window.history.replaceState({}, "", url);
+  };
 
   const hasData = !!session?.data;
   if (!session.isPending && !hasData) {
@@ -51,7 +72,7 @@ export const MembersPage = () => {
           </div>
         </div>
         <IncompleteDetailsBanner />
-        <Tabs defaultValue="membership" className="w-full">
+        <Tabs value={tab} onValueChange={onTabChange} className="w-full">
           <TabsList>
             <TabsTrigger value="membership">Membership</TabsTrigger>
             <TabsTrigger value="details">Your Details</TabsTrigger>
