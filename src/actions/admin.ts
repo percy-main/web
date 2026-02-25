@@ -200,6 +200,78 @@ export const admin = {
     },
   }),
 
+  listContactSubmissions: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      page: z.number().int().min(1),
+      pageSize: z.number().int().min(1).max(100),
+      search: z.string().optional(),
+    }),
+    handler: async ({ page, pageSize, search }) => {
+      let baseQuery = client.selectFrom("contact_submission");
+
+      if (search && search.trim().length > 0) {
+        const term = `%${search.trim()}%`;
+        baseQuery = baseQuery.where((eb) =>
+          eb.or([
+            eb("contact_submission.name", "like", term),
+            eb("contact_submission.email", "like", term),
+          ]),
+        );
+      }
+
+      const countResult = await baseQuery
+        .select((eb) => eb.fn.countAll().as("total"))
+        .executeTakeFirstOrThrow();
+
+      const total = Number(countResult.total);
+
+      const offset = (page - 1) * pageSize;
+
+      const submissions = await (() => {
+        let q = client.selectFrom("contact_submission");
+
+        if (search && search.trim().length > 0) {
+          const term = `%${search.trim()}%`;
+          q = q.where((eb) =>
+            eb.or([
+              eb("contact_submission.name", "like", term),
+              eb("contact_submission.email", "like", term),
+            ]),
+          );
+        }
+
+        return q
+          .select([
+            "contact_submission.id",
+            "contact_submission.name",
+            "contact_submission.email",
+            "contact_submission.message",
+            "contact_submission.page",
+            "contact_submission.created_at",
+          ])
+          .orderBy("contact_submission.created_at", "desc")
+          .limit(pageSize)
+          .offset(offset)
+          .execute();
+      })();
+
+      return {
+        submissions: submissions.map((s) => ({
+          id: s.id,
+          name: s.name,
+          email: s.email,
+          message: s.message,
+          page: s.page,
+          createdAt: s.created_at,
+        })),
+        total,
+        page,
+        pageSize,
+      };
+    },
+  }),
+
   setUserRole: defineAuthAction({
     roles: ["admin"],
     input: z.object({
