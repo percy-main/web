@@ -42,12 +42,12 @@ authTest.describe("Members Area (authenticated)", () => {
       // Click Payments tab
       await authenticatedPage.getByRole("tab", { name: "Payments" }).click();
 
-      // Should show empty subscriptions and payments
+      // Should show empty payments and subscriptions
       await expect(
-        authenticatedPage.getByText("You have no subscriptions."),
+        authenticatedPage.getByText("No payments yet."),
       ).toBeVisible({ timeout: 10_000 });
       await expect(
-        authenticatedPage.getByText("You are yet to make any purchases."),
+        authenticatedPage.getByText("You have no subscriptions."),
       ).toBeVisible();
     },
   );
