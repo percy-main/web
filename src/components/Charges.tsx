@@ -1,7 +1,13 @@
+import { Badge } from "@/ui/Badge";
+import { Button } from "@/ui/Button";
+import { Card, CardContent, CardDescription, CardTitle } from "@/ui/Card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/ui/Table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { formatDate } from "date-fns";
 import { useState } from "react";
+import { Alert, AlertDescription } from "@/ui/Alert";
+import { PaymentForm } from "./PaymentForm";
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -10,13 +16,13 @@ const currencyFormatter = new Intl.NumberFormat("en-GB", {
   maximumFractionDigits: 2,
 });
 
-export const Charges = ({
-  onPaymentStarted,
-}: {
-  onPaymentStarted?: (clientSecret: string) => void;
-}) => {
+export const Charges = () => {
   const queryClient = useQueryClient();
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentData, setPaymentData] = useState<{
+    clientSecret: string;
+    totalAmountPence: number;
+  } | null>(null);
 
   const query = useQuery({
     queryKey: ["myCharges"],
@@ -26,8 +32,11 @@ export const Charges = ({
   const payMutation = useMutation({
     mutationFn: () => actions.charges.payOutstandingBalance({}),
     onSuccess: (result) => {
-      if (result.data?.clientSecret && onPaymentStarted) {
-        onPaymentStarted(result.data.clientSecret);
+      if (result.data) {
+        setPaymentData({
+          clientSecret: result.data.clientSecret,
+          totalAmountPence: result.data.totalAmountPence,
+        });
       }
     },
     onError: () => {
@@ -51,81 +60,88 @@ export const Charges = ({
     0,
   );
 
-  return (
-    <>
-      <h2 className="text-h4 mb-0">Charges</h2>
-      <div className="w-full">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b text-xs uppercase text-gray-500">
-              <tr>
-                <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Description</th>
-                <th className="px-3 py-2">Amount</th>
-                <th className="px-3 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {charges.map((charge) => (
-                <tr key={charge.id} className="border-b">
-                  <td className="px-3 py-2">
-                    {formatDate(charge.charge_date, "dd/MM/yyyy")}
-                  </td>
-                  <td className="px-3 py-2">{charge.description}</td>
-                  <td className="px-3 py-2">
-                    {currencyFormatter.format(charge.amount_pence / 100)}
-                  </td>
-                  <td className="px-3 py-2">
-                    {charge.paid_at ? (
-                      <span className="inline-flex items-center rounded-sm bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
-                        Paid
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-sm bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
-                        Unpaid
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+  if (paymentData) {
+    return (
+      <PaymentForm
+        clientSecret={paymentData.clientSecret}
+        amount={paymentData.totalAmountPence}
+        onSuccess={() => {
+          setPaymentData(null);
+          void queryClient.invalidateQueries({ queryKey: ["myCharges"] });
+        }}
+        onCancel={() => setPaymentData(null)}
+      />
+    );
+  }
 
-        {unpaidCharges.length > 0 && (
-          <div className="mt-4 rounded border border-gray-200 bg-gray-50 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-700">
-                  Outstanding balance:{" "}
-                  <span className="text-lg font-semibold text-gray-900">
-                    {currencyFormatter.format(totalOutstandingPence / 100)}
-                  </span>
-                </p>
-                <p className="text-xs text-gray-500">
-                  {unpaidCharges.length} unpaid{" "}
-                  {unpaidCharges.length === 1 ? "charge" : "charges"}
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setPaymentError(null);
-                  payMutation.mutate();
-                }}
-                disabled={payMutation.isPending}
-                className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                {payMutation.isPending
-                  ? "Processing..."
-                  : "Pay Outstanding Balance"}
-              </button>
+  return (
+    <div className="flex flex-col gap-4">
+      <h2 className="text-h4 mb-0">Charges</h2>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {charges.map((charge) => (
+            <TableRow key={charge.id}>
+              <TableCell>
+                {formatDate(charge.charge_date, "dd/MM/yyyy")}
+              </TableCell>
+              <TableCell>{charge.description}</TableCell>
+              <TableCell>
+                {currencyFormatter.format(charge.amount_pence / 100)}
+              </TableCell>
+              <TableCell>
+                {charge.paid_at ? (
+                  <Badge variant="success">Paid</Badge>
+                ) : (
+                  <Badge variant="warning">Unpaid</Badge>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      {unpaidCharges.length > 0 && (
+        <Card>
+          <CardContent className="flex items-center justify-between pt-6">
+            <div>
+              <CardTitle className="text-base">
+                Outstanding balance:{" "}
+                {currencyFormatter.format(totalOutstandingPence / 100)}
+              </CardTitle>
+              <CardDescription>
+                {unpaidCharges.length} unpaid{" "}
+                {unpaidCharges.length === 1 ? "charge" : "charges"}
+              </CardDescription>
             </div>
-            {paymentError && (
-              <p className="mt-2 text-sm text-red-600">{paymentError}</p>
-            )}
-          </div>
-        )}
-      </div>
-    </>
+            <Button
+              onClick={() => {
+                setPaymentError(null);
+                payMutation.mutate();
+              }}
+              disabled={payMutation.isPending}
+            >
+              {payMutation.isPending
+                ? "Processing..."
+                : "Pay Outstanding Balance"}
+            </Button>
+          </CardContent>
+          {paymentError && (
+            <CardContent className="pt-0">
+              <Alert variant="destructive">
+                <AlertDescription>{paymentError}</AlertDescription>
+              </Alert>
+            </CardContent>
+          )}
+        </Card>
+      )}
+    </div>
   );
 };
