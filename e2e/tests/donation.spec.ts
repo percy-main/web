@@ -39,15 +39,12 @@ test.describe("Donation Checkout", () => {
     // 6. Submit payment
     await page.getByRole("button", { name: /pay/i }).click();
 
-    // 7. Wait for success state
-    await expect(page.getByText("Payment Successful")).toBeVisible({
-      timeout: 60_000,
-    });
-
-    // 8. Verify via Stripe API
-    await page.waitForTimeout(3000);
-    const paymentIntent = await findRecentPaymentIntent(TEST_EMAIL);
-    expect(paymentIntent).toBeDefined();
-    expect(paymentIntent?.status).toBe("succeeded");
+    // 7. Verify payment succeeded via Stripe API
+    //    (more reliable than checking UI state, which can be reset by dev-server HMR)
+    await expect(async () => {
+      const pi = await findRecentPaymentIntent(TEST_EMAIL);
+      expect(pi).toBeDefined();
+      expect(pi!.status).toBe("succeeded");
+    }).toPass({ timeout: 60_000 });
   });
 });
