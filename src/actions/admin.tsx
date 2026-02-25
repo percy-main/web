@@ -1,11 +1,16 @@
 import { defineAuthAction } from "@/lib/auth/api";
 import { auth } from "@/lib/auth/server";
 import { client } from "@/lib/db/client";
+import { send } from "@/lib/email/send";
 import { stripe } from "@/lib/payments/client";
 import { stripeDate } from "@/lib/util/stripeDate";
+import { render } from "@react-email/render";
 import { ActionError } from "astro:actions";
+import { BASE_URL } from "astro:env/client";
 import { z } from "astro:schema";
 import { randomUUID } from "crypto";
+import { formatDate } from "date-fns";
+import { ChargeNotification } from "~/emails/ChargeNotification";
 
 async function fetchStripeCharges(email: string): Promise<
   {
@@ -232,7 +237,7 @@ export const admin = {
       const member = await client
         .selectFrom("member")
         .where("id", "=", memberId)
-        .select(["id"])
+        .select(["id", "name", "email"])
         .executeTakeFirst();
 
       if (!member) {
@@ -261,6 +266,27 @@ export const admin = {
         .where("id", "=", id)
         .selectAll()
         .executeTakeFirstOrThrow();
+
+      const amountFormatted = new Intl.NumberFormat("en-GB", {
+        style: "currency",
+        currency: "GBP",
+      }).format(amountPence / 100);
+
+      await send({
+        to: member.email,
+        subject: ChargeNotification.subject,
+        html: await render(
+          <ChargeNotification.component
+            imageBaseUrl={`${BASE_URL}/images`}
+            name={member.name}
+            description={description}
+            amount={amountFormatted}
+            chargeDate={formatDate(chargeDate, "dd/MM/yyyy")}
+            loginUrl={`${BASE_URL}/auth/login`}
+          />,
+          { pretty: true },
+        ),
+      });
 
       return charge;
     },
