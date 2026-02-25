@@ -1,23 +1,29 @@
 import * as db from "@/lib/db/client";
 import * as email from "@/lib/email/send";
+import { passkey } from "@better-auth/passkey";
 import { render } from "@react-email/render";
+import { DEPLOY_PRIME_URL } from "astro:env/server";
 import { betterAuth } from "better-auth";
 import { admin, twoFactor } from "better-auth/plugins";
-import { passkey } from "@better-auth/passkey";
 import { ResetPassword } from "~/emails/ResetPassword";
 import { VerifyEmail } from "~/emails/VerifyEmail";
 
-const baseURL = await (
+const { baseURL } = await (
   import.meta.env.CLI === "true"
-    ? () => import.meta.env.BASE_URL
+    ? () => ({
+        baseURL: import.meta.env.BASE_URL,
+      })
     : async () => {
-        const env = await import("astro:env/client");
-        return env.BASE_URL;
+        const client = await import("astro:env/client");
+        return {
+          baseURL: client.BASE_URL,
+        };
       }
 )();
 
 export const auth = betterAuth({
   appName: import.meta.env.BETTER_AUTH_RP_NAME as string,
+  trustedOrigins: [DEPLOY_PRIME_URL].filter(Boolean),
   database: {
     type: "sqlite",
     dialect: db.dialect,
