@@ -115,8 +115,10 @@ export const onPreBuild = async ({ utils, netlifyConfig }) => {
       const branchUrl = await ensureBranchDatabase(branch);
       if (branchUrl) {
         url = branchUrl;
-        // Propagate to the Astro build so the app uses the branch DB too
-        netlifyConfig.build.environment.DB_SYNC_URL = branchUrl;
+        // BRANCH_DB_URL is read by the Vite `define` in astro.config.mjs
+        // and inlined into the server bundle at build time, so the deployed
+        // function uses the branch DB instead of the shared preview DB.
+        netlifyConfig.build.environment.BRANCH_DB_URL = branchUrl;
         console.log(`Deploy preview will use branch database: ${branchUrl}`);
       }
     }

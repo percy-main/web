@@ -11,6 +11,12 @@ export default defineConfig({
   integrations: [react(), sitemap()],
   vite: {
     plugins: [tailwindcss()],
+    define: {
+      // Inlined at build time by the Netlify migration plugin for deploy
+      // previews so the server bundle uses the per-PR branch database
+      // instead of the shared preview DB (see scripts/netlify/migrate).
+      __BRANCH_DB_URL__: JSON.stringify(process.env.BRANCH_DB_URL || ""),
+    },
   },
   env: {
     schema: {
