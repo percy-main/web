@@ -49,6 +49,7 @@ export const purchase = defineAction({
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
         currency: price.currency,
+        automatic_payment_methods: { enabled: true },
         metadata: enrichedMetadata,
       });
 
