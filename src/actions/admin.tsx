@@ -1,10 +1,16 @@
 import { defineAuthAction } from "@/lib/auth/api";
 import { auth } from "@/lib/auth/server";
 import { client } from "@/lib/db/client";
+import { send } from "@/lib/email/send";
 import { stripe } from "@/lib/payments/client";
 import { stripeDate } from "@/lib/util/stripeDate";
+import { render } from "@react-email/render";
 import { ActionError } from "astro:actions";
+import { BASE_URL } from "astro:env/client";
 import { z } from "astro:schema";
+import { randomUUID } from "crypto";
+import { formatDate } from "date-fns";
+import { ChargeNotification } from "~/emails/ChargeNotification";
 
 async function fetchStripeCharges(email: string): Promise<
   {
@@ -286,6 +292,122 @@ export const admin = {
           role,
         },
       });
+
+      return { success: true };
+    },
+  }),
+
+  addCharge: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      memberId: z.string(),
+      description: z.string().min(1),
+      amountPence: z.number().int().positive(),
+      chargeDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
+    }),
+    handler: async ({ memberId, description, amountPence, chargeDate }, session) => {
+      const member = await client
+        .selectFrom("member")
+        .where("id", "=", memberId)
+        .select(["id", "name", "email"])
+        .executeTakeFirst();
+
+      if (!member) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Member not found",
+        });
+      }
+
+      const id = randomUUID();
+
+      await client
+        .insertInto("charge")
+        .values({
+          id,
+          member_id: memberId,
+          description,
+          amount_pence: amountPence,
+          charge_date: chargeDate,
+          created_by: session.user.id,
+        })
+        .execute();
+
+      const charge = await client
+        .selectFrom("charge")
+        .where("id", "=", id)
+        .selectAll()
+        .executeTakeFirstOrThrow();
+
+      const amountFormatted = new Intl.NumberFormat("en-GB", {
+        style: "currency",
+        currency: "GBP",
+      }).format(amountPence / 100);
+
+      await send({
+        to: member.email,
+        subject: ChargeNotification.subject,
+        html: await render(
+          <ChargeNotification.component
+            imageBaseUrl={`${BASE_URL}/images`}
+            name={member.name}
+            description={description}
+            amount={amountFormatted}
+            chargeDate={formatDate(chargeDate, "dd/MM/yyyy")}
+            loginUrl={`${BASE_URL}/auth/login`}
+          />,
+          { pretty: true },
+        ),
+      });
+
+      return charge;
+    },
+  }),
+
+  getCharges: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      memberId: z.string(),
+    }),
+    handler: async ({ memberId }) => {
+      const charges = await client
+        .selectFrom("charge")
+        .where("member_id", "=", memberId)
+        .where("deleted_at", "is", null)
+        .selectAll()
+        .orderBy("charge_date", "desc")
+        .execute();
+
+      return charges;
+    },
+  }),
+
+  deleteCharge: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      chargeId: z.string(),
+      reason: z.string().min(1),
+    }),
+    handler: async ({ chargeId, reason }, session) => {
+      const result = await client
+        .updateTable("charge")
+        .set({
+          deleted_at: new Date().toISOString(),
+          deleted_by: session.user.id,
+          deleted_reason: reason,
+        })
+        .where("id", "=", chargeId)
+        .where("paid_at", "is", null)
+        .where("deleted_at", "is", null)
+        .execute();
+
+      if (result[0]?.numUpdatedRows === 0n) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message:
+            "Charge not found or has already been paid/deleted",
+        });
+      }
 
       return { success: true };
     },

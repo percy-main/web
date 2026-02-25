@@ -25,6 +25,22 @@ export interface Account {
   userId: string;
 }
 
+export interface Charge {
+  amount_pence: number;
+  charge_date: string;
+  created_at: Generated<string>;
+  created_by: string;
+  deleted_at: string | null;
+  deleted_by: string | null;
+  deleted_reason: string | null;
+  description: string;
+  id: string;
+  member_id: string;
+  paid_at: string | null;
+  payment_confirmed_at: string | null;
+  stripe_payment_intent_id: string | null;
+}
+
 export interface ContactSubmission {
   created_at: Generated<string>;
   email: string;
@@ -130,6 +146,7 @@ export interface Verification {
 
 export interface DB {
   account: Account;
+  charge: Charge;
   contact_submission: ContactSubmission;
   event_subscriber: EventSubscriber;
   game_score: GameScore;

@@ -96,6 +96,11 @@ export default defineConfig({
         context: "server",
         access: "secret",
       }),
+      CONTEXT: envField.string({
+        context: "client",
+        access: "public",
+        optional: true,
+      }),
       DEPLOY_PRIME_URL: envField.string({
         context: "server",
         access: "public",
