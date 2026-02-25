@@ -1,8 +1,33 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { actions } from "astro:actions";
-import { formatDate } from "date-fns";
+import { addMonths, formatDate } from "date-fns";
 import { useState } from "react";
 import { StatusPill, getMembershipStatus } from "./StatusPill";
+
+/**
+ * Derive the effective paid-until date from the most recent Stripe charge.
+ * The DB `paid_until` can be stale if webhooks don't update it on renewal.
+ * We take the later of (DB paid_until, most recent charge + 1 month).
+ */
+function getEffectivePaidUntil(
+  dbPaidUntil: string | null,
+  charges: { created: string }[],
+): string | null {
+  const dbDate = dbPaidUntil ? new Date(dbPaidUntil) : null;
+
+  if (charges.length === 0) return dbPaidUntil;
+
+  const sorted = [...charges].sort(
+    (a, b) => new Date(b.created).getTime() - new Date(a.created).getTime(),
+  );
+  const latestCharge = new Date(sorted[0].created);
+  const derivedPaidUntil = addMonths(latestCharge, 1);
+
+  if (!dbDate || derivedPaidUntil > dbDate) {
+    return derivedPaidUntil.toISOString();
+  }
+  return dbPaidUntil;
+}
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -186,37 +211,38 @@ export function MemberDetailModal({
             <section>
               <h3 className="mb-2 text-lg font-medium">Membership</h3>
               {detail.membership ? (
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                  <dt className="font-medium text-gray-500">Type</dt>
-                  <dd>{detail.membership.type ?? "N/A"}</dd>
-                  <dt className="font-medium text-gray-500">Paid Until</dt>
-                  <dd>
-                    {formatDate(
-                      detail.membership.paid_until,
-                      "dd/MM/yyyy",
-                    )}
-                  </dd>
-                  <dt className="font-medium text-gray-500">Status</dt>
-                  <dd>
-                    {(() => {
-                      const status = getMembershipStatus(
-                        detail.membership.paid_until,
-                      );
-                      return (
+                (() => {
+                  const effectivePaidUntil = getEffectivePaidUntil(
+                    detail.membership.paid_until,
+                    detail.charges,
+                  );
+                  const status = getMembershipStatus(effectivePaidUntil);
+                  return (
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <dt className="font-medium text-gray-500">Type</dt>
+                      <dd>{detail.membership.type ?? "N/A"}</dd>
+                      <dt className="font-medium text-gray-500">Paid Until</dt>
+                      <dd>
+                        {effectivePaidUntil
+                          ? formatDate(effectivePaidUntil, "dd/MM/yyyy")
+                          : "N/A"}
+                      </dd>
+                      <dt className="font-medium text-gray-500">Status</dt>
+                      <dd>
                         <StatusPill variant={status.variant}>
                           {status.label}
                         </StatusPill>
-                      );
-                    })()}
-                  </dd>
-                  <dt className="font-medium text-gray-500">Created</dt>
-                  <dd>
-                    {formatDate(
-                      detail.membership.created_at,
-                      "dd/MM/yyyy",
-                    )}
-                  </dd>
-                </dl>
+                      </dd>
+                      <dt className="font-medium text-gray-500">Created</dt>
+                      <dd>
+                        {formatDate(
+                          detail.membership.created_at,
+                          "dd/MM/yyyy",
+                        )}
+                      </dd>
+                    </dl>
+                  );
+                })()
               ) : (
                 <p className="text-sm text-gray-500">
                   No membership record found.
