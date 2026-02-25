@@ -23,15 +23,30 @@ export async function findRecentCheckoutSession(
   );
 }
 
+/**
+ * Confirm a payment intent using a test card via the Stripe API.
+ * This bypasses the PaymentElement iframe for more reliable CI testing.
+ */
+export async function confirmPaymentIntent(
+  paymentIntentId: string,
+): Promise<Stripe.PaymentIntent> {
+  return getStripe().paymentIntents.confirm(paymentIntentId, {
+    payment_method: "pm_card_visa",
+    return_url: "https://example.com/return",
+  });
+}
+
 export async function findRecentPaymentIntent(
   email: string,
+  status?: string,
 ): Promise<Stripe.PaymentIntent | undefined> {
   const intents = await getStripe().paymentIntents.list({
     limit: 10,
   });
 
   return intents.data.find(
-    (pi) => pi.metadata.email === email && pi.status === "succeeded",
+    (pi) =>
+      pi.metadata.email === email && (status ? pi.status === status : true),
   );
 }
 

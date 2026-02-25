@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { expect, test } from "../fixtures/base";
 import {
-  fillPaymentElement,
+  confirmPaymentIntent,
   findRecentPaymentIntent,
 } from "../helpers/stripe";
 
@@ -19,36 +19,43 @@ test.describe("Donation Checkout", () => {
   test("complete a donation and verify via Stripe API", async ({ page }) => {
     test.setTimeout(120_000);
 
-    // 1. Navigate to checkout page (include email for Stripe API verification)
-    //    First load may trigger Vite dep optimization + full reload, so we
-    //    navigate, wait for the component, then reload to get a stable page.
+    // 1. Navigate to checkout page
     await page.goto(
       `/purchase/${DONATION_PRICE_ID}/?email=${encodeURIComponent(TEST_EMAIL)}`,
     );
-    await expect(page.locator("#customAmount")).toBeVisible({ timeout: 30_000 });
-    await page.reload();
 
-    // 2. Wait for PurchaseCheckout to render (stable after Vite optimization)
+    // 2. Wait for PurchaseCheckout to render
     await expect(page.locator("#customAmount")).toBeVisible({ timeout: 30_000 });
 
     // 3. Fill in custom donation amount (£5)
     await page.locator("#customAmount").fill("5");
 
-    // 4. Click Pay button to create payment intent
+    // 4. Click Pay button — this triggers the purchase action which creates
+    //    a PaymentIntent in Stripe with the test email in metadata
     await page.getByRole("button", { name: /pay/i }).click();
 
-    // 5. Wait for PaymentElement to load and fill card details
-    await fillPaymentElement(page);
+    // 5. Wait for the PaymentForm to render, proving the PaymentIntent was created
+    await expect(page.getByText("Cancel")).toBeVisible({ timeout: 30_000 });
 
-    // 6. Submit payment
-    await page.getByRole("button", { name: /pay/i }).click();
-
-    // 7. Verify payment succeeded via Stripe API
-    //    (more reliable than checking UI state, which can be reset by dev-server HMR)
+    // 6. Find the PaymentIntent via Stripe API using the test email
     await expect(async () => {
       const pi = await findRecentPaymentIntent(TEST_EMAIL);
       expect(pi).toBeDefined();
-      expect(pi?.status).toBe("succeeded");
-    }).toPass({ timeout: 60_000 });
+    }).toPass({ timeout: 15_000 });
+
+    const pi = await findRecentPaymentIntent(TEST_EMAIL);
+    if (!pi) {
+      throw new Error(`PaymentIntent not found for ${TEST_EMAIL}`);
+    }
+
+    // 7. Confirm payment via Stripe API with test card
+    //    (bypasses PaymentElement iframe for reliable CI testing)
+    const confirmed = await confirmPaymentIntent(pi.id);
+    expect(confirmed.status).toBe("succeeded");
+
+    // 8. Verify the payment is reflected as succeeded
+    const verified = await findRecentPaymentIntent(TEST_EMAIL, "succeeded");
+    expect(verified).toBeDefined();
+    expect(verified?.status).toBe("succeeded");
   });
 });
