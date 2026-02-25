@@ -6,6 +6,10 @@ import { z } from "astro:schema";
 import { randomUUID } from "crypto";
 import { differenceInYears } from "date-fns";
 
+/** Only dependents registered in the current calendar year count towards the family discount. */
+const currentYearStart = () =>
+  new Date(Date.UTC(new Date().getFullYear(), 0, 1)).toISOString();
+
 const dependentSchema = z.object({
   name: z.string().min(1),
   sex: z.string().min(1),
@@ -54,6 +58,7 @@ export const addDependents = defineAuthAction({
     const existingCount = await client
       .selectFrom("dependent")
       .where("member_id", "=", member.id)
+      .where("created_at", ">=", currentYearStart())
       .select(({ fn }) => fn.countAll<number>().as("count"))
       .executeTakeFirstOrThrow();
 
@@ -118,13 +123,13 @@ export const juniorCheckout = defineAuthAction({
       });
     }
 
-    // Count existing dependents to determine pricing — additional children
-    // in the same family always get the discounted rate, even across
-    // separate registration sessions.
+    // Only dependents registered this calendar year count towards the
+    // family discount — previous years' registrations don't carry over.
     const existingCount = await client
       .selectFrom("dependent")
       .where("member_id", "=", memberId)
       .where("id", "not in", dependentIds)
+      .where("created_at", ">=", currentYearStart())
       .select(({ fn }) => fn.countAll<number>().as("count"))
       .executeTakeFirstOrThrow();
 
@@ -206,6 +211,10 @@ export const dependents = defineAuthAction({
       .where("dependent.member_id", "=", member.id)
       .execute();
 
-    return { dependents: deps };
+    const currentYearCount = deps.filter(
+      (d) => d.created_at >= currentYearStart(),
+    ).length;
+
+    return { dependents: deps, currentYearCount };
   },
 });

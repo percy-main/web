@@ -63,7 +63,7 @@ const JuniorRegistrationInner: FC = () => {
     queryKey: ["dependents"],
     queryFn: actions.dependents,
   });
-  const existingCount = existingDepsQuery.data?.data?.dependents.length ?? 0;
+  const existingCount = existingDepsQuery.data?.data?.currentYearCount ?? 0;
 
   const addDependentsMutation = useMutation({
     mutationFn: async (deps: Dependent[]) => {
@@ -245,8 +245,9 @@ const JuniorRegistrationInner: FC = () => {
           </div>
 
           <p className="mb-4 text-sm text-gray-600">
-            This is a one-off payment for 12 months of junior membership. You
-            will not be automatically charged when it expires.
+            This is a one-off payment for junior membership valid until the end
+            of {new Date().getFullYear()}. You will not be automatically charged
+            when it expires.
           </p>
 
           {(addDependentsMutation.error ?? checkoutMutation.error) && (
