@@ -1,6 +1,6 @@
 import { SimpleInput } from "@/components/form/SimpleInput";
 import { RadioButtons } from "@/components/form/RadioButtons";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { loadStripe, type StripeEmbeddedCheckout } from "@stripe/stripe-js";
 import { actions } from "astro:actions";
@@ -21,10 +21,16 @@ type Dependent = {
 
 const emptyDependent = (): Dependent => ({ name: "", sex: "", dob: "" });
 
-const calculateTotal = (count: number) =>
-  count === 0
-    ? 0
-    : FIRST_CHILD_PRICE + (count - 1) * ADDITIONAL_CHILD_PRICE;
+const priceForChild = (existingCount: number, newIndex: number) =>
+  existingCount + newIndex === 0 ? FIRST_CHILD_PRICE : ADDITIONAL_CHILD_PRICE;
+
+const calculateTotal = (existingCount: number, newCount: number) => {
+  let total = 0;
+  for (let i = 0; i < newCount; i++) {
+    total += priceForChild(existingCount, i);
+  }
+  return total;
+};
 
 const validateDependent = (dep: Dependent): string | null => {
   if (!dep.name.trim()) return "Name is required.";
@@ -52,6 +58,12 @@ const JuniorRegistrationInner: FC = () => {
   ]);
   const [errors, setErrors] = useState<Array<string | null>>([]);
   const [clientSecret, setClientSecret] = useState<string>();
+
+  const existingDepsQuery = useQuery({
+    queryKey: ["dependents"],
+    queryFn: actions.dependents,
+  });
+  const existingCount = existingDepsQuery.data?.data?.dependents.length ?? 0;
 
   const addDependentsMutation = useMutation({
     mutationFn: async (deps: Dependent[]) => {
@@ -122,8 +134,7 @@ const JuniorRegistrationInner: FC = () => {
     <div className="mx-auto max-w-2xl">
       <h4 className="mb-2">Junior Membership</h4>
       <p className="mb-6 text-sm text-gray-600">
-        Register your children as junior members of the club. This is a one-off
-        annual payment — you will not be automatically charged again.
+        Register your children as junior members of the club.
       </p>
 
       {step === "add" && (
@@ -135,10 +146,8 @@ const JuniorRegistrationInner: FC = () => {
             >
               <div className="mb-2 flex items-center justify-between">
                 <h5 className="text-sm font-semibold">
-                  Child {i + 1}
-                  {i === 0
-                    ? ` — £${FIRST_CHILD_PRICE}`
-                    : ` — £${ADDITIONAL_CHILD_PRICE}`}
+                  Child {existingCount + i + 1}
+                  {` — £${priceForChild(existingCount, i)}`}
                 </h5>
                 {dependents.length > 1 && (
                   <button
@@ -217,7 +226,7 @@ const JuniorRegistrationInner: FC = () => {
                       {format(new Date(dep.dob), "dd/MM/yyyy")}
                     </td>
                     <td className="py-2 text-right">
-                      £{i === 0 ? FIRST_CHILD_PRICE : ADDITIONAL_CHILD_PRICE}
+                      £{priceForChild(existingCount, i)}
                     </td>
                   </tr>
                 ))}
@@ -228,7 +237,7 @@ const JuniorRegistrationInner: FC = () => {
                     Total
                   </td>
                   <td className="pt-3 text-right">
-                    £{calculateTotal(dependents.length)}
+                    £{calculateTotal(existingCount, dependents.length)}
                   </td>
                 </tr>
               </tfoot>
@@ -270,6 +279,35 @@ const JuniorRegistrationInner: FC = () => {
           </div>
         </>
       )}
+
+      <SocialMembershipUpsell />
+    </div>
+  );
+};
+
+const SocialMembershipUpsell: FC = () => {
+  const membershipQuery = useQuery({
+    queryKey: ["membership"],
+    queryFn: actions.membership,
+  });
+
+  const membership = membershipQuery.data?.data?.membership;
+
+  if (membership) return null;
+
+  return (
+    <div className="mt-8 rounded-lg border border-blue-200 bg-blue-50 p-4">
+      <p className="mb-2 text-sm font-semibold">Support the club?</p>
+      <p className="mb-3 text-sm text-gray-600">
+        As a parent you don&apos;t need a membership, but if you&apos;d like to
+        support the club you can become a social member.
+      </p>
+      <a
+        href="/membership/pay"
+        className={btnSecondary + " inline-block text-sm"}
+      >
+        Become a Social Member
+      </a>
     </div>
   );
 };

@@ -89,12 +89,12 @@ export const Membership: FC<Props> = ({ email }) => {
         </div>
       )}
 
-      <div className="mt-4">
+      <div className="mt-6">
         <a
-          className="text-sm text-blue-700 hover:underline"
+          className="inline-block rounded-lg border border-blue-700 bg-white px-5 py-2.5 text-sm font-medium text-blue-700 hover:bg-blue-50 focus:ring-4 focus:ring-blue-300 focus:outline-none"
           href="/membership/junior"
         >
-          Register junior members
+          Register Junior Members
         </a>
       </div>
     </section>

@@ -51,6 +51,12 @@ export const addDependents = defineAuthAction({
       }
     }
 
+    const existingCount = await client
+      .selectFrom("dependent")
+      .where("member_id", "=", member.id)
+      .select(({ fn }) => fn.countAll<number>().as("count"))
+      .executeTakeFirstOrThrow();
+
     const ids: string[] = [];
 
     for (const dep of dependents) {
@@ -69,7 +75,11 @@ export const addDependents = defineAuthAction({
         .executeTakeFirst();
     }
 
-    return { dependentIds: ids, memberId: member.id };
+    return {
+      dependentIds: ids,
+      memberId: member.id,
+      existingDependentCount: existingCount.count,
+    };
   },
 });
 
@@ -108,11 +118,23 @@ export const juniorCheckout = defineAuthAction({
       });
     }
 
+    // Count existing dependents to determine pricing — additional children
+    // in the same family always get the discounted rate, even across
+    // separate registration sessions.
+    const existingCount = await client
+      .selectFrom("dependent")
+      .where("member_id", "=", memberId)
+      .where("id", "not in", dependentIds)
+      .select(({ fn }) => fn.countAll<number>().as("count"))
+      .executeTakeFirstOrThrow();
+
     const lineItems = dependents.map((dep, i) => ({
       price_data: {
         currency: "gbp" as const,
         unit_amount:
-          i === 0 ? JUNIOR_FIRST_CHILD_PRICE : JUNIOR_ADDITIONAL_CHILD_PRICE,
+          existingCount.count + i === 0
+            ? JUNIOR_FIRST_CHILD_PRICE
+            : JUNIOR_ADDITIONAL_CHILD_PRICE,
         product_data: {
           name: `Junior Membership - ${dep.name}`,
         },
