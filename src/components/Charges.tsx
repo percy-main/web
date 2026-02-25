@@ -22,6 +22,7 @@ export const Charges = () => {
   const [paymentData, setPaymentData] = useState<{
     clientSecret: string;
     totalAmountPence: number;
+    paymentIntentId: string;
   } | null>(null);
 
   const query = useQuery({
@@ -33,9 +34,11 @@ export const Charges = () => {
     mutationFn: () => actions.charges.payOutstandingBalance({}),
     onSuccess: (result) => {
       if (result.data) {
+        const piId = result.data.clientSecret.split("_secret_")[0];
         setPaymentData({
           clientSecret: result.data.clientSecret,
           totalAmountPence: result.data.totalAmountPence,
+          paymentIntentId: piId,
         });
       }
     },
@@ -54,7 +57,7 @@ export const Charges = () => {
     return null;
   }
 
-  const unpaidCharges = charges.filter((c) => !c.paid_at);
+  const unpaidCharges = charges.filter((c) => !c.paid_at && !c.payment_confirmed_at);
   const totalOutstandingPence = unpaidCharges.reduce(
     (sum, c) => sum + c.amount_pence,
     0,
@@ -65,7 +68,10 @@ export const Charges = () => {
       <PaymentForm
         clientSecret={paymentData.clientSecret}
         amount={paymentData.totalAmountPence}
-        onSuccess={() => {
+        onSuccess={async () => {
+          await actions.charges.confirmPayment({
+            paymentIntentId: paymentData.paymentIntentId,
+          });
           setPaymentData(null);
           void queryClient.invalidateQueries({ queryKey: ["myCharges"] });
         }}
@@ -99,6 +105,8 @@ export const Charges = () => {
               <TableCell>
                 {charge.paid_at ? (
                   <Badge variant="success">Paid</Badge>
+                ) : charge.payment_confirmed_at ? (
+                  <Badge variant="default">Pending</Badge>
                 ) : (
                   <Badge variant="warning">Unpaid</Badge>
                 )}

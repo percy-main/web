@@ -37,6 +37,7 @@ export interface Charge {
   id: string;
   member_id: string;
   paid_at: string | null;
+  payment_confirmed_at: string | null;
   stripe_payment_intent_id: string | null;
 }
 

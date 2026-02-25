@@ -46,13 +46,14 @@ export const charges = {
         });
       }
 
-      // Only consider charges with no pending payment intent
+      // Only consider charges with no pending payment intent and not already confirmed
       const unpaidCharges = await client
         .selectFrom("charge")
         .where("member_id", "=", member.id)
         .where("paid_at", "is", null)
         .where("deleted_at", "is", null)
         .where("stripe_payment_intent_id", "is", null)
+        .where("payment_confirmed_at", "is", null)
         .selectAll()
         .execute();
 
@@ -130,6 +131,46 @@ export const charges = {
         totalAmountPence,
         chargeIds,
       };
+    },
+  }),
+
+  confirmPayment: defineAuthAction({
+    input: z.object({
+      paymentIntentId: z.string(),
+    }),
+    handler: async ({ paymentIntentId }, session) => {
+      const member = await client
+        .selectFrom("member")
+        .where("email", "=", session.user.email)
+        .select(["id"])
+        .executeTakeFirst();
+
+      if (!member) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "No member record found for your account",
+        });
+      }
+
+      // Verify the payment intent actually succeeded
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      if (paymentIntent.status !== "succeeded") {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Payment has not succeeded",
+        });
+      }
+
+      await client
+        .updateTable("charge")
+        .set({ payment_confirmed_at: new Date().toISOString() })
+        .where("member_id", "=", member.id)
+        .where("stripe_payment_intent_id", "=", paymentIntentId)
+        .where("paid_at", "is", null)
+        .where("payment_confirmed_at", "is", null)
+        .execute();
+
+      return { success: true };
     },
   }),
 };
