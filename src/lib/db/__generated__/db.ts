@@ -56,7 +56,6 @@ export interface ContactSubmission {
 }
 
 export interface Dependent {
-  charge_id: string | null;
   created_at: Generated<string>;
   dob: string;
   id: string;
