@@ -64,7 +64,7 @@ const donateUrl = `/purchase/${paymentData.prices.donation}`;
     next5calendarItems.length > 0 && (
       <section class="bg-white py-10">
         <div class="container">
-          <h3 class="text-h4 mb-6 text-center">What's On This Week</h3>
+          <h3 class="text-h4 mb-6 text-center">What's Coming Up Soon</h3>
           <div class="flex snap-x gap-4 overflow-x-auto pb-2 md:justify-center md:overflow-x-visible">
             {next5calendarItems.map((calendarItem) => (
               <CalendarStripCard id={calendarItem.id} item={calendarItem.data} />

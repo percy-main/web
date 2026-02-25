@@ -10,32 +10,51 @@ export const purchase = defineAction({
   input: z.object({
     priceId: z.string(),
     quantity: z.number().min(1).default(1),
+    customAmountPence: z.number().min(1).optional(),
     metadata,
     email: z.string().optional(),
   }),
-  handler: async ({ priceId, quantity, metadata, email }) => {
+  handler: async ({ priceId, quantity, customAmountPence, metadata, email }) => {
     try {
       const price = await stripe.prices.retrieve(priceId, {
         expand: ["product"],
       });
 
-      if (!price.unit_amount) {
+      if (price.recurring) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message:
+            "Subscription prices are not supported — use subscribe instead",
+        });
+      }
+
+      const product = price.product as Stripe.Product;
+
+      let amount: number;
+      if (price.custom_unit_amount) {
+        if (!customAmountPence) {
+          throw new ActionError({
+            code: "BAD_REQUEST",
+            message: "Custom amount is required for this price",
+          });
+        }
+        const min = price.custom_unit_amount.minimum ?? 0;
+        const max = price.custom_unit_amount.maximum;
+        if (customAmountPence < min || (max && customAmountPence > max)) {
+          throw new ActionError({
+            code: "BAD_REQUEST",
+            message: `Amount must be between ${min} and ${max ?? "unlimited"}`,
+          });
+        }
+        amount = customAmountPence;
+      } else if (price.unit_amount) {
+        amount = price.unit_amount * quantity;
+      } else {
         throw new ActionError({
           code: "BAD_REQUEST",
           message: "Price has no unit amount",
         });
       }
-
-      if (price.recurring) {
-        throw new ActionError({
-          code: "BAD_REQUEST",
-          message:
-            "Subscription prices are not supported — use checkout instead",
-        });
-      }
-
-      const product = price.product as Stripe.Product;
-      const amount = price.unit_amount * quantity;
 
       const enrichedMetadata: Record<string, string> = {
         ...(metadata ?? {}),

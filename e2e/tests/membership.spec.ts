@@ -1,19 +1,19 @@
 import { expect, test } from "../fixtures/base";
 import { extractVerificationUrl, getLatestEmail } from "../helpers/email";
 import {
-  findRecentCheckoutSession,
-  simulateCheckoutWebhook,
+  fillPaymentElement,
+  findRecentPaymentIntent,
+  simulatePaymentIntentWebhook,
 } from "../helpers/stripe";
 
-// Skipped: flaky due to Stripe iframe timing / DOM detachment in CI
-test.describe.skip("Membership", () => {
+test.describe("Membership", () => {
   const testPassword = "TestPassword123!";
 
   test("full join, register, pay membership flow", async ({
     page,
     baseURL,
   }) => {
-    test.setTimeout(180_000); // Long flow with Stripe
+    test.setTimeout(180_000);
 
     const testId = Date.now();
     const testEmail = `test-e2e-member-${testId}@example.com`;
@@ -29,7 +29,6 @@ test.describe.skip("Membership", () => {
     await page.locator("#name").fill(testName);
 
     // Address lookup — use manual entry mode (no postcodes.io in E2E)
-    // Retry click until React hydration completes and fields appear
     await expect(async () => {
       const btn = page.getByText("Enter address manually");
       if (await btn.isVisible()) await btn.click();
@@ -106,75 +105,49 @@ test.describe.skip("Membership", () => {
 
     await payLink.click();
 
-    // ─── 12. Fill Stripe embedded checkout ───
-    const checkoutDiv = page.locator("#checkout");
-    await expect(checkoutDiv).toBeVisible({ timeout: 30_000 });
-
-    const stripeIframe = checkoutDiv.locator("iframe").first();
-    const stripeFrame = stripeIframe.contentFrame();
-
-    // Fill email
-    await stripeFrame.locator("#email").waitFor({ timeout: 30_000 });
-    await stripeFrame.locator("#email").fill(testEmail);
-
-    // Select Card payment (accordion may not exist if card is the only/default method)
-    const cardAccordion = stripeFrame.locator(
-      '[data-testid="card-accordion-item"]',
-    );
-    if (await cardAccordion.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await cardAccordion.click();
-    }
-
-    // Fill card details
-    await stripeFrame.locator("#cardNumber").waitFor({ timeout: 30_000 });
-    await stripeFrame.locator("#cardNumber").fill("4242424242424242");
-    await stripeFrame.locator("#cardExpiry").fill("12/30");
-    await stripeFrame.locator("#cardCvc").fill("123");
-    await stripeFrame.locator("#billingName").fill(testName);
-
-    // Select UK and fill postcode
-    await stripeFrame
-      .getByRole("combobox", { name: "Country or region" })
-      .selectOption({ label: "United Kingdom" });
-    await stripeFrame.locator("#billingPostalCode").fill("NE29 6HS");
-
-    // Submit payment
-    await stripeFrame
-      .locator('button[data-testid="hosted-payment-submit-button"]')
-      .click();
-
-    // Wait for success
+    // ─── 12. PurchaseCheckout renders — click Pay button ───
     await expect(
-      stripeFrame.getByText("Thanks for your payment"),
-    ).toBeVisible({ timeout: 60_000 });
+      page.getByRole("button", { name: /pay/i }),
+    ).toBeVisible({ timeout: 30_000 });
+    await page.getByRole("button", { name: /pay/i }).click();
 
-    // ─── 13. Verify via Stripe API ───
+    // ─── 13. Fill PaymentElement card details ───
+    await fillPaymentElement(page);
+
+    // ─── 14. Submit payment ───
+    await page.getByRole("button", { name: /pay/i }).click();
+
+    // ─── 15. Wait for success state ───
+    await expect(page.getByText("Payment Successful")).toBeVisible({
+      timeout: 60_000,
+    });
+
+    // ─── 16. Verify via Stripe API ───
     await page.waitForTimeout(3000);
-    const session = await findRecentCheckoutSession(testEmail);
-    if (!session) throw new Error("Checkout session not found");
-    expect(session.payment_status).toBe("paid");
+    const paymentIntent = await findRecentPaymentIntent(testEmail);
+    if (!paymentIntent)
+      throw new Error("Payment intent not found via Stripe API");
+    expect(paymentIntent.status).toBe("succeeded");
 
-    // ─── 14. Simulate webhook ───
+    // ─── 17. Simulate webhook ───
     if (!baseURL) throw new Error("baseURL not set");
-    const webhookResponse = await simulateCheckoutWebhook(
+    const webhookResponse = await simulatePaymentIntentWebhook(
       baseURL,
-      session,
+      paymentIntent,
     );
     if (!webhookResponse.ok) {
       const body = await webhookResponse.text();
       throw new Error(`Webhook failed (${webhookResponse.status}): ${body}`);
     }
 
-    // ─── 15. Verify membership is now active ───
+    // ─── 18. Verify membership is now active ───
     await page.goto("/members");
     await expect(page.getByText("Members Area")).toBeVisible();
 
-    // The membership card should now show the type instead of "No Membership"
     await expect(
       page.getByText("Playing Member (Senior)"),
     ).toBeVisible({ timeout: 10_000 });
 
-    // Should show "Paid Until" with a date
     await expect(page.getByText("Paid Until")).toBeVisible();
   });
 });

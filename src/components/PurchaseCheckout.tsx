@@ -42,6 +42,11 @@ type State =
 const PurchaseCheckoutInner: FC<Props> = ({ price }) => {
   const [state, setState] = useState<State>({ step: "ready" });
   const [quantity, setQuantity] = useState(1);
+  const [customAmount, setCustomAmount] = useState(
+    price.customAmount?.preset
+      ? String(price.customAmount.preset / 100)
+      : "",
+  );
 
   const metadata = useSearchParam({
     param: "metadata",
@@ -54,11 +59,16 @@ const PurchaseCheckoutInner: FC<Props> = ({ price }) => {
     schema: z.string().optional(),
   });
 
+  const customAmountPence = price.customAmount
+    ? Math.round(parseFloat(customAmount || "0") * 100)
+    : undefined;
+
   const purchaseMutation = useMutation({
     mutationFn: () =>
       actions.purchase({
         priceId: price.id,
         quantity,
+        customAmountPence,
         metadata,
         email,
       }),
@@ -104,7 +114,14 @@ const PurchaseCheckoutInner: FC<Props> = ({ price }) => {
     );
   }
 
-  const totalAmount = price.unitAmount * quantity;
+  const totalAmount = price.customAmount
+    ? (customAmountPence ?? 0)
+    : price.unitAmount * quantity;
+
+  const isValidAmount = price.customAmount
+    ? totalAmount >= (price.customAmount.min ?? 0) &&
+      (!price.customAmount.max || totalAmount <= price.customAmount.max)
+    : totalAmount > 0;
 
   return (
     <Card>
@@ -112,25 +129,50 @@ const PurchaseCheckoutInner: FC<Props> = ({ price }) => {
         <CardTitle>{price.product.name}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <span>Price</span>
-          <span>{price.formattedPrice} each</span>
-        </div>
-        {price.qtyAdjustable && (
+        {price.customAmount ? (
           <div className="flex items-center justify-between">
-            <label htmlFor="quantity">Quantity</label>
-            <input
-              id="quantity"
-              type="number"
-              min={1}
-              max={price.maxQty}
-              value={quantity}
-              onChange={(e) =>
-                setQuantity(Math.max(1, parseInt(e.target.value) || 1))
-              }
-              className="w-20 rounded border px-2 py-1 text-right"
-            />
+            <label htmlFor="customAmount">Amount</label>
+            <div className="flex items-center gap-1">
+              <span>£</span>
+              <input
+                id="customAmount"
+                type="number"
+                min={price.customAmount.min / 100}
+                max={
+                  price.customAmount.max
+                    ? price.customAmount.max / 100
+                    : undefined
+                }
+                step="0.01"
+                value={customAmount}
+                onChange={(e) => setCustomAmount(e.target.value)}
+                className="w-24 rounded border px-2 py-1 text-right"
+              />
+            </div>
           </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <span>Price</span>
+              <span>{price.formattedPrice} each</span>
+            </div>
+            {price.qtyAdjustable && (
+              <div className="flex items-center justify-between">
+                <label htmlFor="quantity">Quantity</label>
+                <input
+                  id="quantity"
+                  type="number"
+                  min={1}
+                  max={price.maxQty}
+                  value={quantity}
+                  onChange={(e) =>
+                    setQuantity(Math.max(1, parseInt(e.target.value) || 1))
+                  }
+                  className="w-20 rounded border px-2 py-1 text-right"
+                />
+              </div>
+            )}
+          </>
         )}
         <div className="flex items-center justify-between border-t pt-4 font-semibold">
           <span>Total</span>
@@ -148,7 +190,7 @@ const PurchaseCheckoutInner: FC<Props> = ({ price }) => {
         <Button
           className="w-full"
           onClick={() => purchaseMutation.mutate()}
-          disabled={purchaseMutation.isPending}
+          disabled={purchaseMutation.isPending || !isValidAmount}
         >
           {purchaseMutation.isPending
             ? "Processing..."
