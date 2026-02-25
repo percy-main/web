@@ -10,11 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/ui/Card";
-import { useMutation } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useMutation } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { z } from "astro:schema";
 import { type FC, useState } from "react";
 import { PaymentForm } from "./PaymentForm";
+
+const queryClient = new QueryClient();
 
 type Props = {
   price: Price;
@@ -25,7 +27,7 @@ type State =
   | { step: "paying"; clientSecret: string }
   | { step: "success" };
 
-export const SubscriptionCheckout: FC<Props> = ({ price }) => {
+const SubscriptionCheckoutInner: FC<Props> = ({ price }) => {
   const [state, setState] = useState<State>({ step: "ready" });
 
   const metadata = useSearchParam({
@@ -115,3 +117,9 @@ export const SubscriptionCheckout: FC<Props> = ({ price }) => {
     </Card>
   );
 };
+
+export const SubscriptionCheckout: FC<Props> = (props) => (
+  <QueryClientProvider client={queryClient}>
+    <SubscriptionCheckoutInner {...props} />
+  </QueryClientProvider>
+);

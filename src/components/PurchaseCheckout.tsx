@@ -10,11 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/ui/Card";
-import { useMutation } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useMutation } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { z } from "astro:schema";
 import { type FC, useState } from "react";
 import { PaymentForm } from "./PaymentForm";
+
+const queryClient = new QueryClient();
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -37,7 +39,7 @@ type State =
     }
   | { step: "success"; productName: string };
 
-export const PurchaseCheckout: FC<Props> = ({ price }) => {
+const PurchaseCheckoutInner: FC<Props> = ({ price }) => {
   const [state, setState] = useState<State>({ step: "ready" });
   const [quantity, setQuantity] = useState(1);
 
@@ -156,3 +158,9 @@ export const PurchaseCheckout: FC<Props> = ({ price }) => {
     </Card>
   );
 };
+
+export const PurchaseCheckout: FC<Props> = (props) => (
+  <QueryClientProvider client={queryClient}>
+    <PurchaseCheckoutInner {...props} />
+  </QueryClientProvider>
+);
