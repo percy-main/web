@@ -44,7 +44,7 @@ test.describe("Donation Checkout", () => {
     await expect(async () => {
       const pi = await findRecentPaymentIntent(TEST_EMAIL);
       expect(pi).toBeDefined();
-      expect(pi!.status).toBe("succeeded");
+      expect(pi?.status).toBe("succeeded");
     }).toPass({ timeout: 60_000 });
   });
 });
