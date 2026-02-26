@@ -1,8 +1,10 @@
 import { resolveOutcome, buildInnings } from "@/collections/game";
 import { client } from "@/lib/db/client";
 import * as playCricketApi from "@/lib/play-cricket";
+import { GetMatchDetailResponse } from "@/lib/play-cricket/schemas";
 import { defineAction } from "astro:actions";
 import { z } from "astro:schema";
+import { format } from "date-fns";
 import { sql } from "kysely";
 import _ from "lodash";
 
@@ -353,6 +355,164 @@ export const playCricket = {
           };
         }),
       };
+    },
+  }),
+
+  getLiveScores: defineAction({
+    handler: async () => {
+      const now = new Date();
+      const todayDdMmYyyy = format(now, "dd/MM/yyyy");
+      // Cricket season runs April–September; in Jan–Mar, use previous year
+      const season =
+        now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
+
+      // Cache the season summary in the DB to avoid hitting the API on every poll
+      const SUMMARY_CACHE_KEY = `summary-${season}`;
+      const SUMMARY_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+      let summaryData: Awaited<
+        ReturnType<typeof playCricketApi.getMatchesSummary>
+      >;
+
+      const cachedSummary = await client
+        .selectFrom("play_cricket_match_cache")
+        .select(["data", "fetched_at"])
+        .where("match_id", "=", SUMMARY_CACHE_KEY)
+        .executeTakeFirst();
+
+      if (
+        cachedSummary &&
+        Date.now() - new Date(cachedSummary.fetched_at).getTime() <
+          SUMMARY_CACHE_TTL_MS
+      ) {
+        summaryData = JSON.parse(cachedSummary.data) as typeof summaryData;
+      } else {
+        summaryData = await playCricketApi.getMatchesSummary({ season });
+        await client
+          .insertInto("play_cricket_match_cache")
+          .values({
+            match_id: SUMMARY_CACHE_KEY,
+            data: JSON.stringify(summaryData),
+            fetched_at: new Date().toISOString(),
+            match_date: todayDdMmYyyy,
+          })
+          .onConflict((oc) =>
+            oc.column("match_id").doUpdateSet({
+              data: JSON.stringify(summaryData),
+              fetched_at: new Date().toISOString(),
+              match_date: todayDdMmYyyy,
+            }),
+          )
+          .execute();
+      }
+
+      const todayMatches = summaryData.matches.filter(
+        (m) => m.match_date === todayDdMmYyyy,
+      );
+
+      if (todayMatches.length === 0) {
+        return { matches: [] };
+      }
+
+      const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+      const settled = await Promise.allSettled(
+        todayMatches.map(async (summary) => {
+          const matchId = summary.id.toString();
+
+          // Check cache
+          const cached = await client
+            .selectFrom("play_cricket_match_cache")
+            .select(["data", "fetched_at"])
+            .where("match_id", "=", matchId)
+            .executeTakeFirst();
+
+          let detailData: string;
+          let fetchedAt: string;
+
+          if (
+            cached &&
+            Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS
+          ) {
+            detailData = cached.data;
+            fetchedAt = cached.fetched_at;
+          } else {
+            // Fetch fresh from Play-Cricket API
+            const detail = await playCricketApi.getMatchDetail({
+              matchId,
+            });
+            detailData = JSON.stringify(detail);
+            fetchedAt = new Date().toISOString();
+
+            // Upsert cache
+            await client
+              .insertInto("play_cricket_match_cache")
+              .values({
+                match_id: matchId,
+                data: detailData,
+                fetched_at: fetchedAt,
+                match_date: todayDdMmYyyy,
+              })
+              .onConflict((oc) =>
+                oc.column("match_id").doUpdateSet({
+                  data: detailData,
+                  fetched_at: fetchedAt,
+                  match_date: todayDdMmYyyy,
+                }),
+              )
+              .execute();
+          }
+
+          const parsed = GetMatchDetailResponse.parse(JSON.parse(detailData));
+          const match = parsed.match_details[0];
+
+          if (!match) return null;
+
+          // Determine status — innings.length > 0 means play has started
+          const hasInningsData = match.innings.length > 0;
+          const hasResult = !!match.result && match.result !== "";
+
+          let status: "not_started" | "in_progress" | "completed";
+          if (hasResult) {
+            status = "completed";
+          } else if (hasInningsData) {
+            status = "in_progress";
+          } else {
+            status = "not_started";
+          }
+
+          return {
+            matchId,
+            homeTeam: `${match.home_club_name} ${match.home_team_name}`,
+            homeTeamId: match.home_team_id,
+            awayTeam: `${match.away_club_name} ${match.away_team_name}`,
+            awayTeamId: match.away_team_id,
+            matchDate: summary.match_date,
+            matchTime: summary.match_time,
+            status,
+            toss: match.toss || null,
+            battedFirst: match.batted_first || null,
+            result: match.result_description || null,
+            resultAppliedTo: match.result_applied_to || null,
+            innings: match.innings.map((inn) => ({
+              teamBattingName: inn.team_batting_name,
+              teamBattingId: inn.team_batting_id,
+              inningsNumber: inn.innings_number,
+              runs: parseInt(inn.runs, 10) || 0,
+              wickets: parseInt(inn.wickets, 10) || 0,
+              overs: inn.overs,
+              declared: inn.declared,
+            })),
+            lastUpdatedAt: fetchedAt,
+          };
+        }),
+      );
+
+      const results = settled
+        .flatMap((r) => (r.status === "fulfilled" ? [r.value] : []))
+        .filter((r): r is NonNullable<typeof r> => r !== null);
+
+      return { matches: results };
     },
   }),
 };

@@ -203,6 +203,13 @@ export interface Passkey {
   userId: string;
 }
 
+export interface PlayCricketMatchCache {
+  data: string;
+  fetched_at: string;
+  match_date: string;
+  match_id: string | null;
+}
+
 export interface PlayCricketSyncLog {
   completed_at: string | null;
   errors: string | null;
@@ -280,6 +287,7 @@ export interface DB {
   member: Member;
   membership: Membership;
   passkey: Passkey;
+  play_cricket_match_cache: PlayCricketMatchCache;
   play_cricket_sync_log: PlayCricketSyncLog;
   play_cricket_team: PlayCricketTeam;
   session: Session;
