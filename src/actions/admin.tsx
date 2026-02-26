@@ -4,7 +4,7 @@ import { client } from "@/lib/db/client";
 import { send } from "@/lib/email/send";
 import { syncStripeCharges } from "@/lib/payments/syncStripeCharges";
 import { getAgeGroup, getTeamName } from "@/lib/util/ageGroup";
-import { nameSimilarity, UnionFind } from "@/lib/util/nameSimilarity";
+import { nameSimilarity, normalizeName } from "@/lib/util/nameSimilarity";
 import { render } from "@react-email/render";
 import { ActionError } from "astro:actions";
 import { BASE_URL } from "astro:env/client";
@@ -922,32 +922,59 @@ export const admin = {
       }
 
       // 2. Build name duplicate groups (fuzzy matching)
-      const nameUf = new UnionFind();
-      for (const m of allMembers) nameUf.find(m.id);
+      // Pre-bucket by normalised surname to avoid O(n²) comparisons
+      const surnameBuckets = new Map<string, typeof allMembers>();
+      for (const m of allMembers) {
+        const normalized = normalizeName(m.name);
+        const tokens = normalized.split(" ");
+        const surname = tokens[tokens.length - 1] ?? "";
+        if (!surname) continue;
+        const bucket = surnameBuckets.get(surname) ?? [];
+        bucket.push(m);
+        surnameBuckets.set(surname, bucket);
+      }
 
-      for (let i = 0; i < allMembers.length; i++) {
-        for (let j = i + 1; j < allMembers.length; j++) {
-          const a = allMembers[i];
-          const b = allMembers[j];
-          const pairKey = [a.id, b.id].sort().join(":");
-          // Skip pairs already in the same email group
-          if (emailLinked.has(pairKey)) continue;
+      // Find pairwise matches within each surname bucket
+      // Use direct pairs (not transitive union-find) to avoid false-positive chains
+      const nameGroupMap = new Map<string, Set<string>>();
+      for (const bucket of surnameBuckets.values()) {
+        if (bucket.length < 2) continue;
+        for (let i = 0; i < bucket.length; i++) {
+          for (let j = i + 1; j < bucket.length; j++) {
+            const a = bucket[i];
+            const b = bucket[j];
+            const pairKey = [a.id, b.id].sort().join(":");
+            if (emailLinked.has(pairKey)) continue;
 
-          const sim = nameSimilarity(a.name, b.name);
-          if (sim >= NAME_SIMILARITY_THRESHOLD) {
-            nameUf.union(a.id, b.id);
+            const sim = nameSimilarity(a.name, b.name);
+            if (sim >= NAME_SIMILARITY_THRESHOLD) {
+              // Create a group keyed by the pair (not transitive)
+              const existing = nameGroupMap.get(a.id) ?? new Set<string>();
+              existing.add(a.id);
+              existing.add(b.id);
+              nameGroupMap.set(a.id, existing);
+            }
           }
         }
       }
 
-      const nameGroups = nameUf.groups(allIds).map((ids) => {
-        const first = memberById.get(ids[0]);
-        return {
-          matchType: "name" as const,
+      // Deduplicate: merge overlapping sets that share a member
+      const seen = new Set<string>();
+      const nameGroups: Array<{
+        matchType: "name";
+        matchKey: string;
+        members: Array<ReturnType<typeof toGroupMember>>;
+      }> = [];
+      for (const [anchor, ids] of nameGroupMap) {
+        if (seen.has(anchor)) continue;
+        for (const id of ids) seen.add(id);
+        const first = memberById.get(anchor);
+        nameGroups.push({
+          matchType: "name",
           matchKey: first?.name ?? "Unknown",
-          members: ids.map(toGroupMember),
-        };
-      });
+          members: [...ids].map(toGroupMember),
+        });
+      }
 
       // Email groups first (higher confidence), then name groups
       return [...emailGroups, ...nameGroups];
@@ -990,6 +1017,7 @@ export const admin = {
       ]);
 
       return {
+        isCrossEmailMerge: keepMember.email !== removeMember.email,
         keep: {
           member: keepMember,
           memberships: keepMemberships,

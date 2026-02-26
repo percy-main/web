@@ -38,7 +38,7 @@ export function DuplicateMembersTable() {
 
           {groups.map((group) => (
             <DuplicateGroup
-              key={`${group.matchType}-${group.matchKey}`}
+              key={`${group.matchType}-${group.members[0]?.id}`}
               group={group}
               onPreview={(keepId, removeId) =>
                 setPreviewGroup({ keepId, removeId })
@@ -256,6 +256,16 @@ function MergePreviewModal({
               />
             </div>
 
+            {preview.isCrossEmailMerge && (
+              <div className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+                <p className="font-semibold">Different email addresses</p>
+                <p className="mt-1">
+                  These members have different email addresses ({preview.keep.member.email} vs{" "}
+                  {preview.remove.member.email}). Please verify they are the same person before merging.
+                </p>
+              </div>
+            )}
+
             <div className="rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
               <p className="font-medium">What will happen:</p>
               <ul className="mt-1 list-inside list-disc">
@@ -289,19 +299,19 @@ function MergePreviewModal({
 
             <div className="rounded border border-red-200 bg-red-50 p-4">
               <p className="mb-2 text-sm font-medium text-red-800">
-                This action cannot be undone. Type &quot;merge&quot; to confirm.
+                This action cannot be undone. Type &quot;{preview.isCrossEmailMerge ? "MERGE" : "merge"}&quot; to confirm.
               </p>
               <div className="flex items-center gap-3">
                 <input
                   type="text"
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
-                  placeholder='Type "merge"'
+                  placeholder={preview.isCrossEmailMerge ? 'Type "MERGE"' : 'Type "merge"'}
                   className="rounded border border-gray-300 px-3 py-1.5 text-sm"
                 />
                 <button
                   disabled={
-                    confirmText !== "merge" || mergeMutation.isPending
+                    confirmText !== (preview.isCrossEmailMerge ? "MERGE" : "merge") || mergeMutation.isPending
                   }
                   onClick={() => mergeMutation.mutate()}
                   className="rounded bg-red-600 px-4 py-1.5 text-sm text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"

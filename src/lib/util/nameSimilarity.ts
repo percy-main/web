@@ -13,7 +13,7 @@ const TITLE_WORDS = new Set([
 export function normalizeName(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[.]/g, "")
+    .replace(/[.\-']/g, "")
     .split(/\s+/)
     .filter((w) => !TITLE_WORDS.has(w))
     .join(" ")
@@ -51,8 +51,8 @@ export function nameSimilarity(nameA: string, nameB: string): number {
   const a = normalizeName(nameA);
   const b = normalizeName(nameB);
 
-  if (a === b) return 1.0;
   if (!a || !b) return 0;
+  if (a === b) return 1.0;
 
   const tokensA = a.split(" ");
   const tokensB = b.split(" ");
@@ -94,11 +94,11 @@ export function nameSimilarity(nameA: string, nameB: string): number {
     )
       return 0.8;
 
-    // Levenshtein on first name (catch small typos)
+    // Levenshtein on first name (catch small typos including transpositions)
     const dist = levenshtein(firstA, firstB);
     const maxLen = Math.max(firstA.length, firstB.length);
     const sim = 1 - dist / maxLen;
-    if (sim >= 0.7) return 0.5 + sim * 0.3;
+    if (sim >= 0.5) return 0.55 + sim * 0.3;
   }
 
   // Full string Levenshtein similarity (very similar overall strings)
@@ -109,54 +109,3 @@ export function nameSimilarity(nameA: string, nameB: string): number {
   return fullSim >= 0.85 ? fullSim * 0.7 : 0;
 }
 
-/** Simple union-find for grouping member IDs. */
-export class UnionFind {
-  private parent = new Map<string, string>();
-  private rankMap = new Map<string, number>();
-
-  find(x: string): string {
-    if (!this.parent.has(x)) {
-      this.parent.set(x, x);
-      this.rankMap.set(x, 0);
-    }
-    const p = this.parent.get(x) ?? x;
-    if (p !== x) {
-      const root = this.find(p);
-      this.parent.set(x, root);
-      return root;
-    }
-    return p;
-  }
-
-  union(x: string, y: string): void {
-    const px = this.find(x);
-    const py = this.find(y);
-    if (px === py) return;
-
-    const rx = this.rankMap.get(px) ?? 0;
-    const ry = this.rankMap.get(py) ?? 0;
-
-    if (rx < ry) this.parent.set(px, py);
-    else if (rx > ry) this.parent.set(py, px);
-    else {
-      this.parent.set(py, px);
-      this.rankMap.set(px, rx + 1);
-    }
-  }
-
-  connected(x: string, y: string): boolean {
-    return this.find(x) === this.find(y);
-  }
-
-  /** Return all groups that have more than one member. */
-  groups(ids: string[]): string[][] {
-    const clusters = new Map<string, string[]>();
-    for (const id of ids) {
-      const root = this.find(id);
-      const arr = clusters.get(root) ?? [];
-      arr.push(id);
-      clusters.set(root, arr);
-    }
-    return [...clusters.values()].filter((g) => g.length > 1);
-  }
-}
