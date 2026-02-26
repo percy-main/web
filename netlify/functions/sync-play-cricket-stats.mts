@@ -109,35 +109,6 @@ function didBat(howOut: string): boolean {
   return code !== "dnb" && code !== "";
 }
 
-// Extract fielding stats from the opposition innings' batting dismissals
-function extractFieldingStats(
-  innings: z.infer<typeof MatchDetailInnings>,
-  fieldingTeamId: string,
-): Map<string, { catches: number; stumpings: number }> {
-  const stats = new Map<string, { catches: number; stumpings: number }>();
-
-  // We look at the batting innings where the OTHER team is batting
-  // The fielder_id in each batting entry identifies who caught/stumped
-  for (const bat of innings.bat) {
-    if (!bat.fielder_id) continue;
-    const howOut = bat.how_out.toLowerCase().trim();
-    const current = stats.get(bat.fielder_id) || {
-      catches: 0,
-      stumpings: 0,
-    };
-
-    if (howOut === "ct" || howOut === "ct & b") {
-      current.catches += 1;
-    } else if (howOut === "st") {
-      current.stumpings += 1;
-    }
-
-    stats.set(bat.fielder_id, current);
-  }
-
-  return stats;
-}
-
 // --- Main sync logic ---
 
 async function syncStats(): Promise<{
@@ -185,7 +156,7 @@ async function syncStats(): Promise<{
     const season = new Date().getFullYear();
     console.log(`Fetching matches for season ${season}...`);
     const matchesRes = await fetch(
-      `http://play-cricket.com/api/v2/matches.json?site_id=${siteId}&season=${season}&api_token=${apiKey}`,
+      `https://play-cricket.com/api/v2/matches.json?site_id=${siteId}&season=${season}&api_token=${apiKey}`,
     );
     const matchesData = GetMatchSummaryResponse.parse(await matchesRes.json());
     console.log(`Found ${matchesData.matches.length} matches`);
@@ -202,7 +173,7 @@ async function syncStats(): Promise<{
 
       try {
         const detailRes = await fetch(
-          `http://play-cricket.com/api/v2/match_detail.json?match_id=${matchId}&api_token=${apiKey}`,
+          `https://play-cricket.com/api/v2/match_detail.json?match_id=${matchId}&api_token=${apiKey}`,
         );
         const detailData = GetMatchDetailResponse.parse(
           await detailRes.json(),
@@ -237,18 +208,12 @@ async function syncStats(): Promise<{
           const battingTeamId = innings.team_batting_id;
           const isBattingTeamOurs = ourTeamIds.has(battingTeamId);
 
-          // Determine the fielding team ID (the other team)
+          // Determine the fielding team (the team that bowled this innings)
           const fieldingTeamId =
             battingTeamId === match.home_team_id
               ? match.away_team_id
               : match.home_team_id;
           const isFieldingTeamOurs = ourTeamIds.has(fieldingTeamId);
-
-          // Extract fielding stats from this batting innings (for the fielding team)
-          const fieldingStats = extractFieldingStats(
-            innings,
-            fieldingTeamId,
-          );
 
           // Store batting performances (only for our players)
           if (isBattingTeamOurs) {

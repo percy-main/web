@@ -16,7 +16,7 @@ export const getLeagueTable = async ({
   divisionId: string;
 }): Promise<z.TypeOf<typeof GetLeagueTableResponse>> => {
   const res = await fetch(
-    `http://play-cricket.com/api/v2/league_table.json?division_id=${divisionId}&api_token=${PLAY_CRICKET_API_KEY}`,
+    `https://play-cricket.com/api/v2/league_table.json?division_id=${divisionId}&api_token=${PLAY_CRICKET_API_KEY}`,
   );
 
   return await res
@@ -37,7 +37,7 @@ export const getMatchesSummary = async ({
   season: number;
 }): Promise<z.TypeOf<typeof GetMatchSummaryResponse>> => {
   const res = await fetch(
-    `http://play-cricket.com/api/v2/matches.json?site_id=${PLAY_CRICKET_SITE_ID}&season=${season}&api_token=${PLAY_CRICKET_API_KEY}`,
+    `https://play-cricket.com/api/v2/matches.json?site_id=${PLAY_CRICKET_SITE_ID}&season=${season}&api_token=${PLAY_CRICKET_API_KEY}`,
   );
 
   return await res.json().then((data) => {
@@ -59,7 +59,7 @@ export const getResultSummary = async ({
     ...(teamId ? { team_id: teamId } : {}),
   });
   const res = await fetch(
-    `http://play-cricket.com/api/v2/result_summary.json?${params}`,
+    `https://play-cricket.com/api/v2/result_summary.json?${params}`,
   );
 
   return await res
@@ -84,7 +84,7 @@ export const getMatchDetail = async ({
     api_token: PLAY_CRICKET_API_KEY,
   });
   const res = await fetch(
-    `http://play-cricket.com/api/v2/match_detail.json?${params}`,
+    `https://play-cricket.com/api/v2/match_detail.json?${params}`,
   );
 
   return await res
