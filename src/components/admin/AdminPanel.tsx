@@ -2,13 +2,14 @@ import { useSession } from "@/lib/auth/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
 import { useState } from "react";
+import { ChargesTable } from "./ChargesTable";
 import { ContactSubmissionsTable } from "./ContactSubmissionsTable";
 import { JuniorsTable } from "./JuniorsTable";
 import { MemberTable } from "./MemberTable";
 
 const queryClient = new QueryClient();
 
-type Tab = "members" | "juniors" | "contacts";
+type Tab = "members" | "juniors" | "charges" | "contacts";
 
 export function AdminPanel() {
   const session = useSession();
@@ -54,6 +55,12 @@ export function AdminPanel() {
             Juniors
           </button>
           <button
+            className={`px-4 py-2 text-sm font-medium ${activeTab === "charges" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+            onClick={() => setActiveTab("charges")}
+          >
+            Charges
+          </button>
+          <button
             className={`px-4 py-2 text-sm font-medium ${activeTab === "contacts" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
             onClick={() => setActiveTab("contacts")}
           >
@@ -62,6 +69,7 @@ export function AdminPanel() {
         </div>
         {activeTab === "members" && <MemberTable />}
         {activeTab === "juniors" && <JuniorsTable />}
+        {activeTab === "charges" && <ChargesTable />}
         {activeTab === "contacts" && <ContactSubmissionsTable />}
       </div>
     </QueryClientProvider>
