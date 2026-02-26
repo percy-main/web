@@ -4,6 +4,7 @@ import { client } from "@/lib/db/client";
 import { send } from "@/lib/email/send";
 import { syncStripeCharges } from "@/lib/payments/syncStripeCharges";
 import { getAgeGroup, getTeamName } from "@/lib/util/ageGroup";
+import { nameSimilarity, UnionFind } from "@/lib/util/nameSimilarity";
 import { render } from "@react-email/render";
 import { ActionError } from "astro:actions";
 import { BASE_URL } from "astro:env/client";
@@ -829,84 +830,127 @@ export const admin = {
   findDuplicateMembers: defineAuthAction({
     roles: ["admin"],
     handler: async () => {
-      const duplicates = await client
-        .selectFrom("member as m1")
-        .innerJoin("member as m2", (join) =>
-          join
-            .onRef("m1.email", "=", "m2.email")
-            .on("m1.id", "<", sql`m2.id`),
-        )
-        .select([
-          "m1.email",
-        ])
-        .groupBy("m1.email")
+      const NAME_SIMILARITY_THRESHOLD = 0.7;
+
+      // Fetch all members
+      const allMembers = await client
+        .selectFrom("member")
+        .select(["id", "name", "email", "title", "stripe_customer_id"])
         .execute();
 
-      const groups = [];
-      for (const dup of duplicates) {
-        const members = await client
-          .selectFrom("member")
-          .where("email", "=", dup.email)
-          .select([
-            "member.id",
-            "member.name",
-            "member.email",
-            "member.title",
-            "member.stripe_customer_id",
-          ])
-          .execute();
+      const allIds = allMembers.map((m) => m.id);
+      const memberById = new Map(allMembers.map((m) => [m.id, m]));
 
-        const memberIds = members.map((m) => m.id);
+      // Batch-fetch counts for all members
+      const [membershipCounts, dependentCounts, chargeCounts] =
+        allIds.length > 0
+          ? await Promise.all([
+              client
+                .selectFrom("membership")
+                .where("member_id", "in", allIds)
+                .select(["member_id", sql<number>`COUNT(*)`.as("count")])
+                .groupBy("member_id")
+                .execute(),
+              client
+                .selectFrom("dependent")
+                .where("member_id", "in", allIds)
+                .select(["member_id", sql<number>`COUNT(*)`.as("count")])
+                .groupBy("member_id")
+                .execute(),
+              client
+                .selectFrom("charge")
+                .where("member_id", "in", allIds)
+                .select(["member_id", sql<number>`COUNT(*)`.as("count")])
+                .groupBy("member_id")
+                .execute(),
+            ])
+          : [[], [], []];
 
-        const membershipCounts = await client
-          .selectFrom("membership")
-          .where("member_id", "in", memberIds)
-          .select([
-            "member_id",
-            sql<number>`COUNT(*)`.as("count"),
-          ])
-          .groupBy("member_id")
-          .execute();
+      const mcMap = Object.fromEntries(
+        membershipCounts.map((r) => [r.member_id, Number(r.count)]),
+      );
+      const dcMap = Object.fromEntries(
+        dependentCounts.map((r) => [r.member_id, Number(r.count)]),
+      );
+      const ccMap = Object.fromEntries(
+        chargeCounts.map((r) => [r.member_id, Number(r.count)]),
+      );
 
-        const dependentCounts = await client
-          .selectFrom("dependent")
-          .where("member_id", "in", memberIds)
-          .select([
-            "member_id",
-            sql<number>`COUNT(*)`.as("count"),
-          ])
-          .groupBy("member_id")
-          .execute();
-
-        const chargeCounts = await client
-          .selectFrom("charge")
-          .where("member_id", "in", memberIds)
-          .select([
-            "member_id",
-            sql<number>`COUNT(*)`.as("count"),
-          ])
-          .groupBy("member_id")
-          .execute();
-
-        const mcMap = Object.fromEntries(membershipCounts.map((r) => [r.member_id, Number(r.count)]));
-        const dcMap = Object.fromEntries(dependentCounts.map((r) => [r.member_id, Number(r.count)]));
-        const ccMap = Object.fromEntries(chargeCounts.map((r) => [r.member_id, Number(r.count)]));
-
-        groups.push({
-          email: dup.email,
-          members: members.map((m) => ({
-            id: m.id,
-            name: m.name,
-            title: m.title,
-            stripeCustomerId: m.stripe_customer_id,
-            membershipCount: mcMap[m.id] ?? 0,
-            dependentCount: dcMap[m.id] ?? 0,
-            chargeCount: ccMap[m.id] ?? 0,
-          })),
-        });
+      function toGroupMember(id: string) {
+        const m = memberById.get(id);
+        if (!m) throw new Error(`Member ${id} not found`);
+        return {
+          id: m.id,
+          name: m.name,
+          email: m.email,
+          title: m.title,
+          stripeCustomerId: m.stripe_customer_id,
+          membershipCount: mcMap[m.id] ?? 0,
+          dependentCount: dcMap[m.id] ?? 0,
+          chargeCount: ccMap[m.id] ?? 0,
+        };
       }
 
-      return groups;
+      // 1. Build email duplicate groups
+      const emailBuckets = new Map<string, string[]>();
+      for (const m of allMembers) {
+        const ids = emailBuckets.get(m.email) ?? [];
+        ids.push(m.id);
+        emailBuckets.set(m.email, ids);
+      }
+
+      const emailGroups: Array<{
+        matchType: "email";
+        matchKey: string;
+        members: Array<ReturnType<typeof toGroupMember>>;
+      }> = [];
+
+      // Track which pairs are already in an email group
+      const emailLinked = new Set<string>();
+      for (const [email, ids] of emailBuckets) {
+        if (ids.length < 2) continue;
+        emailGroups.push({
+          matchType: "email",
+          matchKey: email,
+          members: ids.map(toGroupMember),
+        });
+        for (let i = 0; i < ids.length; i++) {
+          for (let j = i + 1; j < ids.length; j++) {
+            emailLinked.add([ids[i], ids[j]].sort().join(":"));
+          }
+        }
+      }
+
+      // 2. Build name duplicate groups (fuzzy matching)
+      const nameUf = new UnionFind();
+      for (const m of allMembers) nameUf.find(m.id);
+
+      for (let i = 0; i < allMembers.length; i++) {
+        for (let j = i + 1; j < allMembers.length; j++) {
+          const a = allMembers[i];
+          const b = allMembers[j];
+          const pairKey = [a.id, b.id].sort().join(":");
+          // Skip pairs already in the same email group
+          if (emailLinked.has(pairKey)) continue;
+
+          const sim = nameSimilarity(a.name, b.name);
+          if (sim >= NAME_SIMILARITY_THRESHOLD) {
+            nameUf.union(a.id, b.id);
+          }
+        }
+      }
+
+      const nameGroups = nameUf.groups(allIds).map((ids) => {
+        const first = memberById.get(ids[0]);
+        return {
+          matchType: "name" as const,
+          matchKey: first?.name ?? "Unknown",
+          members: ids.map(toGroupMember),
+        };
+      });
+
+      // Email groups first (higher confidence), then name groups
+      return [...emailGroups, ...nameGroups];
     },
   }),
 
@@ -928,10 +972,6 @@ export const admin = {
 
       if (!keepMember || !removeMember) {
         throw new ActionError({ code: "NOT_FOUND", message: "One or both member records not found" });
-      }
-
-      if (keepMember.email !== removeMember.email) {
-        throw new ActionError({ code: "BAD_REQUEST", message: "Members must share the same email to merge" });
       }
 
       const [keepMemberships, removeMemberships] = await Promise.all([
@@ -984,10 +1024,6 @@ export const admin = {
 
       if (!keepMember || !removeMember) {
         throw new ActionError({ code: "NOT_FOUND", message: "One or both member records not found" });
-      }
-
-      if (keepMember.email !== removeMember.email) {
-        throw new ActionError({ code: "BAD_REQUEST", message: "Members must share the same email to merge" });
       }
 
       await client.transaction().execute(async (trx) => {
