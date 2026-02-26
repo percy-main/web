@@ -45,6 +45,16 @@ import LinkButton from "../LinkButton.astro";
             label="Password"
             required
           />
+          <div id="register-error" class="hidden rounded-lg bg-amber-50 border border-amber-200 p-4 text-sm text-amber-800">
+            <p class="font-medium">An account with this email already exists.</p>
+            <p class="mt-1">
+              You can <a href="/auth/login" class="font-medium underline">sign in here</a>, or
+              <a href="/auth/reset-password" class="font-medium underline">reset your password</a> if you've forgotten it.
+            </p>
+          </div>
+          <div id="register-generic-error" class="hidden rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-800">
+            <p>Something went wrong. Please try again.</p>
+          </div>
           <div class="flex items-center justify-between">
             <button
               type="submit"
@@ -77,6 +87,11 @@ import LinkButton from "../LinkButton.astro";
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
+    const errorEl = document.getElementById("register-error")!;
+    const genericErrorEl = document.getElementById("register-generic-error")!;
+    errorEl.classList.add("hidden");
+    genericErrorEl.classList.add("hidden");
+
     const data = new FormData(event.target as HTMLFormElement);
 
     const name = data.get("name")?.toString() ?? "";
@@ -90,6 +105,12 @@ import LinkButton from "../LinkButton.astro";
       callbackURL: "/auth/email-confirmed/",
     });
 
-    if (Boolean(tmp.error) === false) window.location.href = "/auth/registered";
+    if (!tmp.error) {
+      window.location.href = "/auth/registered";
+    } else if (tmp.error.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
+      errorEl.classList.remove("hidden");
+    } else {
+      genericErrorEl.classList.remove("hidden");
+    }
   });
 </script>
