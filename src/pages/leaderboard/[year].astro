@@ -4,7 +4,7 @@ import { CricketLeaderboard } from "@/components/CricketLeaderboard";
 import type { GetStaticPaths } from "astro";
 
 export const getStaticPaths = (() => {
-  const firstYear = 2024;
+  const firstYear = 2025;
   const currentYear = new Date().getFullYear();
   const years = [];
   for (let y = firstYear; y <= currentYear; y++) {
@@ -16,7 +16,7 @@ export const getStaticPaths = (() => {
 const { year } = Astro.params;
 const season = parseInt(year, 10);
 const currentYear = new Date().getFullYear();
-const firstYear = 2024;
+const firstYear = 2025;
 const prevYear = season > firstYear ? season - 1 : null;
 const nextYear = season < currentYear ? season + 1 : null;
 ---
