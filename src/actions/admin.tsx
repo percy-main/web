@@ -8,8 +8,12 @@ import { ActionError } from "astro:actions";
 import { BASE_URL } from "astro:env/client";
 import { z } from "astro:schema";
 import { randomUUID } from "crypto";
-import { formatDate } from "date-fns";
+import { formatDate, subHours } from "date-fns";
+import { sql } from "kysely";
 import { ChargeNotification } from "~/emails/ChargeNotification";
+import { PaymentReminder } from "~/emails/PaymentReminder";
+
+const ABANDONED_THRESHOLD_HOURS = 1;
 
 export const admin = {
   listUsers: defineAuthAction({
@@ -417,4 +421,257 @@ export const admin = {
       }));
     },
   }),
+
+  listAllCharges: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      page: z.number().int().min(1),
+      pageSize: z.number().int().min(1).max(100),
+      status: z.enum(["all", "unpaid", "pending", "paid", "abandoned"]).default("all"),
+      showDeleted: z.boolean().default(false),
+      dateFrom: z.string().optional(),
+      dateTo: z.string().optional(),
+      search: z.string().optional(),
+    }),
+    handler: async ({ page, pageSize, status, showDeleted, dateFrom, dateTo, search }) => {
+      const abandonedCutoff = subHours(new Date(), ABANDONED_THRESHOLD_HOURS).toISOString();
+
+      function applyFilters(
+        baseQuery: ReturnType<typeof client.selectFrom<"charge">>,
+      ) {
+        let q = baseQuery
+          .innerJoin("member", "member.id", "charge.member_id");
+
+        // Deleted filter
+        if (!showDeleted) {
+          q = q.where("charge.deleted_at", "is", null);
+        }
+
+        // Status filter
+        if (status === "paid") {
+          q = q.where("charge.paid_at", "is not", null);
+        } else if (status === "pending") {
+          q = q
+            .where("charge.payment_confirmed_at", "is not", null)
+            .where("charge.paid_at", "is", null)
+            .where("charge.deleted_at", "is", null);
+        } else if (status === "unpaid") {
+          q = q
+            .where("charge.paid_at", "is", null)
+            .where("charge.payment_confirmed_at", "is", null)
+            .where("charge.deleted_at", "is", null)
+            .where((eb) =>
+              eb.or([
+                eb("charge.stripe_payment_intent_id", "is", null),
+                eb("charge.created_at", ">=", abandonedCutoff),
+              ]),
+            );
+        } else if (status === "abandoned") {
+          q = q
+            .where("charge.stripe_payment_intent_id", "is not", null)
+            .where("charge.paid_at", "is", null)
+            .where("charge.payment_confirmed_at", "is", null)
+            .where("charge.deleted_at", "is", null)
+            .where("charge.created_at", "<", abandonedCutoff);
+        }
+
+        // Date range filter
+        if (dateFrom) {
+          q = q.where("charge.charge_date", ">=", dateFrom);
+        }
+        if (dateTo) {
+          q = q.where("charge.charge_date", "<=", dateTo);
+        }
+
+        // Search filter
+        if (search && search.trim().length > 0) {
+          const term = `%${search.trim()}%`;
+          q = q.where((eb) =>
+            eb.or([
+              eb("member.name", "like", term),
+              eb("member.email", "like", term),
+              eb("charge.description", "like", term),
+            ]),
+          );
+        }
+
+        return q;
+      }
+
+      const countQuery = applyFilters(client.selectFrom("charge"));
+      const countResult = await countQuery
+        .select((eb) => eb.fn.countAll().as("total"))
+        .executeTakeFirstOrThrow();
+
+      const total = Number(countResult.total);
+      const offset = (page - 1) * pageSize;
+
+      const dataQuery = applyFilters(client.selectFrom("charge"));
+      const charges = await dataQuery
+        .select([
+          "charge.id",
+          "charge.member_id",
+          "charge.description",
+          "charge.amount_pence",
+          "charge.charge_date",
+          "charge.created_at",
+          "charge.paid_at",
+          "charge.payment_confirmed_at",
+          "charge.stripe_payment_intent_id",
+          "charge.type",
+          "charge.source",
+          "charge.deleted_at",
+          "charge.deleted_reason",
+          "member.name as memberName",
+          "member.email as memberEmail",
+        ])
+        .orderBy("charge.charge_date", "desc")
+        .limit(pageSize)
+        .offset(offset)
+        .execute();
+
+      return {
+        charges: charges.map((c) => ({
+          id: c.id,
+          memberId: c.member_id,
+          description: c.description,
+          amountPence: c.amount_pence,
+          chargeDate: c.charge_date,
+          createdAt: c.created_at,
+          paidAt: c.paid_at,
+          paymentConfirmedAt: c.payment_confirmed_at,
+          stripePaymentIntentId: c.stripe_payment_intent_id,
+          type: c.type,
+          source: c.source,
+          deletedAt: c.deleted_at,
+          deletedReason: c.deleted_reason,
+          memberName: c.memberName,
+          memberEmail: c.memberEmail,
+          status: getChargeStatus(c.paid_at, c.payment_confirmed_at, c.deleted_at, c.stripe_payment_intent_id, abandonedCutoff, c.created_at),
+        })),
+        total,
+        page,
+        pageSize,
+      };
+    },
+  }),
+
+  getChargeAggregates: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      dateFrom: z.string().optional(),
+      dateTo: z.string().optional(),
+    }),
+    handler: async ({ dateFrom, dateTo }) => {
+      const abandonedCutoff = subHours(new Date(), ABANDONED_THRESHOLD_HOURS).toISOString();
+
+      let baseQuery = client
+        .selectFrom("charge")
+        .innerJoin("member", "member.id", "charge.member_id");
+
+      if (dateFrom) {
+        baseQuery = baseQuery.where("charge.charge_date", ">=", dateFrom);
+      }
+      if (dateTo) {
+        baseQuery = baseQuery.where("charge.charge_date", "<=", dateTo);
+      }
+
+      const result = await baseQuery
+        .select([
+          sql<number>`COALESCE(SUM(CASE WHEN charge.deleted_at IS NULL THEN charge.amount_pence ELSE 0 END), 0)`.as("totalCharged"),
+          sql<number>`COALESCE(SUM(CASE WHEN charge.paid_at IS NOT NULL THEN charge.amount_pence ELSE 0 END), 0)`.as("totalPaid"),
+          sql<number>`COALESCE(SUM(CASE WHEN charge.paid_at IS NULL AND charge.deleted_at IS NULL THEN charge.amount_pence ELSE 0 END), 0)`.as("totalOutstanding"),
+          sql<number>`COALESCE(SUM(CASE WHEN charge.stripe_payment_intent_id IS NOT NULL AND charge.paid_at IS NULL AND charge.payment_confirmed_at IS NULL AND charge.deleted_at IS NULL AND charge.created_at < ${abandonedCutoff} THEN charge.amount_pence ELSE 0 END), 0)`.as("totalAbandoned"),
+          sql<number>`COALESCE(SUM(CASE WHEN charge.deleted_at IS NOT NULL THEN charge.amount_pence ELSE 0 END), 0)`.as("totalDeleted"),
+          sql<number>`COUNT(CASE WHEN charge.paid_at IS NOT NULL THEN 1 END)`.as("countPaid"),
+          sql<number>`COUNT(CASE WHEN charge.paid_at IS NULL AND charge.payment_confirmed_at IS NULL AND charge.deleted_at IS NULL AND (charge.stripe_payment_intent_id IS NULL OR charge.created_at >= ${abandonedCutoff}) THEN 1 END)`.as("countUnpaid"),
+          sql<number>`COUNT(CASE WHEN charge.payment_confirmed_at IS NOT NULL AND charge.paid_at IS NULL AND charge.deleted_at IS NULL THEN 1 END)`.as("countPending"),
+          sql<number>`COUNT(CASE WHEN charge.stripe_payment_intent_id IS NOT NULL AND charge.paid_at IS NULL AND charge.payment_confirmed_at IS NULL AND charge.deleted_at IS NULL AND charge.created_at < ${abandonedCutoff} THEN 1 END)`.as("countAbandoned"),
+          sql<number>`COUNT(CASE WHEN charge.deleted_at IS NOT NULL THEN 1 END)`.as("countDeleted"),
+        ])
+        .executeTakeFirstOrThrow();
+
+      return {
+        totalCharged: Number(result.totalCharged),
+        totalPaid: Number(result.totalPaid),
+        totalOutstanding: Number(result.totalOutstanding),
+        totalAbandoned: Number(result.totalAbandoned),
+        totalDeleted: Number(result.totalDeleted),
+        countPaid: Number(result.countPaid),
+        countUnpaid: Number(result.countUnpaid),
+        countPending: Number(result.countPending),
+        countAbandoned: Number(result.countAbandoned),
+        countDeleted: Number(result.countDeleted),
+      };
+    },
+  }),
+
+  chasePayment: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      chargeId: z.string(),
+    }),
+    handler: async ({ chargeId }) => {
+      const charge = await client
+        .selectFrom("charge")
+        .innerJoin("member", "member.id", "charge.member_id")
+        .where("charge.id", "=", chargeId)
+        .where("charge.paid_at", "is", null)
+        .where("charge.deleted_at", "is", null)
+        .select([
+          "charge.id",
+          "charge.description",
+          "charge.amount_pence",
+          "charge.charge_date",
+          "member.name as memberName",
+          "member.email as memberEmail",
+        ])
+        .executeTakeFirst();
+
+      if (!charge) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Charge not found or already paid/deleted",
+        });
+      }
+
+      const amountFormatted = new Intl.NumberFormat("en-GB", {
+        style: "currency",
+        currency: "GBP",
+      }).format(charge.amount_pence / 100);
+
+      await send({
+        to: charge.memberEmail,
+        subject: PaymentReminder.subject,
+        html: await render(
+          <PaymentReminder.component
+            imageBaseUrl={`${BASE_URL}/images`}
+            name={charge.memberName}
+            description={charge.description}
+            amount={amountFormatted}
+            chargeDate={formatDate(charge.charge_date, "dd/MM/yyyy")}
+            loginUrl={`${BASE_URL}/auth/login`}
+          />,
+          { pretty: true },
+        ),
+      });
+
+      return { success: true };
+    },
+  }),
 };
+
+function getChargeStatus(
+  paidAt: string | null,
+  paymentConfirmedAt: string | null,
+  deletedAt: string | null,
+  stripePaymentIntentId: string | null,
+  abandonedCutoff: string,
+  createdAt: string,
+): "paid" | "pending" | "unpaid" | "abandoned" | "deleted" {
+  if (deletedAt) return "deleted";
+  if (paidAt) return "paid";
+  if (paymentConfirmedAt) return "pending";
+  if (stripePaymentIntentId && createdAt < abandonedCutoff) return "abandoned";
+  return "unpaid";
+}
