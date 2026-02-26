@@ -28,7 +28,11 @@ export const admin = {
       let baseQuery = client
         .selectFrom("user")
         .leftJoin("member", "member.email", "user.email")
-        .leftJoin("membership", "membership.member_id", "member.id");
+        .leftJoin("membership", (join) =>
+          join
+            .onRef("membership.member_id", "=", "member.id")
+            .on("membership.dependent_id", "is", null),
+        );
 
       if (search && search.trim().length > 0) {
         const term = `%${search.trim()}%`;
@@ -52,7 +56,11 @@ export const admin = {
         let q = client
           .selectFrom("user")
           .leftJoin("member", "member.email", "user.email")
-          .leftJoin("membership", "membership.member_id", "member.id");
+          .leftJoin("membership", (join) =>
+            join
+              .onRef("membership.member_id", "=", "member.id")
+              .on("membership.dependent_id", "is", null),
+          );
 
         if (search && search.trim().length > 0) {
           const term = `%${search.trim()}%`;
