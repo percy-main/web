@@ -7,12 +7,12 @@ import { ContactSubmissionsTable } from "./ContactSubmissionsTable";
 import { DuplicateMembersTable } from "./DuplicateMembersTable";
 import { JuniorsTable } from "./JuniorsTable";
 import { MemberTable } from "./MemberTable";
-import { PlayCricketLinking } from "./PlayCricketLinking";
+import { RecordLinking } from "./RecordLinking";
 import { SponsorshipsTable } from "./SponsorshipsTable";
 
 const queryClient = new QueryClient();
 
-type Tab = "members" | "juniors" | "charges" | "contacts" | "sponsorships" | "duplicates" | "play-cricket";
+type Tab = "members" | "juniors" | "charges" | "contacts" | "sponsorships" | "duplicates" | "record-linking";
 
 export function AdminPanel() {
   const session = useSession();
@@ -82,10 +82,10 @@ export function AdminPanel() {
             Duplicates
           </button>
           <button
-            className={`px-4 py-2 text-sm font-medium ${activeTab === "play-cricket" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-            onClick={() => setActiveTab("play-cricket")}
+            className={`px-4 py-2 text-sm font-medium ${activeTab === "record-linking" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+            onClick={() => setActiveTab("record-linking")}
           >
-            Play-Cricket
+            Record Linking
           </button>
         </div>
         {activeTab === "members" && <MemberTable />}
@@ -94,7 +94,7 @@ export function AdminPanel() {
         {activeTab === "contacts" && <ContactSubmissionsTable />}
         {activeTab === "sponsorships" && <SponsorshipsTable />}
         {activeTab === "duplicates" && <DuplicateMembersTable />}
-        {activeTab === "play-cricket" && <PlayCricketLinking />}
+        {activeTab === "record-linking" && <RecordLinking />}
       </div>
     </QueryClientProvider>
   );
