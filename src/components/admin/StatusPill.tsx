@@ -31,6 +31,8 @@ export function getMembershipTypeDisplay(type: string | null): {
   switch (type) {
     case "senior_player":
       return { label: "Senior Player", variant: "blue" };
+    case "senior_women_player":
+      return { label: "Women's Player", variant: "blue" };
     case "social":
       return { label: "Social", variant: "yellow" };
     case "junior":

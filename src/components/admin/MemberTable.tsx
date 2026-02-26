@@ -85,6 +85,7 @@ export function MemberTable() {
                 )}
                 {result.users.map((user) => {
                   const membershipStatus = getMembershipStatus(user.paidUntil);
+                  const typeDisplay = getMembershipTypeDisplay(user.membershipType);
                   return (
                     <tr
                       key={user.id}
@@ -106,14 +107,9 @@ export function MemberTable() {
                         </StatusPill>
                       </td>
                       <td className="px-4 py-3">
-                        {(() => {
-                          const typeDisplay = getMembershipTypeDisplay(user.membershipType);
-                          return (
-                            <StatusPill variant={typeDisplay.variant}>
-                              {typeDisplay.label}
-                            </StatusPill>
-                          );
-                        })()}
+                        <StatusPill variant={typeDisplay.variant}>
+                          {typeDisplay.label}
+                        </StatusPill>
                       </td>
                       <td className="px-4 py-3">
                         <StatusPill
