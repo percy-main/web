@@ -7,6 +7,7 @@ import { stripeDate } from "@/lib/util/stripeDate";
 import type Stripe from "stripe";
 import { stripe } from "./client";
 import { gameSponsoredSchema, membershipSchema } from "./metadata";
+import { resolveStripeCustomer } from "./resolveStripeCustomer";
 
 export interface SyncStripeChargesResult {
   totalProcessed: number;
@@ -135,17 +136,7 @@ export async function syncStripeCharges(): Promise<SyncStripeChargesResult> {
 
   for (const m of membersWithoutCustomerId) {
     try {
-      const customers = await stripe.customers.list({
-        email: m.email,
-        limit: 1,
-      });
-      if (customers.data.length > 0) {
-        await client
-          .updateTable("member")
-          .set({ stripe_customer_id: customers.data[0].id })
-          .where("id", "=", m.id)
-          .execute();
-      }
+      await resolveStripeCustomer(m.email);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       result.errors.push(

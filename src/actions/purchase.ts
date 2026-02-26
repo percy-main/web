@@ -1,5 +1,6 @@
 import { stripe } from "@/lib/payments/client";
 import { metadata } from "@/lib/payments/metadata";
+import { resolveStripeCustomer } from "@/lib/payments/resolveStripeCustomer";
 import { ActionError, defineAction } from "astro:actions";
 import { CONTEXT } from "astro:env/client";
 import { DEPLOY_PRIME_URL } from "astro:env/server";
@@ -75,10 +76,13 @@ export const purchase = defineAction({
           : {}),
       };
 
+      const customerId = await resolveStripeCustomer(email);
+
       const paymentIntent = await stripe.paymentIntents.create({
         amount,
         currency: price.currency,
         automatic_payment_methods: { enabled: true },
+        ...(customerId ? { customer: customerId } : {}),
         metadata: enrichedMetadata,
       });
 
