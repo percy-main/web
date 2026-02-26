@@ -27,6 +27,10 @@ interface CreatePaymentChargeParams {
  * Looks up the member by email. If no member record exists, the charge
  * is silently skipped — only members see transactions in their account.
  */
+export type CreatePaymentChargeResult =
+  | { created: true }
+  | { created: false; reason: "no_member" | "duplicate" };
+
 export async function createPaymentCharge({
   memberEmail,
   description,
@@ -35,7 +39,7 @@ export async function createPaymentCharge({
   type,
   source,
   stripePaymentIntentId,
-}: CreatePaymentChargeParams): Promise<void> {
+}: CreatePaymentChargeParams): Promise<CreatePaymentChargeResult> {
   const member = await client
     .selectFrom("member")
     .where("email", "=", memberEmail)
@@ -43,7 +47,7 @@ export async function createPaymentCharge({
     .executeTakeFirst();
 
   if (!member) {
-    return;
+    return { created: false, reason: "no_member" };
   }
 
   // Check for duplicate charge with the same stripe_payment_intent_id
@@ -57,7 +61,7 @@ export async function createPaymentCharge({
       .executeTakeFirst();
 
     if (existing) {
-      return;
+      return { created: false, reason: "duplicate" };
     }
   }
 
@@ -83,4 +87,6 @@ export async function createPaymentCharge({
       source,
     })
     .execute();
+
+  return { created: true };
 }

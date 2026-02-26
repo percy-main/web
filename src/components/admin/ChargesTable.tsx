@@ -1,3 +1,4 @@
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -104,6 +105,60 @@ export function ChargesTable() {
     },
   });
 
+  const [syncResult, setSyncResult] = useState<{
+    type: "success" | "error";
+    message: string;
+    details?: {
+      totalProcessed: number;
+      created: number;
+      skippedDuplicate: number;
+      skippedNoMember: number;
+      skippedFailed: number;
+      errors: string[];
+    };
+  } | null>(null);
+  const [showSyncConfirm, setShowSyncConfirm] = useState(false);
+
+  const syncMutation = useMutation({
+    mutationFn: () => actions.admin.syncStripeHistory(),
+    onSuccess: (res) => {
+      setShowSyncConfirm(false);
+
+      // Astro actions return { data, error } — ActionErrors resolve (not reject)
+      if (res.error) {
+        setSyncResult({
+          type: "error",
+          message: res.error.message ?? "Failed to sync Stripe history",
+        });
+        return;
+      }
+
+      if (res.data) {
+        const d = res.data;
+        setSyncResult({
+          type: "success",
+          message: `Sync complete: ${d.created} new charges imported, ${d.skippedDuplicate} duplicates skipped, ${d.totalProcessed} total processed.`,
+          details: d,
+        });
+
+        // Refresh charges list and aggregates
+        void queryClient.invalidateQueries({
+          queryKey: ["admin", "listAllCharges"],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["admin", "chargeAggregates"],
+        });
+      }
+    },
+    onError: (err) => {
+      setShowSyncConfirm(false);
+      setSyncResult({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to sync Stripe history",
+      });
+    },
+  });
+
   const result = chargesQuery.data?.data;
   const aggregates = aggregatesQuery.data?.data;
   const totalPages = result
@@ -149,6 +204,67 @@ export function ChargesTable() {
             variant="destructive"
           />
         </div>
+      )}
+
+      {/* Sync Stripe History */}
+      <div className="flex items-center gap-3">
+        {showSyncConfirm ? (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">
+              Sync all historical Stripe charges? This may take a while.
+            </span>
+            <Button
+              variant="default"
+              size="sm"
+              disabled={syncMutation.isPending}
+              onClick={() => syncMutation.mutate()}
+            >
+              {syncMutation.isPending ? "Syncing..." : "Confirm"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={syncMutation.isPending}
+              onClick={() => setShowSyncConfirm(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSyncConfirm(true)}
+          >
+            Sync Stripe History
+          </Button>
+        )}
+      </div>
+
+      {syncResult && (
+        <Alert variant={syncResult.type === "error" ? "destructive" : "default"}>
+          <AlertTitle>
+            {syncResult.type === "error" ? "Sync Failed" : "Sync Complete"}
+          </AlertTitle>
+          <AlertDescription>
+            <p>{syncResult.message}</p>
+            {syncResult.details && syncResult.details.errors.length > 0 && (
+              <ul className="mt-2 list-disc pl-4">
+                {syncResult.details.errors.map((error, i) => (
+                  <li key={i} className="text-xs">
+                    {error}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button
+              className="mt-2 text-xs text-gray-500 underline hover:text-gray-700"
+              onClick={() => setSyncResult(null)}
+            >
+              Dismiss
+            </button>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Filter bar */}
