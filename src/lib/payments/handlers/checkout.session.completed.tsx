@@ -75,7 +75,10 @@ export const checkoutSessionCompleted = async (
           paidAt: stripeDate(event.created),
         });
 
-        if (amount_total) {
+        // For subscription-mode checkouts, payment_intent is null — the payment
+        // flows through the subscription's invoice. Skip creating the charge here
+        // and let payment_intent.succeeded handle it with proper dedup via the PI ID.
+        if (amount_total && paymentIntentId) {
           await createPaymentCharge({
             memberEmail: email,
             description: `Membership payment - ${metadata.membership}`,

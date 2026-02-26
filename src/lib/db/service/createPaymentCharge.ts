@@ -6,6 +6,7 @@ export type ChargeType =
   | "donation"
   | "membership"
   | "sponsorship"
+  // TODO: wire up junior_membership once junior membership handler is implemented
   | "junior_membership";
 
 export type ChargeSource = "admin" | "webhook" | "self_service";
@@ -58,6 +59,13 @@ export async function createPaymentCharge({
     if (existing) {
       return;
     }
+  }
+
+  if (!stripePaymentIntentId) {
+    console.warn(
+      "createPaymentCharge: inserting charge without stripePaymentIntentId — no dedup protection",
+      { memberEmail, type, description },
+    );
   }
 
   await client
