@@ -211,11 +211,7 @@ async function syncStats(): Promise<{
       const matchesData = GetMatchSummaryResponse.parse(matchesJson);
       console.log(`Found ${matchesData.matches.length} matches for ${season}`);
 
-      const completed = matchesData.matches.filter(
-        (m) => m.status !== "New",
-      );
-      console.log(`${completed.length} completed matches for ${season}`);
-      for (const match of completed) {
+      for (const match of matchesData.matches) {
         allCompletedMatches.push({ match, season });
       }
     }
