@@ -16,6 +16,31 @@ const input = z.object({
 });
 
 export const handler = async (data: z.TypeOf<typeof input>) => {
+  const existing = await db.client
+    .selectFrom("member")
+    .where("email", "=", data.email)
+    .select("id")
+    .executeTakeFirst();
+
+  if (existing) {
+    await db.client
+      .updateTable("member")
+      .set({
+        title: data.title,
+        name: data.name,
+        address: data.address,
+        postcode: data.postcode,
+        dob: data.dob,
+        telephone: data.telephone,
+        emergency_contact_name: data.emerg_name,
+        emergency_contact_telephone: data.emerg_phone,
+      })
+      .where("id", "=", existing.id)
+      .execute();
+
+    return { id: existing.id, ...data };
+  }
+
   const id = randomUUID();
 
   await db.client
