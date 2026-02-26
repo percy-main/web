@@ -60,7 +60,7 @@ export const playCricketAdmin = {
     input: z.object({
       type: z.enum(["member", "dependent"]),
       id: z.string(),
-      playCricketId: z.string(),
+      playCricketId: z.string().regex(/^\d+$/, "Play-Cricket ID must be numeric"),
     }),
     handler: async ({ type, id, playCricketId }) => {
       if (type === "member") {

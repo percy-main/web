@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/input";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -87,17 +89,17 @@ export function PlayCricketLinking() {
     };
   }, [search]);
 
-  const { data, isLoading, error } = useQuery({
+  const { data: linkingData, isLoading, error } = useQuery({
     queryKey: ["admin", "playCricketLinking"],
-    queryFn: () => actions.playCricketAdmin.getPlayCricketLinking(),
+    queryFn: () =>
+      actions.playCricketAdmin.getPlayCricketLinking.orThrow(),
   });
 
   const refreshMutation = useMutation({
-    mutationFn: () => actions.playCricketAdmin.refreshPlayCricketPlayers(),
+    mutationFn: () =>
+      actions.playCricketAdmin.refreshPlayCricketPlayers.orThrow(),
     onSuccess: (result) => {
-      if (result.data) {
-        setPcPlayers(result.data.players);
-      }
+      setPcPlayers(result.players);
     },
   });
 
@@ -106,7 +108,7 @@ export function PlayCricketLinking() {
       type: "member" | "dependent";
       id: string;
       playCricketId: string;
-    }) => actions.playCricketAdmin.linkPlayCricketPlayer(params),
+    }) => actions.playCricketAdmin.linkPlayCricketPlayer.orThrow(params),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["admin", "playCricketLinking"],
@@ -116,17 +118,21 @@ export function PlayCricketLinking() {
     },
   });
 
+  const [pendingUnlinkId, setPendingUnlinkId] = useState<string | null>(null);
+
   const unlinkMutation = useMutation({
     mutationFn: (params: { type: "member" | "dependent"; id: string }) =>
-      actions.playCricketAdmin.unlinkPlayCricketPlayer(params),
+      actions.playCricketAdmin.unlinkPlayCricketPlayer.orThrow(params),
     onSuccess: () => {
+      setPendingUnlinkId(null);
       void queryClient.invalidateQueries({
         queryKey: ["admin", "playCricketLinking"],
       });
     },
+    onError: () => {
+      setPendingUnlinkId(null);
+    },
   });
-
-  const linkingData = data?.data;
 
   // Combine members and dependents into a single list
   const allPeople: PersonRow[] = useMemo(() => {
@@ -210,14 +216,11 @@ export function PlayCricketLinking() {
       .slice(0, 20);
   }, [linkingPerson, pcPlayers, playerSearch]);
 
-  // Get the player name for a given Play-Cricket ID
-  const getPlayerName = (playCricketId: string): string | null => {
-    if (!pcPlayers) return null;
-    const player = pcPlayers.find(
-      (p) => p.memberId.toString() === playCricketId,
-    );
-    return player?.name ?? null;
-  };
+  // Memoized lookup map for player names by Play-Cricket ID
+  const playerNameById = useMemo(() => {
+    if (!pcPlayers) return new Map<string, string>();
+    return new Map(pcPlayers.map((p) => [p.memberId.toString(), p.name]));
+  }, [pcPlayers]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -246,17 +249,17 @@ export function PlayCricketLinking() {
           )}
         </div>
 
-        <button
+        <Button
           onClick={() => refreshMutation.mutate()}
           disabled={refreshMutation.isPending}
-          className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          size="sm"
         >
           {refreshMutation.isPending
             ? "Fetching..."
             : pcPlayers
               ? "Refresh Players"
               : "Load Players from Play-Cricket"}
-        </button>
+        </Button>
       </div>
 
       {refreshMutation.isError && (
@@ -274,12 +277,12 @@ export function PlayCricketLinking() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4">
-        <input
+        <Input
           type="text"
           placeholder="Search by name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="max-w-md"
         />
         <div className="flex items-center gap-3 text-sm">
           <label className="flex items-center gap-1.5">
@@ -347,7 +350,7 @@ export function PlayCricketLinking() {
               )}
               {filteredPeople.map((person) => {
                 const pcName = person.playCricketId
-                  ? getPlayerName(person.playCricketId)
+                  ? (playerNameById.get(person.playCricketId) ?? null)
                   : null;
                 return (
                   <tr key={`${person.type}-${person.id}`} className="border-b">
@@ -393,34 +396,35 @@ export function PlayCricketLinking() {
                     </td>
                     <td className="px-4 py-3">
                       {person.playCricketId ? (
-                        <button
-                          onClick={() =>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setPendingUnlinkId(`${person.type}-${person.id}`);
                             unlinkMutation.mutate({
                               type: person.type,
                               id: person.id,
-                            })
-                          }
-                          disabled={unlinkMutation.isPending}
-                          className="rounded border border-red-300 px-3 py-1 text-xs text-red-700 hover:bg-red-50 disabled:opacity-50"
+                            });
+                          }}
+                          disabled={pendingUnlinkId === `${person.type}-${person.id}`}
+                          className="border-red-300 text-red-700 hover:bg-red-50"
                         >
                           Unlink
-                        </button>
+                        </Button>
                       ) : (
-                        <button
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => {
-                            if (!pcPlayers) {
-                              alert(
-                                "Please load the Play-Cricket players list first.",
-                              );
-                              return;
-                            }
                             setLinkingPerson(person);
                             setPlayerSearch("");
                           }}
-                          className="rounded border border-blue-300 px-3 py-1 text-xs text-blue-700 hover:bg-blue-50"
+                          disabled={!pcPlayers}
+                          title={!pcPlayers ? "Load Play-Cricket players first" : undefined}
+                          className="border-blue-300 text-blue-700 hover:bg-blue-50"
                         >
                           Link
-                        </button>
+                        </Button>
                       )}
                     </td>
                   </tr>
@@ -498,9 +502,10 @@ function LinkingModal({
               )}
             </p>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
             aria-label="Close modal"
           >
             <svg
@@ -516,15 +521,15 @@ function LinkingModal({
                 d="M6 18L18 6M6 6l12 12"
               />
             </svg>
-          </button>
+          </Button>
         </div>
 
-        <input
+        <Input
           type="text"
           placeholder="Search Play-Cricket players..."
           value={playerSearch}
           onChange={(e) => onPlayerSearchChange(e.target.value)}
-          className="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="mb-4"
           autoFocus
         />
 
@@ -561,13 +566,13 @@ function LinkingModal({
                   </StatusPill>
                 )}
               </div>
-              <button
+              <Button
+                size="sm"
                 onClick={() => onLink(player.memberId.toString())}
                 disabled={isLinking}
-                className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 {isLinking ? "Linking..." : "Link"}
-              </button>
+              </Button>
             </div>
           ))}
         </div>
