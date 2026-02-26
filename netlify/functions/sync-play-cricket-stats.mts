@@ -197,24 +197,31 @@ async function syncStats(): Promise<{
       errors.push(msg);
     }
 
-    // Step 2: Get all matches for the current season
-    const season = new Date().getFullYear();
-    console.log(`Fetching matches for season ${season}...`);
-    const matchesJson = await fetchApi(
-      `https://play-cricket.com/api/v2/matches.json?site_id=${siteId}&season=${season}&api_token=${apiKey}`,
-      "Get matches",
-    );
-    const matchesData = GetMatchSummaryResponse.parse(matchesJson);
-    console.log(`Found ${matchesData.matches.length} matches`);
+    // Step 2: Get all matches for each season
+    // TODO: remove 2025 after first successful sync — that season is complete
+    const seasons = [2025, new Date().getFullYear()];
+    const allCompletedMatches: Array<{ match: z.TypeOf<typeof GetMatchSummaryResponse>["matches"][number]; season: number }> = [];
 
-    // Filter to completed matches (status "New" means not yet played)
-    const completedMatches = matchesData.matches.filter(
-      (m) => m.status !== "New",
-    );
-    console.log(`${completedMatches.length} completed matches to process`);
+    for (const season of seasons) {
+      console.log(`Fetching matches for season ${season}...`);
+      const matchesJson = await fetchApi(
+        `https://play-cricket.com/api/v2/matches.json?site_id=${siteId}&season=${season}&api_token=${apiKey}`,
+        `Get matches ${season}`,
+      );
+      const matchesData = GetMatchSummaryResponse.parse(matchesJson);
+      console.log(`Found ${matchesData.matches.length} matches for ${season}`);
+
+      const completed = matchesData.matches.filter(
+        (m) => m.status !== "New",
+      );
+      console.log(`${completed.length} completed matches for ${season}`);
+      for (const match of completed) {
+        allCompletedMatches.push({ match, season });
+      }
+    }
 
     // Step 3: Fetch and store match detail for each completed match
-    for (const match of completedMatches) {
+    for (const { match, season } of allCompletedMatches) {
       const matchId = match.id.toString();
 
       try {
