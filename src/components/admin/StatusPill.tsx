@@ -24,6 +24,24 @@ export function StatusPill({
   );
 }
 
+export function getMembershipTypeDisplay(type: string | null): {
+  label: string;
+  variant: Variant;
+} {
+  switch (type) {
+    case "senior_player":
+      return { label: "Senior Player", variant: "blue" };
+    case "senior_women_player":
+      return { label: "Women's Player", variant: "blue" };
+    case "social":
+      return { label: "Social", variant: "yellow" };
+    case "junior":
+      return { label: "Junior", variant: "green" };
+    default:
+      return { label: "-", variant: "gray" };
+  }
+}
+
 export function getMembershipStatus(paidUntil: string | null): {
   label: string;
   variant: Variant;

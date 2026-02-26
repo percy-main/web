@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { useEffect, useRef, useState } from "react";
 import { MemberDetailModal } from "./MemberDetailModal";
-import { StatusPill, getMembershipStatus } from "./StatusPill";
+import { StatusPill, getMembershipStatus, getMembershipTypeDisplay } from "./StatusPill";
 
 const PAGE_SIZE = 20;
 
@@ -85,6 +85,7 @@ export function MemberTable() {
                 )}
                 {result.users.map((user) => {
                   const membershipStatus = getMembershipStatus(user.paidUntil);
+                  const typeDisplay = getMembershipTypeDisplay(user.membershipType);
                   return (
                     <tr
                       key={user.id}
@@ -106,7 +107,9 @@ export function MemberTable() {
                         </StatusPill>
                       </td>
                       <td className="px-4 py-3">
-                        {user.membershipType ?? "-"}
+                        <StatusPill variant={typeDisplay.variant}>
+                          {typeDisplay.label}
+                        </StatusPill>
                       </td>
                       <td className="px-4 py-3">
                         <StatusPill
