@@ -115,6 +115,7 @@ export function ChargesTable() {
       skippedSelfService: number;
       skippedNoMember: number;
       skippedFailed: number;
+      membershipsSynced: number;
       errors: string[];
     };
   } | null>(null);
@@ -138,7 +139,7 @@ export function ChargesTable() {
         const d = res.data;
         setSyncResult({
           type: "success",
-          message: `Sync complete: ${d.created} new charges imported, ${d.skippedDuplicate} duplicates skipped, ${d.skippedSelfService} self-service excluded, ${d.totalProcessed} total processed.`,
+          message: `Sync complete: ${d.created} new charges imported, ${d.skippedDuplicate} duplicates skipped, ${d.skippedSelfService} self-service excluded, ${d.membershipsSynced} memberships updated, ${d.totalProcessed} total processed.`,
           details: d,
         });
 

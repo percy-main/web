@@ -16,6 +16,7 @@ export interface SyncStripeChargesResult {
   skippedSelfService: number;
   skippedNoMember: number;
   skippedFailed: number;
+  membershipsSynced: number;
   errors: string[];
 }
 
@@ -122,6 +123,7 @@ export async function syncStripeCharges(): Promise<SyncStripeChargesResult> {
     skippedSelfService: 0,
     skippedNoMember: 0,
     skippedFailed: 0,
+    membershipsSynced: 0,
     errors: [],
   };
 
@@ -230,6 +232,71 @@ export async function syncStripeCharges(): Promise<SyncStripeChargesResult> {
         err instanceof Error ? err.message : "Unknown error";
       result.errors.push(
         `Failed to sync charges for ${member.email} (${customerId}): ${message}`,
+      );
+    }
+  }
+
+  // Reconcile membership paid_until from Stripe subscription current_period_end.
+  // This fixes memberships where renewal webhooks failed to update paid_until
+  // (e.g. subscriptions created without proper metadata on the subscription object).
+  for (const member of members) {
+    const customerId = member.stripe_customer_id;
+    if (!customerId) continue;
+
+    try {
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "active",
+        limit: 10,
+      });
+
+      for (const sub of subscriptions.data) {
+        const periodEnd = new Date(sub.current_period_end * 1000).toISOString();
+
+        // Try to resolve membership type from subscription metadata
+        const parsed = membershipSchema.safeParse(sub.metadata);
+        let membershipType: string | undefined;
+
+        if (parsed.success) {
+          membershipType = parsed.data.membership;
+        } else {
+          // Fallback: look up the member's existing membership type
+          const existing = await client
+            .selectFrom("membership")
+            .where("membership.member_id", "=", member.id)
+            .where("membership.dependent_id", "is", null)
+            .select(["membership.type"])
+            .executeTakeFirst();
+
+          if (existing?.type) {
+            membershipType = existing.type;
+          }
+        }
+
+        if (!membershipType) continue;
+
+        // Update paid_until if Stripe's period end is later than what we have
+        const membership = await client
+          .selectFrom("membership")
+          .where("membership.member_id", "=", member.id)
+          .where("membership.type", "=", membershipType)
+          .where("membership.dependent_id", "is", null)
+          .select(["membership.id", "membership.paid_until"])
+          .executeTakeFirst();
+
+        if (membership && membership.paid_until < periodEnd) {
+          await client
+            .updateTable("membership")
+            .set({ paid_until: periodEnd })
+            .where("id", "=", membership.id)
+            .execute();
+          result.membershipsSynced++;
+        }
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      result.errors.push(
+        `Failed to reconcile membership for ${member.email}: ${message}`,
       );
     }
   }
