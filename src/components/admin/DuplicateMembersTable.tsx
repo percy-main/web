@@ -300,7 +300,10 @@ function MergePreviewModal({
               </div>
               {mergeMutation.isError && (
                 <p className="mt-2 text-sm text-red-600">
-                  Failed to merge members. Please try again.
+                  Failed to merge members:{" "}
+                  {mergeMutation.error instanceof Error
+                    ? mergeMutation.error.message
+                    : "Please try again."}
                 </p>
               )}
             </div>

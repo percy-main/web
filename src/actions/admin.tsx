@@ -917,6 +917,10 @@ export const admin = {
       removeMemberId: z.string(),
     }),
     handler: async ({ keepMemberId, removeMemberId }) => {
+      if (keepMemberId === removeMemberId) {
+        throw new ActionError({ code: "BAD_REQUEST", message: "Cannot merge a member with itself" });
+      }
+
       const [keepMember, removeMember] = await Promise.all([
         client.selectFrom("member").where("id", "=", keepMemberId).selectAll().executeTakeFirst(),
         client.selectFrom("member").where("id", "=", removeMemberId).selectAll().executeTakeFirst(),
@@ -969,6 +973,10 @@ export const admin = {
       removeMemberId: z.string(),
     }),
     handler: async ({ keepMemberId, removeMemberId }) => {
+      if (keepMemberId === removeMemberId) {
+        throw new ActionError({ code: "BAD_REQUEST", message: "Cannot merge a member with itself" });
+      }
+
       const [keepMember, removeMember] = await Promise.all([
         client.selectFrom("member").where("id", "=", keepMemberId).selectAll().executeTakeFirst(),
         client.selectFrom("member").where("id", "=", removeMemberId).selectAll().executeTakeFirst(),
@@ -982,39 +990,41 @@ export const admin = {
         throw new ActionError({ code: "BAD_REQUEST", message: "Members must share the same email to merge" });
       }
 
-      // Re-point all foreign keys from removeMember to keepMember
-      await client
-        .updateTable("membership")
-        .set({ member_id: keepMemberId })
-        .where("member_id", "=", removeMemberId)
-        .execute();
-
-      await client
-        .updateTable("dependent")
-        .set({ member_id: keepMemberId })
-        .where("member_id", "=", removeMemberId)
-        .execute();
-
-      await client
-        .updateTable("charge")
-        .set({ member_id: keepMemberId })
-        .where("member_id", "=", removeMemberId)
-        .execute();
-
-      // Preserve stripe_customer_id if keepMember doesn't have one
-      if (!keepMember.stripe_customer_id && removeMember.stripe_customer_id) {
-        await client
-          .updateTable("member")
-          .set({ stripe_customer_id: removeMember.stripe_customer_id })
-          .where("id", "=", keepMemberId)
+      await client.transaction().execute(async (trx) => {
+        // Re-point all foreign keys from removeMember to keepMember
+        await trx
+          .updateTable("membership")
+          .set({ member_id: keepMemberId })
+          .where("member_id", "=", removeMemberId)
           .execute();
-      }
 
-      // Delete the duplicate member record
-      await client
-        .deleteFrom("member")
-        .where("id", "=", removeMemberId)
-        .execute();
+        await trx
+          .updateTable("dependent")
+          .set({ member_id: keepMemberId })
+          .where("member_id", "=", removeMemberId)
+          .execute();
+
+        await trx
+          .updateTable("charge")
+          .set({ member_id: keepMemberId })
+          .where("member_id", "=", removeMemberId)
+          .execute();
+
+        // Preserve stripe_customer_id if keepMember doesn't have one
+        if (!keepMember.stripe_customer_id && removeMember.stripe_customer_id) {
+          await trx
+            .updateTable("member")
+            .set({ stripe_customer_id: removeMember.stripe_customer_id })
+            .where("id", "=", keepMemberId)
+            .execute();
+        }
+
+        // Delete the duplicate member record
+        await trx
+          .deleteFrom("member")
+          .where("id", "=", removeMemberId)
+          .execute();
+      });
 
       return { success: true };
     },
