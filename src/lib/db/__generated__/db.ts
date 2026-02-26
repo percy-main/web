@@ -129,6 +129,42 @@ export interface JuniorTeamManager {
   user_id: string;
 }
 
+export interface MatchPerformanceBatting {
+  balls: Generated<number>;
+  competition_type: Generated<string>;
+  created_at: Generated<string>;
+  fours: Generated<number>;
+  how_out: Generated<string>;
+  id: string | null;
+  match_date: string;
+  match_id: string;
+  not_out: Generated<number>;
+  player_id: string;
+  player_name: string;
+  runs: Generated<number>;
+  season: number;
+  sixes: Generated<number>;
+  team_id: string;
+}
+
+export interface MatchPerformanceBowling {
+  competition_type: Generated<string>;
+  created_at: Generated<string>;
+  id: string | null;
+  maidens: Generated<number>;
+  match_date: string;
+  match_id: string;
+  no_balls: Generated<number>;
+  overs: Generated<string>;
+  player_id: string;
+  player_name: string;
+  runs: Generated<number>;
+  season: number;
+  team_id: string;
+  wickets: Generated<number>;
+  wides: Generated<number>;
+}
+
 export interface Member {
   address: string;
   dob: string;
@@ -163,6 +199,24 @@ export interface Passkey {
   publicKey: string;
   transports: string | null;
   userId: string;
+}
+
+export interface PlayCricketSyncLog {
+  completed_at: string | null;
+  errors: string | null;
+  id: string | null;
+  matches_processed: Generated<number>;
+  season: number;
+  started_at: string;
+}
+
+export interface PlayCricketTeam {
+  created_at: Generated<string>;
+  id: string | null;
+  is_junior: Generated<number>;
+  last_updated: string | null;
+  name: string;
+  site_id: string;
 }
 
 export interface Session {
@@ -219,9 +273,13 @@ export interface DB {
   game_sponsorship: GameSponsorship;
   junior_team: JuniorTeam;
   junior_team_manager: JuniorTeamManager;
+  match_performance_batting: MatchPerformanceBatting;
+  match_performance_bowling: MatchPerformanceBowling;
   member: Member;
   membership: Membership;
   passkey: Passkey;
+  play_cricket_sync_log: PlayCricketSyncLog;
+  play_cricket_team: PlayCricketTeam;
   session: Session;
   twoFactor: TwoFactor;
   user: User;
