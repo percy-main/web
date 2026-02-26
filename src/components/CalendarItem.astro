@@ -3,6 +3,7 @@ import { formatDate, getYear } from "date-fns";
 import { RichText } from "@/components/RichText";
 import { Sponsor } from "@/components/Sponsor";
 import { MatchResult } from "@/components/MatchResult";
+import { Scorecard } from "@/components/Scorecard";
 import { Map } from "@/components/Map";
 import { When } from "./When";
 import { AddToCalendarButton } from "add-to-calendar-button-react";
@@ -93,6 +94,11 @@ const { id, title, calendarItem } = Astro.props;
             ourTeamId={game.team.id}
             when={game.when ? game.when.toISOString() : null}
             ssrResult={game.result}
+          />
+          <Scorecard
+            client:load
+            matchId={id}
+            when={game.when ? game.when.toISOString() : null}
           />
           <RichText
             client:load
