@@ -202,7 +202,7 @@ export const MatchDetailInnings = z.object({
 export const MatchDetailPlayer = z.object({
   position: z.number(),
   player_name: z.string(),
-  player_id: z.number(),
+  player_id: z.number().nullable(),
   captain: z.boolean(),
   wicket_keeper: z.boolean(),
 });
