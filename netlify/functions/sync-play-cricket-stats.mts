@@ -1,0 +1,357 @@
+import { LibsqlDialect } from "@libsql/kysely-libsql";
+import { schedule } from "@netlify/functions";
+import { Kysely, sql } from "kysely";
+import { z } from "zod";
+
+// --- Zod schemas (duplicated from src/lib/play-cricket/schemas.ts to avoid
+//     import path issues in the Netlify function bundler) ---
+
+const GetMatchSummaryResponse = z.object({
+  matches: z.array(
+    z.object({
+      id: z.number(),
+      status: z.string(),
+      last_updated: z.string(),
+      competition_type: z.string(),
+      match_type: z.string(),
+      match_date: z.string(),
+      home_team_id: z.string(),
+      home_club_id: z.string(),
+      away_team_id: z.string(),
+      away_club_id: z.string(),
+      season: z.string(),
+    }),
+  ),
+});
+
+const MatchDetailBat = z.object({
+  batsman_name: z.string(),
+  batsman_id: z.string(),
+  how_out: z.string(),
+  fielder_name: z.string().optional().default(""),
+  fielder_id: z.string().optional().default(""),
+  runs: z.string(),
+  fours: z.string(),
+  sixes: z.string(),
+  balls: z.string(),
+});
+
+const MatchDetailBowl = z.object({
+  bowler_name: z.string(),
+  bowler_id: z.string(),
+  overs: z.string(),
+  maidens: z.string(),
+  runs: z.string(),
+  wides: z.string(),
+  wickets: z.string(),
+  no_balls: z.string(),
+});
+
+const MatchDetailInnings = z.object({
+  team_batting_name: z.string(),
+  team_batting_id: z.string(),
+  innings_number: z.number(),
+  bat: z.array(MatchDetailBat),
+  bowl: z.array(MatchDetailBowl),
+});
+
+const MatchDetail = z.object({
+  id: z.number(),
+  home_team_id: z.string(),
+  home_club_id: z.string().optional().default(""),
+  away_team_id: z.string(),
+  away_club_id: z.string().optional().default(""),
+  result: z.string().optional().default(""),
+  competition_type: z.string().optional().default(""),
+  match_date: z.string().optional().default(""),
+  season: z.string().optional().default(""),
+  innings: z.array(MatchDetailInnings),
+});
+
+const GetMatchDetailResponse = z.object({
+  match_details: z.array(MatchDetail),
+});
+
+const GetTeamsResponse = z.object({
+  teams: z.array(
+    z.object({
+      id: z.union([z.string(), z.number()]),
+      status: z.string(),
+      last_updated: z.string(),
+      site_id: z.union([z.string(), z.number()]),
+      team_name: z.string(),
+    }),
+  ),
+});
+
+// --- Helpers ---
+
+const JUNIOR_PATTERNS = [/under/i, /\bU\d{2}\b/, /junior/i, /colts/i];
+
+function isJuniorTeam(teamName: string): boolean {
+  return JUNIOR_PATTERNS.some((p) => p.test(teamName));
+}
+
+function randomId(): string {
+  return crypto.randomUUID();
+}
+
+// Not-out dismissal codes — player was not dismissed
+const NOT_OUT_CODES = new Set(["no", "dnb", "rtd", ""]);
+
+function isNotOut(howOut: string): boolean {
+  return NOT_OUT_CODES.has(howOut.toLowerCase().trim());
+}
+
+// Did the player actually bat (i.e. not "did not bat")?
+function didBat(howOut: string): boolean {
+  const code = howOut.toLowerCase().trim();
+  return code !== "dnb" && code !== "";
+}
+
+// Extract fielding stats from the opposition innings' batting dismissals
+function extractFieldingStats(
+  innings: z.infer<typeof MatchDetailInnings>,
+  fieldingTeamId: string,
+): Map<string, { catches: number; stumpings: number }> {
+  const stats = new Map<string, { catches: number; stumpings: number }>();
+
+  // We look at the batting innings where the OTHER team is batting
+  // The fielder_id in each batting entry identifies who caught/stumped
+  for (const bat of innings.bat) {
+    if (!bat.fielder_id) continue;
+    const howOut = bat.how_out.toLowerCase().trim();
+    const current = stats.get(bat.fielder_id) || {
+      catches: 0,
+      stumpings: 0,
+    };
+
+    if (howOut === "ct" || howOut === "ct & b") {
+      current.catches += 1;
+    } else if (howOut === "st") {
+      current.stumpings += 1;
+    }
+
+    stats.set(bat.fielder_id, current);
+  }
+
+  return stats;
+}
+
+// --- Main sync logic ---
+
+async function syncStats(): Promise<{
+  matchesProcessed: number;
+  errors: string[];
+}> {
+  const apiKey = process.env.PLAY_CRICKET_API_KEY;
+  const siteId = process.env.PLAY_CRICKET_SITE_ID;
+  const dbUrl = process.env.DB_SYNC_URL;
+  const dbToken = process.env.DB_TOKEN;
+
+  if (!apiKey || !siteId || !dbUrl || !dbToken) {
+    throw new Error(
+      "Missing required env vars: PLAY_CRICKET_API_KEY, PLAY_CRICKET_SITE_ID, DB_SYNC_URL, DB_TOKEN",
+    );
+  }
+
+  const db = new Kysely({
+    dialect: new LibsqlDialect({ url: dbUrl, authToken: dbToken }),
+  });
+
+  const errors: string[] = [];
+  let matchesProcessed = 0;
+
+  try {
+    // Step 1: Sync teams
+    console.log("Syncing teams...");
+    const teamsRes = await fetch(
+      `https://play-cricket.com/api/v2/sites/${siteId}/teams.json?api_token=${apiKey}`,
+    );
+    const teamsData = GetTeamsResponse.parse(await teamsRes.json());
+
+    for (const team of teamsData.teams) {
+      const teamId = team.id.toString();
+      const junior = isJuniorTeam(team.team_name) ? 1 : 0;
+      await sql`INSERT INTO play_cricket_team (id, name, is_junior, site_id, last_updated)
+        VALUES (${teamId}, ${team.team_name}, ${junior}, ${siteId}, ${team.last_updated})
+        ON CONFLICT(id) DO UPDATE SET name = ${team.team_name}, is_junior = ${junior}, last_updated = ${team.last_updated}`.execute(
+        db,
+      );
+    }
+    console.log(`Synced ${teamsData.teams.length} teams`);
+
+    // Step 2: Get all matches for the current season
+    const season = new Date().getFullYear();
+    console.log(`Fetching matches for season ${season}...`);
+    const matchesRes = await fetch(
+      `http://play-cricket.com/api/v2/matches.json?site_id=${siteId}&season=${season}&api_token=${apiKey}`,
+    );
+    const matchesData = GetMatchSummaryResponse.parse(await matchesRes.json());
+    console.log(`Found ${matchesData.matches.length} matches`);
+
+    // Filter to completed matches (status "New" means not yet played)
+    const completedMatches = matchesData.matches.filter(
+      (m) => m.status !== "New",
+    );
+    console.log(`${completedMatches.length} completed matches to process`);
+
+    // Step 3: Fetch and store match detail for each completed match
+    for (const match of completedMatches) {
+      const matchId = match.id.toString();
+
+      try {
+        const detailRes = await fetch(
+          `http://play-cricket.com/api/v2/match_detail.json?match_id=${matchId}&api_token=${apiKey}`,
+        );
+        const detailData = GetMatchDetailResponse.parse(
+          await detailRes.json(),
+        );
+        const detail = detailData.match_details[0];
+        if (!detail) {
+          console.log(`No detail for match ${matchId}, skipping`);
+          continue;
+        }
+
+        // Check if scorecard has actual data (at least one innings with batting)
+        const hasScorecard = detail.innings.some(
+          (inn) => inn.bat.length > 0,
+        );
+        if (!hasScorecard) {
+          console.log(
+            `Match ${matchId} has no scorecard data, skipping`,
+          );
+          continue;
+        }
+
+        // Determine which team is ours for each innings
+        const ourTeamIds = new Set<string>();
+        if (match.home_club_id === siteId) {
+          ourTeamIds.add(match.home_team_id);
+        }
+        if (match.away_club_id === siteId) {
+          ourTeamIds.add(match.away_team_id);
+        }
+
+        for (const innings of detail.innings) {
+          const battingTeamId = innings.team_batting_id;
+          const isBattingTeamOurs = ourTeamIds.has(battingTeamId);
+
+          // Determine the fielding team ID (the other team)
+          const fieldingTeamId =
+            battingTeamId === match.home_team_id
+              ? match.away_team_id
+              : match.home_team_id;
+          const isFieldingTeamOurs = ourTeamIds.has(fieldingTeamId);
+
+          // Extract fielding stats from this batting innings (for the fielding team)
+          const fieldingStats = extractFieldingStats(
+            innings,
+            fieldingTeamId,
+          );
+
+          // Store batting performances (only for our players)
+          if (isBattingTeamOurs) {
+            for (const bat of innings.bat) {
+              if (!didBat(bat.how_out)) continue;
+
+              const notOut = isNotOut(bat.how_out) ? 1 : 0;
+              await sql`INSERT INTO match_performance_batting
+                (id, match_id, player_id, player_name, team_id, competition_type, match_date, season, runs, balls, fours, sixes, how_out, not_out)
+                VALUES (${randomId()}, ${matchId}, ${bat.batsman_id}, ${bat.batsman_name}, ${battingTeamId}, ${match.competition_type}, ${match.match_date}, ${season}, ${parseInt(bat.runs) || 0}, ${parseInt(bat.balls) || 0}, ${parseInt(bat.fours) || 0}, ${parseInt(bat.sixes) || 0}, ${bat.how_out}, ${notOut})
+                ON CONFLICT(match_id, player_id) DO UPDATE SET
+                  player_name = ${bat.batsman_name},
+                  runs = ${parseInt(bat.runs) || 0},
+                  balls = ${parseInt(bat.balls) || 0},
+                  fours = ${parseInt(bat.fours) || 0},
+                  sixes = ${parseInt(bat.sixes) || 0},
+                  how_out = ${bat.how_out},
+                  not_out = ${notOut}`.execute(db);
+            }
+          }
+
+          // Store bowling performances (only for our players — the fielding team bowled)
+          if (isFieldingTeamOurs) {
+            for (const bowl of innings.bowl) {
+              await sql`INSERT INTO match_performance_bowling
+                (id, match_id, player_id, player_name, team_id, competition_type, match_date, season, overs, maidens, runs, wickets, wides, no_balls)
+                VALUES (${randomId()}, ${matchId}, ${bowl.bowler_id}, ${bowl.bowler_name}, ${fieldingTeamId}, ${match.competition_type}, ${match.match_date}, ${season}, ${bowl.overs}, ${parseInt(bowl.maidens) || 0}, ${parseInt(bowl.runs) || 0}, ${parseInt(bowl.wickets) || 0}, ${parseInt(bowl.wides) || 0}, ${parseInt(bowl.no_balls) || 0})
+                ON CONFLICT(match_id, player_id) DO UPDATE SET
+                  player_name = ${bowl.bowler_name},
+                  overs = ${bowl.overs},
+                  maidens = ${parseInt(bowl.maidens) || 0},
+                  runs = ${parseInt(bowl.runs) || 0},
+                  wickets = ${parseInt(bowl.wickets) || 0},
+                  wides = ${parseInt(bowl.wides) || 0},
+                  no_balls = ${parseInt(bowl.no_balls) || 0}`.execute(db);
+            }
+          }
+        }
+
+        matchesProcessed++;
+        console.log(`Processed match ${matchId}`);
+      } catch (err) {
+        const msg = `Error processing match ${matchId}: ${err instanceof Error ? err.message : String(err)}`;
+        console.error(msg);
+        errors.push(msg);
+      }
+    }
+  } finally {
+    await db.destroy();
+  }
+
+  return { matchesProcessed, errors };
+}
+
+// Run at 3 AM UTC on Sundays and Fridays (overnight Sat→Sun and Thu→Fri)
+export const handler = schedule("0 3 * * 0,5", async () => {
+  const logId = randomId();
+  const startedAt = new Date().toISOString();
+
+  console.log(`Starting Play-Cricket stats sync (log: ${logId})`);
+
+  let db: Kysely<unknown> | null = null;
+  try {
+    const { matchesProcessed, errors } = await syncStats();
+
+    // Log the sync
+    db = new Kysely({
+      dialect: new LibsqlDialect({
+        url: process.env.DB_SYNC_URL!,
+        authToken: process.env.DB_TOKEN!,
+      }),
+    });
+    await sql`INSERT INTO play_cricket_sync_log (id, started_at, completed_at, season, matches_processed, errors)
+      VALUES (${logId}, ${startedAt}, ${new Date().toISOString()}, ${new Date().getFullYear()}, ${matchesProcessed}, ${errors.length > 0 ? JSON.stringify(errors) : null})`.execute(
+      db,
+    );
+
+    console.log(
+      `Sync complete: ${matchesProcessed} matches processed, ${errors.length} errors`,
+    );
+  } catch (err) {
+    console.error("Sync failed:", err);
+
+    // Try to log the failure
+    try {
+      if (!db) {
+        db = new Kysely({
+          dialect: new LibsqlDialect({
+            url: process.env.DB_SYNC_URL!,
+            authToken: process.env.DB_TOKEN!,
+          }),
+        });
+      }
+      await sql`INSERT INTO play_cricket_sync_log (id, started_at, completed_at, season, matches_processed, errors)
+        VALUES (${logId}, ${startedAt}, ${new Date().toISOString()}, ${new Date().getFullYear()}, ${0}, ${JSON.stringify([String(err)])})`.execute(
+        db,
+      );
+    } catch {
+      console.error("Failed to log sync error");
+    }
+  } finally {
+    await db?.destroy();
+  }
+
+  return { statusCode: 200 };
+});

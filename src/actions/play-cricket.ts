@@ -1,8 +1,18 @@
 import { resolveOutcome, buildInnings } from "@/collections/game";
+import { client } from "@/lib/db/client";
 import * as playCricketApi from "@/lib/play-cricket";
 import { defineAction } from "astro:actions";
 import { z } from "astro:schema";
+import { sql } from "kysely";
 import _ from "lodash";
+
+/** Convert cricket overs string (e.g. "12.3") to total balls */
+function oversToBalls(overs: string): number {
+  const parts = overs.split(".");
+  const completedOvers = parseInt(parts[0], 10) || 0;
+  const extraBalls = parseInt(parts[1], 10) || 0;
+  return completedOvers * 6 + extraBalls;
+}
 
 export const playCricket = {
   getResultSummary: defineAction({
@@ -130,6 +140,219 @@ export const playCricket = {
       };
 
       return response;
+    },
+  }),
+
+  getTeams: defineAction({
+    handler: async () => {
+      const rows = await client
+        .selectFrom("play_cricket_team")
+        .select(["id", "name", "is_junior"])
+        .execute();
+
+      return {
+        teams: rows.map((r) => ({
+          id: r.id ?? "",
+          name: r.name,
+          isJunior: r.is_junior === 1,
+        })),
+      };
+    },
+  }),
+
+  getBattingLeaderboard: defineAction({
+    input: z.object({
+      season: z.number(),
+      teamId: z.string().optional(),
+      competitionTypes: z.array(z.string()).optional(),
+      isJunior: z.boolean().optional().default(false),
+    }),
+    handler: async ({ season, teamId, competitionTypes, isJunior }) => {
+      let query = client
+        .selectFrom("match_performance_batting as b")
+        .innerJoin("play_cricket_team as t", "t.id", "b.team_id")
+        .select([
+          "b.player_id",
+          "b.player_name",
+          sql<number>`SUM(b.runs)`.as("total_runs"),
+          sql<number>`COUNT(*)`.as("innings"),
+          sql<number>`SUM(b.not_out)`.as("not_outs"),
+          sql<number>`MAX(b.runs)`.as("high_score"),
+          sql<number>`SUM(b.balls)`.as("total_balls"),
+          sql<number>`SUM(b.fours)`.as("total_fours"),
+          sql<number>`SUM(b.sixes)`.as("total_sixes"),
+          sql<number>`SUM(CASE WHEN b.runs >= 50 AND b.runs < 100 THEN 1 ELSE 0 END)`.as(
+            "fifties",
+          ),
+          sql<number>`SUM(CASE WHEN b.runs >= 100 THEN 1 ELSE 0 END)`.as(
+            "hundreds",
+          ),
+        ])
+        .where("b.season", "=", season)
+        .where("t.is_junior", "=", isJunior ? 1 : 0)
+        .groupBy(["b.player_id", "b.player_name"]);
+
+      if (teamId) {
+        query = query.where("b.team_id", "=", teamId);
+      }
+
+      if (competitionTypes && competitionTypes.length > 0) {
+        query = query.where("b.competition_type", "in", competitionTypes);
+      }
+
+      const rows = await query
+        .orderBy("total_runs", "desc")
+        .limit(50)
+        .execute();
+
+      return {
+        entries: rows.map((r) => {
+          const dismissals = r.innings - r.not_outs;
+          const average = dismissals > 0 ? r.total_runs / dismissals : null;
+          const strikeRate =
+            r.total_balls > 0 ? (r.total_runs / r.total_balls) * 100 : null;
+
+          return {
+            playerId: r.player_id,
+            playerName: r.player_name,
+            innings: r.innings,
+            notOuts: r.not_outs,
+            runs: r.total_runs,
+            highScore: r.high_score,
+            average:
+              average !== null && r.innings >= 3
+                ? Math.round(average * 100) / 100
+                : null,
+            strikeRate:
+              strikeRate !== null
+                ? Math.round(strikeRate * 100) / 100
+                : null,
+            fours: r.total_fours,
+            sixes: r.total_sixes,
+            fifties: r.fifties,
+            hundreds: r.hundreds,
+          };
+        }),
+      };
+    },
+  }),
+
+  getBowlingLeaderboard: defineAction({
+    input: z.object({
+      season: z.number(),
+      teamId: z.string().optional(),
+      competitionTypes: z.array(z.string()).optional(),
+      isJunior: z.boolean().optional().default(false),
+    }),
+    handler: async ({ season, teamId, competitionTypes, isJunior }) => {
+      let query = client
+        .selectFrom("match_performance_bowling as b")
+        .innerJoin("play_cricket_team as t", "t.id", "b.team_id")
+        .select([
+          "b.player_id",
+          "b.player_name",
+          sql<number>`COUNT(*)`.as("matches"),
+          sql<number>`SUM(b.wickets)`.as("total_wickets"),
+          sql<number>`SUM(b.runs)`.as("total_runs"),
+          sql<number>`SUM(b.maidens)`.as("total_maidens"),
+          sql<number>`SUM(b.wides)`.as("total_wides"),
+          sql<number>`SUM(b.no_balls)`.as("total_no_balls"),
+          sql<number>`MAX(b.wickets)`.as("best_wickets"),
+        ])
+        .where("b.season", "=", season)
+        .where("t.is_junior", "=", isJunior ? 1 : 0)
+        .groupBy(["b.player_id", "b.player_name"]);
+
+      if (teamId) {
+        query = query.where("b.team_id", "=", teamId);
+      }
+
+      if (competitionTypes && competitionTypes.length > 0) {
+        query = query.where("b.competition_type", "in", competitionTypes);
+      }
+
+      const rows = await query
+        .orderBy("total_wickets", "desc")
+        .limit(50)
+        .execute();
+
+      // Need to compute total overs from individual match overs strings
+      // Fetch the raw overs for each player to sum correctly
+      const playerIds = rows.map((r) => r.player_id);
+
+      const oversMap = new Map<string, { totalBalls: number }>();
+      if (playerIds.length > 0) {
+        let oversQuery = client
+          .selectFrom("match_performance_bowling as b")
+          .innerJoin("play_cricket_team as t", "t.id", "b.team_id")
+          .select(["b.player_id", "b.overs"])
+          .where("b.season", "=", season)
+          .where("t.is_junior", "=", isJunior ? 1 : 0)
+          .where("b.player_id", "in", playerIds);
+
+        if (teamId) {
+          oversQuery = oversQuery.where("b.team_id", "=", teamId);
+        }
+
+        if (competitionTypes && competitionTypes.length > 0) {
+          oversQuery = oversQuery.where(
+            "b.competition_type",
+            "in",
+            competitionTypes,
+          );
+        }
+
+        const oversRows = await oversQuery.execute();
+
+        for (const row of oversRows) {
+          const current = oversMap.get(row.player_id) ?? { totalBalls: 0 };
+          current.totalBalls += oversToBalls(row.overs);
+          oversMap.set(row.player_id, current);
+        }
+      }
+
+      return {
+        entries: rows.map((r) => {
+          const oData = oversMap.get(r.player_id) ?? { totalBalls: 0 };
+          const totalOvers = Math.floor(oData.totalBalls / 6);
+          const remainingBalls = oData.totalBalls % 6;
+          const oversStr = `${totalOvers}.${remainingBalls}`;
+
+          const average =
+            r.total_wickets > 0 ? r.total_runs / r.total_wickets : null;
+          const economy =
+            oData.totalBalls > 0
+              ? r.total_runs / (oData.totalBalls / 6)
+              : null;
+          const strikeRate =
+            r.total_wickets > 0
+              ? oData.totalBalls / r.total_wickets
+              : null;
+
+          return {
+            playerId: r.player_id,
+            playerName: r.player_name,
+            matches: r.matches,
+            overs: oversStr,
+            maidens: r.total_maidens,
+            runs: r.total_runs,
+            wickets: r.total_wickets,
+            average:
+              average !== null && oData.totalBalls >= 60
+                ? Math.round(average * 100) / 100
+                : null,
+            economy:
+              economy !== null
+                ? Math.round(economy * 100) / 100
+                : null,
+            strikeRate:
+              strikeRate !== null && oData.totalBalls >= 60
+                ? Math.round(strikeRate * 10) / 10
+                : null,
+            bestWickets: r.best_wickets,
+          };
+        }),
+      };
     },
   }),
 };
