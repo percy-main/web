@@ -551,6 +551,114 @@ export const playCricket = {
     },
   }),
 
+  getPlayerCareerStats: defineAction({
+    input: z.object({
+      contentfulEntryId: z.string(),
+    }),
+    handler: async ({ contentfulEntryId }) => {
+      const member = await client
+        .selectFrom("member")
+        .select(["id", "name", "play_cricket_id"])
+        .where("contentful_entry_id", "=", contentfulEntryId)
+        .executeTakeFirst();
+
+      if (!member?.play_cricket_id) {
+        return null;
+      }
+
+      const playerId = member.play_cricket_id;
+
+      // Get available seasons (union of batting + bowling seasons)
+      const battingSeasons = await client
+        .selectFrom("match_performance_batting")
+        .select("season")
+        .where("player_id", "=", playerId)
+        .groupBy("season")
+        .execute();
+
+      const bowlingSeasons = await client
+        .selectFrom("match_performance_bowling")
+        .select("season")
+        .where("player_id", "=", playerId)
+        .groupBy("season")
+        .execute();
+
+      const seasons = [
+        ...new Set([
+          ...battingSeasons.map((r) => r.season),
+          ...bowlingSeasons.map((r) => r.season),
+        ]),
+      ].sort((a, b) => b - a);
+
+      if (seasons.length === 0) {
+        return { seasons: [], career: null };
+      }
+
+      // All-time batting totals
+      const battingTotals = await client
+        .selectFrom("match_performance_batting")
+        .select([
+          sql<number>`SUM(runs)`.as("total_runs"),
+          sql<number>`COUNT(*)`.as("total_innings"),
+          sql<number>`MAX(runs)`.as("high_score"),
+        ])
+        .where("player_id", "=", playerId)
+        .executeTakeFirst();
+
+      // All-time bowling totals
+      const bowlingTotals = await client
+        .selectFrom("match_performance_bowling")
+        .select([
+          sql<number>`SUM(wickets)`.as("total_wickets"),
+        ])
+        .where("player_id", "=", playerId)
+        .executeTakeFirst();
+
+      // Best bowling: highest wickets, ties broken by lowest runs, then lowest overs
+      const bestBowling = await client
+        .selectFrom("match_performance_bowling")
+        .select(["wickets", "runs", "overs"])
+        .where("player_id", "=", playerId)
+        .where("wickets", ">", 0)
+        .orderBy("wickets", "desc")
+        .orderBy("runs", "asc")
+        .orderBy(sql`CAST(overs AS REAL)`, "asc")
+        .limit(1)
+        .executeTakeFirst();
+
+      // Total distinct matches (union of match IDs from both tables)
+      const battingMatchIds = await client
+        .selectFrom("match_performance_batting")
+        .select("match_id")
+        .where("player_id", "=", playerId)
+        .execute();
+
+      const bowlingMatchIds = await client
+        .selectFrom("match_performance_bowling")
+        .select("match_id")
+        .where("player_id", "=", playerId)
+        .execute();
+
+      const totalMatches = new Set([
+        ...battingMatchIds.map((r) => r.match_id),
+        ...bowlingMatchIds.map((r) => r.match_id),
+      ]).size;
+
+      return {
+        seasons,
+        career: {
+          matches: totalMatches,
+          runs: battingTotals?.total_runs ?? 0,
+          wickets: bowlingTotals?.total_wickets ?? 0,
+          highScore: battingTotals?.high_score ?? null,
+          bestBowling: bestBowling
+            ? `${bestBowling.wickets}/${bestBowling.runs}`
+            : null,
+        },
+      };
+    },
+  }),
+
   getPlayerSeasonStats: defineAction({
     input: z.object({
       contentfulEntryId: z.string(),
