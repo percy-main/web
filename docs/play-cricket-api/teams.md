@@ -2,6 +2,8 @@
 
 List teams belonging to a site (club or CCB).
 
+> **Access:** This endpoint may not be accessible with all API tokens. Our club token returns **HTTP 401** for this endpoint. Team names can alternatively be obtained from [Match Detail](./match-detail.md) responses (`home_team_name` / `away_team_name`).
+
 ## Request
 
 ```

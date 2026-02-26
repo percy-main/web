@@ -18,6 +18,8 @@ All endpoints require an `api_token` query parameter. Tokens are issued per-club
 ?api_token=YOUR_TOKEN
 ```
 
+> **Note:** Not all endpoints may be accessible with a given token. Our club token can access matches, match detail, result summary, league table, and competitions, but returns **HTTP 401** for the [Teams](./teams.md) endpoint. Check endpoint access before relying on it.
+
 ## Endpoints
 
 | Endpoint | Description | Doc |
@@ -47,6 +49,8 @@ Two date-range patterns appear across endpoints:
 Many responses include a `status` field with values:
 - `"New"` - active/current record
 - `"Deleted"` - soft-deleted record
+
+> **Warning:** The `status` field is **not** an indicator of whether a match has been played. All matches — past, present, and future — have `status: "New"`. To determine if a match has been played, fetch the [Match Detail](./match-detail.md) and check whether the innings array contains batting data.
 
 ### Published field
 

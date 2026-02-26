@@ -86,3 +86,4 @@ GET https://play-cricket.com/api/v2/matches.json?site_id=1234&season=2024&api_to
 
 - Unpublished matches are fixtures created in league sites but not yet published to the front end or club sites. Most consumers will not need these.
 - The `status: "Deleted"` value indicates a soft-deleted record. Use `from_entry_date` to detect deletions during incremental sync.
+- **All matches have `status: "New"`** regardless of whether they have been played. Do not use the status field to filter for completed matches. Instead, fetch the [Match Detail](./match-detail.md) and check for innings with batting data.
