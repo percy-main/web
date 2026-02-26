@@ -2,6 +2,7 @@ import { defineAuthAction } from "@/lib/auth/api";
 import { auth } from "@/lib/auth/server";
 import { client } from "@/lib/db/client";
 import { send } from "@/lib/email/send";
+import { getAgeGroup, getTeamName } from "@/lib/util/ageGroup";
 import { render } from "@react-email/render";
 import { ActionError } from "astro:actions";
 import { BASE_URL } from "astro:env/client";
@@ -373,6 +374,47 @@ export const admin = {
       }
 
       return { success: true };
+    },
+  }),
+
+  listJuniors: defineAuthAction({
+    roles: ["admin"],
+    handler: async () => {
+      const rows = await client
+        .selectFrom("dependent")
+        .innerJoin("member", "member.id", "dependent.member_id")
+        .leftJoin("membership", (join) =>
+          join
+            .onRef("membership.dependent_id", "=", "dependent.id")
+            .on("membership.type", "=", "junior"),
+        )
+        .select([
+          "dependent.id",
+          "dependent.name",
+          "dependent.sex",
+          "dependent.dob",
+          "dependent.created_at as registeredAt",
+          "member.name as parentName",
+          "member.email as parentEmail",
+          "member.telephone as parentTelephone",
+          "membership.paid_until as paidUntil",
+        ])
+        .orderBy("dependent.name", "asc")
+        .execute();
+
+      return rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        sex: row.sex,
+        dob: row.dob,
+        registeredAt: row.registeredAt,
+        parentName: row.parentName,
+        parentEmail: row.parentEmail,
+        parentTelephone: row.parentTelephone,
+        paidUntil: row.paidUntil,
+        ageGroup: getAgeGroup(row.dob),
+        teamName: getTeamName(row.dob, row.sex),
+      }));
     },
   }),
 };
