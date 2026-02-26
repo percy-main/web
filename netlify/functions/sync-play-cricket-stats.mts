@@ -1,6 +1,5 @@
-import { LibsqlDialect } from "@libsql/kysely-libsql";
+import { createClient } from "@libsql/client/http";
 import { schedule } from "@netlify/functions";
-import { Kysely, sql } from "kysely";
 import { z } from "zod";
 
 // --- Zod schemas (duplicated from src/lib/play-cricket/schemas.ts to avoid
@@ -109,6 +108,17 @@ function didBat(howOut: string): boolean {
   return code !== "dnb" && code !== "";
 }
 
+type DbClient = ReturnType<typeof createClient>;
+
+function createDb() {
+  const url = process.env.DB_SYNC_URL;
+  const authToken = process.env.DB_TOKEN;
+  if (!url || !authToken) {
+    throw new Error("Missing DB_SYNC_URL or DB_TOKEN");
+  }
+  return createClient({ url, authToken });
+}
+
 // --- Main sync logic ---
 
 async function syncStats(): Promise<{
@@ -117,19 +127,14 @@ async function syncStats(): Promise<{
 }> {
   const apiKey = process.env.PLAY_CRICKET_API_KEY;
   const siteId = process.env.PLAY_CRICKET_SITE_ID;
-  const dbUrl = process.env.DB_SYNC_URL;
-  const dbToken = process.env.DB_TOKEN;
 
-  if (!apiKey || !siteId || !dbUrl || !dbToken) {
+  if (!apiKey || !siteId) {
     throw new Error(
-      "Missing required env vars: PLAY_CRICKET_API_KEY, PLAY_CRICKET_SITE_ID, DB_SYNC_URL, DB_TOKEN",
+      "Missing required env vars: PLAY_CRICKET_API_KEY, PLAY_CRICKET_SITE_ID",
     );
   }
 
-  const db = new Kysely({
-    dialect: new LibsqlDialect({ url: dbUrl, authToken: dbToken }),
-  });
-
+  const db = createDb();
   const errors: string[] = [];
   let matchesProcessed = 0;
 
@@ -144,11 +149,21 @@ async function syncStats(): Promise<{
     for (const team of teamsData.teams) {
       const teamId = team.id.toString();
       const junior = isJuniorTeam(team.team_name) ? 1 : 0;
-      await sql`INSERT INTO play_cricket_team (id, name, is_junior, site_id, last_updated)
-        VALUES (${teamId}, ${team.team_name}, ${junior}, ${siteId}, ${team.last_updated})
-        ON CONFLICT(id) DO UPDATE SET name = ${team.team_name}, is_junior = ${junior}, last_updated = ${team.last_updated}`.execute(
-        db,
-      );
+      await db.execute({
+        sql: `INSERT INTO play_cricket_team (id, name, is_junior, site_id, last_updated)
+          VALUES (?, ?, ?, ?, ?)
+          ON CONFLICT(id) DO UPDATE SET name = ?, is_junior = ?, last_updated = ?`,
+        args: [
+          teamId,
+          team.team_name,
+          junior,
+          siteId,
+          team.last_updated,
+          team.team_name,
+          junior,
+          team.last_updated,
+        ],
+      });
     }
     console.log(`Synced ${teamsData.teams.length} teams`);
 
@@ -221,34 +236,74 @@ async function syncStats(): Promise<{
               if (!didBat(bat.how_out)) continue;
 
               const notOut = isNotOut(bat.how_out) ? 1 : 0;
-              await sql`INSERT INTO match_performance_batting
-                (id, match_id, player_id, player_name, team_id, competition_type, match_date, season, runs, balls, fours, sixes, how_out, not_out)
-                VALUES (${randomId()}, ${matchId}, ${bat.batsman_id}, ${bat.batsman_name}, ${battingTeamId}, ${match.competition_type}, ${match.match_date}, ${season}, ${parseInt(bat.runs) || 0}, ${parseInt(bat.balls) || 0}, ${parseInt(bat.fours) || 0}, ${parseInt(bat.sixes) || 0}, ${bat.how_out}, ${notOut})
-                ON CONFLICT(match_id, player_id) DO UPDATE SET
-                  player_name = ${bat.batsman_name},
-                  runs = ${parseInt(bat.runs) || 0},
-                  balls = ${parseInt(bat.balls) || 0},
-                  fours = ${parseInt(bat.fours) || 0},
-                  sixes = ${parseInt(bat.sixes) || 0},
-                  how_out = ${bat.how_out},
-                  not_out = ${notOut}`.execute(db);
+              await db.execute({
+                sql: `INSERT INTO match_performance_batting
+                  (id, match_id, player_id, player_name, team_id, competition_type, match_date, season, runs, balls, fours, sixes, how_out, not_out)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  ON CONFLICT(match_id, player_id) DO UPDATE SET
+                    player_name = ?, runs = ?, balls = ?, fours = ?, sixes = ?, how_out = ?, not_out = ?`,
+                args: [
+                  randomId(),
+                  matchId,
+                  bat.batsman_id,
+                  bat.batsman_name,
+                  battingTeamId,
+                  match.competition_type,
+                  match.match_date,
+                  season,
+                  parseInt(bat.runs) || 0,
+                  parseInt(bat.balls) || 0,
+                  parseInt(bat.fours) || 0,
+                  parseInt(bat.sixes) || 0,
+                  bat.how_out,
+                  notOut,
+                  // ON CONFLICT SET values
+                  bat.batsman_name,
+                  parseInt(bat.runs) || 0,
+                  parseInt(bat.balls) || 0,
+                  parseInt(bat.fours) || 0,
+                  parseInt(bat.sixes) || 0,
+                  bat.how_out,
+                  notOut,
+                ],
+              });
             }
           }
 
           // Store bowling performances (only for our players — the fielding team bowled)
           if (isFieldingTeamOurs) {
             for (const bowl of innings.bowl) {
-              await sql`INSERT INTO match_performance_bowling
-                (id, match_id, player_id, player_name, team_id, competition_type, match_date, season, overs, maidens, runs, wickets, wides, no_balls)
-                VALUES (${randomId()}, ${matchId}, ${bowl.bowler_id}, ${bowl.bowler_name}, ${fieldingTeamId}, ${match.competition_type}, ${match.match_date}, ${season}, ${bowl.overs}, ${parseInt(bowl.maidens) || 0}, ${parseInt(bowl.runs) || 0}, ${parseInt(bowl.wickets) || 0}, ${parseInt(bowl.wides) || 0}, ${parseInt(bowl.no_balls) || 0})
-                ON CONFLICT(match_id, player_id) DO UPDATE SET
-                  player_name = ${bowl.bowler_name},
-                  overs = ${bowl.overs},
-                  maidens = ${parseInt(bowl.maidens) || 0},
-                  runs = ${parseInt(bowl.runs) || 0},
-                  wickets = ${parseInt(bowl.wickets) || 0},
-                  wides = ${parseInt(bowl.wides) || 0},
-                  no_balls = ${parseInt(bowl.no_balls) || 0}`.execute(db);
+              await db.execute({
+                sql: `INSERT INTO match_performance_bowling
+                  (id, match_id, player_id, player_name, team_id, competition_type, match_date, season, overs, maidens, runs, wickets, wides, no_balls)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  ON CONFLICT(match_id, player_id) DO UPDATE SET
+                    player_name = ?, overs = ?, maidens = ?, runs = ?, wickets = ?, wides = ?, no_balls = ?`,
+                args: [
+                  randomId(),
+                  matchId,
+                  bowl.bowler_id,
+                  bowl.bowler_name,
+                  fieldingTeamId,
+                  match.competition_type,
+                  match.match_date,
+                  season,
+                  bowl.overs,
+                  parseInt(bowl.maidens) || 0,
+                  parseInt(bowl.runs) || 0,
+                  parseInt(bowl.wickets) || 0,
+                  parseInt(bowl.wides) || 0,
+                  parseInt(bowl.no_balls) || 0,
+                  // ON CONFLICT SET values
+                  bowl.bowler_name,
+                  bowl.overs,
+                  parseInt(bowl.maidens) || 0,
+                  parseInt(bowl.runs) || 0,
+                  parseInt(bowl.wickets) || 0,
+                  parseInt(bowl.wides) || 0,
+                  parseInt(bowl.no_balls) || 0,
+                ],
+              });
             }
           }
         }
@@ -262,7 +317,7 @@ async function syncStats(): Promise<{
       }
     }
   } finally {
-    await db.destroy();
+    db.close();
   }
 
   return { matchesProcessed, errors };
@@ -275,21 +330,24 @@ export const handler = schedule("0 3 * * 0,5", async () => {
 
   console.log(`Starting Play-Cricket stats sync (log: ${logId})`);
 
-  let db: Kysely<unknown> | null = null;
+  let db: DbClient | null = null;
   try {
     const { matchesProcessed, errors } = await syncStats();
 
     // Log the sync
-    db = new Kysely({
-      dialect: new LibsqlDialect({
-        url: process.env.DB_SYNC_URL!,
-        authToken: process.env.DB_TOKEN!,
-      }),
+    db = createDb();
+    await db.execute({
+      sql: `INSERT INTO play_cricket_sync_log (id, started_at, completed_at, season, matches_processed, errors)
+        VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [
+        logId,
+        startedAt,
+        new Date().toISOString(),
+        new Date().getFullYear(),
+        matchesProcessed,
+        errors.length > 0 ? JSON.stringify(errors) : null,
+      ],
     });
-    await sql`INSERT INTO play_cricket_sync_log (id, started_at, completed_at, season, matches_processed, errors)
-      VALUES (${logId}, ${startedAt}, ${new Date().toISOString()}, ${new Date().getFullYear()}, ${matchesProcessed}, ${errors.length > 0 ? JSON.stringify(errors) : null})`.execute(
-      db,
-    );
 
     console.log(
       `Sync complete: ${matchesProcessed} matches processed, ${errors.length} errors`,
@@ -300,22 +358,25 @@ export const handler = schedule("0 3 * * 0,5", async () => {
     // Try to log the failure
     try {
       if (!db) {
-        db = new Kysely({
-          dialect: new LibsqlDialect({
-            url: process.env.DB_SYNC_URL!,
-            authToken: process.env.DB_TOKEN!,
-          }),
-        });
+        db = createDb();
       }
-      await sql`INSERT INTO play_cricket_sync_log (id, started_at, completed_at, season, matches_processed, errors)
-        VALUES (${logId}, ${startedAt}, ${new Date().toISOString()}, ${new Date().getFullYear()}, ${0}, ${JSON.stringify([String(err)])})`.execute(
-        db,
-      );
+      await db.execute({
+        sql: `INSERT INTO play_cricket_sync_log (id, started_at, completed_at, season, matches_processed, errors)
+          VALUES (?, ?, ?, ?, ?, ?)`,
+        args: [
+          logId,
+          startedAt,
+          new Date().toISOString(),
+          new Date().getFullYear(),
+          0,
+          JSON.stringify([String(err)]),
+        ],
+      });
     } catch {
       console.error("Failed to log sync error");
     }
   } finally {
-    await db?.destroy();
+    db?.close();
   }
 
   return { statusCode: 200 };
