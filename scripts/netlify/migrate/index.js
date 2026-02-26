@@ -92,8 +92,103 @@ async function ensureBranchDatabase(branch) {
   return `libsql://${hostname}`;
 }
 
+/**
+ * Delete a Turso branch database so it can be recreated fresh.
+ * Used when migrations are corrupted due to rebasing.
+ */
+async function deleteBranchDatabase(branch) {
+  const apiToken = process.env.TURSO_API_TOKEN;
+  const org = process.env.TURSO_ORG;
+
+  if (!apiToken || !org) return false;
+
+  const dbName = `preview-${sanitizeBranchName(branch)}`;
+  const url = `https://api.turso.tech/v1/organizations/${org}/databases/${dbName}`;
+  const headers = { Authorization: `Bearer ${apiToken}` };
+
+  console.log(`Deleting corrupted branch database: ${dbName}`);
+  const res = await fetch(url, { method: "DELETE", headers });
+
+  if (res.ok) {
+    console.log(`Deleted branch database: ${dbName}`);
+    return true;
+  }
+
+  console.error(`Failed to delete branch database (${res.status}): ${await res.text()}`);
+  return false;
+}
+
+async function getMigrationProvider() {
+  console.log("Ensuring .temp directory exists");
+  await mkdir(path.join(process.cwd(), ".temp")).catch(console.error);
+
+  return {
+    getMigrations: async () => {
+      const migrationDir = path.join(
+        process.cwd(),
+        "./src/lib/db/migrations",
+      );
+
+      console.log(`Looking for migrations in ${migrationDir}`);
+      const files = await fs.readdir(migrationDir);
+      console.log(`Found ${files.length} migrations`);
+
+      const migrations = await Promise.all(
+        files.map(async (filename) => {
+          console.log(`${filename} : Reading`);
+          const tsContent = await readFile(
+            path.join(migrationDir, filename),
+            "utf-8",
+          );
+          console.log(`${filename} : Transpiling TS -> JS`);
+          const jsFileContent = ts.transpile(tsContent, {
+            module: "ESNext",
+            target: "ESNext",
+          });
+
+          const jsFilepath = path.join(
+            process.cwd(),
+            ".temp",
+            `${filename.substring(0, filename.length - 2)}.mjs`,
+          );
+          console.log(`${filename} : Writing JS to ${jsFilepath}`);
+          await writeFile(jsFilepath, jsFileContent);
+
+          console.log(`${filename} : Importing compiled JS module`);
+          const migration = await import(jsFilepath);
+          return [filename, migration];
+        }),
+      );
+
+      return Object.fromEntries(migrations);
+    },
+  };
+}
+
+async function runMigrations(url, authToken) {
+  const dialect = new LibsqlDialect({ url, authToken });
+  const db = new Kysely({ dialect });
+
+  try {
+    const provider = await getMigrationProvider();
+    const migrator = new Migrator({ db, provider });
+    const { results, error } = await migrator.migrateToLatest();
+
+    if (error) throw error;
+
+    results.forEach((result) => {
+      console.log(
+        `${result.direction} : ${result.migrationName} : ${result.status}`,
+      );
+    });
+
+    return results;
+  } finally {
+    await db.destroy();
+  }
+}
+
 export const onPreBuild = async ({ utils, netlifyConfig }) => {
-  let db;
   try {
     let url = process.env.DB_SYNC_URL;
     const authToken = process.env.DB_TOKEN;
@@ -123,88 +218,53 @@ export const onPreBuild = async ({ utils, netlifyConfig }) => {
       }
     }
 
-    const dialect = new LibsqlDialect({
-      url,
-      authToken,
-    });
+    let results;
+    try {
+      results = await runMigrations(url, authToken);
+    } catch (error) {
+      // On deploy previews, "corrupted migrations" means the branch DB
+      // was created before a rebase changed the migration order. Delete
+      // and recreate the branch DB to fix it.
+      const isCorrupted =
+        error?.message?.includes("corrupted migrations") &&
+        context === "deploy-preview" &&
+        branch;
 
-    db = new Kysely({
-      dialect,
-    });
-
-    console.log("Ensuring .temp directory exists");
-    await mkdir(path.join(process.cwd(), ".temp")).catch(console.error);
-
-    const migrator = new Migrator({
-      db,
-      provider: {
-        getMigrations: async () => {
-          const migrationDir = path.join(
-            process.cwd(),
-            "./src/lib/db/migrations",
-          );
-
-          console.log(`Looking for migrations in ${migrationDir}`);
-          const files = await fs.readdir(migrationDir);
-          console.log(`Found ${files.length} migrations`);
-
-          const migrations = await Promise.all(
-            files.map(async (filename) => {
-              console.log(`${filename} : Reading`);
-              const tsContent = await readFile(
-                path.join(migrationDir, filename),
-                "utf-8",
-              );
-              console.log(`${filename} : Transpiling TS -> JS`);
-              const jsFileContent = ts.transpile(tsContent, {
-                module: "ESNext",
-                target: "ESNext",
-              });
-
-              const jsFilepath = path.join(
-                process.cwd(),
-                ".temp",
-                `${filename.substring(0, filename.length - 2)}.mjs`,
-              );
-              console.log(`${filename} : Writing JS to ${jsFilepath}`);
-              await writeFile(jsFilepath, jsFileContent);
-
-              console.log(`${filename} : Importing compiled JS module`);
-              const migration = await import(jsFilepath);
-              return [filename, migration];
-            }),
-          );
-
-          return Object.fromEntries(migrations);
-        },
-      },
-    });
-
-    const { results, error } = await migrator.migrateToLatest();
-
-    if (error) {
-      throw error;
+      if (isCorrupted) {
+        console.log(
+          "Migration corruption detected on deploy preview — recreating branch database",
+        );
+        const deleted = await deleteBranchDatabase(branch);
+        if (deleted) {
+          const freshUrl = await ensureBranchDatabase(branch);
+          if (freshUrl) {
+            url = freshUrl;
+            netlifyConfig.build.environment.BRANCH_DB_URL = freshUrl;
+            results = await runMigrations(url, authToken);
+          } else {
+            throw error;
+          }
+        } else {
+          throw error;
+        }
+      } else {
+        throw error;
+      }
     }
 
-    const failures = results.filter((r) => r.status === "Error");
-
-    results.forEach((result) => {
-      console.log(
-        `${result.direction} : ${result.migrationName} : ${result.status}`,
-      );
-    });
+    const failures = (results ?? []).filter((r) => r.status === "Error");
 
     utils.status.show({
       title: "DB Migrations",
       summary: failures.length
         ? "Some migrations failed"
         : "Migrations succeeded",
-      text: results.map((r) => `${r.migrationName} : ${r.status}`).join("\r\n"),
+      text: (results ?? [])
+        .map((r) => `${r.migrationName} : ${r.status}`)
+        .join("\r\n"),
     });
   } catch (error) {
     console.error(error);
     utils.build.failBuild("Migrations failed", { error });
-  } finally {
-    await db?.destroy();
   }
 };
