@@ -75,6 +75,12 @@ export const Membership: FC<Props> = ({ email }) => {
                   <span className="font-semibold">Date of Birth: </span>
                   {formatDate(dep.dob, "dd/MM/yyyy")}
                 </p>
+                {dep.school_year && (
+                  <p className="text-sm">
+                    <span className="font-semibold">School Year: </span>
+                    {dep.school_year}
+                  </p>
+                )}
                 {dep.paid_until ? (
                   <p className="text-sm">
                     <span className="font-semibold">Paid Until: </span>
@@ -82,6 +88,12 @@ export const Membership: FC<Props> = ({ email }) => {
                   </p>
                 ) : (
                   <p className="text-sm text-amber-600">Awaiting payment</p>
+                )}
+                {dep.photo_consent !== null && (
+                  <p className="text-sm">
+                    <span className="font-semibold">Photo Consent: </span>
+                    {dep.photo_consent ? "Yes" : "No"}
+                  </p>
                 )}
               </div>
             ))}
