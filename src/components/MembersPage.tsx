@@ -62,6 +62,16 @@ export const MembersPage = () => {
               </a>
             ) : null}
 
+            {(session.data.user.role === "junior_manager" ||
+              session.data.user.role === "admin") && (
+              <a
+                className="text-dark justify-self-start rounded border-1 border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
+                href="/junior-manager"
+              >
+                Junior Teams
+              </a>
+            )}
+
             <a
               className="text-dark justify-self-start rounded border-1 border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
               href="/auth/logout"
