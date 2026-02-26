@@ -107,7 +107,7 @@ import LinkButton from "../LinkButton.astro";
 
     if (!tmp.error) {
       window.location.href = "/auth/registered";
-    } else if (tmp.error.code === "USER_ALREADY_EXISTS") {
+    } else if (tmp.error.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL") {
       errorEl.classList.remove("hidden");
     } else {
       genericErrorEl.classList.remove("hidden");
