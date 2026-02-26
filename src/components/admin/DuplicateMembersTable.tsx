@@ -31,13 +31,14 @@ export function DuplicateMembersTable() {
       {groups && groups.length > 0 && (
         <div className="flex flex-col gap-6">
           <p className="text-sm text-gray-600">
-            Found {groups.length} email{groups.length !== 1 ? "s" : ""} with
-            duplicate member records. Select which record to keep for each group.
+            Found {groups.length} group{groups.length !== 1 ? "s" : ""} of
+            potential duplicate member records. Select which record to keep for
+            each group.
           </p>
 
           {groups.map((group) => (
             <DuplicateGroup
-              key={group.email}
+              key={`${group.matchType}-${group.members[0]?.id}`}
               group={group}
               onPreview={(keepId, removeId) =>
                 setPreviewGroup({ keepId, removeId })
@@ -72,10 +73,12 @@ function DuplicateGroup({
   onPreview,
 }: {
   group: {
-    email: string;
+    matchType: string;
+    matchKey: string;
     members: Array<{
       id: string;
       name: string;
+      email: string;
       title: string;
       stripeCustomerId: string | null;
       membershipCount: number;
@@ -88,12 +91,16 @@ function DuplicateGroup({
   const [keepId, setKeepId] = useState<string | null>(null);
 
   const removeMembers = group.members.filter((m) => m.id !== keepId);
+  const isEmailMatch = group.matchType === "email";
 
   return (
     <div className="rounded border border-gray-200 bg-white p-4">
       <div className="mb-3 flex items-center gap-2">
-        <h3 className="text-sm font-semibold">{group.email}</h3>
-        <StatusPill variant="yellow">
+        <h3 className="text-sm font-semibold">{group.matchKey}</h3>
+        <StatusPill variant={isEmailMatch ? "green" : "yellow"}>
+          {isEmailMatch ? "Email match" : "Name match"}
+        </StatusPill>
+        <StatusPill variant="gray">
           {group.members.length} records
         </StatusPill>
       </div>
@@ -104,6 +111,7 @@ function DuplicateGroup({
             <th className="px-3 py-2">Keep</th>
             <th className="px-3 py-2">ID</th>
             <th className="px-3 py-2">Name</th>
+            {!isEmailMatch && <th className="px-3 py-2">Email</th>}
             <th className="px-3 py-2">Stripe</th>
             <th className="px-3 py-2">Memberships</th>
             <th className="px-3 py-2">Dependents</th>
@@ -119,7 +127,7 @@ function DuplicateGroup({
               <td className="px-3 py-2">
                 <input
                   type="radio"
-                  name={`keep-${group.email}`}
+                  name={`keep-${group.matchType}-${group.matchKey}`}
                   checked={keepId === member.id}
                   onChange={() => setKeepId(member.id)}
                   className="h-4 w-4 text-blue-600"
@@ -129,6 +137,9 @@ function DuplicateGroup({
                 {member.id.slice(0, 8)}...
               </td>
               <td className="px-3 py-2">{member.name}</td>
+              {!isEmailMatch && (
+                <td className="px-3 py-2 text-gray-600">{member.email}</td>
+              )}
               <td className="px-3 py-2">
                 {member.stripeCustomerId ? (
                   <StatusPill variant="green">Yes</StatusPill>
@@ -245,6 +256,16 @@ function MergePreviewModal({
               />
             </div>
 
+            {preview.isCrossEmailMerge && (
+              <div className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+                <p className="font-semibold">Different email addresses</p>
+                <p className="mt-1">
+                  These members have different email addresses ({preview.keep.member.email} vs{" "}
+                  {preview.remove.member.email}). Please verify they are the same person before merging.
+                </p>
+              </div>
+            )}
+
             <div className="rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
               <p className="font-medium">What will happen:</p>
               <ul className="mt-1 list-inside list-disc">
@@ -278,19 +299,19 @@ function MergePreviewModal({
 
             <div className="rounded border border-red-200 bg-red-50 p-4">
               <p className="mb-2 text-sm font-medium text-red-800">
-                This action cannot be undone. Type &quot;merge&quot; to confirm.
+                This action cannot be undone. Type &quot;{preview.isCrossEmailMerge ? "MERGE" : "merge"}&quot; to confirm.
               </p>
               <div className="flex items-center gap-3">
                 <input
                   type="text"
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
-                  placeholder='Type "merge"'
+                  placeholder={preview.isCrossEmailMerge ? 'Type "MERGE"' : 'Type "merge"'}
                   className="rounded border border-gray-300 px-3 py-1.5 text-sm"
                 />
                 <button
                   disabled={
-                    confirmText !== "merge" || mergeMutation.isPending
+                    confirmText !== (preview.isCrossEmailMerge ? "MERGE" : "merge") || mergeMutation.isPending
                   }
                   onClick={() => mergeMutation.mutate()}
                   className="rounded bg-red-600 px-4 py-1.5 text-sm text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
@@ -367,6 +388,8 @@ function MemberCard({
       <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
         <dt className="font-medium text-gray-500">Name</dt>
         <dd>{member.name}</dd>
+        <dt className="font-medium text-gray-500">Email</dt>
+        <dd>{member.email}</dd>
         <dt className="font-medium text-gray-500">Title</dt>
         <dd>{member.title}</dd>
         <dt className="font-medium text-gray-500">Address</dt>
