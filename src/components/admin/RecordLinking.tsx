@@ -525,6 +525,7 @@ export function RecordLinking() {
           isUnlinking={
             unlinkPcMutation.isPending || unlinkContentfulMutation.isPending
           }
+          isContentfulLoading={contentfulQuery.isLoading}
           onClose={() => {
             setDetailModal(null);
             setLinkSearch("");
@@ -588,6 +589,7 @@ function DetailModal({
   onUnlinkContentful,
   isLinking,
   isUnlinking,
+  isContentfulLoading,
   onClose,
 }: {
   person: PersonRow;
@@ -606,6 +608,7 @@ function DetailModal({
   onUnlinkContentful: () => void;
   isLinking: boolean;
   isUnlinking: boolean;
+  isContentfulLoading: boolean;
   onClose: () => void;
 }) {
   const contentfulPerson = person.contentfulEntryId
@@ -896,14 +899,14 @@ function DetailModal({
                     Cancel
                   </Button>
                 </div>
-                {contentfulQuery.isLoading && (
+                {isContentfulLoading && (
                   <p className="text-sm text-gray-500">
                     Loading Contentful profiles...
                   </p>
                 )}
                 <div className="flex max-h-60 flex-col gap-1 overflow-y-auto">
                   {suggestedContentful.length === 0 &&
-                    !contentfulQuery.isLoading && (
+                    !isContentfulLoading && (
                       <p className="py-2 text-center text-sm text-gray-500">
                         No matching profiles found.
                       </p>
