@@ -197,3 +197,122 @@ export const getResultSummary = async ({
       throw new Error("Failed to parse result summary response");
     });
 };
+
+const MatchDetailBat = z.object({
+  position: z.string(),
+  batsman_name: z.string(),
+  batsman_id: z.string(),
+  how_out: z.string(),
+  fielder_name: z.string().optional().default(""),
+  fielder_id: z.string().optional().default(""),
+  bowler_name: z.string().optional().default(""),
+  bowler_id: z.string().optional().default(""),
+  runs: z.string(),
+  fours: z.string(),
+  sixes: z.string(),
+  balls: z.string(),
+});
+
+const MatchDetailBowl = z.object({
+  bowler_name: z.string(),
+  bowler_id: z.string(),
+  overs: z.string(),
+  maidens: z.string(),
+  runs: z.string(),
+  wides: z.string(),
+  wickets: z.string(),
+  no_balls: z.string(),
+});
+
+const MatchDetailFoW = z.object({
+  runs: z.string(),
+  wickets: z.number(),
+  batsman_out_name: z.string(),
+  batsman_out_id: z.string(),
+  batsman_in_name: z.string().optional().default(""),
+  batsman_in_id: z.string().optional().default(""),
+  batsman_in_runs: z.string().optional().default(""),
+});
+
+const MatchDetailInnings = z.object({
+  team_batting_name: z.string(),
+  team_batting_id: z.string(),
+  innings_number: z.number(),
+  extra_byes: z.string(),
+  extra_leg_byes: z.string(),
+  extra_wides: z.string(),
+  extra_no_balls: z.string(),
+  extra_penalty_runs: z.string(),
+  penalties_runs_awarded_in_other_innings: z.string(),
+  total_extras: z.string(),
+  runs: z.string(),
+  wickets: z.string(),
+  overs: z.string(),
+  declared: z.boolean(),
+  revised_target_runs: z.string(),
+  revised_target_overs: z.string(),
+  bat: z.array(MatchDetailBat),
+  bowl: z.array(MatchDetailBowl),
+  fow: z.array(MatchDetailFoW),
+});
+
+const MatchDetailPlayer = z.object({
+  position: z.number(),
+  player_name: z.string(),
+  player_id: z.number(),
+  captain: z.boolean(),
+  wicket_keeper: z.boolean(),
+});
+
+const MatchDetail = z.object({
+  id: z.number(),
+  home_team_name: z.string(),
+  home_team_id: z.string(),
+  home_club_name: z.string(),
+  home_club_id: z.string().optional().default(""),
+  away_team_name: z.string(),
+  away_team_id: z.string(),
+  away_club_name: z.string(),
+  away_club_id: z.string().optional().default(""),
+  toss: z.string().optional().default(""),
+  batted_first: z.string().optional().default(""),
+  result: z.string().optional().default(""),
+  result_description: z.string().optional().default(""),
+  result_applied_to: z.string().optional().default(""),
+  players: z.array(
+    z.object({
+      home_team: z.array(MatchDetailPlayer).optional(),
+      away_team: z.array(MatchDetailPlayer).optional(),
+    }),
+  ),
+  innings: z.array(MatchDetailInnings),
+});
+
+const GetMatchDetailResponse = z.object({
+  match_details: z.array(MatchDetail),
+});
+
+export const getMatchDetail = async ({
+  matchId,
+}: {
+  matchId: string;
+}): Promise<z.TypeOf<typeof GetMatchDetailResponse>> => {
+  const params = new URLSearchParams({
+    match_id: matchId,
+    api_token: PLAY_CRICKET_API_KEY,
+  });
+  const res = await fetch(
+    `http://play-cricket.com/api/v2/match_detail.json?${params}`,
+  );
+
+  return await res
+    .json()
+    .then((data) => GetMatchDetailResponse.parse(data))
+    .catch((err) => {
+      console.error(
+        "Error parsing match detail response:",
+        JSON.stringify(err, null, 2),
+      );
+      throw new Error("Failed to parse match detail response");
+    });
+};
