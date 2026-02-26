@@ -2,6 +2,7 @@
 import Container from "@/layouts/Container.astro";
 import { CricketLeaderboard } from "@/components/CricketLeaderboard";
 import type { GetStaticPaths } from "astro";
+import { getCollection } from "astro:content";
 
 export const getStaticPaths = (() => {
   const firstYear = 2025;
@@ -19,6 +20,16 @@ const currentYear = new Date().getFullYear();
 const firstYear = 2025;
 const prevYear = season > firstYear ? season - 1 : null;
 const nextYear = season < currentYear ? season + 1 : null;
+
+const people = await getCollection("person");
+const personProfiles = people
+  .filter((p) => !p.data.hasLeftClub)
+  .map((p) => ({
+    contentfulId: p.id,
+    slug: p.data.slug,
+    name: p.data.name,
+    photoUrl: p.data.photo?.url ? `https:${p.data.photo.url}` : null,
+  }));
 ---
 
 <Container title={`${season} Season Leaderboard`}>
@@ -64,6 +75,6 @@ const nextYear = season < currentYear ? season + 1 : null;
       </nav>
     </div>
 
-    <CricketLeaderboard client:load season={season} />
+    <CricketLeaderboard client:load season={season} personProfiles={personProfiles} />
   </div>
 </Container>

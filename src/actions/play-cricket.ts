@@ -173,9 +173,11 @@ export const playCricket = {
       let query = client
         .selectFrom("match_performance_batting as b")
         .innerJoin("play_cricket_team as t", "t.id", "b.team_id")
+        .leftJoin("member as m", "m.play_cricket_id", "b.player_id")
         .select([
           "b.player_id",
           "b.player_name",
+          "m.contentful_entry_id",
           sql<number>`SUM(b.runs)`.as("total_runs"),
           sql<number>`COUNT(*)`.as("innings"),
           sql<number>`SUM(b.not_out)`.as("not_outs"),
@@ -192,7 +194,7 @@ export const playCricket = {
         ])
         .where("b.season", "=", season)
         .where("t.is_junior", "=", isJunior ? 1 : 0)
-        .groupBy(["b.player_id", "b.player_name"]);
+        .groupBy(["b.player_id", "b.player_name", "m.contentful_entry_id"]);
 
       if (teamId) {
         query = query.where("b.team_id", "=", teamId);
@@ -217,6 +219,7 @@ export const playCricket = {
           return {
             playerId: r.player_id,
             playerName: r.player_name,
+            contentfulEntryId: r.contentful_entry_id ?? null,
             innings: r.innings,
             notOuts: r.not_outs,
             runs: r.total_runs,
@@ -250,9 +253,11 @@ export const playCricket = {
       let query = client
         .selectFrom("match_performance_bowling as b")
         .innerJoin("play_cricket_team as t", "t.id", "b.team_id")
+        .leftJoin("member as m", "m.play_cricket_id", "b.player_id")
         .select([
           "b.player_id",
           "b.player_name",
+          "m.contentful_entry_id",
           sql<number>`COUNT(*)`.as("matches"),
           sql<number>`SUM(b.wickets)`.as("total_wickets"),
           sql<number>`SUM(b.runs)`.as("total_runs"),
@@ -263,7 +268,7 @@ export const playCricket = {
         ])
         .where("b.season", "=", season)
         .where("t.is_junior", "=", isJunior ? 1 : 0)
-        .groupBy(["b.player_id", "b.player_name"]);
+        .groupBy(["b.player_id", "b.player_name", "m.contentful_entry_id"]);
 
       if (teamId) {
         query = query.where("b.team_id", "=", teamId);
@@ -334,6 +339,7 @@ export const playCricket = {
           return {
             playerId: r.player_id,
             playerName: r.player_name,
+            contentfulEntryId: r.contentful_entry_id ?? null,
             matches: r.matches,
             overs: oversStr,
             maidens: r.total_maidens,

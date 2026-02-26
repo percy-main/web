@@ -13,13 +13,21 @@ import {
   useQuery,
 } from "@tanstack/react-query";
 import { actions } from "astro:actions";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 const queryClient = new QueryClient();
+
+type PersonProfile = {
+  contentfulId: string;
+  slug: string;
+  name: string;
+  photoUrl: string | null;
+};
 
 type BattingEntry = {
   playerId: string;
   playerName: string;
+  contentfulEntryId: string | null;
   innings: number;
   notOuts: number;
   runs: number;
@@ -35,6 +43,7 @@ type BattingEntry = {
 type BowlingEntry = {
   playerId: string;
   playerName: string;
+  contentfulEntryId: string | null;
   matches: number;
   overs: string;
   maidens: number;
@@ -136,7 +145,32 @@ function TeamFilter({
   );
 }
 
-function BattingTable({ entries }: { entries: BattingEntry[] }) {
+function PlayerName({
+  entry,
+  profileMap,
+}: {
+  entry: { playerName: string; contentfulEntryId: string | null };
+  profileMap: Map<string, PersonProfile>;
+}) {
+  const profile = entry.contentfulEntryId
+    ? profileMap.get(entry.contentfulEntryId)
+    : null;
+
+  if (profile) {
+    return (
+      <a
+        href={`/person/${profile.slug}`}
+        className="font-medium text-green-800 underline decoration-green-800/30 underline-offset-2 hover:decoration-green-800"
+      >
+        {entry.playerName}
+      </a>
+    );
+  }
+
+  return <span className="font-medium">{entry.playerName}</span>;
+}
+
+function BattingTable({ entries, profileMap }: { entries: BattingEntry[]; profileMap: Map<string, PersonProfile> }) {
   if (entries.length === 0) {
     return <EmptyState message="No batting data available yet." />;
   }
@@ -163,7 +197,9 @@ function BattingTable({ entries }: { entries: BattingEntry[] }) {
         {entries.map((entry, idx) => (
           <TableRow key={entry.playerId}>
             <TableCell className="text-gray-500">{idx + 1}</TableCell>
-            <TableCell className="font-medium">{entry.playerName}</TableCell>
+            <TableCell>
+              <PlayerName entry={entry} profileMap={profileMap} />
+            </TableCell>
             <TableCell className="text-right">{entry.innings}</TableCell>
             <TableCell className="hidden text-right sm:table-cell">
               {entry.notOuts}
@@ -195,7 +231,7 @@ function BattingTable({ entries }: { entries: BattingEntry[] }) {
   );
 }
 
-function BowlingTable({ entries }: { entries: BowlingEntry[] }) {
+function BowlingTable({ entries, profileMap }: { entries: BowlingEntry[]; profileMap: Map<string, PersonProfile> }) {
   if (entries.length === 0) {
     return <EmptyState message="No bowling data available yet." />;
   }
@@ -220,7 +256,9 @@ function BowlingTable({ entries }: { entries: BowlingEntry[] }) {
         {entries.map((entry, idx) => (
           <TableRow key={entry.playerId}>
             <TableCell className="text-gray-500">{idx + 1}</TableCell>
-            <TableCell className="font-medium">{entry.playerName}</TableCell>
+            <TableCell>
+              <PlayerName entry={entry} profileMap={profileMap} />
+            </TableCell>
             <TableCell className="text-right">{entry.overs}</TableCell>
             <TableCell className="hidden text-right sm:table-cell">
               {entry.maidens}
@@ -248,12 +286,17 @@ function BowlingTable({ entries }: { entries: BowlingEntry[] }) {
   );
 }
 
-function LeaderboardInner({ season }: { season: number }) {
+function LeaderboardInner({ season, personProfiles }: { season: number; personProfiles: PersonProfile[] }) {
   const [isJunior, setIsJunior] = useState(false);
   const [teamId, setTeamId] = useState("");
   const [competitionTypes, setCompetitionTypes] = useState<string[]>([]);
   const [discipline, setDiscipline] = useState<"batting" | "bowling">(
     "batting",
+  );
+
+  const profileMap = useMemo(
+    () => new Map(personProfiles.map((p) => [p.contentfulId, p])),
+    [personProfiles],
   );
 
   const teamsQuery = useQuery({
@@ -363,7 +406,7 @@ function LeaderboardInner({ season }: { season: number }) {
           ) : battingQuery.error ? (
             <EmptyState message="Failed to load batting leaderboard." />
           ) : (
-            <BattingTable entries={battingQuery.data?.entries ?? []} />
+            <BattingTable entries={battingQuery.data?.entries ?? []} profileMap={profileMap} />
           )}
           <p className="mt-2 text-xs text-gray-400">
             Averages shown for players with 3+ innings.
@@ -376,7 +419,7 @@ function LeaderboardInner({ season }: { season: number }) {
           ) : bowlingQuery.error ? (
             <EmptyState message="Failed to load bowling leaderboard." />
           ) : (
-            <BowlingTable entries={bowlingQuery.data?.entries ?? []} />
+            <BowlingTable entries={bowlingQuery.data?.entries ?? []} profileMap={profileMap} />
           )}
           <p className="mt-2 text-xs text-gray-400">
             Averages and strike rates shown for bowlers with 10+ overs.
@@ -387,10 +430,10 @@ function LeaderboardInner({ season }: { season: number }) {
   );
 }
 
-export function CricketLeaderboard({ season }: { season: number }) {
+export function CricketLeaderboard({ season, personProfiles = [] }: { season: number; personProfiles?: PersonProfile[] }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <LeaderboardInner season={season} />
+      <LeaderboardInner season={season} personProfiles={personProfiles} />
     </QueryClientProvider>
   );
 }
