@@ -75,6 +75,7 @@ export interface Dependent {
   member_id: string;
   name: string;
   photo_consent: number | null;
+  play_cricket_id: string | null;
   played_before: number | null;
   previous_cricket: string | null;
   school_year: string | null;
@@ -173,6 +174,7 @@ export interface Member {
   emergency_contact_telephone: string;
   id: string;
   name: string;
+  play_cricket_id: string | null;
   postcode: string;
   stripe_customer_id: string | null;
   telephone: string;
