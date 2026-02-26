@@ -3,6 +3,7 @@ import { client } from "@/lib/db/client";
 import * as playCricketApi from "@/lib/play-cricket";
 import { defineAction } from "astro:actions";
 import { z } from "astro:schema";
+import { format } from "date-fns";
 import { sql } from "kysely";
 import _ from "lodash";
 
@@ -352,6 +353,151 @@ export const playCricket = {
             bestWickets: r.best_wickets,
           };
         }),
+      };
+    },
+  }),
+
+  getLiveScores: defineAction({
+    handler: async () => {
+      const now = new Date();
+      const todayDdMmYyyy = format(now, "dd/MM/yyyy");
+      const season = now.getFullYear();
+
+      // Fetch this season's matches and filter to today
+      const { matches } = await playCricketApi.getMatchesSummary({ season });
+      const todayMatches = matches.filter(
+        (m) => m.match_date === todayDdMmYyyy,
+      );
+
+      if (todayMatches.length === 0) {
+        return { matches: [] };
+      }
+
+      const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+      const results = await Promise.all(
+        todayMatches.map(async (summary) => {
+          const matchId = summary.id.toString();
+
+          // Check cache
+          const cached = await client
+            .selectFrom("play_cricket_match_cache")
+            .select(["data", "fetched_at"])
+            .where("match_id", "=", matchId)
+            .executeTakeFirst();
+
+          let detailData: string;
+          let fetchedAt: string;
+
+          if (
+            cached &&
+            Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS
+          ) {
+            detailData = cached.data;
+            fetchedAt = cached.fetched_at;
+          } else {
+            // Fetch fresh from Play-Cricket API
+            const detail = await playCricketApi.getMatchDetail({
+              matchId,
+            });
+            detailData = JSON.stringify(detail);
+            fetchedAt = new Date().toISOString();
+
+            // Upsert cache
+            await client
+              .insertInto("play_cricket_match_cache")
+              .values({
+                match_id: matchId,
+                data: detailData,
+                fetched_at: fetchedAt,
+                match_date: todayDdMmYyyy,
+              })
+              .onConflict((oc) =>
+                oc.column("match_id").doUpdateSet({
+                  data: detailData,
+                  fetched_at: fetchedAt,
+                  match_date: todayDdMmYyyy,
+                }),
+              )
+              .execute();
+          }
+
+          const { match_details } = JSON.parse(detailData) as {
+            match_details: Array<{
+              id: number;
+              home_team_name: string;
+              home_team_id: string;
+              home_club_name: string;
+              away_team_name: string;
+              away_team_id: string;
+              away_club_name: string;
+              toss: string;
+              batted_first: string;
+              result: string;
+              result_description: string;
+              result_applied_to: string;
+              innings: Array<{
+                team_batting_name: string;
+                team_batting_id: string;
+                innings_number: number;
+                runs: string;
+                wickets: string;
+                overs: string;
+                declared: boolean;
+                bat: Array<{ position: string }>;
+              }>;
+            }>;
+          };
+          const match = match_details[0];
+
+          if (!match) return null;
+
+          // Determine status
+          const hasInningsData = match.innings.some(
+            (inn) => inn.bat.length > 0,
+          );
+          const hasResult = !!match.result && match.result !== "";
+
+          let status: "not_started" | "in_progress" | "completed";
+          if (hasResult) {
+            status = "completed";
+          } else if (hasInningsData) {
+            status = "in_progress";
+          } else {
+            status = "not_started";
+          }
+
+          return {
+            matchId,
+            homeTeam: `${match.home_club_name} ${match.home_team_name}`,
+            homeTeamId: match.home_team_id,
+            awayTeam: `${match.away_club_name} ${match.away_team_name}`,
+            awayTeamId: match.away_team_id,
+            matchDate: summary.match_date,
+            matchTime: summary.match_time,
+            status,
+            toss: match.toss || null,
+            battedFirst: match.batted_first || null,
+            result: match.result_description || null,
+            resultAppliedTo: match.result_applied_to || null,
+            innings: match.innings.map((inn) => ({
+              teamBattingName: inn.team_batting_name,
+              teamBattingId: inn.team_batting_id,
+              inningsNumber: inn.innings_number,
+              runs: parseInt(inn.runs, 10) || 0,
+              wickets: parseInt(inn.wickets, 10) || 0,
+              overs: inn.overs,
+              declared: inn.declared,
+            })),
+            lastUpdatedAt: fetchedAt,
+          };
+        }),
+      );
+
+      return {
+        matches: results.filter(
+          (r): r is NonNullable<typeof r> => r !== null,
+        ),
       };
     },
   }),

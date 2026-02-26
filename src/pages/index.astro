@@ -6,6 +6,7 @@ import CalendarStripCard from "@/components/CalendarStripCard.astro";
 import SportCard from "@/components/SportCard.astro";
 import { compareDesc, compareAsc, isAfter, isSameDay } from "date-fns";
 import Hero from "@/components/Hero/Hero.astro";
+import { LiveScoreWidget } from "@/components/LiveScoreWidget";
 import LDJson from "../components/LDJson.astro";
 import { PLAY_CRICKET_1XI_ID, PLAY_CRICKET_2XI_ID } from "astro:env/server";
 import { paymentData } from "@/lib/payments/config";
@@ -58,6 +59,9 @@ const donateUrl = `/purchase/${paymentData.prices.donation}`;
 
   <!-- 1. Hero -->
   <Hero />
+
+  <!-- 1b. Live Scores (renders nothing if no matches today) -->
+  <LiveScoreWidget client:load />
 
   <!-- 2. Calendar Strip -->
   {
