@@ -246,6 +246,12 @@ export const admin = {
       role: z.enum(["user", "admin"]),
     }),
     handler: async ({ userId, role }, session, context) => {
+      // When changing to user or admin, clean up any junior_manager team assignments
+      await client
+        .deleteFrom("junior_team_manager")
+        .where("user_id", "=", userId)
+        .execute();
+
       await auth.api.setRole({
         headers: context.request.headers,
         body: {
@@ -253,6 +259,119 @@ export const admin = {
           role,
         },
       });
+
+      return { success: true };
+    },
+  }),
+
+  listJuniorTeams: defineAuthAction({
+    roles: ["admin"],
+    handler: async () => {
+      const teams = await client
+        .selectFrom("junior_team")
+        .selectAll()
+        .orderBy("age_group", "asc")
+        .orderBy("sex", "asc")
+        .execute();
+
+      return teams;
+    },
+  }),
+
+  getJuniorManagerTeams: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      userId: z.string(),
+    }),
+    handler: async ({ userId }) => {
+      const assignments = await client
+        .selectFrom("junior_team_manager")
+        .where("user_id", "=", userId)
+        .select("junior_team_id")
+        .execute();
+
+      return assignments.map((a) => a.junior_team_id);
+    },
+  }),
+
+  setJuniorManager: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      userId: z.string(),
+      teamIds: z.array(z.string()),
+    }),
+    handler: async ({ userId, teamIds }) => {
+      // Verify the target user exists
+      const targetUser = await client
+        .selectFrom("user")
+        .where("id", "=", userId)
+        .select(["id", "role"])
+        .executeTakeFirst();
+
+      if (!targetUser) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+
+      // Don't allow changing an admin's role via this action
+      if (targetUser.role === "admin") {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Cannot assign junior manager role to an admin. Demote them first.",
+        });
+      }
+
+      // Clear existing team assignments
+      await client
+        .deleteFrom("junior_team_manager")
+        .where("user_id", "=", userId)
+        .execute();
+
+      if (teamIds.length > 0) {
+        // Validate all team IDs exist
+        const existingTeams = await client
+          .selectFrom("junior_team")
+          .select("id")
+          .execute();
+
+        const validIds = new Set(existingTeams.map((t) => t.id));
+        for (const id of teamIds) {
+          if (!validIds.has(id)) {
+            throw new ActionError({
+              code: "BAD_REQUEST",
+              message: `Invalid team ID: ${id}`,
+            });
+          }
+        }
+
+        // Insert new assignments
+        for (const teamId of teamIds) {
+          await client
+            .insertInto("junior_team_manager")
+            .values({
+              user_id: userId,
+              junior_team_id: teamId,
+            })
+            .execute();
+        }
+
+        // Set role to junior_manager directly in DB
+        // (Better Auth's setRole only knows "user"/"admin", so we update directly)
+        await client
+          .updateTable("user")
+          .set({ role: "junior_manager" })
+          .where("id", "=", userId)
+          .execute();
+      } else {
+        // No teams assigned — revert to user role
+        await client
+          .updateTable("user")
+          .set({ role: "user" })
+          .where("id", "=", userId)
+          .execute();
+      }
 
       return { success: true };
     },

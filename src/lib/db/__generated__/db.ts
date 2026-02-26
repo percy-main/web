@@ -83,6 +83,19 @@ export interface GameScore {
   user_id: string;
 }
 
+export interface JuniorTeam {
+  age_group: string;
+  created_at: Generated<string>;
+  id: string | null;
+  name: string;
+  sex: string;
+}
+
+export interface JuniorTeamManager {
+  junior_team_id: string;
+  user_id: string;
+}
+
 export interface Member {
   address: string;
   dob: string;
@@ -170,6 +183,8 @@ export interface DB {
   dependent: Dependent;
   event_subscriber: EventSubscriber;
   game_score: GameScore;
+  junior_team: JuniorTeam;
+  junior_team_manager: JuniorTeamManager;
   member: Member;
   membership: Membership;
   passkey: Passkey;

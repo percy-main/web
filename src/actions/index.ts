@@ -5,6 +5,7 @@ import { createEventSubscriber } from "./create-event-subscriber";
 import { gameScore } from "./game-score";
 import { join } from "./join";
 import { addDependents, dependents } from "./junior";
+import { juniorManager } from "./junior-manager";
 import { leaderboard } from "./leaderboard";
 import { getMemberDetails, updateMemberDetails } from "./member-details";
 import { membership } from "./membership";
@@ -21,6 +22,7 @@ export const server = {
   join,
   addDependents,
   dependents,
+  juniorManager,
   purchase,
   subscribe,
   subscriptions,
