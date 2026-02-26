@@ -3,15 +3,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
 import { useState } from "react";
 import { ContactSubmissionsTable } from "./ContactSubmissionsTable";
+import { JuniorsTable } from "./JuniorsTable";
 import { MemberTable } from "./MemberTable";
 
 const queryClient = new QueryClient();
 
+type Tab = "members" | "juniors" | "contacts";
+
 export function AdminPanel() {
   const session = useSession();
-  const [activeTab, setActiveTab] = useState<"members" | "contacts">(
-    "members",
-  );
+  const [activeTab, setActiveTab] = useState<Tab>("members");
 
   if (session.isPending) {
     return <p className="text-gray-500">Loading...</p>;
@@ -47,6 +48,12 @@ export function AdminPanel() {
             Members
           </button>
           <button
+            className={`px-4 py-2 text-sm font-medium ${activeTab === "juniors" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+            onClick={() => setActiveTab("juniors")}
+          >
+            Juniors
+          </button>
+          <button
             className={`px-4 py-2 text-sm font-medium ${activeTab === "contacts" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
             onClick={() => setActiveTab("contacts")}
           >
@@ -54,6 +61,7 @@ export function AdminPanel() {
           </button>
         </div>
         {activeTab === "members" && <MemberTable />}
+        {activeTab === "juniors" && <JuniorsTable />}
         {activeTab === "contacts" && <ContactSubmissionsTable />}
       </div>
     </QueryClientProvider>
