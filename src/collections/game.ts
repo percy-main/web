@@ -1,4 +1,5 @@
 import * as location from "@/collections/location";
+import { client } from "@/lib/db/client";
 import { contentClient } from "@/lib/contentful/client";
 import { defineCollection, z } from "astro:content";
 import { PLAY_CRICKET_SITE_ID } from "astro:env/server";
@@ -50,6 +51,9 @@ export const schema = z.object({
   sponsor: z
     .object({
       name: z.string(),
+      logoUrl: z.string().optional(),
+      message: z.string().optional(),
+      website: z.string().optional(),
     })
     .optional(),
   description: z.any().optional(),
@@ -78,10 +82,28 @@ export const loader = async () => {
     (g) => g.fields.playCricketId,
   );
 
+  const dbSponsorships = await client
+    .selectFrom("game_sponsorship")
+    .where("approved", "=", 1)
+    .where("paid_at", "is not", null)
+    .select([
+      "game_id",
+      "sponsor_name",
+      "display_name",
+      "sponsor_logo_url",
+      "sponsor_message",
+      "sponsor_website",
+    ])
+    .execute();
+
+  const dbSponsorsByGameId = _.keyBy(dbSponsorships, (s) => s.game_id);
+
   return response.matches.map((match) => {
     const home = match.home_club_id === PLAY_CRICKET_SITE_ID;
 
-    const sponsor = gamesByGameId[match.id.toString()]?.fields.sponsor as
+    const dbSponsorship = dbSponsorsByGameId[match.id.toString()];
+
+    const cfSponsor = gamesByGameId[match.id.toString()]?.fields.sponsor as
       | Entry<TypeSponsorSkeleton, undefined>
       | undefined;
 
@@ -164,7 +186,16 @@ export const loader = async () => {
         type: match.competition_type,
       },
       location,
-      sponsor: sponsor?.fields,
+      sponsor: dbSponsorship
+        ? {
+            name: dbSponsorship.display_name ?? dbSponsorship.sponsor_name,
+            logoUrl: dbSponsorship.sponsor_logo_url ?? undefined,
+            message: dbSponsorship.sponsor_message ?? undefined,
+            website: dbSponsorship.sponsor_website ?? undefined,
+          }
+        : cfSponsor?.fields
+          ? { name: cfSponsor.fields.name }
+          : undefined,
       description,
     };
   });
