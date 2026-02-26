@@ -1,4 +1,5 @@
 import type { Game } from "@/collections/game";
+import { OutcomePill } from "@/components/OutcomePill";
 import { formatDate } from "date-fns";
 import { IoChevronForward } from "react-icons/io5";
 import { Sponsor } from "./Sponsor";
@@ -20,8 +21,11 @@ export const GamePreview = ({ id, game }: Props) => (
         loading="eager"
         className="mt-1 self-start"
       />
-      <h4 className="text-lg font-semibold">
+      <h4 className="flex items-center gap-2 text-lg font-semibold">
         {game.when ? formatDate(game.when, "dd/MM/yyyy") : "TBC"}
+        {game.result?.outcome && (
+          <OutcomePill outcome={game.result.outcome} />
+        )}
       </h4>
     </div>
     <div className="flex flex-row justify-between gap-4">
