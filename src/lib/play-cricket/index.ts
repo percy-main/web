@@ -111,3 +111,89 @@ export const getMatchesSummary = async ({
     return GetMatchSummaryResponse.parse(data);
   });
 };
+
+const ResultSummaryInnings = z.object({
+  team_batting_id: z.string(),
+  innings_number: z.number(),
+  extra_byes: z.string(),
+  extra_leg_byes: z.string(),
+  extra_wides: z.string(),
+  extra_no_balls: z.string(),
+  extra_penalty_runs: z.string(),
+  penalties_runs_awarded_in_other_innings: z.string(),
+  total_extras: z.string(),
+  runs: z.string(),
+  wickets: z.string(),
+  overs: z.string(),
+  declared: z.boolean(),
+  revised_target_runs: z.string(),
+  revised_target_overs: z.string(),
+});
+
+const ResultSummaryMatch = z.object({
+  id: z.number(),
+  status: z.string(),
+  published: z.string(),
+  last_updated: z.string(),
+  league_name: z.string().optional().default(""),
+  league_id: z.string().optional().default(""),
+  competition_name: z.string().optional().default(""),
+  competition_id: z.string().optional().default(""),
+  competition_type: z.string().optional().default(""),
+  match_type: z.string().optional().default(""),
+  game_type: z.string().optional().default(""),
+  match_date: z.string(),
+  match_time: z.string(),
+  ground_name: z.string().optional().default(""),
+  ground_id: z.string().optional().default(""),
+  home_team_name: z.string(),
+  home_team_id: z.string(),
+  home_club_name: z.string(),
+  home_club_id: z.string(),
+  away_team_name: z.string(),
+  away_team_id: z.string(),
+  away_club_name: z.string(),
+  away_club_id: z.string(),
+  toss_won_by_team_id: z.string().optional().default(""),
+  toss: z.string().optional().default(""),
+  batted_first: z.string().optional().default(""),
+  result: z.string(),
+  result_description: z.string().optional().default(""),
+  result_applied_to: z.string().optional().default(""),
+  innings: z.array(ResultSummaryInnings),
+});
+
+export type ResultSummaryMatch = z.TypeOf<typeof ResultSummaryMatch>;
+
+const GetResultSummaryResponse = z.object({
+  result_summary: z.array(ResultSummaryMatch),
+});
+
+export const getResultSummary = async ({
+  season,
+  teamId,
+}: {
+  season: number;
+  teamId?: string;
+}): Promise<z.TypeOf<typeof GetResultSummaryResponse>> => {
+  const params = new URLSearchParams({
+    site_id: PLAY_CRICKET_SITE_ID,
+    season: season.toString(),
+    api_token: PLAY_CRICKET_API_KEY,
+    ...(teamId ? { team_id: teamId } : {}),
+  });
+  const res = await fetch(
+    `http://play-cricket.com/api/v2/result_summary.json?${params}`,
+  );
+
+  return await res
+    .json()
+    .then((data) => GetResultSummaryResponse.parse(data))
+    .catch((err) => {
+      console.error(
+        "Error parsing result summary response:",
+        JSON.stringify(err, null, 2),
+      );
+      throw new Error("Failed to parse result summary response");
+    });
+};

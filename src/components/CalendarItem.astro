@@ -1,7 +1,8 @@
 ---
-import { formatDate } from "date-fns";
+import { formatDate, getYear } from "date-fns";
 import { RichText } from "@/components/RichText";
 import { Sponsor } from "@/components/Sponsor";
+import { MatchResult } from "@/components/MatchResult";
 import { Map } from "@/components/Map";
 import { When } from "./When";
 import { AddToCalendarButton } from "add-to-calendar-button-react";
@@ -70,7 +71,7 @@ const { id, title, calendarItem } = Astro.props;
   {
     match(calendarItem)
       .with({ type: "game" }, (game) => (
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-4">
           <h4 class="text-h6 md:text-h4">Match Details</h4>
           <ul class="flex flex-col gap-2">
             <li>
@@ -85,6 +86,14 @@ const { id, title, calendarItem } = Astro.props;
               {game.competition.name || "Friendly"}
             </li>
           </ul>
+          <MatchResult
+            client:load
+            matchId={id}
+            season={game.when ? getYear(game.when) : new Date().getFullYear()}
+            ourTeamId={game.team.id}
+            when={game.when ? game.when.toISOString() : null}
+            ssrResult={game.result}
+          />
           <RichText
             client:load
             page={`calendar/event/${id}`}

@@ -1,9 +1,34 @@
+import { resolveOutcome, buildInnings } from "@/collections/game";
 import * as playCricketApi from "@/lib/play-cricket";
 import { defineAction } from "astro:actions";
 import { z } from "astro:schema";
 import _ from "lodash";
 
 export const playCricket = {
+  getResultSummary: defineAction({
+    input: z.object({
+      matchId: z.string(),
+      season: z.number(),
+      ourTeamId: z.string(),
+    }),
+    handler: async ({ matchId, season, ourTeamId }) => {
+      const { result_summary } = await playCricketApi.getResultSummary({
+        season,
+        teamId: ourTeamId,
+      });
+
+      const match = result_summary.find((r) => r.id.toString() === matchId);
+      if (!match) return null;
+
+      return {
+        outcome: resolveOutcome(match, ourTeamId),
+        description: match.result_description,
+        toss: match.toss,
+        innings: buildInnings(match),
+      };
+    },
+  }),
+
   getLeagueTable: defineAction({
     input: z.object({
       divisionId: z.string(),

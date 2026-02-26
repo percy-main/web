@@ -10,6 +10,7 @@ import type {
   TypeSponsorSkeleton,
 } from "../__generated__";
 import * as playCricket from "../lib/play-cricket";
+import type { ResultSummaryMatch } from "../lib/play-cricket";
 
 export const team = z.object({
   id: z.string(),
@@ -31,6 +32,27 @@ export const competition = z.object({
   name: z.string(),
   type: z.string(),
 });
+
+const innings = z.object({
+  teamBattingId: z.string(),
+  teamName: z.string(),
+  runs: z.number(),
+  wickets: z.number(),
+  overs: z.string(),
+  declared: z.boolean(),
+  allOut: z.boolean(),
+});
+
+export type Innings = z.TypeOf<typeof innings>;
+
+const result = z.object({
+  outcome: z.enum(["W", "L", "D", "T", "A", "C", "N"]).nullable(),
+  description: z.string(),
+  toss: z.string(),
+  innings: z.array(innings),
+});
+
+export type Result = z.TypeOf<typeof result>;
 
 export const schema = z.object({
   type: z.literal("game"),
@@ -56,9 +78,57 @@ export const schema = z.object({
     })
     .optional(),
   description: z.any().optional(),
+  result: result.optional(),
 });
 
 export type Game = z.TypeOf<typeof schema>;
+
+export function resolveOutcome(
+  resultMatch: ResultSummaryMatch,
+  ourTeamId: string,
+): Result["outcome"] {
+  const { result, result_applied_to, result_description } = resultMatch;
+
+  if (!result || result === "") return null;
+
+  const desc = result_description.toLowerCase();
+  if (desc.includes("abandoned")) return "A";
+  if (desc.includes("cancel")) return "C";
+  if (desc.includes("tied") || result === "T") return "T";
+  if (desc.includes("draw") || result === "D") return "D";
+  if (desc.includes("no result")) return "N";
+
+  if (result === "W") {
+    if (!result_applied_to) return null;
+    return result_applied_to === ourTeamId ? "W" : "L";
+  }
+
+  return null;
+}
+
+export function buildInnings(
+  resultMatch: ResultSummaryMatch,
+): Innings[] {
+  return resultMatch.innings.map((inn) => {
+    const teamId = inn.team_batting_id;
+    const isHome = teamId === resultMatch.home_team_id;
+    const teamName = isHome
+      ? `${resultMatch.home_club_name} ${resultMatch.home_team_name}`
+      : `${resultMatch.away_club_name} ${resultMatch.away_team_name}`;
+    const runs = parseInt(inn.runs, 10) || 0;
+    const wickets = parseInt(inn.wickets, 10) || 0;
+
+    return {
+      teamBattingId: teamId,
+      teamName,
+      runs,
+      wickets,
+      overs: inn.overs,
+      declared: inn.declared,
+      allOut: wickets >= 10,
+    };
+  });
+}
 
 export const loader = async () => {
   const currentYear = new Date().getFullYear();
@@ -66,10 +136,23 @@ export const loader = async () => {
     { length: currentYear - 2025 + 1 },
     (_, i) => 2025 + i,
   );
-  const responses = await Promise.all(
-    seasons.map((season) => playCricket.getMatchesSummary({ season })),
+  const [matchResponses, resultResponses] = await Promise.all([
+    Promise.all(
+      seasons.map((season) => playCricket.getMatchesSummary({ season })),
+    ),
+    Promise.all(
+      seasons.map((season) =>
+        playCricket
+          .getResultSummary({ season })
+          .catch(() => ({ result_summary: [] })),
+      ),
+    ),
+  ]);
+  const response = { matches: matchResponses.flatMap((r) => r.matches) };
+  const resultsByMatchId = _.keyBy(
+    resultResponses.flatMap((r) => r.result_summary),
+    (r) => r.id.toString(),
   );
-  const response = { matches: responses.flatMap((r) => r.matches) };
 
   const cfGamesResponse =
     await contentClient.getEntries<TypeGameDetailSkeleton>({
@@ -116,6 +199,7 @@ export const loader = async () => {
 
   return response.matches.map((match) => {
     const home = match.home_club_id === PLAY_CRICKET_SITE_ID;
+    const resultMatch = resultsByMatchId[match.id.toString()];
 
     const dbSponsorship = dbSponsorsByGameId[match.id.toString()];
 
@@ -213,6 +297,14 @@ export const loader = async () => {
           ? { name: cfSponsor.fields.name }
           : undefined,
       description,
+      result: resultMatch
+        ? {
+            outcome: resolveOutcome(resultMatch, team.id),
+            description: resultMatch.result_description,
+            toss: resultMatch.toss,
+            innings: buildInnings(resultMatch),
+          }
+        : undefined,
     };
   });
 };
