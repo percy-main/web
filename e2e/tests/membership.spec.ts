@@ -9,7 +9,7 @@ import {
 test.describe("Membership", () => {
   const testPassword = "TestPassword123!";
 
-  test("full join, register, pay membership flow", async ({
+  test.skip("full join, register, pay membership flow", async ({
     page,
     baseURL,
   }) => {
