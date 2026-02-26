@@ -113,6 +113,7 @@ export const charges = {
       const paymentIntent = await stripe.paymentIntents.create({
         amount: totalAmountPence,
         currency: "gbp",
+        automatic_payment_methods: { enabled: true },
         metadata,
       });
 
