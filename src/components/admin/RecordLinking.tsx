@@ -260,6 +260,9 @@ export function RecordLinking() {
         );
       }
     }
+    // Intentionally depend only on allPeople: it's derived from linkingData via
+    // useMemo, so they always change together. Including detailModal would cause
+    // an infinite loop since this effect calls setDetailModal.
   }, [allPeople]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

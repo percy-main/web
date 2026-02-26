@@ -120,7 +120,7 @@ const currentSeason = now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYe
   }
 
   <PlayerSeasonStats
-    client:load
+    client:visible
     contentfulEntryId={contentfulEntryId}
     season={currentSeason}
   />

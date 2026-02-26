@@ -43,16 +43,9 @@ function PlayerSeasonStatsInner({ contentfulEntryId, season }: Props) {
     staleTime: 10 * 60 * 1000,
   });
 
-  if (isLoading) {
-    return (
-      <div className="mt-6 space-y-2">
-        <div className="h-6 w-48 animate-pulse rounded bg-gray-100" />
-        <div className="h-20 animate-pulse rounded bg-gray-100" />
-      </div>
-    );
-  }
-
-  if (!data) return null;
+  // Render nothing while loading or when no stats exist — most person pages
+  // won't have linked stats, so avoid showing a skeleton flash.
+  if (isLoading || !data) return null;
 
   return (
     <section className="mt-8">

@@ -173,11 +173,9 @@ export const playCricket = {
       let query = client
         .selectFrom("match_performance_batting as b")
         .innerJoin("play_cricket_team as t", "t.id", "b.team_id")
-        .leftJoin("member as m", "m.play_cricket_id", "b.player_id")
         .select([
           "b.player_id",
           "b.player_name",
-          "m.contentful_entry_id",
           sql<number>`SUM(b.runs)`.as("total_runs"),
           sql<number>`COUNT(*)`.as("innings"),
           sql<number>`SUM(b.not_out)`.as("not_outs"),
@@ -194,7 +192,7 @@ export const playCricket = {
         ])
         .where("b.season", "=", season)
         .where("t.is_junior", "=", isJunior ? 1 : 0)
-        .groupBy(["b.player_id", "b.player_name", "m.contentful_entry_id"]);
+        .groupBy(["b.player_id", "b.player_name"]);
 
       if (teamId) {
         query = query.where("b.team_id", "=", teamId);
@@ -209,6 +207,23 @@ export const playCricket = {
         .limit(50)
         .execute();
 
+      // Resolve contentful_entry_id separately to avoid JOIN row multiplication
+      const playerIds = rows.map((r) => r.player_id).filter(Boolean);
+      const contentfulMap = new Map<string, string>();
+      if (playerIds.length > 0) {
+        const members = await client
+          .selectFrom("member")
+          .select(["play_cricket_id", "contentful_entry_id"])
+          .where("play_cricket_id", "in", playerIds)
+          .where("contentful_entry_id", "is not", null)
+          .execute();
+        for (const m of members) {
+          if (m.play_cricket_id && m.contentful_entry_id) {
+            contentfulMap.set(m.play_cricket_id, m.contentful_entry_id);
+          }
+        }
+      }
+
       return {
         entries: rows.map((r) => {
           const dismissals = r.innings - r.not_outs;
@@ -219,7 +234,7 @@ export const playCricket = {
           return {
             playerId: r.player_id,
             playerName: r.player_name,
-            contentfulEntryId: r.contentful_entry_id ?? null,
+            contentfulEntryId: contentfulMap.get(r.player_id) ?? null,
             innings: r.innings,
             notOuts: r.not_outs,
             runs: r.total_runs,
@@ -253,11 +268,9 @@ export const playCricket = {
       let query = client
         .selectFrom("match_performance_bowling as b")
         .innerJoin("play_cricket_team as t", "t.id", "b.team_id")
-        .leftJoin("member as m", "m.play_cricket_id", "b.player_id")
         .select([
           "b.player_id",
           "b.player_name",
-          "m.contentful_entry_id",
           sql<number>`COUNT(*)`.as("matches"),
           sql<number>`SUM(b.wickets)`.as("total_wickets"),
           sql<number>`SUM(b.runs)`.as("total_runs"),
@@ -268,7 +281,7 @@ export const playCricket = {
         ])
         .where("b.season", "=", season)
         .where("t.is_junior", "=", isJunior ? 1 : 0)
-        .groupBy(["b.player_id", "b.player_name", "m.contentful_entry_id"]);
+        .groupBy(["b.player_id", "b.player_name"]);
 
       if (teamId) {
         query = query.where("b.team_id", "=", teamId);
@@ -285,7 +298,7 @@ export const playCricket = {
 
       // Need to compute total overs from individual match overs strings
       // Fetch the raw overs for each player to sum correctly
-      const playerIds = rows.map((r) => r.player_id);
+      const playerIds = rows.map((r) => r.player_id).filter(Boolean);
 
       const oversMap = new Map<string, { totalBalls: number }>();
       if (playerIds.length > 0) {
@@ -318,6 +331,22 @@ export const playCricket = {
         }
       }
 
+      // Resolve contentful_entry_id separately to avoid JOIN row multiplication
+      const contentfulMap = new Map<string, string>();
+      if (playerIds.length > 0) {
+        const members = await client
+          .selectFrom("member")
+          .select(["play_cricket_id", "contentful_entry_id"])
+          .where("play_cricket_id", "in", playerIds)
+          .where("contentful_entry_id", "is not", null)
+          .execute();
+        for (const m of members) {
+          if (m.play_cricket_id && m.contentful_entry_id) {
+            contentfulMap.set(m.play_cricket_id, m.contentful_entry_id);
+          }
+        }
+      }
+
       return {
         entries: rows.map((r) => {
           const oData = oversMap.get(r.player_id) ?? { totalBalls: 0 };
@@ -339,7 +368,7 @@ export const playCricket = {
           return {
             playerId: r.player_id,
             playerName: r.player_name,
-            contentfulEntryId: r.contentful_entry_id ?? null,
+            contentfulEntryId: contentfulMap.get(r.player_id) ?? null,
             matches: r.matches,
             overs: oversStr,
             maidens: r.total_maidens,
