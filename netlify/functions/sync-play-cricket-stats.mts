@@ -56,8 +56,10 @@ const MatchDetailInnings = z.object({
 
 const MatchDetail = z.object({
   id: z.number(),
+  home_team_name: z.string().optional().default(""),
   home_team_id: z.string(),
   home_club_id: z.string().optional().default(""),
+  away_team_name: z.string().optional().default(""),
   away_team_id: z.string(),
   away_club_id: z.string().optional().default(""),
   result: z.string().optional().default(""),
@@ -160,34 +162,40 @@ async function syncStats(): Promise<{
   let matchesProcessed = 0;
 
   try {
-    // Step 1: Sync teams
+    // Step 1: Sync teams (non-blocking — endpoint may not be authorised)
     console.log("Syncing teams...");
-    const teamsJson = await fetchApi(
-      `https://play-cricket.com/api/v2/sites/${siteId}/teams.json?api_token=${apiKey}`,
-      "Get teams",
-    );
-    const teamsData = GetTeamsResponse.parse(teamsJson);
+    try {
+      const teamsJson = await fetchApi(
+        `https://play-cricket.com/api/v2/sites/${siteId}/teams.json?api_token=${apiKey}`,
+        "Get teams",
+      );
+      const teamsData = GetTeamsResponse.parse(teamsJson);
 
-    for (const team of teamsData.teams) {
-      const teamId = team.id.toString();
-      const junior = isJuniorTeam(team.team_name) ? 1 : 0;
-      await db.execute({
-        sql: `INSERT INTO play_cricket_team (id, name, is_junior, site_id, last_updated)
-          VALUES (?, ?, ?, ?, ?)
-          ON CONFLICT(id) DO UPDATE SET name = ?, is_junior = ?, last_updated = ?`,
-        args: [
-          teamId,
-          team.team_name,
-          junior,
-          siteId,
-          team.last_updated,
-          team.team_name,
-          junior,
-          team.last_updated,
-        ],
-      });
+      for (const team of teamsData.teams) {
+        const teamId = team.id.toString();
+        const junior = isJuniorTeam(team.team_name) ? 1 : 0;
+        await db.execute({
+          sql: `INSERT INTO play_cricket_team (id, name, is_junior, site_id, last_updated)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET name = ?, is_junior = ?, last_updated = ?`,
+          args: [
+            teamId,
+            team.team_name,
+            junior,
+            siteId,
+            team.last_updated,
+            team.team_name,
+            junior,
+            team.last_updated,
+          ],
+        });
+      }
+      console.log(`Synced ${teamsData.teams.length} teams`);
+    } catch (err) {
+      const msg = `Teams sync skipped: ${err instanceof Error ? err.message : String(err)}`;
+      console.warn(msg);
+      errors.push(msg);
     }
-    console.log(`Synced ${teamsData.teams.length} teams`);
 
     // Step 2: Get all matches for the current season
     const season = new Date().getFullYear();
@@ -230,6 +238,30 @@ async function syncStats(): Promise<{
             `Match ${matchId} has no scorecard data, skipping`,
           );
           continue;
+        }
+
+        // Upsert teams discovered from match detail (fallback when teams endpoint is unavailable)
+        const teamEntries = [
+          { id: detail.home_team_id, name: detail.home_team_name, clubId: detail.home_club_id },
+          { id: detail.away_team_id, name: detail.away_team_name, clubId: detail.away_club_id },
+        ];
+        for (const t of teamEntries) {
+          if (t.id && t.name && t.clubId === siteId) {
+            await db.execute({
+              sql: `INSERT INTO play_cricket_team (id, name, is_junior, site_id, last_updated)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET name = ?, is_junior = ?`,
+              args: [
+                t.id,
+                t.name,
+                isJuniorTeam(t.name) ? 1 : 0,
+                siteId,
+                new Date().toISOString(),
+                t.name,
+                isJuniorTeam(t.name) ? 1 : 0,
+              ],
+            });
+          }
         }
 
         // Determine which team is ours for each innings
