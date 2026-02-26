@@ -1,3 +1,4 @@
+import { createPaymentCharge } from "@/lib/db/service/createPaymentCharge";
 import { stripe } from "@/lib/payments/client";
 import { send } from "@/lib/email/send";
 import { stripeDate } from "@/lib/util/stripeDate";
@@ -25,13 +26,34 @@ export const checkoutSessionCompleted = async (
     },
   );
 
+  // Resolve the payment intent ID from the checkout session
+  const paymentIntentId =
+    typeof checkoutSession.payment_intent === "string"
+      ? checkoutSession.payment_intent
+      : checkoutSession.payment_intent?.id;
+
   await match(checkoutSession)
     .with(
       {
         payment_status: "paid",
         metadata: P.when(is("sponsorGame")),
       },
-      ({ metadata: { gameId } }) => sendMessage(`Game ${gameId} was sponsored`),
+      async ({ metadata: { gameId }, customer_details, amount_total }) => {
+        await sendMessage(`Game ${gameId} was sponsored`);
+
+        const email = customer_details?.email;
+        if (email && amount_total) {
+          await createPaymentCharge({
+            memberEmail: email,
+            description: `Game sponsorship`,
+            amountPence: amount_total,
+            chargeDate: stripeDate(event.created),
+            type: "sponsorship",
+            source: "webhook",
+            stripePaymentIntentId: paymentIntentId,
+          });
+        }
+      },
     )
     .with(
       {
@@ -40,13 +62,33 @@ export const checkoutSessionCompleted = async (
         customer_details: { email: P.string },
         line_items: P.nonNullable,
       },
-      async ({ customer_details: { email }, line_items, metadata }) => {
+      async ({
+        customer_details: { email },
+        line_items,
+        metadata,
+        amount_total,
+      }) => {
         const membership = await updateMembership({
           membershipType: metadata.membership,
           email,
           addedDuration: invoiceLinesToDuration(line_items.data ?? []),
           paidAt: stripeDate(event.created),
         });
+
+        // For subscription-mode checkouts, payment_intent is null — the payment
+        // flows through the subscription's invoice. Skip creating the charge here
+        // and let payment_intent.succeeded handle it with proper dedup via the PI ID.
+        if (amount_total && paymentIntentId) {
+          await createPaymentCharge({
+            memberEmail: email,
+            description: `Membership payment - ${metadata.membership}`,
+            amountPence: amount_total,
+            chargeDate: stripeDate(event.created),
+            type: "membership",
+            source: "webhook",
+            stripePaymentIntentId: paymentIntentId,
+          });
+        }
 
         await send({
           to: email,

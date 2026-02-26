@@ -54,7 +54,12 @@ export const Charges = () => {
   }
 
   if (!charges || charges.length === 0) {
-    return null;
+    return (
+      <div className="flex flex-col gap-4">
+        <h2 className="text-h4 mb-0">Payments</h2>
+        <p className="text-sm text-gray-500">No payments yet.</p>
+      </div>
+    );
   }
 
   const unpaidCharges = charges.filter((c) => !c.paid_at && !c.payment_confirmed_at);
@@ -82,7 +87,7 @@ export const Charges = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-h4 mb-0">Charges</h2>
+      <h2 className="text-h4 mb-0">Payments</h2>
       <Table>
         <TableHeader>
           <TableRow>
@@ -126,7 +131,7 @@ export const Charges = () => {
               </CardTitle>
               <CardDescription>
                 {unpaidCharges.length} unpaid{" "}
-                {unpaidCharges.length === 1 ? "charge" : "charges"}
+                {unpaidCharges.length === 1 ? "payment" : "payments"}
               </CardDescription>
             </div>
             <Button

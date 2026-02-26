@@ -2,9 +2,7 @@ import { defineAuthAction } from "@/lib/auth/api";
 import { auth } from "@/lib/auth/server";
 import { client } from "@/lib/db/client";
 import { send } from "@/lib/email/send";
-import { stripe } from "@/lib/payments/client";
 import { getAgeGroup, getTeamName } from "@/lib/util/ageGroup";
-import { stripeDate } from "@/lib/util/stripeDate";
 import { render } from "@react-email/render";
 import { ActionError } from "astro:actions";
 import { BASE_URL } from "astro:env/client";
@@ -12,41 +10,6 @@ import { z } from "astro:schema";
 import { randomUUID } from "crypto";
 import { formatDate } from "date-fns";
 import { ChargeNotification } from "~/emails/ChargeNotification";
-
-async function fetchStripeCharges(email: string): Promise<
-  Array<{
-    id: string;
-    created: string;
-    amount: number;
-    description: string | null;
-  }>
-> {
-  try {
-    const customers = await stripe.customers.search({
-      query: `email:"${email}"`,
-    });
-
-    const customer = customers.data[0];
-
-    if (customers.data.length !== 1 || !customer) {
-      return [];
-    }
-
-    const stripeCharges = await stripe.charges.search({
-      query: `customer:"${customer.id}"`,
-    });
-
-    return stripeCharges.data.map((charge) => ({
-      id: charge.id,
-      created: stripeDate(charge.created).toISOString(),
-      amount: charge.amount,
-      description: charge.description,
-    }));
-  } catch (err) {
-    console.error("Failed to fetch Stripe charges for", email, err);
-    return [];
-  }
-}
 
 export const admin = {
   listUsers: defineAuthAction({
@@ -189,8 +152,6 @@ export const admin = {
             .executeTakeFirst()) ?? null;
       }
 
-      const charges = await fetchStripeCharges(user.email);
-
       return {
         user: {
           id: user.id,
@@ -202,7 +163,6 @@ export const admin = {
         },
         member: member ?? null,
         membership,
-        charges,
       };
     },
   }),
@@ -331,6 +291,8 @@ export const admin = {
           amount_pence: amountPence,
           charge_date: chargeDate,
           created_by: session.user.id,
+          type: "manual",
+          source: "admin",
         })
         .execute();
 

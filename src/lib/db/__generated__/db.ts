@@ -38,7 +38,9 @@ export interface Charge {
   member_id: string;
   paid_at: string | null;
   payment_confirmed_at: string | null;
+  source: Generated<string>;
   stripe_payment_intent_id: string | null;
+  type: Generated<string>;
 }
 
 export interface ChargeDependent {

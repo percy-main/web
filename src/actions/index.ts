@@ -8,7 +8,6 @@ import { addDependents, dependents } from "./junior";
 import { leaderboard } from "./leaderboard";
 import { getMemberDetails, updateMemberDetails } from "./member-details";
 import { membership } from "./membership";
-import { payments } from "./payments";
 import { playCricket } from "./play-cricket";
 import { purchase } from "./purchase";
 import { subscribe } from "./subscribe";
@@ -22,7 +21,6 @@ export const server = {
   join,
   addDependents,
   dependents,
-  payments,
   purchase,
   subscribe,
   subscriptions,
