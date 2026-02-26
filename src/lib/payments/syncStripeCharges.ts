@@ -7,6 +7,7 @@ import { stripeDate } from "@/lib/util/stripeDate";
 import type Stripe from "stripe";
 import { stripe } from "./client";
 import { gameSponsoredSchema, membershipSchema } from "./metadata";
+import { resolveStripeCustomer } from "./resolveStripeCustomer";
 
 export interface SyncStripeChargesResult {
   totalProcessed: number;
@@ -123,6 +124,26 @@ export async function syncStripeCharges(): Promise<SyncStripeChargesResult> {
     skippedFailed: 0,
     errors: [],
   };
+
+  // Backfill stripe_customer_id for members that don't have one yet.
+  // Look up all members without a customer ID, search Stripe by email,
+  // and store the match so the charge-fetching loop below can use it.
+  const membersWithoutCustomerId = await client
+    .selectFrom("member")
+    .where("stripe_customer_id", "is", null)
+    .select(["id", "email"])
+    .execute();
+
+  for (const m of membersWithoutCustomerId) {
+    try {
+      await resolveStripeCustomer(m.email);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      result.errors.push(
+        `Failed to look up Stripe customer for ${m.email}: ${message}`,
+      );
+    }
+  }
 
   // Get all members with a stripe_customer_id
   const members = await client

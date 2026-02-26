@@ -2,6 +2,7 @@ import { defineAuthAction } from "@/lib/auth/api";
 import { client } from "@/lib/db/client";
 import { stripe } from "@/lib/payments/client";
 import { paymentData } from "@/lib/payments/config";
+import { resolveStripeCustomer } from "@/lib/payments/resolveStripeCustomer";
 import { ActionError, defineAction } from "astro:actions";
 import { CONTEXT } from "astro:env/client";
 import { DEPLOY_PRIME_URL } from "astro:env/server";
@@ -81,10 +82,13 @@ export const sponsorship = {
             : {}),
         };
 
+        const customerId = await resolveStripeCustomer(sponsorEmail);
+
         const paymentIntent = await stripe.paymentIntents.create({
           amount,
           currency: price.currency,
           automatic_payment_methods: { enabled: true },
+          ...(customerId ? { customer: customerId } : {}),
           metadata: enrichedMetadata,
         });
 

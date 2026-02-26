@@ -1,6 +1,6 @@
-import { client } from "@/lib/db/client";
 import { stripe } from "@/lib/payments/client";
 import { membershipSchema } from "@/lib/payments/metadata";
+import { resolveStripeCustomer } from "@/lib/payments/resolveStripeCustomer";
 import { ActionError, defineAction } from "astro:actions";
 import { CONTEXT } from "astro:env/client";
 import { DEPLOY_PRIME_URL } from "astro:env/server";
@@ -15,22 +15,14 @@ export const subscribe = defineAction({
   }),
   handler: async ({ priceId, membership, email }) => {
     try {
-      // Find or create Stripe customer
-      const existing = await stripe.customers.list({ email, limit: 1 });
-      let customer: Stripe.Customer;
+      const customerId = await resolveStripeCustomer(email);
 
-      if (existing.data.length > 0) {
-        customer = existing.data[0];
-      } else {
-        customer = await stripe.customers.create({ email });
+      if (!customerId) {
+        throw new ActionError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not resolve Stripe customer",
+        });
       }
-
-      // Store customer ID on member record
-      await client
-        .updateTable("member")
-        .set({ stripe_customer_id: customer.id })
-        .where("email", "=", email)
-        .execute();
 
       const subscriptionMetadata: Record<string, string> = {
         type: "membership",
@@ -43,7 +35,7 @@ export const subscribe = defineAction({
 
       // Create subscription with incomplete status — payment collected via PaymentElement
       const subscription = await stripe.subscriptions.create({
-        customer: customer.id,
+        customer: customerId,
         items: [{ price: priceId }],
         payment_behavior: "default_incomplete",
         payment_settings: {
