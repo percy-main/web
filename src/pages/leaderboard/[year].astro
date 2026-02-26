@@ -1,0 +1,69 @@
+---
+import Container from "@/layouts/Container.astro";
+import { CricketLeaderboard } from "@/components/CricketLeaderboard";
+import type { GetStaticPaths } from "astro";
+
+export const getStaticPaths = (() => {
+  const firstYear = 2024;
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let y = firstYear; y <= currentYear; y++) {
+    years.push({ params: { year: String(y) } });
+  }
+  return years;
+}) satisfies GetStaticPaths;
+
+const { year } = Astro.params;
+const season = parseInt(year, 10);
+const currentYear = new Date().getFullYear();
+const firstYear = 2024;
+const prevYear = season > firstYear ? season - 1 : null;
+const nextYear = season < currentYear ? season + 1 : null;
+---
+
+<Container title={`${season} Season Leaderboard`}>
+  <div class="mx-auto max-w-4xl py-8">
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <h1
+          class="text-3xl font-bold"
+          style="font-family: var(--font-secondary), serif;"
+        >
+          {season} Season Leaderboard
+        </h1>
+        <p class="mt-1 text-gray-600">
+          Batting and bowling statistics for Percy Main CC.
+        </p>
+      </div>
+
+      <nav class="flex items-center gap-2">
+        {prevYear ? (
+          <a
+            href={`/leaderboard/${prevYear}`}
+            class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            &larr; {prevYear}
+          </a>
+        ) : (
+          <span class="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-300">
+            &larr; {season - 1}
+          </span>
+        )}
+        {nextYear ? (
+          <a
+            href={`/leaderboard/${nextYear}`}
+            class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            {nextYear} &rarr;
+          </a>
+        ) : (
+          <span class="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-300">
+            {season + 1} &rarr;
+          </span>
+        )}
+      </nav>
+    </div>
+
+    <CricketLeaderboard client:load season={season} />
+  </div>
+</Container>
