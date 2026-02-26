@@ -182,7 +182,6 @@ export const admin = {
             .execute()
         : [];
 
-
       return {
         user: {
           id: user.id,

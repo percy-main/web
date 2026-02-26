@@ -90,6 +90,13 @@ export const addDependents = defineAuthAction({
         });
       }
 
+      if (!dep.medical_fitness_declaration) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: `Medical fitness declaration is required for ${dep.name}.`,
+        });
+      }
+
       if (!dep.data_protection_consent) {
         throw new ActionError({
           code: "BAD_REQUEST",

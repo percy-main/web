@@ -1,6 +1,6 @@
-import { Kysely } from "kysely";
+import type { Kysely } from "kysely";
 
-export async function up(db: Kysely<unknown>): Promise<void> {
+export async function up(db: Kysely<Record<string, never>>): Promise<void> {
   await db.schema
     .alterTable("dependent")
     .addColumn("school_year", "text")
