@@ -17,7 +17,10 @@ export const handler = schedule("0 3 * * 0,5", async () => {
   try {
     const res = await fetch(`${siteUrl}/api/sync-play-cricket-stats`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${secret}` },
+      headers: {
+        Authorization: `Bearer ${secret}`,
+        Origin: siteUrl,
+      },
     });
 
     console.log(`Trigger response: ${res.status}`);
