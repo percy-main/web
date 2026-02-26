@@ -1,3 +1,4 @@
+import { resolveOutcome, buildInnings } from "@/collections/game";
 import * as playCricketApi from "@/lib/play-cricket";
 import { defineAction } from "astro:actions";
 import { z } from "astro:schema";
@@ -13,47 +14,17 @@ export const playCricket = {
     handler: async ({ matchId, season, ourTeamId }) => {
       const { result_summary } = await playCricketApi.getResultSummary({
         season,
+        teamId: ourTeamId,
       });
 
       const match = result_summary.find((r) => r.id.toString() === matchId);
       if (!match) return null;
 
-      const innings = match.innings.map((inn) => {
-        const teamId = inn.team_batting_id;
-        const isHome = teamId === match.home_team_id;
-        const teamName = isHome
-          ? `${match.home_club_name} ${match.home_team_name}`
-          : `${match.away_club_name} ${match.away_team_name}`;
-        const runs = parseInt(inn.runs, 10) || 0;
-        const wickets = parseInt(inn.wickets, 10) || 0;
-
-        return {
-          teamBattingId: teamId,
-          teamName,
-          runs,
-          wickets,
-          overs: inn.overs,
-          declared: inn.declared,
-          allOut: wickets >= 10,
-        };
-      });
-
-      const desc = match.result_description.toLowerCase();
-      let outcome: "W" | "L" | "D" | "T" | "A" | "C" | "N" | null = null;
-      if (desc.includes("abandoned")) outcome = "A";
-      else if (desc.includes("cancel")) outcome = "C";
-      else if (desc.includes("tied") || match.result === "T") outcome = "T";
-      else if (desc.includes("draw") || match.result === "D") outcome = "D";
-      else if (desc.includes("no result")) outcome = "N";
-      else if (match.result === "W") {
-        outcome = match.result_applied_to === ourTeamId ? "W" : "L";
-      }
-
       return {
-        outcome,
+        outcome: resolveOutcome(match, ourTeamId),
         description: match.result_description,
         toss: match.toss,
-        innings,
+        innings: buildInnings(match),
       };
     },
   }),

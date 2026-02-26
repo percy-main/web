@@ -83,7 +83,7 @@ export const schema = z.object({
 
 export type Game = z.TypeOf<typeof schema>;
 
-function resolveOutcome(
+export function resolveOutcome(
   resultMatch: ResultSummaryMatch,
   ourTeamId: string,
 ): Result["outcome"] {
@@ -99,13 +99,14 @@ function resolveOutcome(
   if (desc.includes("no result")) return "N";
 
   if (result === "W") {
+    if (!result_applied_to) return null;
     return result_applied_to === ourTeamId ? "W" : "L";
   }
 
   return null;
 }
 
-function buildInnings(
+export function buildInnings(
   resultMatch: ResultSummaryMatch,
 ): Innings[] {
   return resultMatch.innings.map((inn) => {

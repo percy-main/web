@@ -171,11 +171,19 @@ const GetResultSummaryResponse = z.object({
 
 export const getResultSummary = async ({
   season,
+  teamId,
 }: {
   season: number;
+  teamId?: string;
 }): Promise<z.TypeOf<typeof GetResultSummaryResponse>> => {
+  const params = new URLSearchParams({
+    site_id: PLAY_CRICKET_SITE_ID,
+    season: season.toString(),
+    api_token: PLAY_CRICKET_API_KEY,
+    ...(teamId ? { team_id: teamId } : {}),
+  });
   const res = await fetch(
-    `http://play-cricket.com/api/v2/result_summary.json?site_id=${PLAY_CRICKET_SITE_ID}&season=${season}&api_token=${PLAY_CRICKET_API_KEY}`,
+    `http://play-cricket.com/api/v2/result_summary.json?${params}`,
   );
 
   return await res
