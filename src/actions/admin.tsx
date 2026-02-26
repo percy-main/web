@@ -2,6 +2,7 @@ import { defineAuthAction } from "@/lib/auth/api";
 import { auth } from "@/lib/auth/server";
 import { client } from "@/lib/db/client";
 import { send } from "@/lib/email/send";
+import { syncStripeCharges } from "@/lib/payments/syncStripeCharges";
 import { getAgeGroup, getTeamName } from "@/lib/util/ageGroup";
 import { render } from "@react-email/render";
 import { ActionError } from "astro:actions";
@@ -807,6 +808,13 @@ export const admin = {
       });
 
       return { success: true };
+    },
+  }),
+
+  syncStripeHistory: defineAuthAction({
+    roles: ["admin"],
+    handler: async () => {
+      return await syncStripeCharges();
     },
   }),
 };
