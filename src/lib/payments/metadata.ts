@@ -4,6 +4,7 @@ import { isMatching } from "ts-pattern";
 export const gameSponsoredSchema = z.object({
   type: z.literal("sponsorGame"),
   gameId: z.string(),
+  sponsorshipId: z.string().optional(),
 });
 export type GameSponsored = z.TypeOf<typeof gameSponsoredSchema>;
 
