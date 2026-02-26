@@ -521,4 +521,160 @@ export const playCricket = {
       return { matches: results };
     },
   }),
+
+  getPlayerSeasonStats: defineAction({
+    input: z.object({
+      contentfulEntryId: z.string(),
+      season: z.number(),
+    }),
+    handler: async ({ contentfulEntryId, season }) => {
+      // Find the member with this contentful entry ID
+      const member = await client
+        .selectFrom("member")
+        .select(["id", "name", "play_cricket_id"])
+        .where("contentful_entry_id", "=", contentfulEntryId)
+        .executeTakeFirst();
+
+      if (!member?.play_cricket_id) {
+        return null;
+      }
+
+      const playerId = member.play_cricket_id;
+
+      // Fetch batting stats
+      const battingRows = await client
+        .selectFrom("match_performance_batting as b")
+        .select([
+          sql<number>`SUM(b.runs)`.as("total_runs"),
+          sql<number>`COUNT(*)`.as("innings"),
+          sql<number>`SUM(b.not_out)`.as("not_outs"),
+          sql<number>`MAX(b.runs)`.as("high_score"),
+          sql<number>`SUM(b.balls)`.as("total_balls"),
+          sql<number>`SUM(b.fours)`.as("total_fours"),
+          sql<number>`SUM(b.sixes)`.as("total_sixes"),
+          sql<number>`SUM(CASE WHEN b.runs >= 50 AND b.runs < 100 THEN 1 ELSE 0 END)`.as(
+            "fifties",
+          ),
+          sql<number>`SUM(CASE WHEN b.runs >= 100 THEN 1 ELSE 0 END)`.as(
+            "hundreds",
+          ),
+        ])
+        .where("b.player_id", "=", playerId)
+        .where("b.season", "=", season)
+        .executeTakeFirst();
+
+      // Fetch bowling stats
+      const bowlingRows = await client
+        .selectFrom("match_performance_bowling as b")
+        .select([
+          sql<number>`COUNT(*)`.as("matches"),
+          sql<number>`SUM(b.wickets)`.as("total_wickets"),
+          sql<number>`SUM(b.runs)`.as("total_runs"),
+          sql<number>`SUM(b.maidens)`.as("total_maidens"),
+          sql<number>`MAX(b.wickets)`.as("best_wickets"),
+        ])
+        .where("b.player_id", "=", playerId)
+        .where("b.season", "=", season)
+        .executeTakeFirst();
+
+      // Compute bowling overs
+      let totalBowlingBalls = 0;
+      if (bowlingRows && bowlingRows.matches > 0) {
+        const oversRows = await client
+          .selectFrom("match_performance_bowling as b")
+          .select(["b.overs"])
+          .where("b.player_id", "=", playerId)
+          .where("b.season", "=", season)
+          .execute();
+
+        for (const row of oversRows) {
+          totalBowlingBalls += oversToBalls(row.overs);
+        }
+      }
+
+      const hasBatting = battingRows && battingRows.innings > 0;
+      const hasBowling = bowlingRows && bowlingRows.matches > 0;
+
+      if (!hasBatting && !hasBowling) {
+        return null;
+      }
+
+      const batting = hasBatting
+        ? (() => {
+            const dismissals = battingRows.innings - battingRows.not_outs;
+            const average =
+              dismissals > 0 ? battingRows.total_runs / dismissals : null;
+            const strikeRate =
+              battingRows.total_balls > 0
+                ? (battingRows.total_runs / battingRows.total_balls) * 100
+                : null;
+            return {
+              innings: battingRows.innings,
+              notOuts: battingRows.not_outs,
+              runs: battingRows.total_runs,
+              highScore: battingRows.high_score,
+              average:
+                average !== null && battingRows.innings >= 3
+                  ? Math.round(average * 100) / 100
+                  : null,
+              strikeRate:
+                strikeRate !== null
+                  ? Math.round(strikeRate * 100) / 100
+                  : null,
+              fours: battingRows.total_fours,
+              sixes: battingRows.total_sixes,
+              fifties: battingRows.fifties,
+              hundreds: battingRows.hundreds,
+            };
+          })()
+        : null;
+
+      const bowling = hasBowling
+        ? (() => {
+            const totalOvers = Math.floor(totalBowlingBalls / 6);
+            const remainingBalls = totalBowlingBalls % 6;
+            const oversStr = `${totalOvers}.${remainingBalls}`;
+            const average =
+              bowlingRows.total_wickets > 0
+                ? bowlingRows.total_runs / bowlingRows.total_wickets
+                : null;
+            const economy =
+              totalBowlingBalls > 0
+                ? bowlingRows.total_runs / (totalBowlingBalls / 6)
+                : null;
+            const strikeRate =
+              bowlingRows.total_wickets > 0
+                ? totalBowlingBalls / bowlingRows.total_wickets
+                : null;
+            return {
+              matches: bowlingRows.matches,
+              overs: oversStr,
+              maidens: bowlingRows.total_maidens,
+              runs: bowlingRows.total_runs,
+              wickets: bowlingRows.total_wickets,
+              average:
+                average !== null && totalBowlingBalls >= 60
+                  ? Math.round(average * 100) / 100
+                  : null,
+              economy:
+                economy !== null
+                  ? Math.round(economy * 100) / 100
+                  : null,
+              strikeRate:
+                strikeRate !== null && totalBowlingBalls >= 60
+                  ? Math.round(strikeRate * 10) / 10
+                  : null,
+              bestWickets: bowlingRows.best_wickets,
+            };
+          })()
+        : null;
+
+      return {
+        playerName: member.name,
+        season,
+        batting,
+        bowling,
+      };
+    },
+  }),
 };

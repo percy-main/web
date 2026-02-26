@@ -6,6 +6,7 @@ import { RichText } from "@/components/RichText";
 import LDJson from "@/components/LDJson.astro";
 import dbsChecked from "@/components/dbs.png";
 import { Picture } from "astro:assets";
+import { PlayerSeasonStats } from "@/components/PlayerSeasonStats";
 import { Breadcrumbs } from "astro-breadcrumbs";
 import { IoChevronForward } from "react-icons/io5";
 
@@ -21,10 +22,14 @@ export async function getStaticPaths() {
 const games = await getCollection("game");
 
 const {
-  person: { data: person },
+  person: { id: contentfulEntryId, data: person },
 } = Astro.props;
 const { pathname } = Astro.url;
 const pageData = Object.entries(person.pageData);
+
+// Cricket season: April–September in current year; in Jan–Mar use previous year
+const now = new Date();
+const currentSeason = now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
 ---
 
 <LDJson
@@ -113,4 +118,10 @@ const pageData = Object.entries(person.pageData);
       </section>
     )
   }
+
+  <PlayerSeasonStats
+    client:load
+    contentfulEntryId={contentfulEntryId}
+    season={currentSeason}
+  />
 </Container>
