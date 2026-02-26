@@ -168,6 +168,7 @@ export interface MatchPerformanceBowling {
 
 export interface Member {
   address: string;
+  contentful_entry_id: string | null;
   dob: string;
   email: string;
   emergency_contact_name: string;
