@@ -60,7 +60,7 @@ const loader = async () => {
         id: product.id,
         name: product.name,
       },
-      qtyAdjustable: product.metadata.adjustable === "true",
+      qtyAdjustable: product.metadata.adjustable !== "false",
       maxQty: product.metadata.max_qty
         ? Number(product.metadata.max_qty)
         : undefined,

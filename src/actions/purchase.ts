@@ -30,6 +30,16 @@ export const purchase = defineAction({
 
       const product = price.product as Stripe.Product;
 
+      const maxQty = product.metadata.max_qty
+        ? Number(product.metadata.max_qty)
+        : undefined;
+      if (maxQty && quantity > maxQty) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: `Maximum quantity is ${maxQty}`,
+        });
+      }
+
       let amount: number;
       if (price.custom_unit_amount) {
         if (!customAmountPence) {
