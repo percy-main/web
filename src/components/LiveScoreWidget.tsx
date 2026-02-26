@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { formatDistanceToNow } from "date-fns";
+import { useState } from "react";
 
 type InningsScore = {
   teamBattingName: string;
@@ -179,13 +180,9 @@ function MatchCard({ match }: { match: LiveMatch }) {
 function LiveScoreWidgetInner() {
   const { data, isLoading } = useQuery({
     queryKey: ["liveScores"],
-    queryFn: async () => {
-      const result = await actions.playCricket.getLiveScores();
-      if (result.error) throw result.error;
-      return result.data;
-    },
+    queryFn: () => actions.playCricket.getLiveScores.orThrow(),
     refetchInterval: 60_000,
-    staleTime: 30_000,
+    staleTime: 60_000,
   });
 
   if (isLoading) return null;
@@ -209,9 +206,8 @@ function LiveScoreWidgetInner() {
   );
 }
 
-const queryClient = new QueryClient();
-
 export function LiveScoreWidget() {
+  const [queryClient] = useState(() => new QueryClient());
   return (
     <QueryClientProvider client={queryClient}>
       <LiveScoreWidgetInner />

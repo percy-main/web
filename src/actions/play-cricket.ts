@@ -1,6 +1,7 @@
 import { resolveOutcome, buildInnings } from "@/collections/game";
 import { client } from "@/lib/db/client";
 import * as playCricketApi from "@/lib/play-cricket";
+import { GetMatchDetailResponse } from "@/lib/play-cricket/schemas";
 import { defineAction } from "astro:actions";
 import { z } from "astro:schema";
 import { format } from "date-fns";
@@ -361,11 +362,51 @@ export const playCricket = {
     handler: async () => {
       const now = new Date();
       const todayDdMmYyyy = format(now, "dd/MM/yyyy");
-      const season = now.getFullYear();
+      // Cricket season runs April–September; in Jan–Mar, use previous year
+      const season =
+        now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
 
-      // Fetch this season's matches and filter to today
-      const { matches } = await playCricketApi.getMatchesSummary({ season });
-      const todayMatches = matches.filter(
+      // Cache the season summary in the DB to avoid hitting the API on every poll
+      const SUMMARY_CACHE_KEY = `summary-${season}`;
+      const SUMMARY_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+      let summaryData: Awaited<
+        ReturnType<typeof playCricketApi.getMatchesSummary>
+      >;
+
+      const cachedSummary = await client
+        .selectFrom("play_cricket_match_cache")
+        .select(["data", "fetched_at"])
+        .where("match_id", "=", SUMMARY_CACHE_KEY)
+        .executeTakeFirst();
+
+      if (
+        cachedSummary &&
+        Date.now() - new Date(cachedSummary.fetched_at).getTime() <
+          SUMMARY_CACHE_TTL_MS
+      ) {
+        summaryData = JSON.parse(cachedSummary.data) as typeof summaryData;
+      } else {
+        summaryData = await playCricketApi.getMatchesSummary({ season });
+        await client
+          .insertInto("play_cricket_match_cache")
+          .values({
+            match_id: SUMMARY_CACHE_KEY,
+            data: JSON.stringify(summaryData),
+            fetched_at: new Date().toISOString(),
+            match_date: todayDdMmYyyy,
+          })
+          .onConflict((oc) =>
+            oc.column("match_id").doUpdateSet({
+              data: JSON.stringify(summaryData),
+              fetched_at: new Date().toISOString(),
+              match_date: todayDdMmYyyy,
+            }),
+          )
+          .execute();
+      }
+
+      const todayMatches = summaryData.matches.filter(
         (m) => m.match_date === todayDdMmYyyy,
       );
 
@@ -375,7 +416,7 @@ export const playCricket = {
 
       const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-      const results = await Promise.all(
+      const settled = await Promise.allSettled(
         todayMatches.map(async (summary) => {
           const matchId = summary.id.toString();
 
@@ -422,40 +463,13 @@ export const playCricket = {
               .execute();
           }
 
-          const { match_details } = JSON.parse(detailData) as {
-            match_details: Array<{
-              id: number;
-              home_team_name: string;
-              home_team_id: string;
-              home_club_name: string;
-              away_team_name: string;
-              away_team_id: string;
-              away_club_name: string;
-              toss: string;
-              batted_first: string;
-              result: string;
-              result_description: string;
-              result_applied_to: string;
-              innings: Array<{
-                team_batting_name: string;
-                team_batting_id: string;
-                innings_number: number;
-                runs: string;
-                wickets: string;
-                overs: string;
-                declared: boolean;
-                bat: Array<{ position: string }>;
-              }>;
-            }>;
-          };
-          const match = match_details[0];
+          const parsed = GetMatchDetailResponse.parse(JSON.parse(detailData));
+          const match = parsed.match_details[0];
 
           if (!match) return null;
 
-          // Determine status
-          const hasInningsData = match.innings.some(
-            (inn) => inn.bat.length > 0,
-          );
+          // Determine status — innings.length > 0 means play has started
+          const hasInningsData = match.innings.length > 0;
           const hasResult = !!match.result && match.result !== "";
 
           let status: "not_started" | "in_progress" | "completed";
@@ -494,11 +508,11 @@ export const playCricket = {
         }),
       );
 
-      return {
-        matches: results.filter(
-          (r): r is NonNullable<typeof r> => r !== null,
-        ),
-      };
+      const results = settled
+        .flatMap((r) => (r.status === "fulfilled" ? [r.value] : []))
+        .filter((r): r is NonNullable<typeof r> => r !== null);
+
+      return { matches: results };
     },
   }),
 };

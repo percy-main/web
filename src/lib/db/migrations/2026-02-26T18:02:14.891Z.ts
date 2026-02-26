@@ -9,3 +9,7 @@ export async function up(db: Kysely<unknown>): Promise<void> {
     .addColumn("match_date", "text", (col) => col.notNull())
     .execute();
 }
+
+export async function down(db: Kysely<unknown>): Promise<void> {
+  await db.schema.dropTable("play_cricket_match_cache").execute();
+}
