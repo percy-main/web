@@ -1,5 +1,4 @@
 import * as location from "@/collections/location";
-import { client } from "@/lib/db/client";
 import { contentClient } from "@/lib/contentful/client";
 import { defineCollection, z } from "astro:content";
 import { PLAY_CRICKET_SITE_ID } from "astro:env/server";
@@ -82,21 +81,38 @@ export const loader = async () => {
     (g) => g.fields.playCricketId,
   );
 
-  const dbSponsorships = await client
-    .selectFrom("game_sponsorship")
-    .where("approved", "=", 1)
-    .where("paid_at", "is not", null)
-    .select([
-      "game_id",
-      "sponsor_name",
-      "display_name",
-      "sponsor_logo_url",
-      "sponsor_message",
-      "sponsor_website",
-    ])
-    .execute();
+  let dbSponsorsByGameId: Record<
+    string,
+    {
+      game_id: string;
+      sponsor_name: string;
+      display_name: string | null;
+      sponsor_logo_url: string | null;
+      sponsor_message: string | null;
+      sponsor_website: string | null;
+    }
+  > = {};
 
-  const dbSponsorsByGameId = _.keyBy(dbSponsorships, (s) => s.game_id);
+  try {
+    const { client } = await import("@/lib/db/client");
+    const dbSponsorships = await client
+      .selectFrom("game_sponsorship")
+      .where("approved", "=", 1)
+      .where("paid_at", "is not", null)
+      .select([
+        "game_id",
+        "sponsor_name",
+        "display_name",
+        "sponsor_logo_url",
+        "sponsor_message",
+        "sponsor_website",
+      ])
+      .execute();
+
+    dbSponsorsByGameId = _.keyBy(dbSponsorships, (s) => s.game_id);
+  } catch {
+    // DB not available (e.g. during astro sync in CI) - fall back to Contentful only
+  }
 
   return response.matches.map((match) => {
     const home = match.home_club_id === PLAY_CRICKET_SITE_ID;
