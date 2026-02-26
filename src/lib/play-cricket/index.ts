@@ -4,6 +4,7 @@ import {
   GetLeagueTableResponse,
   GetMatchDetailResponse,
   GetMatchSummaryResponse,
+  GetPlayersResponse,
   GetResultSummaryResponse,
   GetTeamsResponse,
 } from "./schemas";
@@ -96,6 +97,25 @@ export const getMatchDetail = async ({
         JSON.stringify(err, null, 2),
       );
       throw new Error("Failed to parse match detail response");
+    });
+};
+
+export const getPlayers = async (): Promise<
+  z.TypeOf<typeof GetPlayersResponse>
+> => {
+  const res = await fetch(
+    `https://play-cricket.com/api/v2/sites/${PLAY_CRICKET_SITE_ID}/players?api_token=${PLAY_CRICKET_API_KEY}&include_everyone=yes`,
+  );
+
+  return await res
+    .json()
+    .then((data) => GetPlayersResponse.parse(data))
+    .catch((err) => {
+      console.error(
+        "Error parsing players response:",
+        JSON.stringify(err, null, 2),
+      );
+      throw new Error("Failed to parse players response");
     });
 };
 

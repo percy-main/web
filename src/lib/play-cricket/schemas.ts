@@ -239,6 +239,17 @@ export const GetMatchDetailResponse = z.object({
   match_details: z.array(MatchDetail),
 });
 
+// --- Players ---
+
+export const GetPlayersResponse = z.object({
+  players: z.array(
+    z.object({
+      member_id: z.number(),
+      name: z.string(),
+    }),
+  ),
+});
+
 // --- Teams ---
 
 export const GetTeamsResponse = z.object({

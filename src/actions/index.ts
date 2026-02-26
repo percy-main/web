@@ -10,6 +10,7 @@ import { leaderboard } from "./leaderboard";
 import { getMemberDetails, updateMemberDetails } from "./member-details";
 import { membership } from "./membership";
 import { playCricket } from "./play-cricket";
+import { playCricketAdmin } from "./play-cricket-admin";
 import { purchase } from "./purchase";
 import { sponsorship } from "./sponsorship";
 import { subscribe } from "./subscribe";
@@ -29,6 +30,7 @@ export const server = {
   subscribe,
   subscriptions,
   playCricket,
+  playCricketAdmin,
   membership,
   createEventSubscriber,
   gameScore,
