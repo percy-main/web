@@ -9,7 +9,7 @@ export type ChargeType =
   // TODO: wire up junior_membership once junior membership handler is implemented
   | "junior_membership";
 
-export type ChargeSource = "admin" | "webhook" | "self_service";
+export type ChargeSource = "admin" | "webhook" | "self_service" | "backfill";
 
 interface CreatePaymentChargeParams {
   memberEmail: string;

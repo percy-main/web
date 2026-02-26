@@ -1,8 +1,11 @@
 import { defineAuthAction } from "@/lib/auth/api";
 import { auth } from "@/lib/auth/server";
 import { client } from "@/lib/db/client";
+import { createPaymentCharge } from "@/lib/db/service/createPaymentCharge";
 import { send } from "@/lib/email/send";
+import { stripe } from "@/lib/payments/client";
 import { getAgeGroup, getTeamName } from "@/lib/util/ageGroup";
+import { stripeDate } from "@/lib/util/stripeDate";
 import { render } from "@react-email/render";
 import { ActionError } from "astro:actions";
 import { BASE_URL } from "astro:env/client";
@@ -415,6 +418,128 @@ export const admin = {
         ageGroup: getAgeGroup(row.dob),
         teamName: getTeamName(row.dob, row.sex),
       }));
+    },
+  }),
+
+  backfillStripePayments: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({}),
+    handler: async () => {
+      const members = await client
+        .selectFrom("member")
+        .select(["id", "email", "stripe_customer_id"])
+        .execute();
+
+      let totalProcessed = 0;
+      let totalSkipped = 0;
+      let totalMembers = 0;
+      const errors: string[] = [];
+
+      for (const member of members) {
+        try {
+          // Find or look up the Stripe customer for this member
+          let customerId = member.stripe_customer_id;
+
+          if (!customerId) {
+            const customers = await stripe.customers.list({
+              email: member.email,
+              limit: 1,
+            });
+
+            if (customers.data.length === 0) {
+              continue;
+            }
+
+            customerId = customers.data[0].id;
+
+            // Store the customer ID for future use
+            await client
+              .updateTable("member")
+              .set({ stripe_customer_id: customerId })
+              .where("id", "=", member.id)
+              .execute();
+          }
+
+          totalMembers++;
+
+          // Paginate through all charges for this customer
+          let hasMore = true;
+          let startingAfter: string | undefined;
+
+          while (hasMore) {
+            const listParams: {
+              customer: string;
+              limit: number;
+              starting_after?: string;
+            } = {
+              customer: customerId,
+              limit: 100,
+            };
+            if (startingAfter) {
+              listParams.starting_after = startingAfter;
+            }
+
+            const chargeList = await stripe.charges.list(listParams);
+
+            for (const charge of chargeList.data) {
+              if (charge.status !== "succeeded") {
+                totalSkipped++;
+                continue;
+              }
+
+              const paymentIntentId =
+                typeof charge.payment_intent === "string"
+                  ? charge.payment_intent
+                  : charge.payment_intent?.id;
+
+              // Determine description from Stripe charge description
+              let description = "Payment";
+              if (charge.description) {
+                if (
+                  charge.description.includes("Subscription creation")
+                ) {
+                  description = "Membership payment";
+                } else if (
+                  charge.description.includes("Subscription update")
+                ) {
+                  description = "Membership renewal";
+                } else {
+                  description = charge.description;
+                }
+              }
+
+              await createPaymentCharge({
+                memberEmail: member.email,
+                description,
+                amountPence: charge.amount,
+                chargeDate: stripeDate(charge.created),
+                type: "membership",
+                source: "backfill",
+                stripePaymentIntentId: paymentIntentId,
+              });
+
+              totalProcessed++;
+            }
+
+            hasMore = chargeList.has_more;
+            if (chargeList.data.length > 0) {
+              startingAfter =
+                chargeList.data[chargeList.data.length - 1].id;
+            }
+          }
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Unknown error";
+          errors.push(`${member.email}: ${message}`);
+        }
+      }
+
+      return {
+        totalMembers,
+        totalProcessed,
+        totalSkipped,
+        errors,
+      };
     },
   }),
 };
