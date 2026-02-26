@@ -85,6 +85,23 @@ const GetTeamsResponse = z.object({
 
 // --- Helpers ---
 
+async function fetchApi(url: string, label: string): Promise<unknown> {
+  const res = await fetch(url);
+  const body = await res.text();
+  if (!res.ok) {
+    throw new Error(
+      `${label} failed (HTTP ${res.status}): ${body.slice(0, 500)}`,
+    );
+  }
+  try {
+    return JSON.parse(body);
+  } catch {
+    throw new Error(
+      `${label} returned non-JSON (HTTP ${res.status}): ${body.slice(0, 500)}`,
+    );
+  }
+}
+
 const JUNIOR_PATTERNS = [/under/i, /\bU\d{2}\b/, /junior/i, /colts/i];
 
 function isJuniorTeam(teamName: string): boolean {
@@ -134,6 +151,10 @@ async function syncStats(): Promise<{
     );
   }
 
+  console.log(
+    `Using site_id=${siteId}, api_key=${apiKey.slice(0, 4)}...${apiKey.slice(-4)}`,
+  );
+
   const db = createDb();
   const errors: string[] = [];
   let matchesProcessed = 0;
@@ -141,10 +162,11 @@ async function syncStats(): Promise<{
   try {
     // Step 1: Sync teams
     console.log("Syncing teams...");
-    const teamsRes = await fetch(
+    const teamsJson = await fetchApi(
       `https://play-cricket.com/api/v2/sites/${siteId}/teams.json?api_token=${apiKey}`,
+      "Get teams",
     );
-    const teamsData = GetTeamsResponse.parse(await teamsRes.json());
+    const teamsData = GetTeamsResponse.parse(teamsJson);
 
     for (const team of teamsData.teams) {
       const teamId = team.id.toString();
@@ -170,10 +192,11 @@ async function syncStats(): Promise<{
     // Step 2: Get all matches for the current season
     const season = new Date().getFullYear();
     console.log(`Fetching matches for season ${season}...`);
-    const matchesRes = await fetch(
+    const matchesJson = await fetchApi(
       `https://play-cricket.com/api/v2/matches.json?site_id=${siteId}&season=${season}&api_token=${apiKey}`,
+      "Get matches",
     );
-    const matchesData = GetMatchSummaryResponse.parse(await matchesRes.json());
+    const matchesData = GetMatchSummaryResponse.parse(matchesJson);
     console.log(`Found ${matchesData.matches.length} matches`);
 
     // Filter to completed matches (status "New" means not yet played)
@@ -187,12 +210,11 @@ async function syncStats(): Promise<{
       const matchId = match.id.toString();
 
       try {
-        const detailRes = await fetch(
+        const detailJson = await fetchApi(
           `https://play-cricket.com/api/v2/match_detail.json?match_id=${matchId}&api_token=${apiKey}`,
+          `Get match detail ${matchId}`,
         );
-        const detailData = GetMatchDetailResponse.parse(
-          await detailRes.json(),
-        );
+        const detailData = GetMatchDetailResponse.parse(detailJson);
         const detail = detailData.match_details[0];
         if (!detail) {
           console.log(`No detail for match ${matchId}, skipping`);
