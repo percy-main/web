@@ -1,4 +1,5 @@
 import { invoiceLinesToDuration } from "@/lib//util/invoiceLinesToDuration";
+import { client } from "@/lib/db/client";
 import { createPaymentCharge } from "@/lib/db/service/createPaymentCharge";
 import { updateMembership } from "@/lib/db/service/updateMembership";
 import { send } from "@/lib/email/send";
@@ -27,6 +28,7 @@ import { membershipSchema } from "../metadata";
  */
 const resolveSubscriptionMembershipMetadata = async (
   invoice: Stripe.Invoice,
+  email: string | null,
 ): Promise<z.infer<typeof membershipSchema> | undefined> => {
   if (!invoice.subscription) {
     return undefined;
@@ -63,6 +65,35 @@ const resolveSubscriptionMembershipMetadata = async (
     return parsed.data;
   }
 
+  // Fallback: if subscription metadata is missing (e.g. older checkout-created
+  // subscriptions that didn't propagate metadata to the subscription object),
+  // look up the member's existing membership type from our database.
+  if (email) {
+    const existing = await client
+      .selectFrom("member")
+      .innerJoin("membership", "membership.member_id", "member.id")
+      .where("member.email", "=", email)
+      .where("membership.dependent_id", "is", null)
+      .select(["membership.type"])
+      .executeTakeFirst();
+
+    if (existing?.type) {
+      const fallbackParsed = membershipSchema.safeParse({
+        type: "membership",
+        membership: existing.type,
+      });
+      if (fallbackParsed.success) {
+        console.log(
+          `Resolved membership type from DB fallback for ${email}: ${existing.type}`,
+        );
+        return fallbackParsed.data;
+      }
+    }
+  }
+
+  console.warn(
+    `Could not resolve membership metadata for subscription ${subscriptionId}`,
+  );
   return undefined;
 };
 
@@ -93,6 +124,7 @@ export const invoicePaymentSucceeded = async (
 
   const metadata = await resolveSubscriptionMembershipMetadata(
     event.data.object,
+    email,
   );
 
   if (metadata) {
