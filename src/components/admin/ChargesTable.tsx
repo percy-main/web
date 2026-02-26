@@ -112,6 +112,7 @@ export function ChargesTable() {
       totalProcessed: number;
       created: number;
       skippedDuplicate: number;
+      skippedSelfService: number;
       skippedNoMember: number;
       skippedFailed: number;
       errors: string[];
@@ -137,7 +138,7 @@ export function ChargesTable() {
         const d = res.data;
         setSyncResult({
           type: "success",
-          message: `Sync complete: ${d.created} new charges imported, ${d.skippedDuplicate} duplicates skipped, ${d.totalProcessed} total processed.`,
+          message: `Sync complete: ${d.created} new charges imported, ${d.skippedDuplicate} duplicates skipped, ${d.skippedSelfService} self-service excluded, ${d.totalProcessed} total processed.`,
           details: d,
         });
 
@@ -257,12 +258,14 @@ export function ChargesTable() {
                 ))}
               </ul>
             )}
-            <button
-              className="mt-2 text-xs text-gray-500 underline hover:text-gray-700"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-2 h-auto p-0 text-xs text-gray-500 underline hover:text-gray-700"
               onClick={() => setSyncResult(null)}
             >
               Dismiss
-            </button>
+            </Button>
           </AlertDescription>
         </Alert>
       )}

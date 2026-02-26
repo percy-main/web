@@ -12,6 +12,7 @@ export interface SyncStripeChargesResult {
   totalProcessed: number;
   created: number;
   skippedDuplicate: number;
+  skippedSelfService: number;
   skippedNoMember: number;
   skippedFailed: number;
   errors: string[];
@@ -117,6 +118,7 @@ export async function syncStripeCharges(): Promise<SyncStripeChargesResult> {
     totalProcessed: 0,
     created: 0,
     skippedDuplicate: 0,
+    skippedSelfService: 0,
     skippedNoMember: 0,
     skippedFailed: 0,
     errors: [],
@@ -167,9 +169,9 @@ export async function syncStripeCharges(): Promise<SyncStripeChargesResult> {
           charge.invoice !== null,
         );
 
-        // Skip charges that are self-service payments (already tracked)
+        // Skip charges that are self-service payments (already tracked by webhooks)
         if (chargeType === undefined) {
-          result.skippedDuplicate++;
+          result.skippedSelfService++;
           continue;
         }
 
@@ -190,7 +192,7 @@ export async function syncStripeCharges(): Promise<SyncStripeChargesResult> {
           amountPence: charge.amount,
           chargeDate: stripeDate(charge.created),
           type: chargeType,
-          source: "webhook",
+          source: "historical_import",
           stripePaymentIntentId: dedupKey,
         });
 
