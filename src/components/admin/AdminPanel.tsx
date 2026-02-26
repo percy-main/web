@@ -6,10 +6,11 @@ import { ChargesTable } from "./ChargesTable";
 import { ContactSubmissionsTable } from "./ContactSubmissionsTable";
 import { JuniorsTable } from "./JuniorsTable";
 import { MemberTable } from "./MemberTable";
+import { SponsorshipsTable } from "./SponsorshipsTable";
 
 const queryClient = new QueryClient();
 
-type Tab = "members" | "juniors" | "charges" | "contacts";
+type Tab = "members" | "juniors" | "charges" | "contacts" | "sponsorships";
 
 export function AdminPanel() {
   const session = useSession();
@@ -66,11 +67,18 @@ export function AdminPanel() {
           >
             Contact Submissions
           </button>
+          <button
+            className={`px-4 py-2 text-sm font-medium ${activeTab === "sponsorships" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+            onClick={() => setActiveTab("sponsorships")}
+          >
+            Sponsorships
+          </button>
         </div>
         {activeTab === "members" && <MemberTable />}
         {activeTab === "juniors" && <JuniorsTable />}
         {activeTab === "charges" && <ChargesTable />}
         {activeTab === "contacts" && <ContactSubmissionsTable />}
+        {activeTab === "sponsorships" && <SponsorshipsTable />}
       </div>
     </QueryClientProvider>
   );

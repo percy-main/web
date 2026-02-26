@@ -50,6 +50,9 @@ export const schema = z.object({
   sponsor: z
     .object({
       name: z.string(),
+      logoUrl: z.string().optional(),
+      message: z.string().optional(),
+      website: z.string().optional(),
     })
     .optional(),
   description: z.any().optional(),
@@ -78,10 +81,45 @@ export const loader = async () => {
     (g) => g.fields.playCricketId,
   );
 
+  let dbSponsorsByGameId: Record<
+    string,
+    {
+      game_id: string;
+      sponsor_name: string;
+      display_name: string | null;
+      sponsor_logo_url: string | null;
+      sponsor_message: string | null;
+      sponsor_website: string | null;
+    }
+  > = {};
+
+  try {
+    const { client } = await import("@/lib/db/client");
+    const dbSponsorships = await client
+      .selectFrom("game_sponsorship")
+      .where("approved", "=", 1)
+      .where("paid_at", "is not", null)
+      .select([
+        "game_id",
+        "sponsor_name",
+        "display_name",
+        "sponsor_logo_url",
+        "sponsor_message",
+        "sponsor_website",
+      ])
+      .execute();
+
+    dbSponsorsByGameId = _.keyBy(dbSponsorships, (s) => s.game_id);
+  } catch {
+    // DB not available (e.g. during astro sync in CI) - fall back to Contentful only
+  }
+
   return response.matches.map((match) => {
     const home = match.home_club_id === PLAY_CRICKET_SITE_ID;
 
-    const sponsor = gamesByGameId[match.id.toString()]?.fields.sponsor as
+    const dbSponsorship = dbSponsorsByGameId[match.id.toString()];
+
+    const cfSponsor = gamesByGameId[match.id.toString()]?.fields.sponsor as
       | Entry<TypeSponsorSkeleton, undefined>
       | undefined;
 
@@ -164,7 +202,16 @@ export const loader = async () => {
         type: match.competition_type,
       },
       location,
-      sponsor: sponsor?.fields,
+      sponsor: dbSponsorship
+        ? {
+            name: dbSponsorship.display_name ?? dbSponsorship.sponsor_name,
+            logoUrl: dbSponsorship.sponsor_logo_url ?? undefined,
+            message: dbSponsorship.sponsor_message ?? undefined,
+            website: dbSponsorship.sponsor_website ?? undefined,
+          }
+        : cfSponsor?.fields
+          ? { name: cfSponsor.fields.name }
+          : undefined,
       description,
     };
   });

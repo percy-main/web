@@ -1,0 +1,26 @@
+---
+import { SponsorCheckout } from "@/components/SponsorCheckout";
+import Container from "@/layouts/Container.astro";
+import { getCollection } from "astro:content";
+
+export async function getStaticPaths() {
+  const games = await getCollection("game");
+  return games.map((game) => ({
+    params: { gameId: game.id },
+    props: { game },
+  }));
+}
+
+const { game } = Astro.props;
+const title = `Sponsor: ${game.data.team.name} vs ${game.data.opposition.club.name} ${game.data.opposition.team.name}`;
+---
+
+<Container title={title}>
+  <div class="mx-auto max-w-md">
+    <SponsorCheckout
+      client:only="react"
+      gameId={game.id}
+      gameTitle={title}
+    />
+  </div>
+</Container>

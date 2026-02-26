@@ -10,6 +10,7 @@ import { getMemberDetails, updateMemberDetails } from "./member-details";
 import { membership } from "./membership";
 import { playCricket } from "./play-cricket";
 import { purchase } from "./purchase";
+import { sponsorship } from "./sponsorship";
 import { subscribe } from "./subscribe";
 import { subscriptions } from "./subscriptions";
 
@@ -22,6 +23,7 @@ export const server = {
   addDependents,
   dependents,
   purchase,
+  sponsorship,
   subscribe,
   subscriptions,
   playCricket,

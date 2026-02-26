@@ -99,6 +99,23 @@ export interface GameScore {
   user_id: string;
 }
 
+export interface GameSponsorship {
+  amount_pence: number;
+  approved: Generated<number>;
+  created_at: Generated<string>;
+  display_name: string | null;
+  game_id: string;
+  id: string | null;
+  notes: string | null;
+  paid_at: string | null;
+  sponsor_email: string;
+  sponsor_logo_url: string | null;
+  sponsor_message: string | null;
+  sponsor_name: string;
+  sponsor_website: string | null;
+  stripe_payment_intent_id: string | null;
+}
+
 export interface Member {
   address: string;
   dob: string;
@@ -186,6 +203,7 @@ export interface DB {
   dependent: Dependent;
   event_subscriber: EventSubscriber;
   game_score: GameScore;
+  game_sponsorship: GameSponsorship;
   member: Member;
   membership: Membership;
   passkey: Passkey;
