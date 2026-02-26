@@ -35,9 +35,9 @@ async function ensureBranchDatabase(branch) {
   const seedDb = process.env.TURSO_SEED_DB_NAME || parentDb;
   const group = process.env.TURSO_GROUP || "default";
 
-  if (!apiToken || !org || !parentDb) {
+  if (!apiToken || !org || !seedDb) {
     console.log(
-      "Turso branching env vars not configured (TURSO_API_TOKEN, TURSO_ORG, TURSO_DB_NAME) — using shared preview DB",
+      "Turso branching env vars not configured (TURSO_API_TOKEN, TURSO_ORG, TURSO_SEED_DB_NAME or TURSO_DB_NAME) — using shared preview DB",
     );
     return null;
   }
@@ -56,7 +56,10 @@ async function ensureBranchDatabase(branch) {
   if (checkRes.ok) {
     const data = await checkRes.json();
     const hostname = data.database?.Hostname || data.database?.hostname;
-    console.log(`Reusing existing branch database: ${hostname}`);
+    console.log(
+      `Reusing existing branch database: ${hostname}. ` +
+        `If seeded before TURSO_SEED_DB_NAME was configured, close and reopen the PR to reseed from production.`,
+    );
     return `libsql://${hostname}`;
   }
 
