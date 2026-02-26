@@ -4,13 +4,14 @@ import { navigate } from "astro:transitions/client";
 import { useState } from "react";
 import { ChargesTable } from "./ChargesTable";
 import { ContactSubmissionsTable } from "./ContactSubmissionsTable";
+import { DuplicateMembersTable } from "./DuplicateMembersTable";
 import { JuniorsTable } from "./JuniorsTable";
 import { MemberTable } from "./MemberTable";
 import { SponsorshipsTable } from "./SponsorshipsTable";
 
 const queryClient = new QueryClient();
 
-type Tab = "members" | "juniors" | "charges" | "contacts" | "sponsorships";
+type Tab = "members" | "juniors" | "charges" | "contacts" | "sponsorships" | "duplicates";
 
 export function AdminPanel() {
   const session = useSession();
@@ -73,12 +74,19 @@ export function AdminPanel() {
           >
             Sponsorships
           </button>
+          <button
+            className={`px-4 py-2 text-sm font-medium ${activeTab === "duplicates" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
+            onClick={() => setActiveTab("duplicates")}
+          >
+            Duplicates
+          </button>
         </div>
         {activeTab === "members" && <MemberTable />}
         {activeTab === "juniors" && <JuniorsTable />}
         {activeTab === "charges" && <ChargesTable />}
         {activeTab === "contacts" && <ContactSubmissionsTable />}
         {activeTab === "sponsorships" && <SponsorshipsTable />}
+        {activeTab === "duplicates" && <DuplicateMembersTable />}
       </div>
     </QueryClientProvider>
   );

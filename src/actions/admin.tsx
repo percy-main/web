@@ -825,6 +825,210 @@ export const admin = {
       return await syncStripeCharges();
     },
   }),
+
+  findDuplicateMembers: defineAuthAction({
+    roles: ["admin"],
+    handler: async () => {
+      const duplicates = await client
+        .selectFrom("member as m1")
+        .innerJoin("member as m2", (join) =>
+          join
+            .onRef("m1.email", "=", "m2.email")
+            .on("m1.id", "<", sql`m2.id`),
+        )
+        .select([
+          "m1.email",
+        ])
+        .groupBy("m1.email")
+        .execute();
+
+      const groups = [];
+      for (const dup of duplicates) {
+        const members = await client
+          .selectFrom("member")
+          .where("email", "=", dup.email)
+          .select([
+            "member.id",
+            "member.name",
+            "member.email",
+            "member.title",
+            "member.stripe_customer_id",
+          ])
+          .execute();
+
+        const memberIds = members.map((m) => m.id);
+
+        const membershipCounts = await client
+          .selectFrom("membership")
+          .where("member_id", "in", memberIds)
+          .select([
+            "member_id",
+            sql<number>`COUNT(*)`.as("count"),
+          ])
+          .groupBy("member_id")
+          .execute();
+
+        const dependentCounts = await client
+          .selectFrom("dependent")
+          .where("member_id", "in", memberIds)
+          .select([
+            "member_id",
+            sql<number>`COUNT(*)`.as("count"),
+          ])
+          .groupBy("member_id")
+          .execute();
+
+        const chargeCounts = await client
+          .selectFrom("charge")
+          .where("member_id", "in", memberIds)
+          .select([
+            "member_id",
+            sql<number>`COUNT(*)`.as("count"),
+          ])
+          .groupBy("member_id")
+          .execute();
+
+        const mcMap = Object.fromEntries(membershipCounts.map((r) => [r.member_id, Number(r.count)]));
+        const dcMap = Object.fromEntries(dependentCounts.map((r) => [r.member_id, Number(r.count)]));
+        const ccMap = Object.fromEntries(chargeCounts.map((r) => [r.member_id, Number(r.count)]));
+
+        groups.push({
+          email: dup.email,
+          members: members.map((m) => ({
+            id: m.id,
+            name: m.name,
+            title: m.title,
+            stripeCustomerId: m.stripe_customer_id,
+            membershipCount: mcMap[m.id] ?? 0,
+            dependentCount: dcMap[m.id] ?? 0,
+            chargeCount: ccMap[m.id] ?? 0,
+          })),
+        });
+      }
+
+      return groups;
+    },
+  }),
+
+  getMergePreview: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      keepMemberId: z.string(),
+      removeMemberId: z.string(),
+    }),
+    handler: async ({ keepMemberId, removeMemberId }) => {
+      if (keepMemberId === removeMemberId) {
+        throw new ActionError({ code: "BAD_REQUEST", message: "Cannot merge a member with itself" });
+      }
+
+      const [keepMember, removeMember] = await Promise.all([
+        client.selectFrom("member").where("id", "=", keepMemberId).selectAll().executeTakeFirst(),
+        client.selectFrom("member").where("id", "=", removeMemberId).selectAll().executeTakeFirst(),
+      ]);
+
+      if (!keepMember || !removeMember) {
+        throw new ActionError({ code: "NOT_FOUND", message: "One or both member records not found" });
+      }
+
+      if (keepMember.email !== removeMember.email) {
+        throw new ActionError({ code: "BAD_REQUEST", message: "Members must share the same email to merge" });
+      }
+
+      const [keepMemberships, removeMemberships] = await Promise.all([
+        client.selectFrom("membership").where("member_id", "=", keepMemberId).selectAll().execute(),
+        client.selectFrom("membership").where("member_id", "=", removeMemberId).selectAll().execute(),
+      ]);
+
+      const [keepDependents, removeDependents] = await Promise.all([
+        client.selectFrom("dependent").where("member_id", "=", keepMemberId).selectAll().execute(),
+        client.selectFrom("dependent").where("member_id", "=", removeMemberId).selectAll().execute(),
+      ]);
+
+      const [keepCharges, removeCharges] = await Promise.all([
+        client.selectFrom("charge").where("member_id", "=", keepMemberId).selectAll().execute(),
+        client.selectFrom("charge").where("member_id", "=", removeMemberId).selectAll().execute(),
+      ]);
+
+      return {
+        keep: {
+          member: keepMember,
+          memberships: keepMemberships,
+          dependents: keepDependents,
+          charges: keepCharges,
+        },
+        remove: {
+          member: removeMember,
+          memberships: removeMemberships,
+          dependents: removeDependents,
+          charges: removeCharges,
+        },
+      };
+    },
+  }),
+
+  mergeMembers: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      keepMemberId: z.string(),
+      removeMemberId: z.string(),
+    }),
+    handler: async ({ keepMemberId, removeMemberId }) => {
+      if (keepMemberId === removeMemberId) {
+        throw new ActionError({ code: "BAD_REQUEST", message: "Cannot merge a member with itself" });
+      }
+
+      const [keepMember, removeMember] = await Promise.all([
+        client.selectFrom("member").where("id", "=", keepMemberId).selectAll().executeTakeFirst(),
+        client.selectFrom("member").where("id", "=", removeMemberId).selectAll().executeTakeFirst(),
+      ]);
+
+      if (!keepMember || !removeMember) {
+        throw new ActionError({ code: "NOT_FOUND", message: "One or both member records not found" });
+      }
+
+      if (keepMember.email !== removeMember.email) {
+        throw new ActionError({ code: "BAD_REQUEST", message: "Members must share the same email to merge" });
+      }
+
+      await client.transaction().execute(async (trx) => {
+        // Re-point all foreign keys from removeMember to keepMember
+        await trx
+          .updateTable("membership")
+          .set({ member_id: keepMemberId })
+          .where("member_id", "=", removeMemberId)
+          .execute();
+
+        await trx
+          .updateTable("dependent")
+          .set({ member_id: keepMemberId })
+          .where("member_id", "=", removeMemberId)
+          .execute();
+
+        await trx
+          .updateTable("charge")
+          .set({ member_id: keepMemberId })
+          .where("member_id", "=", removeMemberId)
+          .execute();
+
+        // Preserve stripe_customer_id if keepMember doesn't have one
+        if (!keepMember.stripe_customer_id && removeMember.stripe_customer_id) {
+          await trx
+            .updateTable("member")
+            .set({ stripe_customer_id: removeMember.stripe_customer_id })
+            .where("id", "=", keepMemberId)
+            .execute();
+        }
+
+        // Delete the duplicate member record
+        await trx
+          .deleteFrom("member")
+          .where("id", "=", removeMemberId)
+          .execute();
+      });
+
+      return { success: true };
+    },
+  }),
 };
 
 function getChargeStatus(
