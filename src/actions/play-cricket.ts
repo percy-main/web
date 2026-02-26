@@ -568,20 +568,70 @@ export const playCricket = {
 
       const playerId = member.play_cricket_id;
 
-      // Get available seasons (union of batting + bowling seasons)
-      const battingSeasons = await client
-        .selectFrom("match_performance_batting")
-        .select("season")
-        .where("player_id", "=", playerId)
-        .groupBy("season")
-        .execute();
-
-      const bowlingSeasons = await client
-        .selectFrom("match_performance_bowling")
-        .select("season")
-        .where("player_id", "=", playerId)
-        .groupBy("season")
-        .execute();
+      // Run independent queries in parallel
+      const [
+        battingSeasons,
+        bowlingSeasons,
+        battingTotals,
+        bowlingTotals,
+        bestBowling,
+        matchCountResult,
+      ] = await Promise.all([
+        // Available seasons from batting
+        client
+          .selectFrom("match_performance_batting")
+          .select("season")
+          .where("player_id", "=", playerId)
+          .groupBy("season")
+          .execute(),
+        // Available seasons from bowling
+        client
+          .selectFrom("match_performance_bowling")
+          .select("season")
+          .where("player_id", "=", playerId)
+          .groupBy("season")
+          .execute(),
+        // All-time batting totals
+        client
+          .selectFrom("match_performance_batting")
+          .select([
+            sql<number>`SUM(runs)`.as("total_runs"),
+            sql<number>`COUNT(*)`.as("total_innings"),
+            sql<number>`MAX(runs)`.as("high_score"),
+          ])
+          .where("player_id", "=", playerId)
+          .executeTakeFirst(),
+        // All-time bowling totals
+        client
+          .selectFrom("match_performance_bowling")
+          .select([
+            sql<number>`SUM(wickets)`.as("total_wickets"),
+          ])
+          .where("player_id", "=", playerId)
+          .executeTakeFirst(),
+        // Best bowling: highest wickets, ties broken by lowest runs, then fewest balls
+        client
+          .selectFrom("match_performance_bowling")
+          .select(["wickets", "runs", "overs"])
+          .where("player_id", "=", playerId)
+          .where("wickets", ">", 0)
+          .orderBy("wickets", "desc")
+          .orderBy("runs", "asc")
+          .orderBy(
+            sql`(CAST(SUBSTR(overs, 1, INSTR(overs, '.') - 1) AS INTEGER) * 6 + CAST(SUBSTR(overs, INSTR(overs, '.') + 1) AS INTEGER))`,
+            "asc",
+          )
+          .limit(1)
+          .executeTakeFirst(),
+        // Total distinct matches via SQL UNION
+        sql<{ count: number }>`
+          SELECT COUNT(*) as count FROM (
+            SELECT match_id FROM match_performance_batting WHERE player_id = ${playerId}
+            UNION
+            SELECT match_id FROM match_performance_bowling WHERE player_id = ${playerId}
+          )
+        `.execute(client),
+      ]);
 
       const seasons = [
         ...new Set([
@@ -594,55 +644,7 @@ export const playCricket = {
         return { seasons: [], career: null };
       }
 
-      // All-time batting totals
-      const battingTotals = await client
-        .selectFrom("match_performance_batting")
-        .select([
-          sql<number>`SUM(runs)`.as("total_runs"),
-          sql<number>`COUNT(*)`.as("total_innings"),
-          sql<number>`MAX(runs)`.as("high_score"),
-        ])
-        .where("player_id", "=", playerId)
-        .executeTakeFirst();
-
-      // All-time bowling totals
-      const bowlingTotals = await client
-        .selectFrom("match_performance_bowling")
-        .select([
-          sql<number>`SUM(wickets)`.as("total_wickets"),
-        ])
-        .where("player_id", "=", playerId)
-        .executeTakeFirst();
-
-      // Best bowling: highest wickets, ties broken by lowest runs, then lowest overs
-      const bestBowling = await client
-        .selectFrom("match_performance_bowling")
-        .select(["wickets", "runs", "overs"])
-        .where("player_id", "=", playerId)
-        .where("wickets", ">", 0)
-        .orderBy("wickets", "desc")
-        .orderBy("runs", "asc")
-        .orderBy(sql`CAST(overs AS REAL)`, "asc")
-        .limit(1)
-        .executeTakeFirst();
-
-      // Total distinct matches (union of match IDs from both tables)
-      const battingMatchIds = await client
-        .selectFrom("match_performance_batting")
-        .select("match_id")
-        .where("player_id", "=", playerId)
-        .execute();
-
-      const bowlingMatchIds = await client
-        .selectFrom("match_performance_bowling")
-        .select("match_id")
-        .where("player_id", "=", playerId)
-        .execute();
-
-      const totalMatches = new Set([
-        ...battingMatchIds.map((r) => r.match_id),
-        ...bowlingMatchIds.map((r) => r.match_id),
-      ]).size;
+      const totalMatches = matchCountResult.rows[0]?.count ?? 0;
 
       return {
         seasons,
@@ -708,25 +710,38 @@ export const playCricket = {
           sql<number>`SUM(b.wickets)`.as("total_wickets"),
           sql<number>`SUM(b.runs)`.as("total_runs"),
           sql<number>`SUM(b.maidens)`.as("total_maidens"),
-          sql<number>`MAX(b.wickets)`.as("best_wickets"),
         ])
         .where("b.player_id", "=", playerId)
         .where("b.season", "=", season)
         .executeTakeFirst();
 
-      // Compute bowling overs
+      // Compute bowling overs + best bowling spell
       let totalBowlingBalls = 0;
+      let bestBowlingSpell: { wickets: number; runs: number } | null = null;
       if (bowlingRows && bowlingRows.matches > 0) {
-        const oversRows = await client
-          .selectFrom("match_performance_bowling as b")
-          .select(["b.overs"])
-          .where("b.player_id", "=", playerId)
-          .where("b.season", "=", season)
-          .execute();
+        const [oversRows, bestSpell] = await Promise.all([
+          client
+            .selectFrom("match_performance_bowling as b")
+            .select(["b.overs"])
+            .where("b.player_id", "=", playerId)
+            .where("b.season", "=", season)
+            .execute(),
+          client
+            .selectFrom("match_performance_bowling as b")
+            .select(["b.wickets", "b.runs"])
+            .where("b.player_id", "=", playerId)
+            .where("b.season", "=", season)
+            .where("b.wickets", ">", 0)
+            .orderBy("b.wickets", "desc")
+            .orderBy("b.runs", "asc")
+            .limit(1)
+            .executeTakeFirst(),
+        ]);
 
         for (const row of oversRows) {
           totalBowlingBalls += oversToBalls(row.overs);
         }
+        bestBowlingSpell = bestSpell ?? null;
       }
 
       const hasBatting = battingRows && battingRows.innings > 0;
@@ -801,7 +816,9 @@ export const playCricket = {
                 strikeRate !== null && totalBowlingBalls >= 60
                   ? Math.round(strikeRate * 10) / 10
                   : null,
-              bestWickets: bowlingRows.best_wickets,
+              bestBowling: bestBowlingSpell
+                ? `${bestBowlingSpell.wickets}/${bestBowlingSpell.runs}`
+                : null,
             };
           })()
         : null;

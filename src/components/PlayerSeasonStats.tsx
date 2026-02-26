@@ -250,7 +250,7 @@ function PlayerSeasonStatsInner({ contentfulEntryId }: Props) {
                               : "-"}
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
-                            {seasonQuery.data.bowling.bestWickets}
+                            {seasonQuery.data.bowling.bestBowling ?? "-"}
                           </TableCell>
                         </TableRow>
                       </TableBody>
