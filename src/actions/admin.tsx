@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth/server";
 import { client } from "@/lib/db/client";
 import { send } from "@/lib/email/send";
 import { syncStripeCharges } from "@/lib/payments/syncStripeCharges";
-import { getAgeGroup, getTeamName } from "@/lib/util/ageGroup";
+import { AGE_GROUPS, getAgeGroup, getTeamName } from "@/lib/util/ageGroup";
 import { nameSimilarity, normalizeName } from "@/lib/util/nameSimilarity";
 import { render } from "@react-email/render";
 import { ActionError } from "astro:actions";
@@ -543,15 +543,46 @@ export const admin = {
 
   listJuniors: defineAuthAction({
     roles: ["admin"],
-    handler: async () => {
-      const rows = await client
-        .selectFrom("dependent")
-        .innerJoin("member", "member.id", "dependent.member_id")
-        .leftJoin("membership", (join) =>
-          join
-            .onRef("membership.dependent_id", "=", "dependent.id")
-            .on("membership.type", "=", "junior"),
-        )
+    input: z.object({
+      page: z.number().int().min(1),
+      pageSize: z.number().int().min(1).max(100),
+      search: z.string().optional(),
+      sex: z.enum(["all", "male", "female"]).default("all"),
+      ageGroup: z.enum(["all", ...AGE_GROUPS]).default("all"),
+      membershipStatus: z.enum(["all", "paid", "unpaid"]).default("all"),
+    }),
+    handler: async ({ page, pageSize, search, sex, ageGroup, membershipStatus }) => {
+      function buildBaseQuery() {
+        let q = client
+          .selectFrom("dependent")
+          .innerJoin("member", "member.id", "dependent.member_id")
+          .leftJoin("membership", (join) =>
+            join
+              .onRef("membership.dependent_id", "=", "dependent.id")
+              .on("membership.type", "=", "junior"),
+          );
+
+        // sex filter at SQL level
+        if (sex !== "all") {
+          q = q.where("dependent.sex", "=", sex);
+        }
+
+        // search filter at SQL level
+        if (search && search.trim().length > 0) {
+          const term = `%${search.trim()}%`;
+          q = q.where((eb) =>
+            eb.or([
+              eb("dependent.name", "like", term),
+              eb("member.name", "like", term),
+            ]),
+          );
+        }
+
+        return q;
+      }
+
+      // Fetch all matching rows (before ageGroup/membership post-filters)
+      const allRows = await buildBaseQuery()
         .select([
           "dependent.id",
           "dependent.name",
@@ -566,19 +597,43 @@ export const admin = {
         .orderBy("dependent.name", "asc")
         .execute();
 
-      return rows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        sex: row.sex,
-        dob: row.dob,
-        registeredAt: row.registeredAt,
-        parentName: row.parentName,
-        parentEmail: row.parentEmail,
-        parentTelephone: row.parentTelephone,
-        paidUntil: row.paidUntil,
-        ageGroup: getAgeGroup(row.dob),
-        teamName: getTeamName(row.dob, row.sex),
-      }));
+      // Post-query filters (computed from dob/paidUntil)
+      const now = new Date();
+      const filtered = allRows.filter((row) => {
+        if (ageGroup !== "all" && getAgeGroup(row.dob) !== ageGroup) {
+          return false;
+        }
+        if (membershipStatus === "paid" && !(row.paidUntil && new Date(row.paidUntil) >= now)) {
+          return false;
+        }
+        if (membershipStatus === "unpaid" && (row.paidUntil && new Date(row.paidUntil) >= now)) {
+          return false;
+        }
+        return true;
+      });
+
+      const total = filtered.length;
+      const offset = (page - 1) * pageSize;
+      const paged = filtered.slice(offset, offset + pageSize);
+
+      return {
+        juniors: paged.map((row) => ({
+          id: row.id,
+          name: row.name,
+          sex: row.sex,
+          dob: row.dob,
+          registeredAt: row.registeredAt,
+          parentName: row.parentName,
+          parentEmail: row.parentEmail,
+          parentTelephone: row.parentTelephone,
+          paidUntil: row.paidUntil,
+          ageGroup: getAgeGroup(row.dob),
+          teamName: getTeamName(row.dob, row.sex),
+        })),
+        total,
+        page,
+        pageSize,
+      };
     },
   }),
 
