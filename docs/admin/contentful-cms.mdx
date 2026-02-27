@@ -1,0 +1,118 @@
+# Contentful CMS
+
+The website's public content — news articles, pages, events, and people profiles — is managed in [Contentful](https://app.contentful.com), a cloud-based content management system.
+
+<Callout type="info">
+Contentful is separate from the admin panel. You access it at [app.contentful.com](https://app.contentful.com) with your own login credentials. Ask an existing admin for an invitation if you don't have access.
+</Callout>
+
+## Content Types
+
+### News Articles
+
+News articles appear on the homepage and the news section of the website.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| **Title** | Yes | The article headline |
+| **Slug** | Yes | URL path (e.g. `latest-tournament-results` becomes `/news/article/latest-tournament-results`) |
+| **Content** | Yes | The full article body (rich text — supports formatting, images, links) |
+| **Summary** | No | A short preview shown on the homepage and news listing |
+| **Author** | No | Link to a Person entry |
+| **When** | No | Publication date |
+
+### Pages
+
+Pages make up the main website structure (e.g. Cricket, Football, About Us).
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| **Title** | Yes | Page name (shown in navigation) |
+| **Slug** | Yes | URL path — can be nested (e.g. `cricket/fixtures`) |
+| **Content** | Yes | Page body (rich text) |
+| **Main Menu Item** | No | Whether this page appears in the main navigation |
+| **Parent** | No | Parent page for hierarchy (creates submenus and breadcrumbs) |
+| **Menu Order** | No | Position in the menu |
+
+<Callout type="warning">
+Changing a page's slug will break any existing links to it. If you must change a slug, let a developer know so they can set up a redirect.
+</Callout>
+
+### Events
+
+Events appear in the calendar widget on the homepage.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| **Name** | Yes | Event name |
+| **Description** | No | Event details (rich text) |
+| **When** | Yes | Start date and time |
+| **Finish** | No | End date and time |
+| **Location** | No | Link to a Location entry |
+
+### People (Trustees)
+
+People profiles are used for club officials, coaches, and players. They appear on the website with their own profile pages.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| **Name** | Yes | Full name |
+| **Slug** | Yes | URL path (e.g. `john-smith` becomes `/person/john-smith`) |
+| **Photo** | No | Profile picture (upload to Contentful's media library) |
+| **Bio** | No | Biography (rich text) |
+| **DBS Checked** | No | Whether they've passed a DBS check |
+| **Has Left Club** | No | Mark as inactive without deleting |
+
+### Game Details
+
+Game details enrich cricket matches pulled from Play-Cricket with website-specific content.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| **Play-Cricket ID** | Yes | Links to the match in Play-Cricket |
+| **Name** | Yes | Game name |
+| **Slug** | Yes | URL path for the game page |
+| **Description** | No | Pre-match information (rich text) |
+| **Report** | No | Post-match report (rich text) |
+| **Sponsor** | No | Link to a Sponsor entry |
+
+### Sponsors
+
+Sponsor entries store sponsor logos for linking to games.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| **Name** | Yes | Sponsor company name |
+| **Logo** | Yes | Logo image (upload to media library) |
+
+### Locations
+
+Reusable location entries for events and games.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| **Name** | Yes | Location name |
+| **Street** | No | Street address |
+| **City** | No | City |
+| **County** | No | County |
+| **Country** | No | Country |
+| **Postcode** | No | Postal code |
+| **Coordinates** | No | Map coordinates (lat/lon) |
+
+## How Content Gets to the Website
+
+Content changes in Contentful are **not instant** on the live website. The website is statically generated, meaning it's rebuilt when code changes are pushed. To see content changes:
+
+1. Make your changes in Contentful
+2. The site will pick up the changes on the next deployment
+
+<Callout type="info">
+If you need content changes to appear urgently, ask a developer to trigger a rebuild.
+</Callout>
+
+## Tips
+
+- **Use descriptive slugs** — they become part of the URL and help with search engines
+- **Optimise images** — upload reasonably sized images. Very large files slow down the site
+- **Rich text** — use the formatting toolbar for headings, bold, italic, lists, and links. You can embed images directly in rich text fields
+- **Preview** — Contentful has a preview feature to see how your content will look before publishing

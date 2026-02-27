@@ -1,0 +1,70 @@
+# Duplicate Members
+
+<AdminTab name="Duplicates">
+Find and safely merge duplicate member records.
+</AdminTab>
+
+## How Duplicates are Detected
+
+The system identifies potential duplicates using two methods:
+
+| Method | Confidence | Badge |
+|--------|-----------|-------|
+| **Email match** | High — same email on multiple records | Green "Email match" |
+| **Name match** | Lower — fuzzy name matching (70%+ similarity) | Yellow "Name match" |
+
+## Duplicate Groups
+
+Each group shows the matching records with:
+
+| Column | Description |
+|--------|-------------|
+| **Keep** | Radio button to select which record to retain |
+| **ID** | Truncated record ID |
+| **Name** | Full name |
+| **Stripe** | Whether the record has a Stripe customer ID |
+| **Memberships** | Count of membership records |
+| **Dependents** | Count of junior members |
+| **Charges** | Count of charges |
+
+## Merge Workflow
+
+Merging combines two records into one. The record you select as "Keep" is retained, and all data from the other record is moved to it.
+
+### Step 1: Select the Record to Keep
+
+Choose which record should be the primary one by clicking its **Keep** radio button. Consider:
+
+- Which has more complete personal details?
+- Which has the Stripe customer ID?
+- Which has more memberships, dependents, or charges?
+
+### Step 2: Preview the Merge
+
+Click **Merge** to see a side-by-side preview showing:
+
+- **Left (green)** — the record being kept, with all its details
+- **Right (red)** — the record being removed
+
+The preview also shows what will happen:
+
+- "X membership(s) will be moved..."
+- "X dependent(s) will be moved..."
+- "X charge(s) will be moved..."
+- "Stripe customer ID will be copied..." (if the removed record has one)
+- "The duplicate member record will be deleted"
+
+### Step 3: Confirm
+
+To prevent accidental merges, you must type a confirmation word:
+
+- For records with the **same email**: type `merge`
+- For records with **different emails**: type `MERGE` (uppercase)
+
+<Callout type="danger">
+Merging is permanent and cannot be undone. Always verify that the two records genuinely belong to the same person before confirming, especially when emails differ.
+</Callout>
+
+### Cross-Email Merges
+
+When merging records with different email addresses, an amber warning appears showing both emails and asking you to verify they are the same person. The uppercase `MERGE` confirmation adds an extra layer of safety.
