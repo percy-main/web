@@ -1,0 +1,45 @@
+# Junior Managers
+
+The <RoleBadge role="junior-manager" /> role gives specific people the ability to view and manage the junior teams they're responsible for, without needing full admin access.
+
+## What Junior Managers Can Do
+
+Junior managers have access to a dedicated **Junior Manager Panel** at `/junior-manager` where they can:
+
+- View the teams they've been assigned to
+- See all players in their teams (age-appropriate filtering)
+- View player details (contact info, medical info, etc.)
+
+They **cannot** access the main admin panel or any other admin features.
+
+## Assigning the Junior Manager Role
+
+<RoleBadge role="admin" /> Only admins can assign the junior manager role.
+
+1. Go to the **Members** tab in the admin panel
+2. Find the user and click their row to open the detail modal
+3. Scroll to the **Junior Manager** section
+4. Select the teams they should manage using the checkboxes
+5. Click **Save Team Assignments**
+
+The user's role is automatically changed to <RoleBadge role="junior-manager" /> when teams are assigned.
+
+<Callout type="info">
+Admins always have full access to all teams. If a user has the admin role, you'll see a message saying "Admins have full access to all teams. Demote to User first to assign specific teams."
+</Callout>
+
+## Removing Team Assignments
+
+To remove a junior manager's access:
+
+1. Open their member detail modal
+2. Deselect all teams, or click **Remove All Teams**
+3. Their role automatically reverts to <RoleBadge role="user" />
+
+## Junior Manager Panel
+
+When a junior manager logs in, they can access `/junior-manager` to see:
+
+- A list of their assigned teams
+- Click a team to see all players in that team
+- Player details including contact information for parents/guardians

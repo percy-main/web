@@ -1,0 +1,117 @@
+# Members
+
+<AdminTab name="Members">
+Browse all user accounts, view details, manage roles, and add charges.
+</AdminTab>
+
+## Member List
+
+The Members tab shows a paginated table of all registered users. Each row displays:
+
+| Column | Description |
+|--------|-------------|
+| **Name** | The user's full name |
+| **Email** | Their email address |
+| **Member** | Green "Member" badge if they have a member record, red "Not Member" otherwise |
+| **Membership Status** | Whether their membership is current, based on paid-until date |
+| **Membership Type** | The type of membership (e.g. adult, junior) |
+| **Role** | Their system role — <RoleBadge role="admin" />, <RoleBadge role="user" />, or <RoleBadge role="junior-manager" /> |
+
+### Searching
+
+Use the search box to filter by **name** or **email**. The search updates as you type (with a short delay).
+
+### Pagination
+
+Results are shown 20 per page. Use the **Previous** and **Next** buttons to navigate. The total user count is displayed.
+
+## Member Detail
+
+Click any row to open the member detail modal. This shows everything about a user across several sections.
+
+### Account Information
+
+- Name, email, role
+- Whether their email is verified
+- Account creation date
+
+### Role Management
+
+You can promote a regular user to admin or demote an admin to a regular user:
+
+1. Click **Promote to Admin** or **Demote to User**
+2. Confirm the action in the confirmation dialog
+3. The role change takes effect immediately
+
+<Callout type="info">
+The Promote/Demote button only toggles between the <RoleBadge role="user" /> and <RoleBadge role="admin" /> roles. To assign the <RoleBadge role="junior-manager" /> role, use the **Junior Manager** section lower in the same modal — see [Junior Managers](junior-managers).
+</Callout>
+
+<Callout type="warning">
+Changing a user's role to admin gives them full access to all admin features. Only do this for trusted club officials.
+</Callout>
+
+### Member Details
+
+If the user has completed their membership registration, this section shows their personal details:
+
+- Title, name, address, postcode
+- Date of birth, telephone
+- Emergency contact name and phone number
+
+### Membership
+
+Shows the user's current membership status:
+
+- Membership type
+- Paid-until date
+- Current status (active/expiring/expired)
+- When the membership was created
+
+### Junior Members (Dependents)
+
+If the member has registered junior players, each dependent is listed with:
+
+- Name, date of birth, gender
+- Payment status (paid until date, or unpaid)
+- School year, photo consent
+- GP surgery details
+- Alternative contact details
+- Emergency medical consent
+- Any disability or medical information
+
+### Payments
+
+This section allows you to view and manage charges for the member.
+
+#### Adding a Payment
+
+1. Click **Add Payment**
+2. Fill in the description, amount (in GBP), and date
+3. Click **Submit**
+
+The member will receive an email notification about the new charge with a link to pay.
+
+#### Viewing Charges
+
+The charges table shows:
+
+| Column | Description |
+|--------|-------------|
+| **Date** | When the charge was created |
+| **Description** | What the charge is for |
+| **Amount** | Amount in GBP |
+| **Source** | "admin" (manually created) or "stripe" (from Stripe) |
+| **Status** | Paid, Pending, or Unpaid |
+
+#### Deleting a Charge
+
+You can delete unpaid charges:
+
+1. Click **Delete** on the charge row
+2. Enter a reason for the deletion
+3. Click **Confirm**
+
+<Callout type="info">
+Deleted charges are soft-deleted — they remain in the database with the deletion reason recorded, but are hidden from the member's view.
+</Callout>

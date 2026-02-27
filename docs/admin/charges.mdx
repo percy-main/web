@@ -1,0 +1,80 @@
+# Charges
+
+<AdminTab name="Charges">
+Monitor all member charges and payment status, sync Stripe history, and send payment reminders.
+</AdminTab>
+
+## Summary Cards
+
+At the top of the Charges tab, four summary cards give you an at-a-glance view:
+
+| Card | Colour | Description |
+|------|--------|-------------|
+| **Total Charged** | Default | Total amount and count of all charges |
+| **Collected** | Green | Amount and count of paid charges |
+| **Outstanding** | Yellow | Amount and count of unpaid charges |
+| **Abandoned** | Red | Amount and count of abandoned charges |
+
+## Filters
+
+| Filter | Description |
+|--------|-------------|
+| **Search** | Search by member name or charge description |
+| **Status** | All Statuses, Unpaid, Pending, Paid, Abandoned |
+| **Date range** | From and To date pickers |
+| **Show deleted** | Checkbox to include soft-deleted charges |
+
+A **Clear filters** button appears when any filter is active.
+
+## Charges Table
+
+| Column | Description |
+|--------|-------------|
+| **Date** | When the charge was created |
+| **Member** | Member name and email |
+| **Description** | What the charge is for (deleted charges show deletion reason) |
+| **Amount** | Amount in GBP |
+| **Source** | Badge showing "stripe" or "admin" |
+| **Status** | Paid (green), Pending (blue), Unpaid (yellow), Abandoned (red), or Deleted (grey) |
+| **Payment Date** | When payment was received, or "-" |
+| **Actions** | Chase button for unpaid/abandoned charges |
+
+Deleted charges appear with reduced opacity.
+
+## Chasing Payments
+
+For unpaid or abandoned charges, you can send a payment reminder email:
+
+1. Click the **Chase** button on the charge row
+2. The button changes to **Send** and **Cancel**
+3. Click **Send** to dispatch the reminder email to the member
+
+The email contains a link for the member to make their payment online.
+
+## Syncing Stripe History
+
+The **Sync Stripe History** button pulls all historical payment data from Stripe and reconciles it with the database. This is useful when:
+
+- Setting up the system for the first time
+- Charges were created in Stripe directly (e.g. via the Stripe dashboard)
+- You suspect data is out of sync
+
+### How to sync
+
+1. Click **Sync Stripe History**
+2. Read the confirmation message — this can take a while for large histories
+3. Click **Confirm**
+4. Wait for the sync to complete
+
+The result shows:
+
+- Number of charges created
+- Number of duplicates skipped
+- Number of self-service charges excluded
+- Number of memberships updated
+- Total charges processed
+- Any errors encountered
+
+<Callout type="warning">
+Stripe sync processes all historical charges. Run it during quiet periods as it can take some time. Duplicate charges are automatically detected and skipped, so it's safe to run multiple times.
+</Callout>

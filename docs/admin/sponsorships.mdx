@@ -1,0 +1,85 @@
+# Sponsorships
+
+<AdminTab name="Sponsorships">
+Manage game sponsorships — approve, reject, edit, and create manual sponsorships.
+</AdminTab>
+
+## Overview
+
+Members of the public can sponsor individual cricket matches through the website. When someone submits a sponsorship, it goes through an approval workflow before appearing on the site.
+
+## Sponsorship Statuses
+
+| Status | Badge | Meaning |
+|--------|-------|---------|
+| **Pending Payment** | Red | Sponsor has submitted but not yet paid |
+| **Pending Approval** | Yellow | Payment received, awaiting admin approval |
+| **Approved** | Green | Sponsorship is live on the website |
+
+## Filtering
+
+Use the status filter to view sponsorships by their current state: All, Pending Payment, Pending Approval, or Approved.
+
+## Sponsorships Table
+
+| Column | Description |
+|--------|-------------|
+| **Game** | Date, team, and opposition (with Home/Away indicator) |
+| **Sponsor** | Sponsor name and logo preview |
+| **Amount** | Amount in GBP |
+| **Status** | Current status badge |
+| **Paid** | Payment date or "-" |
+| **Message** | The sponsor's message (expandable if long) |
+| **Actions** | Context-dependent action buttons |
+
+## Approval Workflow
+
+### Approving a Sponsorship
+
+When a sponsorship has status **Pending Approval** (payment has been received):
+
+1. Review the sponsor details, message, and logo
+2. Click **Approve** to make it live on the website
+
+The sponsorship will now show with a green "Approved" badge and appear on the game's page on the website.
+
+### Revoking a Sponsorship
+
+If an approved sponsorship needs to be taken down:
+
+1. Click **Revoke** on the approved sponsorship
+2. The sponsorship returns to **Pending Approval** status and is removed from the public website
+
+You can re-approve it later if needed.
+
+## Editing a Sponsorship
+
+Click **Edit** to modify any sponsorship. You can update:
+
+- Sponsor name, email, and website
+- Logo (with image preview)
+- Sponsor message
+- Amount
+- Display name (overrides the sponsor name shown publicly)
+- Internal notes
+
+## Creating a Manual Sponsorship
+
+For sponsorships arranged offline (e.g. at the club, via email), you can create them directly:
+
+1. Click **Create Manual Sponsorship**
+2. Search for the game by opponent name and select it
+3. Fill in the sponsor details:
+   - **Sponsor Name** (required)
+   - **Sponsor Email** (required)
+   - **Website URL** (optional)
+   - **Logo** (optional — images are auto-resized to max 300px, max 150KB)
+   - **Message** (optional, max 100 characters)
+   - **Amount** (required, in GBP)
+   - **Display Name** (optional override)
+   - **Notes** (optional, internal only)
+4. Click **Create**
+
+<Callout type="info">
+Manual sponsorships are created as already-approved and paid — they appear on the website immediately.
+</Callout>

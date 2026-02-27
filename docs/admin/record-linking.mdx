@@ -1,0 +1,80 @@
+# Record Linking
+
+<AdminTab name="Record Linking">
+Link members and juniors to Play-Cricket player profiles and Contentful person entries.
+</AdminTab>
+
+## Why Link Records?
+
+The website pulls cricket data from multiple sources:
+
+- **Play-Cricket** — the ECB's match results and player statistics system
+- **Contentful** — the CMS where player profiles, bios, and photos are managed
+- **Website database** — where member registrations and payments are stored
+
+Linking these records together lets the website show a unified view — connecting match statistics to player profiles to member accounts.
+
+## Overview Stats
+
+At the top of the tab, you can see:
+
+- **Total members** count
+- **Members linked to Play-Cricket** — how many members (and juniors) have been matched
+- **Members linked to Contentful** — how many members have been matched to CMS profiles
+
+## Loading Play-Cricket Players
+
+Before you can link records, the system needs a list of Play-Cricket players:
+
+1. Click **Load PC Players** (first time) or **Refresh PC Players** (subsequent times)
+2. This fetches the current player list from the Play-Cricket API
+
+## Filters
+
+| Filter | Description |
+|--------|-------------|
+| **Search** | Search by name |
+| **Fully linked** | Toggle to show/hide records that are already fully linked |
+| **Unlinked** | Toggle to show/hide records with no links |
+| **Type** | All types, Members only, or Juniors only |
+
+## Record Table
+
+| Column | Description |
+|--------|-------------|
+| **Name** | Person's name (juniors show parent name in small text) |
+| **Type** | Blue "Member" or green "Junior" badge |
+| **Play-Cricket** | Green tick if linked, grey cross if not |
+| **Contentful** | Green tick if linked, grey cross if not, "—" for juniors (N/A) |
+
+## Linking to Play-Cricket
+
+1. Click a row to open the detail modal
+2. In the **Play-Cricket** section, click **Link**
+3. Search for the player by name
+4. The system shows fuzzy matches with confidence scores:
+   - **Strong match** (green) — 70%+ similarity
+   - **Possible match** (yellow) — 40-70% similarity
+5. Click **Link** next to the correct player
+
+To unlink, click the **Unlink** button in the detail modal.
+
+## Linking to Contentful
+
+Contentful linking works the same way, but only applies to members (not juniors):
+
+1. Click a member row to open the detail modal
+2. In the **Contentful** section, click **Link**
+3. Search for the profile by name
+4. Matches show the person's photo (if available) and their profile URL
+5. Click **Link** next to the correct profile
+
+<Callout type="info">
+You can also click **View profile** to open the person's page on the website in a new tab, which helps verify you're linking to the right person.
+</Callout>
+
+## When to Link Records
+
+- **New members**: After someone registers, check if they have a Play-Cricket profile and link them
+- **Start of season**: When the Play-Cricket player list is updated for a new season, refresh and re-check links
+- **New Contentful profiles**: When someone's profile page is created in Contentful, link it to their member record
