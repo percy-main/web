@@ -21,31 +21,49 @@ type PersonProfile = {
   name: string;
 };
 
+type SponsorInfo = {
+  contentfulEntryId: string;
+  sponsorName: string;
+  sponsorWebsite: string | null;
+};
+
 function PlayerLink({
   name,
   contentfulEntryId,
   profileMap,
+  sponsorMap,
 }: {
   name: string;
   contentfulEntryId: string | null;
   profileMap: Map<string, PersonProfile>;
+  sponsorMap: Map<string, SponsorInfo>;
 }) {
   const profile = contentfulEntryId
     ? profileMap.get(contentfulEntryId)
     : null;
+  const sponsor = contentfulEntryId
+    ? sponsorMap.get(contentfulEntryId)
+    : null;
 
-  if (profile) {
-    return (
-      <a
-        href={`/person/${profile.slug}`}
-        className="font-medium text-green-800 underline decoration-green-800/30 underline-offset-2 hover:decoration-green-800"
-      >
-        {name}
-      </a>
-    );
-  }
-
-  return <span className="font-medium">{name}</span>;
+  return (
+    <div className="flex flex-col">
+      {profile ? (
+        <a
+          href={`/person/${profile.slug}`}
+          className="font-medium text-green-800 underline decoration-green-800/30 underline-offset-2 hover:decoration-green-800"
+        >
+          {name}
+        </a>
+      ) : (
+        <span className="font-medium">{name}</span>
+      )}
+      {sponsor && (
+        <span className="text-xs text-gray-500">
+          Sponsored by {sponsor.sponsorName}
+        </span>
+      )}
+    </div>
+  );
 }
 
 function MiniTable({
@@ -78,6 +96,20 @@ function SeasonLeadersInner({
   profileMap: Map<string, PersonProfile>;
 }) {
   const season = currentCricketSeason();
+
+  const sponsorsQuery = useQuery({
+    queryKey: ["player-sponsors", season],
+    queryFn: async () => {
+      const result = await actions.playerSponsorship.getAllApproved({ season });
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const sponsorMap = new Map(
+    (sponsorsQuery.data ?? []).map((s) => [s.contentfulEntryId, s]),
+  );
 
   const battingQuery = useQuery({
     queryKey: ["season-leaders-batting", season],
@@ -185,6 +217,7 @@ function SeasonLeadersInner({
                       name={entry.playerName}
                       contentfulEntryId={entry.contentfulEntryId}
                       profileMap={profileMap}
+                      sponsorMap={sponsorMap}
                     />
                   </TableCell>
                   <TableCell className="text-right font-bold">
@@ -226,6 +259,7 @@ function SeasonLeadersInner({
                       name={entry.playerName}
                       contentfulEntryId={entry.contentfulEntryId}
                       profileMap={profileMap}
+                      sponsorMap={sponsorMap}
                     />
                   </TableCell>
                   <TableCell className="text-right font-bold">

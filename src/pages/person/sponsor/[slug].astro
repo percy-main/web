@@ -1,0 +1,29 @@
+---
+import { PlayerSponsorCheckout } from "@/components/PlayerSponsorCheckout";
+import Container from "@/layouts/Container.astro";
+import type { GetStaticPathsResult } from "astro";
+import { getCollection } from "astro:content";
+
+export async function getStaticPaths() {
+  const people = await getCollection("person");
+  return people.map((person) => ({
+    params: { slug: person.data.slug },
+    props: { person },
+  })) satisfies GetStaticPathsResult;
+}
+
+const {
+  person: { id: contentfulEntryId, data: person },
+} = Astro.props;
+---
+
+<Container title={`Sponsor ${person.name}`}>
+  <div class="mx-auto max-w-md">
+    <PlayerSponsorCheckout
+      client:only="react"
+      contentfulEntryId={contentfulEntryId}
+      playerName={person.name}
+      playerPhotoUrl={person.photo?.url}
+    />
+  </div>
+</Container>

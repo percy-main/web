@@ -229,6 +229,25 @@ export interface PlayCricketTeam {
   site_id: string;
 }
 
+export interface PlayerSponsorship {
+  amount_pence: number;
+  approved: Generated<number>;
+  contentful_entry_id: string;
+  created_at: Generated<string>;
+  display_name: string | null;
+  id: string | null;
+  notes: string | null;
+  paid_at: string | null;
+  player_name: string;
+  season: number;
+  sponsor_email: string;
+  sponsor_logo_url: string | null;
+  sponsor_message: string | null;
+  sponsor_name: string;
+  sponsor_website: string | null;
+  stripe_payment_intent_id: string | null;
+}
+
 export interface Session {
   createdAt: string;
   expiresAt: string;
@@ -291,6 +310,7 @@ export interface DB {
   play_cricket_match_cache: PlayCricketMatchCache;
   play_cricket_sync_log: PlayCricketSyncLog;
   play_cricket_team: PlayCricketTeam;
+  player_sponsorship: PlayerSponsorship;
   session: Session;
   twoFactor: TwoFactor;
   user: User;

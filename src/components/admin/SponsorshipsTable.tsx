@@ -686,14 +686,241 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
   );
 };
 
+// --- Player Sponsorship Row ---
+
+type PlayerSponsorship = {
+  id: string | null;
+  contentfulEntryId: string;
+  playerName: string;
+  season: number;
+  sponsorName: string;
+  sponsorEmail: string;
+  sponsorWebsite: string | null;
+  sponsorLogoUrl: string | null;
+  sponsorMessage: string | null;
+  approved: boolean;
+  displayName: string | null;
+  amountPence: number;
+  paidAt: string | null;
+  createdAt: string;
+  notes: string | null;
+};
+
+const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
+  sponsorship,
+}) => {
+  const queryClient = useQueryClient();
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notes, setNotes] = useState(sponsorship.notes ?? "");
+  const [editingDisplayName, setEditingDisplayName] = useState(false);
+  const [displayName, setDisplayName] = useState(
+    sponsorship.displayName ?? "",
+  );
+
+  const sponsorshipId = sponsorship.id ?? "";
+
+  const approveMutation = useMutation({
+    mutationFn: () =>
+      actions.playerSponsorship.approve({ sponsorshipId }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "playerSponsorships"],
+      });
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: () =>
+      actions.playerSponsorship.reject({ sponsorshipId }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "playerSponsorships"],
+      });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: { displayName?: string; notes?: string }) =>
+      actions.playerSponsorship.update({ sponsorshipId, ...data }),
+    onSuccess: () => {
+      setEditingNotes(false);
+      setEditingDisplayName(false);
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "playerSponsorships"],
+      });
+    },
+  });
+
+  const getStatusBadge = () => {
+    if (!sponsorship.paidAt) {
+      return <Badge variant="warning">Pending Payment</Badge>;
+    }
+    if (!sponsorship.approved) {
+      return <Badge variant="info">Pending Approval</Badge>;
+    }
+    return <Badge variant="success">Approved</Badge>;
+  };
+
+  return (
+    <TableRow>
+      <TableCell>
+        <div className="flex flex-col gap-1">
+          <span className="font-medium">{sponsorship.playerName}</span>
+          <span className="text-xs text-gray-500">
+            Season {sponsorship.season}
+          </span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-col gap-1">
+          <span className="font-medium">{sponsorship.sponsorName}</span>
+          <span className="text-xs text-gray-500">
+            {sponsorship.sponsorEmail}
+          </span>
+          {sponsorship.sponsorWebsite && (
+            <a
+              href={sponsorship.sponsorWebsite}
+              className="text-xs text-blue-600 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {sponsorship.sponsorWebsite}
+            </a>
+          )}
+          {sponsorship.sponsorLogoUrl && (
+            <img
+              src={sponsorship.sponsorLogoUrl}
+              alt="Sponsor logo"
+              className="mt-1 h-8 max-w-[80px] object-contain"
+            />
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        {sponsorship.sponsorMessage && (
+          <span className="text-sm italic">
+            &ldquo;{sponsorship.sponsorMessage}&rdquo;
+          </span>
+        )}
+      </TableCell>
+      <TableCell>
+        {currencyFormatter.format(sponsorship.amountPence / 100)}
+      </TableCell>
+      <TableCell>{getStatusBadge()}</TableCell>
+      <TableCell>
+        {sponsorship.paidAt
+          ? formatDate(sponsorship.paidAt, "dd/MM/yyyy")
+          : "-"}
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-col gap-1">
+          {editingDisplayName ? (
+            <div className="flex items-center gap-1">
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="w-32 rounded border px-1 py-0.5 text-xs"
+                placeholder="Display name"
+              />
+              <Button
+                variant="outline"
+                className="h-6 px-2 text-xs"
+                onClick={() => updateMutation.mutate({ displayName })}
+                disabled={updateMutation.isPending}
+              >
+                Save
+              </Button>
+              <Button
+                variant="outline"
+                className="h-6 px-2 text-xs"
+                onClick={() => setEditingDisplayName(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditingDisplayName(true)}
+              className="text-left text-xs text-blue-600 hover:underline"
+            >
+              {sponsorship.displayName ?? "Set display name"}
+            </button>
+          )}
+          {editingNotes ? (
+            <div className="flex items-center gap-1">
+              <input
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-32 rounded border px-1 py-0.5 text-xs"
+                placeholder="Notes"
+              />
+              <Button
+                variant="outline"
+                className="h-6 px-2 text-xs"
+                onClick={() => updateMutation.mutate({ notes })}
+                disabled={updateMutation.isPending}
+              >
+                Save
+              </Button>
+              <Button
+                variant="outline"
+                className="h-6 px-2 text-xs"
+                onClick={() => setEditingNotes(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setEditingNotes(true)}
+              className="text-left text-xs text-blue-600 hover:underline"
+            >
+              {sponsorship.notes ?? "Add notes"}
+            </button>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-col gap-1">
+          {sponsorship.paidAt && !sponsorship.approved && (
+            <Button
+              variant="default"
+              className="h-7 px-3 text-xs"
+              onClick={() => approveMutation.mutate()}
+              disabled={approveMutation.isPending}
+            >
+              {approveMutation.isPending ? "..." : "Approve"}
+            </Button>
+          )}
+          {sponsorship.approved && (
+            <Button
+              variant="outline"
+              className="h-7 px-3 text-xs"
+              onClick={() => rejectMutation.mutate()}
+              disabled={rejectMutation.isPending}
+            >
+              {rejectMutation.isPending ? "..." : "Revoke"}
+            </Button>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+};
+
 // --- Main Table ---
 
+type SponsorshipTab = "game" | "player";
+
 export function SponsorshipsTable() {
+  const [tab, setTab] = useState<SponsorshipTab>("game");
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<Filter>("all");
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const { data, isLoading, error } = useQuery({
+  const gameQuery = useQuery({
     queryKey: ["admin", "sponsorships", page, PAGE_SIZE, filter],
     queryFn: () =>
       actions.sponsorship.list({
@@ -701,21 +928,60 @@ export function SponsorshipsTable() {
         pageSize: PAGE_SIZE,
         filter: filter === "all" ? undefined : filter,
       }),
+    enabled: tab === "game",
   });
 
-  const result = data?.data;
+  const playerQuery = useQuery({
+    queryKey: ["admin", "playerSponsorships", page, PAGE_SIZE, filter],
+    queryFn: () =>
+      actions.playerSponsorship.list({
+        page,
+        pageSize: PAGE_SIZE,
+        filter: filter === "all" ? undefined : filter,
+      }),
+    enabled: tab === "player",
+  });
+
+  const result = tab === "game" ? gameQuery.data?.data : playerQuery.data?.data;
+  const isLoading = tab === "game" ? gameQuery.isLoading : playerQuery.isLoading;
+  const error = tab === "game" ? gameQuery.error : playerQuery.error;
+
   const totalPages = result
     ? Math.max(1, Math.ceil(result.total / PAGE_SIZE))
     : 1;
 
-  const totalRevenue = result
-    ? result.sponsorships
-        .filter((s) => s.paidAt)
-        .reduce((sum, s) => sum + s.amountPence, 0)
-    : 0;
-
   return (
     <div className="flex flex-col gap-4">
+      {/* Tab pills */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => {
+            setTab("game");
+            setPage(1);
+          }}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+            tab === "game"
+              ? "bg-green-700 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          Game Sponsorships
+        </button>
+        <button
+          onClick={() => {
+            setTab("player");
+            setPage(1);
+          }}
+          className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+            tab === "player"
+              ? "bg-blue-700 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          Player Sponsorships
+        </button>
+      </div>
+
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-700">Filter:</label>
@@ -738,14 +1004,15 @@ export function SponsorshipsTable() {
             <span>
               {result.total} sponsorship{result.total !== 1 ? "s" : ""}
             </span>
-            <span>Revenue: {currencyFormatter.format(totalRevenue / 100)}</span>
           </div>
         )}
-        <div className="ml-auto">
-          <Button onClick={() => setShowCreateModal(true)}>
-            Create Sponsorship
-          </Button>
-        </div>
+        {tab === "game" && (
+          <div className="ml-auto">
+            <Button onClick={() => setShowCreateModal(true)}>
+              Create Sponsorship
+            </Button>
+          </div>
+        )}
       </div>
 
       {showCreateModal && (
@@ -760,7 +1027,7 @@ export function SponsorshipsTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Game</TableHead>
+                <TableHead>{tab === "game" ? "Game" : "Player"}</TableHead>
                 <TableHead>Sponsor</TableHead>
                 <TableHead>Message</TableHead>
                 <TableHead>Amount</TableHead>
@@ -781,12 +1048,24 @@ export function SponsorshipsTable() {
                   </TableCell>
                 </TableRow>
               )}
-              {result.sponsorships.map((sponsorship) => (
-                <SponsorshipRow
-                  key={sponsorship.id}
-                  sponsorship={sponsorship}
-                />
-              ))}
+              {tab === "game" &&
+                (result as { sponsorships: Sponsorship[] }).sponsorships.map(
+                  (sponsorship) => (
+                    <SponsorshipRow
+                      key={sponsorship.id}
+                      sponsorship={sponsorship}
+                    />
+                  ),
+                )}
+              {tab === "player" &&
+                (
+                  result as { sponsorships: PlayerSponsorship[] }
+                ).sponsorships.map((sponsorship) => (
+                  <PlayerSponsorshipRow
+                    key={sponsorship.id}
+                    sponsorship={sponsorship}
+                  />
+                ))}
             </TableBody>
           </Table>
 
