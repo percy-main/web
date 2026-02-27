@@ -1,5 +1,7 @@
 import { Badge } from "@/ui/Badge";
 import { Button } from "@/ui/Button";
+import { Input } from "@/ui/input";
+import { Label } from "@/ui/label";
 import {
   Table,
   TableBody,
@@ -11,7 +13,14 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { formatDate } from "date-fns";
-import { type FC, useState } from "react";
+import {
+  type ChangeEvent,
+  type FC,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 const PAGE_SIZE = 20;
 
@@ -39,6 +48,435 @@ type Sponsorship = {
   createdAt: string;
   notes: string | null;
 };
+
+type GameOption = {
+  id: string;
+  date: string;
+  team: string;
+  opposition: string;
+  home: boolean;
+};
+
+const MAX_MESSAGE_LENGTH = 100;
+const MAX_LOGO_SIZE_BYTES = 100_000;
+
+function resizeImage(file: File, maxSize: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+
+        const maxDim = 300;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Could not get canvas context"));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        let quality = 0.8;
+        let dataUrl = canvas.toDataURL("image/jpeg", quality);
+
+        while (dataUrl.length > maxSize && quality > 0.1) {
+          quality -= 0.1;
+          dataUrl = canvas.toDataURL("image/jpeg", quality);
+        }
+
+        if (dataUrl.length > maxSize) {
+          reject(
+            new Error(
+              "Image is too large even after compression. Please use a smaller image.",
+            ),
+          );
+          return;
+        }
+
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+// --- Game Selector (typeahead) ---
+
+const GameSelector: FC<{
+  selectedGame: GameOption | null;
+  onSelect: (game: GameOption | null) => void;
+}> = ({ selectedGame, onSelect }) => {
+  const [search, setSearch] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [search]);
+
+  const { data, isFetching } = useQuery({
+    queryKey: ["admin", "listGames", debouncedSearch],
+    queryFn: () =>
+      actions.sponsorship.listGames({
+        search: debouncedSearch || undefined,
+      }),
+    enabled: isOpen,
+  });
+
+  const games = data?.data?.games ?? [];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  if (selectedGame) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-sm">
+          {selectedGame.date} — {selectedGame.team} vs {selectedGame.opposition}
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-6 px-2 text-xs"
+          onClick={() => {
+            onSelect(null);
+            setSearch("");
+          }}
+        >
+          Change
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <Input
+        type="text"
+        placeholder="Search by opponent name..."
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+      />
+      {isOpen && (
+        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+          {isFetching && (
+            <div className="px-3 py-2 text-sm text-gray-500">Searching...</div>
+          )}
+          {!isFetching && games.length === 0 && (
+            <div className="px-3 py-2 text-sm text-gray-500">
+              No games found.
+            </div>
+          )}
+          {games.map((game) => (
+            <button
+              key={game.id}
+              type="button"
+              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100"
+              onClick={() => {
+                onSelect(game);
+                setIsOpen(false);
+              }}
+            >
+              {game.date} — {game.team} vs {game.opposition}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// --- Create Sponsorship Modal ---
+
+const CreateSponsorshipModal: FC<{ onClose: () => void }> = ({ onClose }) => {
+  const queryClient = useQueryClient();
+
+  const [selectedGame, setSelectedGame] = useState<GameOption | null>(null);
+  const [sponsorName, setSponsorName] = useState("");
+  const [sponsorEmail, setSponsorEmail] = useState("");
+  const [sponsorWebsite, setSponsorWebsite] = useState("");
+  const [sponsorMessage, setSponsorMessage] = useState("");
+  const [logoDataUrl, setLogoDataUrl] = useState<string | undefined>();
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const [logoFileName, setLogoFileName] = useState<string | null>(null);
+  const [amountGBP, setAmountGBP] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const handleLogoChange = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      setLogoError(null);
+      const file = e.target.files?.[0];
+      if (!file) {
+        setLogoDataUrl(undefined);
+        setLogoFileName(null);
+        return;
+      }
+
+      if (!file.type.startsWith("image/")) {
+        setLogoError("Please select an image file");
+        return;
+      }
+
+      try {
+        const dataUrl = await resizeImage(file, MAX_LOGO_SIZE_BYTES);
+        setLogoDataUrl(dataUrl);
+        setLogoFileName(file.name);
+      } catch (err) {
+        setLogoError(
+          err instanceof Error ? err.message : "Failed to process image",
+        );
+      }
+    },
+    [],
+  );
+
+  const createMutation = useMutation({
+    mutationFn: () => {
+      if (!selectedGame) {
+        return Promise.reject(new Error("No game selected"));
+      }
+      const parsedAmount = parseFloat(amountGBP);
+      const amountPence = Math.round(parsedAmount * 100);
+
+      return actions.sponsorship.createManual({
+        gameId: selectedGame.id,
+        sponsorName,
+        sponsorEmail,
+        sponsorWebsite: sponsorWebsite || undefined,
+        sponsorLogoDataUrl: logoDataUrl,
+        sponsorMessage: sponsorMessage || undefined,
+        amountPence,
+        displayName: displayName || undefined,
+        notes: notes || undefined,
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "sponsorships"],
+      });
+      onClose();
+    },
+  });
+
+  const parsedAmount = parseFloat(amountGBP);
+  const isAmountValid = amountGBP !== "" && !isNaN(parsedAmount) && parsedAmount >= 0;
+  const isFormValid =
+    selectedGame !== null &&
+    sponsorName.trim().length > 0 &&
+    sponsorEmail.trim().length > 0 &&
+    isAmountValid &&
+    sponsorMessage.length <= MAX_MESSAGE_LENGTH &&
+    !logoError;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="fixed inset-0 bg-black/50"
+        onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onClose();
+        }}
+      />
+      <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-auto rounded-lg bg-white p-6 shadow-xl">
+        <h2 className="mb-4 text-lg font-semibold">Create Manual Sponsorship</h2>
+
+        <div className="flex flex-col gap-4">
+          {/* Game selector */}
+          <div className="flex flex-col gap-1.5">
+            <Label>Game *</Label>
+            <GameSelector
+              selectedGame={selectedGame}
+              onSelect={setSelectedGame}
+            />
+          </div>
+
+          {/* Sponsor name */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="manual-sponsorName">Sponsor Name *</Label>
+            <Input
+              id="manual-sponsorName"
+              value={sponsorName}
+              onChange={(e) => setSponsorName(e.target.value)}
+              placeholder="e.g. Smith & Sons Builders"
+              required
+            />
+          </div>
+
+          {/* Sponsor email */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="manual-sponsorEmail">Sponsor Email *</Label>
+            <Input
+              id="manual-sponsorEmail"
+              type="email"
+              value={sponsorEmail}
+              onChange={(e) => setSponsorEmail(e.target.value)}
+              placeholder="sponsor@example.com"
+              required
+            />
+          </div>
+
+          {/* Sponsor website */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="manual-sponsorWebsite">Website URL</Label>
+            <Input
+              id="manual-sponsorWebsite"
+              type="url"
+              value={sponsorWebsite}
+              onChange={(e) => setSponsorWebsite(e.target.value)}
+              placeholder="https://www.example.com"
+            />
+          </div>
+
+          {/* Logo upload */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="manual-sponsorLogo">Logo (optional)</Label>
+            <Input
+              id="manual-sponsorLogo"
+              type="file"
+              accept="image/*"
+              onChange={(e) => void handleLogoChange(e)}
+            />
+            {logoError && (
+              <p className="text-sm text-red-600">{logoError}</p>
+            )}
+            {logoFileName && !logoError && (
+              <p className="text-sm text-gray-600">Selected: {logoFileName}</p>
+            )}
+            {logoDataUrl && (
+              <div className="mt-1">
+                <img
+                  src={logoDataUrl}
+                  alt="Logo preview"
+                  className="h-16 max-w-full rounded border object-contain"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Sponsor message */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="manual-sponsorMessage">
+              Message (optional, max {MAX_MESSAGE_LENGTH} chars)
+            </Label>
+            <Input
+              id="manual-sponsorMessage"
+              value={sponsorMessage}
+              onChange={(e) => setSponsorMessage(e.target.value)}
+              placeholder='e.g. "Good luck lads!"'
+              maxLength={MAX_MESSAGE_LENGTH}
+            />
+            <p className="text-xs text-gray-500">
+              {sponsorMessage.length}/{MAX_MESSAGE_LENGTH}
+            </p>
+          </div>
+
+          {/* Amount */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="manual-amount">Amount (GBP) *</Label>
+            <Input
+              id="manual-amount"
+              type="number"
+              min="0"
+              step="0.01"
+              value={amountGBP}
+              onChange={(e) => setAmountGBP(e.target.value)}
+              placeholder="0.00"
+              required
+            />
+            <p className="text-xs text-gray-500">
+              Enter 0 for complimentary sponsorships.
+            </p>
+          </div>
+
+          {/* Display name */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="manual-displayName">Display Name (optional)</Label>
+            <Input
+              id="manual-displayName"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Override display name"
+            />
+          </div>
+
+          {/* Notes */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="manual-notes">Notes (optional)</Label>
+            <Input
+              id="manual-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Internal notes"
+            />
+          </div>
+
+          {/* Error display */}
+          {createMutation.error && (
+            <p className="text-sm text-red-600">
+              Failed to create sponsorship. Please try again.
+            </p>
+          )}
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => createMutation.mutate()}
+              disabled={!isFormValid || createMutation.isPending}
+            >
+              {createMutation.isPending ? "Creating..." : "Create Sponsorship"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Sponsorship Row ---
 
 const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
   const queryClient = useQueryClient();
@@ -248,9 +686,12 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
   );
 };
 
+// --- Main Table ---
+
 export function SponsorshipsTable() {
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<Filter>("all");
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "sponsorships", page, PAGE_SIZE, filter],
@@ -300,7 +741,16 @@ export function SponsorshipsTable() {
             <span>Revenue: {currencyFormatter.format(totalRevenue / 100)}</span>
           </div>
         )}
+        <div className="ml-auto">
+          <Button onClick={() => setShowCreateModal(true)}>
+            Create Sponsorship
+          </Button>
+        </div>
       </div>
+
+      {showCreateModal && (
+        <CreateSponsorshipModal onClose={() => setShowCreateModal(false)} />
+      )}
 
       {isLoading && <p className="text-gray-500">Loading...</p>}
       {error && <p className="text-red-600">Failed to load sponsorships.</p>}

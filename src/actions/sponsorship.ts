@@ -1,11 +1,12 @@
 import { defineAuthAction } from "@/lib/auth/api";
 import { client } from "@/lib/db/client";
+import * as playCricketApi from "@/lib/play-cricket";
 import { stripe } from "@/lib/payments/client";
 import { paymentData } from "@/lib/payments/config";
 import { resolveStripeCustomer } from "@/lib/payments/resolveStripeCustomer";
 import { ActionError, defineAction } from "astro:actions";
 import { CONTEXT } from "astro:env/client";
-import { DEPLOY_PRIME_URL } from "astro:env/server";
+import { DEPLOY_PRIME_URL, PLAY_CRICKET_SITE_ID } from "astro:env/server";
 import { z } from "astro:schema";
 import { randomUUID } from "crypto";
 import type Stripe from "stripe";
@@ -267,6 +268,112 @@ export const sponsorship = {
       }
 
       return { success: true };
+    },
+  }),
+
+  listGames: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      search: z.string().optional(),
+      season: z.number().optional(),
+    }),
+    handler: async ({ search, season }) => {
+      const now = new Date();
+      const resolvedSeason =
+        season ?? (now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear());
+
+      const { matches } = await playCricketApi.getMatchesSummary({
+        season: resolvedSeason,
+      });
+
+      let filtered = matches;
+      if (search && search.trim().length > 0) {
+        const lowerSearch = search.trim().toLowerCase();
+        filtered = matches.filter((m) => {
+          const isHome = m.home_club_id === PLAY_CRICKET_SITE_ID;
+          const opposition = isHome
+            ? `${m.away_club_name} ${m.away_team_name}`
+            : `${m.home_club_name} ${m.home_team_name}`;
+          return opposition.toLowerCase().includes(lowerSearch);
+        });
+      }
+
+      return {
+        games: filtered.slice(0, 50).map((m) => {
+          const isHome = m.home_club_id === PLAY_CRICKET_SITE_ID;
+          const ourTeam = isHome
+            ? m.home_team_name
+            : m.away_team_name;
+          const opposition = isHome
+            ? `${m.away_club_name} ${m.away_team_name}`
+            : `${m.home_club_name} ${m.home_team_name}`;
+          return {
+            id: m.id.toString(),
+            date: m.match_date,
+            team: ourTeam,
+            opposition,
+            home: isHome,
+          };
+        }),
+      };
+    },
+  }),
+
+  createManual: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      gameId: z.string().min(1),
+      sponsorName: z.string().min(1).max(200),
+      sponsorEmail: z.string().email(),
+      sponsorWebsite: z.string().url().optional().or(z.literal("")),
+      sponsorLogoDataUrl: z.string().optional(),
+      sponsorMessage: z.string().max(100).optional().or(z.literal("")),
+      amountPence: z.number().int().min(0),
+      displayName: z.string().optional().or(z.literal("")),
+      notes: z.string().optional().or(z.literal("")),
+    }),
+    handler: async ({
+      gameId,
+      sponsorName,
+      sponsorEmail,
+      sponsorWebsite,
+      sponsorLogoDataUrl,
+      sponsorMessage,
+      amountPence,
+      displayName,
+      notes,
+    }) => {
+      if (
+        sponsorLogoDataUrl &&
+        sponsorLogoDataUrl.length > MAX_LOGO_SIZE_BYTES
+      ) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Logo image is too large. Please use an image under 150KB.",
+        });
+      }
+
+      const sponsorshipId = randomUUID();
+
+      await client
+        .insertInto("game_sponsorship")
+        .values({
+          id: sponsorshipId,
+          game_id: gameId,
+          sponsor_name: sponsorName,
+          sponsor_email: sponsorEmail,
+          sponsor_website: sponsorWebsite ?? null,
+          sponsor_logo_url: sponsorLogoDataUrl ?? null,
+          sponsor_message: sponsorMessage ?? null,
+          amount_pence: amountPence,
+          approved: 1,
+          paid_at: new Date().toISOString(),
+          display_name: displayName ?? null,
+          notes: notes ?? null,
+        })
+        .execute();
+
+      return { sponsorshipId };
     },
   }),
 };
