@@ -8,20 +8,51 @@ import {
   getDate,
   getYear,
   getMonth,
-  isSameDay,
   differenceInMonths,
+  isAfter,
 } from "date-fns";
 import { generateCalendar } from "@/lib/calendar";
-import { IoCalendar, IoChevronBack, IoChevronForward } from "react-icons/io5";
+import { IoChevronForward } from "react-icons/io5";
 import { getCollection } from "astro:content";
 import _ from "lodash";
-import { Image } from "astro:assets";
 import { Breadcrumbs } from "astro-breadcrumbs";
 import { PLAY_CRICKET_1XI_ID } from "astro:env/server";
 import { PLAY_CRICKET_2XI_ID } from "astro:env/server";
-import CalendarPreview from "../../../components/CalendarPreview.astro";
+import { CalendarAgenda } from "@/components/calendar/CalendarAgenda";
+import type { CalendarItem } from "@/components/calendar/CalendarAgenda";
 
 export const getStaticPaths = (async () => {
+  function categorise(
+    item: { type: string; team?: { id: string; name: string } },
+  ): CalendarItem["category"] {
+    if (item.type === "event") return "event";
+    const team = item.team;
+    if (!team) return "event";
+    if (team.id === PLAY_CRICKET_1XI_ID) return "1xi";
+    if (team.id === PLAY_CRICKET_2XI_ID) return "2xi";
+    if (/midweek/i.test(team.name)) return "mid";
+    if (/under|junior|colts|\bU\d{2}\b/i.test(team.name)) return "jun";
+    return "1xi"; // fallback for unknown teams
+  }
+
+  function buildScoreDescription(
+    innings: Array<{
+      runs: number;
+      wickets: number;
+      allOut: boolean;
+      declared: boolean;
+    }>,
+  ): string {
+    if (!innings || innings.length === 0) return "";
+    return innings
+      .map((inn) => {
+        const wicketStr = inn.allOut ? "" : `/${inn.wickets}`;
+        const declStr = inn.declared ? "d" : "";
+        return `${inn.runs}${wicketStr}${declStr}`;
+      })
+      .join(" – ");
+  }
+
   const calendarItems = await getCollection("calendarItem");
 
   const teamOrder: Record<string, number> = {
@@ -61,11 +92,65 @@ export const getStaticPaths = (async () => {
   const paths = [...past12Months, ...next12Months].map((date, i, arr) => {
     const prevDate = addMonths(date, -1);
     const nextDate = addMonths(date, 1);
+    const rawItems = calendarItemGroups[`${getYear(date)}-${getMonth(date)}`] ?? [];
+
+    const items: CalendarItem[] = rawItems.map((entry) => {
+      const d = entry.data;
+      const cat = categorise(d);
+
+      if (d.type === "game") {
+        return {
+          id: entry.id,
+          type: "game" as const,
+          category: cat,
+          when: d.when.toISOString(),
+          home: d.home,
+          teamName: d.team.name,
+          oppositionClub: d.opposition.club.name,
+          oppositionTeam: d.opposition.team.name,
+          leagueName: d.league.name,
+          competitionName: d.competition.name,
+          sponsorName: d.sponsor?.name,
+          sponsorCta: !d.sponsor && d.when && isAfter(d.when, now),
+          outcome: d.result?.outcome ?? null,
+          scoreDescription: d.result?.innings
+            ? buildScoreDescription(d.result.innings)
+            : undefined,
+        };
+      }
+
+      // Event
+      return {
+        id: entry.id,
+        type: "event" as const,
+        category: "event" as const,
+        when: d.when.toISOString(),
+        eventName: d.name,
+        eventDescription:
+          typeof d.description === "string" ? d.description : undefined,
+      };
+    });
+
+    const calendar = generateCalendar(date, rawItems);
+    const calendarDays = calendar.map((day) => ({
+      date: day.date.toISOString(),
+      isExtra: day.isExtra,
+      itemCount: day.items.length,
+    }));
+
+    const won = items.filter((i) => i.outcome === "W").length;
+    const lost = items.filter((i) => i.outcome === "L").length;
+    const upcoming = items.filter(
+      (i) => i.type === "game" && !i.outcome,
+    ).length;
+
     const props = {
       year: formatDate(date, "yyyy"),
       month: formatDate(date, "MMMM"),
-      calendar: generateCalendar(date, calendarItems),
-      items: calendarItemGroups[`${getYear(date)}-${getMonth(date)}`] ?? [],
+      monthNumber: getMonth(date),
+      items,
+      calendarDays,
+      stats: { won, lost, upcoming },
       previous:
         i === 0
           ? undefined
@@ -88,7 +173,7 @@ export const getStaticPaths = (async () => {
   return paths;
 }) satisfies GetStaticPaths;
 
-const { year, month, calendar, previous, next, items } = Astro.props;
+const { year, month, monthNumber, items, calendarDays, stats, previous, next } = Astro.props;
 ---
 
 <Container title="Calendar">
@@ -113,158 +198,15 @@ const { year, month, calendar, previous, next, items } = Astro.props;
     </Breadcrumbs>
   </div>
 
-  <section id="calendar-wrapper">
-    <div class="z-10 w-full">
-      <div class="w-full max-w-7xl">
-        <div class="grid max-w-4xl grid-cols-12 gap-8 xl:max-w-full">
-          <div
-            class="col-span-12 px-2.5 py-5 max-xl:row-start-1 sm:p-8 xl:col-span-7"
-          >
-            <div
-              class="mb-5 flex items-center justify-between gap-4"
-            >
-              {previous ? (
-                <a href={previous} title="Previous Month">
-                  <IoChevronBack
-                    className="text-gray-700 hover:text-primary"
-                    fontSize={28}
-                  />
-                </a>
-              ) : <div class="w-7" />}
-              <h3 class="mb-0 text-lg font-semibold text-gray-800">{month} {year}</h3>
-              {next ? (
-                <a href={next} title="Next Month">
-                  <IoChevronForward
-                    className="text-gray-700 hover:text-primary"
-                    fontSize={28}
-                  />
-                </a>
-              ) : <div class="w-7" />}
-            </div>
-            <div class="rounded-xl border-t border-l border-gray-200">
-              <div
-                class="grid grid-cols-7 rounded-t-3xl border-b border-gray-200"
-              >
-                <div
-                  class="flex items-center justify-center rounded-tl-xl border-r border-gray-200 bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
-                >
-                  Mon
-                </div>
-                <div
-                  class="flex items-center justify-center border-r border-gray-200 bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
-                >
-                  Tue
-                </div>
-                <div
-                  class="flex items-center justify-center border-r border-gray-200 bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
-                >
-                  Wed
-                </div>
-                <div
-                  class="flex items-center justify-center border-r border-gray-200 bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
-                >
-                  Thu
-                </div>
-                <div
-                  class="flex items-center justify-center border-r border-gray-200 bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
-                >
-                  Fri
-                </div>
-                <div
-                  class="flex items-center justify-center bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
-                >
-                  Sat
-                </div>
-                <div
-                  class="flex items-center justify-center rounded-tr-xl border-r border-gray-200 bg-gray-50 py-3.5 text-sm font-medium text-gray-700"
-                >
-                  Sun
-                </div>
-              </div>
-              <div class="grid grid-cols-7 rounded-b-xl">
-                {
-                  calendar.map(({ date, isExtra, items }) => (
-                    <button
-                      id={`calendar-${formatDate(date, "dd-MM-yyyy")}`}
-                      class="flex items-start justify-between border-r border-b border-gray-200 p-3.5 transition-all duration-300 hover:bg-green-50 max-xl:min-h-[60px] xl:aspect-square"
-                      class:list={[isExtra ? "bg-gray-100" : "bg-white"]}
-                    >
-                      <span class="text-xs font-semibold text-gray-400">
-                        {formatDate(date, "dd")}
-                      </span>
-                      {items.some((item) => item.data.type === "game") ? (
-                        <Image
-                          src="/images/cricket.png"
-                          alt="Cricket Match"
-                          title="Cricket Match"
-                          width="24"
-                          height="24"
-                          loading="eager"
-                          class="max-h-24 max-w-24"
-                        />
-                      ) : null}
-                      {items.some((item) => item.data.type === "event") ? (
-                        <IoCalendar title="Event" fontSize={24} />
-                      ) : null}
-                    </button>
-                  ))
-                }
-              </div>
-            </div>
-          </div>
-
-          <div class="col-span-12 max-h-160 overflow-auto xl:col-span-5">
-            {items.length === 0 ? (
-              <div class="flex flex-col items-center justify-center rounded-lg bg-white p-8 text-center shadow-sm">
-                <IoCalendar className="mb-3 text-gray-300" fontSize={48} />
-                <p class="text-gray-600 font-medium">No events scheduled for {month}</p>
-                <p class="mt-1 text-sm text-gray-500">Check nearby months or <a href="mailto:trustees@percymain.org" class="text-primary hover:underline">contact the club</a></p>
-              </div>
-            ) : (
-              <ul class="flex flex-col">
-                {
-                  calendar.map(({ date }) => (
-                    <ul
-                      id={`list-${formatDate(date, "dd-MM-yyyy")}`}
-                      class="flex flex-col"
-                    >
-                      {items
-                        .filter((g) => isSameDay(g.data.when, date))
-                        .map((item) => (
-                          <li>
-                            <CalendarPreview id={item.id} item={item.data} />
-                          </li>
-                        ))}
-                    </ul>
-                  ))
-                }
-              </ul>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <CalendarAgenda
+    client:load
+    items={items}
+    year={year}
+    month={month}
+    monthNumber={monthNumber}
+    previous={previous}
+    next={next}
+    stats={stats}
+    calendarDays={calendarDays}
+  />
 </Container>
-
-<script>
-  function scrollToElement(id: string) {
-    const element = document.getElementById(id);
-
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-  }
-
-  const links = document.querySelectorAll("button[id^='calendar-']");
-
-  links.forEach((link) => {
-    link.addEventListener("click", (event) => {
-      event.preventDefault();
-      const targetId = link.getAttribute("id")?.replace("calendar-", "list-");
-      if (targetId) {
-        scrollToElement(targetId);
-      }
-    });
-  });
-</script>
