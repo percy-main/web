@@ -279,17 +279,27 @@ export const sponsorship = {
     }),
     handler: async ({ search, season }) => {
       const now = new Date();
-      const resolvedSeason =
-        season ?? (now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear());
+      // Default to current calendar year — sponsorships are for upcoming games
+      const resolvedSeason = season ?? now.getFullYear();
 
       const { matches } = await playCricketApi.getMatchesSummary({
         season: resolvedSeason,
       });
 
-      let filtered = matches;
+      // Filter to future games only
+      const todayStr = `${String(now.getDate()).padStart(2, "0")}/${String(now.getMonth() + 1).padStart(2, "0")}/${now.getFullYear()}`;
+      let filtered = matches.filter((m) => {
+        // match_date is dd/MM/yyyy — compare chronologically
+        const [d, mo, y] = m.match_date.split("/");
+        const matchYmd = `${y}-${mo}-${d}`;
+        const [td, tmo, ty] = todayStr.split("/");
+        const todayYmd = `${ty}-${tmo}-${td}`;
+        return matchYmd >= todayYmd;
+      });
+
       if (search && search.trim().length > 0) {
         const lowerSearch = search.trim().toLowerCase();
-        filtered = matches.filter((m) => {
+        filtered = filtered.filter((m) => {
           const isHome = m.home_club_id === PLAY_CRICKET_SITE_ID;
           const opposition = isHome
             ? `${m.away_club_name} ${m.away_team_name}`
