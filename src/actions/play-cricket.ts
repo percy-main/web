@@ -168,9 +168,10 @@ export const playCricket = {
       teamId: z.string().optional(),
       competitionTypes: z.array(z.string()).optional(),
       isJunior: z.boolean().optional().default(false),
+      limit: z.number().int().min(1).max(50).optional().default(50),
     }),
-    handler: async ({ season, teamId, competitionTypes, isJunior }) => {
-      let query = client
+    handler: async ({ season, teamId, competitionTypes, isJunior, limit }) => {
+      let innerQuery = client
         .selectFrom("match_performance_batting as b")
         .innerJoin("play_cricket_team as t", "t.id", "b.team_id")
         .select([
@@ -192,37 +193,44 @@ export const playCricket = {
         ])
         .where("b.season", "=", season)
         .where("t.is_junior", "=", isJunior ? 1 : 0)
-        .groupBy(["b.player_id", "b.player_name"]);
+        .groupBy(["b.player_id", "b.player_name"])
+        .orderBy("total_runs", "desc")
+        .limit(limit);
 
       if (teamId) {
-        query = query.where("b.team_id", "=", teamId);
+        innerQuery = innerQuery.where("b.team_id", "=", teamId);
       }
 
       if (competitionTypes && competitionTypes.length > 0) {
-        query = query.where("b.competition_type", "in", competitionTypes);
+        innerQuery = innerQuery.where(
+          "b.competition_type",
+          "in",
+          competitionTypes,
+        );
       }
 
-      const rows = await query
-        .orderBy("total_runs", "desc")
-        .limit(50)
+      const rows = await client
+        .selectFrom(innerQuery.as("r"))
+        .leftJoin("member as m", (join) =>
+          join
+            .onRef("m.play_cricket_id", "=", "r.player_id")
+            .on("m.contentful_entry_id", "is not", null),
+        )
+        .select([
+          "r.player_id",
+          "r.player_name",
+          "r.total_runs",
+          "r.innings",
+          "r.not_outs",
+          "r.high_score",
+          "r.total_balls",
+          "r.total_fours",
+          "r.total_sixes",
+          "r.fifties",
+          "r.hundreds",
+          "m.contentful_entry_id",
+        ])
         .execute();
-
-      // Resolve contentful_entry_id separately to avoid JOIN row multiplication
-      const playerIds = rows.map((r) => r.player_id).filter(Boolean);
-      const contentfulMap = new Map<string, string>();
-      if (playerIds.length > 0) {
-        const members = await client
-          .selectFrom("member")
-          .select(["play_cricket_id", "contentful_entry_id"])
-          .where("play_cricket_id", "in", playerIds)
-          .where("contentful_entry_id", "is not", null)
-          .execute();
-        for (const m of members) {
-          if (m.play_cricket_id && m.contentful_entry_id) {
-            contentfulMap.set(m.play_cricket_id, m.contentful_entry_id);
-          }
-        }
-      }
 
       return {
         entries: rows.map((r) => {
@@ -234,7 +242,7 @@ export const playCricket = {
           return {
             playerId: r.player_id,
             playerName: r.player_name,
-            contentfulEntryId: contentfulMap.get(r.player_id) ?? null,
+            contentfulEntryId: r.contentful_entry_id ?? null,
             innings: r.innings,
             notOuts: r.not_outs,
             runs: r.total_runs,
@@ -263,9 +271,10 @@ export const playCricket = {
       teamId: z.string().optional(),
       competitionTypes: z.array(z.string()).optional(),
       isJunior: z.boolean().optional().default(false),
+      limit: z.number().int().min(1).max(50).optional().default(50),
     }),
-    handler: async ({ season, teamId, competitionTypes, isJunior }) => {
-      let query = client
+    handler: async ({ season, teamId, competitionTypes, isJunior, limit }) => {
+      let innerQuery = client
         .selectFrom("match_performance_bowling as b")
         .innerJoin("play_cricket_team as t", "t.id", "b.team_id")
         .select([
@@ -278,104 +287,81 @@ export const playCricket = {
           sql<number>`SUM(b.wides)`.as("total_wides"),
           sql<number>`SUM(b.no_balls)`.as("total_no_balls"),
           sql<number>`MAX(b.wickets)`.as("best_wickets"),
+          sql<number>`SUM(
+            CASE WHEN INSTR(b.overs, '.') > 0
+              THEN CAST(b.overs AS INTEGER) * 6 + CAST(SUBSTR(b.overs, INSTR(b.overs, '.') + 1) AS INTEGER)
+              ELSE CAST(b.overs AS INTEGER) * 6
+            END
+          )`.as("total_balls"),
         ])
         .where("b.season", "=", season)
         .where("t.is_junior", "=", isJunior ? 1 : 0)
-        .groupBy(["b.player_id", "b.player_name"]);
+        .groupBy(["b.player_id", "b.player_name"])
+        .orderBy("total_wickets", "desc")
+        .limit(limit);
 
       if (teamId) {
-        query = query.where("b.team_id", "=", teamId);
+        innerQuery = innerQuery.where("b.team_id", "=", teamId);
       }
 
       if (competitionTypes && competitionTypes.length > 0) {
-        query = query.where("b.competition_type", "in", competitionTypes);
+        innerQuery = innerQuery.where(
+          "b.competition_type",
+          "in",
+          competitionTypes,
+        );
       }
 
-      const rows = await query
-        .orderBy("total_wickets", "desc")
-        .limit(50)
+      const rows = await client
+        .selectFrom(innerQuery.as("r"))
+        .leftJoin("member as m", (join) =>
+          join
+            .onRef("m.play_cricket_id", "=", "r.player_id")
+            .on("m.contentful_entry_id", "is not", null),
+        )
+        .select([
+          "r.player_id",
+          "r.player_name",
+          "r.matches",
+          "r.total_wickets",
+          "r.total_runs",
+          "r.total_maidens",
+          "r.total_wides",
+          "r.total_no_balls",
+          "r.best_wickets",
+          "r.total_balls",
+          "m.contentful_entry_id",
+        ])
         .execute();
-
-      // Need to compute total overs from individual match overs strings
-      // Fetch the raw overs for each player to sum correctly
-      const playerIds = rows.map((r) => r.player_id).filter(Boolean);
-
-      const oversMap = new Map<string, { totalBalls: number }>();
-      if (playerIds.length > 0) {
-        let oversQuery = client
-          .selectFrom("match_performance_bowling as b")
-          .innerJoin("play_cricket_team as t", "t.id", "b.team_id")
-          .select(["b.player_id", "b.overs"])
-          .where("b.season", "=", season)
-          .where("t.is_junior", "=", isJunior ? 1 : 0)
-          .where("b.player_id", "in", playerIds);
-
-        if (teamId) {
-          oversQuery = oversQuery.where("b.team_id", "=", teamId);
-        }
-
-        if (competitionTypes && competitionTypes.length > 0) {
-          oversQuery = oversQuery.where(
-            "b.competition_type",
-            "in",
-            competitionTypes,
-          );
-        }
-
-        const oversRows = await oversQuery.execute();
-
-        for (const row of oversRows) {
-          const current = oversMap.get(row.player_id) ?? { totalBalls: 0 };
-          current.totalBalls += oversToBalls(row.overs);
-          oversMap.set(row.player_id, current);
-        }
-      }
-
-      // Resolve contentful_entry_id separately to avoid JOIN row multiplication
-      const contentfulMap = new Map<string, string>();
-      if (playerIds.length > 0) {
-        const members = await client
-          .selectFrom("member")
-          .select(["play_cricket_id", "contentful_entry_id"])
-          .where("play_cricket_id", "in", playerIds)
-          .where("contentful_entry_id", "is not", null)
-          .execute();
-        for (const m of members) {
-          if (m.play_cricket_id && m.contentful_entry_id) {
-            contentfulMap.set(m.play_cricket_id, m.contentful_entry_id);
-          }
-        }
-      }
 
       return {
         entries: rows.map((r) => {
-          const oData = oversMap.get(r.player_id) ?? { totalBalls: 0 };
-          const totalOvers = Math.floor(oData.totalBalls / 6);
-          const remainingBalls = oData.totalBalls % 6;
+          const totalOvers = Math.floor(r.total_balls / 6);
+          const remainingBalls = r.total_balls % 6;
           const oversStr = `${totalOvers}.${remainingBalls}`;
 
           const average =
             r.total_wickets > 0 ? r.total_runs / r.total_wickets : null;
           const economy =
-            oData.totalBalls > 0
-              ? r.total_runs / (oData.totalBalls / 6)
+            r.total_balls > 0
+              ? r.total_runs / (r.total_balls / 6)
               : null;
           const strikeRate =
             r.total_wickets > 0
-              ? oData.totalBalls / r.total_wickets
+              ? r.total_balls / r.total_wickets
               : null;
 
           return {
             playerId: r.player_id,
             playerName: r.player_name,
-            contentfulEntryId: contentfulMap.get(r.player_id) ?? null,
+            contentfulEntryId: r.contentful_entry_id ?? null,
             matches: r.matches,
             overs: oversStr,
             maidens: r.total_maidens,
             runs: r.total_runs,
             wickets: r.total_wickets,
             average:
-              average !== null && oData.totalBalls >= 60
+              average !== null && r.total_balls >= 60
                 ? Math.round(average * 100) / 100
                 : null,
             economy:
@@ -383,7 +369,7 @@ export const playCricket = {
                 ? Math.round(economy * 100) / 100
                 : null,
             strikeRate:
-              strikeRate !== null && oData.totalBalls >= 60
+              strikeRate !== null && r.total_balls >= 60
                 ? Math.round(strikeRate * 10) / 10
                 : null,
             bestWickets: r.best_wickets,

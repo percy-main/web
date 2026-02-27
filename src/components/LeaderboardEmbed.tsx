@@ -128,11 +128,12 @@ function LeaderboardEmbedInner({
   >(showBatting ? "batting" : "bowling");
 
   const battingQuery = useQuery({
-    queryKey: ["leaderboard-embed-batting", targetSeason, isJunior],
+    queryKey: ["leaderboard-embed-batting", targetSeason, isJunior, limit],
     queryFn: async () => {
       const primary = await actions.playCricket.getBattingLeaderboard({
         season: targetSeason,
         isJunior,
+        limit,
       });
       if (primary.error) throw primary.error;
       if (primary.data && primary.data.entries.length > 0) {
@@ -141,6 +142,7 @@ function LeaderboardEmbedInner({
       const fallback = await actions.playCricket.getBattingLeaderboard({
         season: targetSeason - 1,
         isJunior,
+        limit,
       });
       if (fallback.error) throw fallback.error;
       return { data: fallback.data, season: targetSeason - 1 };
@@ -150,11 +152,12 @@ function LeaderboardEmbedInner({
   });
 
   const bowlingQuery = useQuery({
-    queryKey: ["leaderboard-embed-bowling", targetSeason, isJunior],
+    queryKey: ["leaderboard-embed-bowling", targetSeason, isJunior, limit],
     queryFn: async () => {
       const primary = await actions.playCricket.getBowlingLeaderboard({
         season: targetSeason,
         isJunior,
+        limit,
       });
       if (primary.error) throw primary.error;
       if (primary.data && primary.data.entries.length > 0) {
@@ -163,6 +166,7 @@ function LeaderboardEmbedInner({
       const fallback = await actions.playCricket.getBowlingLeaderboard({
         season: targetSeason - 1,
         isJunior,
+        limit,
       });
       if (fallback.error) throw fallback.error;
       return { data: fallback.data, season: targetSeason - 1 };
@@ -178,14 +182,8 @@ function LeaderboardEmbedInner({
 
   if (hasError) return null;
 
-  const battingEntries = (battingQuery.data?.data?.entries ?? []).slice(
-    0,
-    limit,
-  );
-  const bowlingEntries = (bowlingQuery.data?.data?.entries ?? []).slice(
-    0,
-    limit,
-  );
+  const battingEntries = battingQuery.data?.data?.entries ?? [];
+  const bowlingEntries = bowlingQuery.data?.data?.entries ?? [];
 
   const effectiveSeason =
     battingQuery.data?.season ?? bowlingQuery.data?.season ?? targetSeason;
