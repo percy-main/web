@@ -1,6 +1,7 @@
 ---
 import { formatDate } from "date-fns";
 import type { CalendarItem } from "@/collections/calendarItem";
+import { GameCardSponsor } from "@/components/GameCardSponsor";
 
 type Props = {
   id: string;
@@ -16,6 +17,10 @@ const displayName =
     : item.name;
 const dateStr = item.when ? formatDate(item.when, "EEE dd MMM") : "TBC";
 const timeStr = item.when ? formatDate(item.when, "h:mm a") : "";
+const ssrSponsor =
+  item.type === "game" && item.sponsor
+    ? { name: item.sponsor.name, logoUrl: item.sponsor.logoUrl }
+    : undefined;
 ---
 
 <a
@@ -54,23 +59,12 @@ const timeStr = item.when ? formatDate(item.when, "h:mm a") : "";
   <p class="text-sm font-medium text-dark line-clamp-2">{displayName}</p>
   {timeStr && <p class="mt-1 text-xs text-gray-500">{timeStr}</p>}
   {
-    item.type === "game" && item.sponsor && (
-      <div class="mt-auto flex items-center gap-1.5 border-t border-gray-100 pt-2">
-        {item.sponsor.logoUrl ? (
-          <img
-            src={item.sponsor.logoUrl}
-            alt={`Sponsored by ${item.sponsor.name}`}
-            width="60"
-            height="24"
-            class="h-6 max-w-[60px] object-contain"
-          />
-        ) : (
-          <span class="min-w-0 text-[10px] font-medium text-gray-500 leading-tight truncate">
-            {item.sponsor.name}
-          </span>
-        )}
-        <span class="text-[10px] text-gray-400 leading-tight shrink-0">Sponsored</span>
-      </div>
+    item.type === "game" && (
+      <GameCardSponsor
+        client:load
+        gameId={id}
+        ssrSponsor={ssrSponsor}
+      />
     )
   }
 </a>
