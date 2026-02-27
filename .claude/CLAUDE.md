@@ -36,7 +36,8 @@ CI runs a `check-generated` workflow that diffs these files — your PR will fai
 
 - **Never type-assert API responses** — always validate with zod schemas (e.g. `schema.parse(await res.json())`) instead of `as SomeType`
 - **Use react-query for data fetching in React components** — no raw `fetch` in `useEffect`/`useCallback`. Use `useQuery`/`useMutation` from `@tanstack/react-query`.
-- **Use shadcn/ui components where possible** - avoid writing our own components unless necessary. Consider how their colours fit with our theme always. Compose smaller components to make larger components. 
+- **Use shadcn/ui components where possible** - avoid writing our own components unless necessary. Consider how their colours fit with our theme always. Compose smaller components to make larger components.
+- **Use `NULL` for unset/missing values in the database** — never use empty string `""` to represent "no value". Empty string should only mean a genuinely empty string. For nullable columns, use `NULL`; for Zod schemas, use `.optional()` not `.optional().default("")`.
 
 ## Local Data
 
@@ -86,7 +87,8 @@ When beginning work on a ticket, follow these steps:
 
 8. **Review the PR**
    - Use an appropriate agent (e.g., **code-reviewer**) to review the PR
-   - Leave all review comments directly on the PR
+   - The subagent cannot post comments themselves, so ask for their review to be provided in a structured form
+   - The supervising agent should ensure the review is posted on the PR
    - Comments MUST BE recorded on the pull request itself - check if the code-reviewer has recorded their comments, and if not, record them yourself. Use one comment per issue, ideally linked to the specific line of code, unless it is a broader more general comment.
 
 9. **Address review comments**
