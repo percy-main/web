@@ -2,11 +2,11 @@ import { type Kysely, sql } from "kysely";
 
 export async function up(db: Kysely<unknown>): Promise<void> {
   // ── Leaderboard queries (public, hot path) ──
-  // Covers: WHERE season = ? AND team_id = ? [AND competition_type IN (?)]
-  await sql`CREATE INDEX idx_batting_season_team ON match_performance_batting(season, team_id)`.execute(
+  // Covers: WHERE season = ? AND team_id = ? AND competition_type IN (?)
+  await sql`CREATE INDEX idx_batting_season_team ON match_performance_batting(season, team_id, competition_type)`.execute(
     db,
   );
-  await sql`CREATE INDEX idx_bowling_season_team ON match_performance_bowling(season, team_id)`.execute(
+  await sql`CREATE INDEX idx_bowling_season_team ON match_performance_bowling(season, team_id, competition_type)`.execute(
     db,
   );
   // Covers: WHERE player_id = ? (career stats, season stats)
@@ -22,16 +22,18 @@ export async function up(db: Kysely<unknown>): Promise<void> {
   await sql`CREATE INDEX idx_game_sponsorship_game ON game_sponsorship(game_id)`.execute(
     db,
   );
-  // Covers: WHERE contentful_entry_id = ? AND season = ? (general lookup)
+  // The partial unique index (idx_player_sponsorship_unique_paid) only covers
+  // paid_at IS NOT NULL queries. This general index covers the hasPending path
+  // which filters for paid_at IS NULL.
   await sql`CREATE INDEX idx_player_sponsorship_lookup ON player_sponsorship(contentful_entry_id, season)`.execute(
     db,
   );
 
-  // ── Admin sponsorship lists ──
-  await sql`CREATE INDEX idx_game_sponsorship_created ON game_sponsorship(created_at DESC)`.execute(
+  // ── Admin sponsorship lists (ORDER BY created_at DESC) ──
+  await sql`CREATE INDEX idx_game_sponsorship_created ON game_sponsorship(created_at)`.execute(
     db,
   );
-  await sql`CREATE INDEX idx_player_sponsorship_created ON player_sponsorship(created_at DESC)`.execute(
+  await sql`CREATE INDEX idx_player_sponsorship_created ON player_sponsorship(created_at)`.execute(
     db,
   );
 
@@ -70,6 +72,14 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 
   // ── Session (better-auth token is already UNIQUE; add userId lookup) ──
   await sql`CREATE INDEX idx_session_user ON session(userId)`.execute(db);
+
+  // ── Member lookups (player profile pages, leaderboard rendering) ──
+  await sql`CREATE INDEX idx_member_contentful_entry ON member(contentful_entry_id)`.execute(
+    db,
+  );
+  await sql`CREATE INDEX idx_member_play_cricket_id ON member(play_cricket_id)`.execute(
+    db,
+  );
 }
 
 export async function down(db: Kysely<unknown>): Promise<void> {
@@ -91,4 +101,6 @@ export async function down(db: Kysely<unknown>): Promise<void> {
   await sql`DROP INDEX IF EXISTS idx_charge_dependent_charge`.execute(db);
   await sql`DROP INDEX IF EXISTS idx_charge_dependent_dependent`.execute(db);
   await sql`DROP INDEX IF EXISTS idx_session_user`.execute(db);
+  await sql`DROP INDEX IF EXISTS idx_member_contentful_entry`.execute(db);
+  await sql`DROP INDEX IF EXISTS idx_member_play_cricket_id`.execute(db);
 }
