@@ -9,6 +9,9 @@ type Props = {
   game: Game;
 };
 
+const gameWhenStr = (game: Game) =>
+  game.when ? game.when.toISOString() : null;
+
 export const GamePreview = ({ id, game }: Props) => (
   <div className="flex h-full flex-col items-stretch justify-between">
     <div className="flex flex-row justify-start gap-4">
@@ -49,7 +52,7 @@ export const GamePreview = ({ id, game }: Props) => (
       </a>
     </div>
     <div className="self-center">
-      <Sponsor id={id} game={game} />
+      <Sponsor id={id} when={gameWhenStr(game)} ssrSponsor={game.sponsor} />
     </div>
   </div>
 );

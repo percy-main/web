@@ -14,6 +14,38 @@ import type Stripe from "stripe";
 const MAX_LOGO_SIZE_BYTES = 150_000;
 
 export const sponsorship = {
+  getByGameId: defineAction({
+    input: z.object({
+      gameId: z.string(),
+    }),
+    handler: async ({ gameId }) => {
+      const row = await client
+        .selectFrom("game_sponsorship")
+        .where("game_id", "=", gameId)
+        .where("approved", "=", 1)
+        .where("paid_at", "is not", null)
+        .select([
+          "sponsor_name",
+          "display_name",
+          "sponsor_logo_url",
+          "sponsor_message",
+          "sponsor_website",
+        ])
+        .executeTakeFirst();
+
+      if (!row) return { sponsor: null };
+
+      return {
+        sponsor: {
+          name: row.display_name ?? row.sponsor_name,
+          logoUrl: row.sponsor_logo_url ?? undefined,
+          message: row.sponsor_message ?? undefined,
+          website: row.sponsor_website ?? undefined,
+        },
+      };
+    },
+  }),
+
   createPayment: defineAction({
     input: z.object({
       gameId: z.string(),
