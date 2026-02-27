@@ -1,4 +1,11 @@
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -95,17 +102,21 @@ function PlayerSeasonStatsInner({ contentfulEntryId }: Props) {
             <h6 className="text-sm font-semibold text-gray-600">
               Season Stats
             </h6>
-            <select
-              value={season}
-              onChange={(e) => setSelectedSeason(Number(e.target.value))}
-              className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm focus:border-green-700 focus:ring-green-700 focus:outline-none"
+            <Select
+              value={String(season)}
+              onValueChange={(v) => setSelectedSeason(Number(v))}
             >
-              {seasons.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-8 w-[100px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {seasons.map((s) => (
+                  <SelectItem key={s} value={String(s)}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {seasonQuery.isLoading ? (

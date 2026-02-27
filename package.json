@@ -34,6 +34,7 @@
     "@libsql/client": "^0.14.0",
     "@libsql/kysely-libsql": "^0.4.1",
     "@netlify/functions": "^5.1.2",
+    "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-tabs": "^1.1.2",
     "@react-email/components": "^0.0.36",
     "@react-email/render": "1.0.4",
