@@ -493,7 +493,7 @@ function PastUpcomingDivider() {
     <div className="relative my-8 flex items-center">
       <div className="flex-1 border-t-2 border-dashed border-primary/20" />
       <span className="mx-4 shrink-0 rounded-full bg-primary px-4 py-1 text-xs font-bold uppercase tracking-wider text-white">
-        Upcoming Fixtures
+        Upcoming Events
       </span>
       <div className="flex-1 border-t-2 border-dashed border-primary/20" />
     </div>
@@ -573,11 +573,12 @@ export function CalendarAgenda({
 
   // Find divider position: between last past and first future
   const dividerIndex = useMemo(() => {
-    const now = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     let lastPastIdx = -1;
     for (let i = 0; i < grouped.length; i++) {
       const d = new Date(grouped[i].dateStr);
-      if (d < now) lastPastIdx = i;
+      if (d < today) lastPastIdx = i;
     }
     // Insert divider after lastPastIdx if there are future items after
     if (lastPastIdx >= 0 && lastPastIdx < grouped.length - 1) {
