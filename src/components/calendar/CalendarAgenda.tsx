@@ -556,19 +556,21 @@ export function CalendarAgenda({
     return items.filter((item) => item.category === activeFilter);
   }, [items, activeFilter]);
 
-  // Group by date
+  // Group by date (using a Map to merge items on the same day regardless of sort order)
   const grouped = useMemo(() => {
-    const groups: Array<{ dateStr: string; items: CalendarItem[] }> = [];
+    const map = new Map<string, CalendarItem[]>();
     for (const item of filteredItems) {
       const dateStr = item.when.split("T")[0];
-      const last = groups[groups.length - 1];
-      if (last && last.dateStr === dateStr) {
-        last.items.push(item);
+      const existing = map.get(dateStr);
+      if (existing) {
+        existing.push(item);
       } else {
-        groups.push({ dateStr, items: [item] });
+        map.set(dateStr, [item]);
       }
     }
-    return groups;
+    return [...map.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dateStr, items]) => ({ dateStr, items }));
   }, [filteredItems]);
 
   // Find divider position: between last past and first future
