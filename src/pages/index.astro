@@ -7,6 +7,7 @@ import SportCard from "@/components/SportCard.astro";
 import { compareDesc, compareAsc, isAfter, isSameDay } from "date-fns";
 import Hero from "@/components/Hero/Hero.astro";
 import { LiveScoreWidget } from "@/components/LiveScoreWidget";
+import { SeasonLeaders } from "@/components/SeasonLeaders";
 import LDJson from "../components/LDJson.astro";
 import { PLAY_CRICKET_1XI_ID, PLAY_CRICKET_2XI_ID } from "astro:env/server";
 import { paymentData } from "@/lib/payments/config";
@@ -40,6 +41,15 @@ const next5calendarItems = calendarItems
   })
   .filter(({ data }) => isAfter(data.when, new Date()))
   .slice(0, 5);
+
+const people = await getCollection("person");
+const personProfiles = people
+  .filter((p) => !p.data.hasLeftClub)
+  .map((p) => ({
+    contentfulId: p.id,
+    slug: p.data.slug,
+    name: p.data.name,
+  }));
 
 const donateUrl = `/purchase/${paymentData.prices.donation}`;
 ---
@@ -78,6 +88,13 @@ const donateUrl = `/purchase/${paymentData.prices.donation}`;
       </section>
     )
   }
+
+  <!-- 2b. Season Leaders (heading rendered inside React component, hidden when no data) -->
+  <section class="bg-primary/5 py-10">
+    <div class="container">
+      <SeasonLeaders client:load personProfiles={personProfiles} />
+    </div>
+  </section>
 
   <!-- 3. Featured News -->
   {
