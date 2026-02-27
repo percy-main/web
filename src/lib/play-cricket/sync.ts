@@ -37,11 +37,13 @@ function randomId(): string {
 
 const NOT_OUT_CODES = new Set(["no", "dnb", "rtd", ""]);
 
-function isNotOut(howOut: string): boolean {
+function isNotOut(howOut: string | null | undefined): boolean {
+  if (!howOut) return true;
   return NOT_OUT_CODES.has(howOut.toLowerCase().trim());
 }
 
-function didBat(howOut: string): boolean {
+function didBat(howOut: string | null | undefined): boolean {
+  if (!howOut) return false;
   const code = howOut.toLowerCase().trim();
   return code !== "dnb" && code !== "";
 }
@@ -263,14 +265,14 @@ async function syncMatches(
                 parseInt(bat.balls) || 0,
                 parseInt(bat.fours) || 0,
                 parseInt(bat.sixes) || 0,
-                bat.how_out,
+                bat.how_out ?? "",
                 notOut,
                 bat.batsman_name,
                 parseInt(bat.runs) || 0,
                 parseInt(bat.balls) || 0,
                 parseInt(bat.fours) || 0,
                 parseInt(bat.sixes) || 0,
-                bat.how_out,
+                bat.how_out ?? "",
                 notOut,
               ],
             });
