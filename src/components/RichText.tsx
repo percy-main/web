@@ -100,7 +100,6 @@ const renderOptions = (page: string, games: Game[]): Options => ({
             discipline={fields.discipline ?? "both"}
             category={fields.category ?? "seniors"}
             limit={fields.limit ?? 10}
-            profileMap={new Map()}
           />
         );
       } else if (contentTypeId === "assetLink") {

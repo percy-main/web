@@ -6,36 +6,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
-import {
-  currentCricketSeason,
-  fetchWithSeasonFallback,
-} from "@/lib/cricket-season";
+import { currentCricketSeason } from "@/lib/cricket-season";
 import {
   QueryClient,
   QueryClientProvider,
   useQuery,
 } from "@tanstack/react-query";
 import { actions } from "astro:actions";
-
-const queryClient = new QueryClient();
-
-type BattingEntry = {
-  playerName: string;
-  contentfulEntryId: string | null;
-  runs: number;
-  innings: number;
-  average: number | null;
-  highScore: number;
-};
-
-type BowlingEntry = {
-  playerName: string;
-  contentfulEntryId: string | null;
-  wickets: number;
-  overs: string;
-  average: number | null;
-  bestWickets: number;
-};
+import { useState } from "react";
 
 type PersonProfile = {
   contentfulId: string;
@@ -103,29 +81,43 @@ function SeasonLeadersInner({
 
   const battingQuery = useQuery({
     queryKey: ["season-leaders-batting", season],
-    queryFn: () =>
-      fetchWithSeasonFallback(
-        (s) =>
-          actions.playCricket.getBattingLeaderboard({
-            season: s,
-            isJunior: false,
-          }),
+    queryFn: async () => {
+      const primary = await actions.playCricket.getBattingLeaderboard({
         season,
-      ),
+        isJunior: false,
+      });
+      if (primary.error) throw primary.error;
+      if (primary.data && primary.data.entries.length > 0) {
+        return { data: primary.data, season };
+      }
+      const fallback = await actions.playCricket.getBattingLeaderboard({
+        season: season - 1,
+        isJunior: false,
+      });
+      if (fallback.error) throw fallback.error;
+      return { data: fallback.data, season: season - 1 };
+    },
     staleTime: 10 * 60 * 1000,
   });
 
   const bowlingQuery = useQuery({
     queryKey: ["season-leaders-bowling", season],
-    queryFn: () =>
-      fetchWithSeasonFallback(
-        (s) =>
-          actions.playCricket.getBowlingLeaderboard({
-            season: s,
-            isJunior: false,
-          }),
+    queryFn: async () => {
+      const primary = await actions.playCricket.getBowlingLeaderboard({
         season,
-      ),
+        isJunior: false,
+      });
+      if (primary.error) throw primary.error;
+      if (primary.data && primary.data.entries.length > 0) {
+        return { data: primary.data, season };
+      }
+      const fallback = await actions.playCricket.getBowlingLeaderboard({
+        season: season - 1,
+        isJunior: false,
+      });
+      if (fallback.error) throw fallback.error;
+      return { data: fallback.data, season: season - 1 };
+    },
     staleTime: 10 * 60 * 1000,
   });
 
@@ -134,12 +126,8 @@ function SeasonLeadersInner({
 
   if (hasError) return null;
 
-  const battingEntries = (
-    (battingQuery.data?.data?.entries ?? []) as BattingEntry[]
-  ).slice(0, 3);
-  const bowlingEntries = (
-    (bowlingQuery.data?.data?.entries ?? []) as BowlingEntry[]
-  ).slice(0, 3);
+  const battingEntries = (battingQuery.data?.data?.entries ?? []).slice(0, 3);
+  const bowlingEntries = (bowlingQuery.data?.data?.entries ?? []).slice(0, 3);
 
   const effectiveSeason =
     battingQuery.data?.season ?? bowlingQuery.data?.season ?? season;
@@ -149,6 +137,13 @@ function SeasonLeadersInner({
 
   return (
     <div>
+      <h3
+        className="mb-6 text-center font-secondary font-bold"
+        style={{ fontSize: "var(--text-h4)" }}
+      >
+        Season Leaders
+      </h3>
+
       {isLoading ? (
         <div className="grid gap-6 md:grid-cols-2">
           {[0, 1].map((i) => (
@@ -266,6 +261,7 @@ export function SeasonLeaders({
 }: {
   personProfiles?: PersonProfile[];
 }) {
+  const [queryClient] = useState(() => new QueryClient());
   const profileMap = new Map(
     personProfiles.map((p) => [p.contentfulId, p]),
   );

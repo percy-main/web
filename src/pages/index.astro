@@ -89,10 +89,9 @@ const donateUrl = `/purchase/${paymentData.prices.donation}`;
     )
   }
 
-  <!-- 2b. Season Leaders -->
+  <!-- 2b. Season Leaders (heading rendered inside React component, hidden when no data) -->
   <section class="bg-primary/5 py-10">
     <div class="container">
-      <h3 class="text-h4 mb-6 text-center">Season Leaders</h3>
       <SeasonLeaders client:load personProfiles={personProfiles} />
     </div>
   </section>

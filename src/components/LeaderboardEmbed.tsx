@@ -7,39 +7,14 @@ import {
   TableRow,
 } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
+import { currentCricketSeason } from "@/lib/cricket-season";
 import {
-  currentCricketSeason,
-  fetchWithSeasonFallback,
-} from "@/lib/cricket-season";
-import { useQuery } from "@tanstack/react-query";
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+} from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { useState } from "react";
-
-type BattingEntry = {
-  playerName: string;
-  contentfulEntryId: string | null;
-  runs: number;
-  innings: number;
-  average: number | null;
-  highScore: number;
-  notOuts: number;
-};
-
-type BowlingEntry = {
-  playerName: string;
-  contentfulEntryId: string | null;
-  wickets: number;
-  overs: string;
-  average: number | null;
-  bestWickets: number;
-  runs: number;
-};
-
-type PersonProfile = {
-  contentfulId: string;
-  slug: string;
-  name: string;
-};
 
 type Props = {
   title?: string;
@@ -47,42 +22,12 @@ type Props = {
   discipline?: "batting" | "bowling" | "both";
   category?: "seniors" | "juniors";
   limit?: number;
-  profileMap: Map<string, PersonProfile>;
 };
-
-function PlayerLink({
-  name,
-  contentfulEntryId,
-  profileMap,
-}: {
-  name: string;
-  contentfulEntryId: string | null;
-  profileMap: Map<string, PersonProfile>;
-}) {
-  const profile = contentfulEntryId
-    ? profileMap.get(contentfulEntryId)
-    : null;
-
-  if (profile) {
-    return (
-      <a
-        href={`/person/${profile.slug}`}
-        className="font-medium text-green-800 underline decoration-green-800/30 underline-offset-2 hover:decoration-green-800"
-      >
-        {name}
-      </a>
-    );
-  }
-
-  return <span className="font-medium">{name}</span>;
-}
 
 function BattingMiniTable({
   entries,
-  profileMap,
 }: {
-  entries: BattingEntry[];
-  profileMap: Map<string, PersonProfile>;
+  entries: Array<{ playerName: string; runs: number; innings: number; average: number | null; highScore: number }>;
 }) {
   if (entries.length === 0) return null;
 
@@ -103,11 +48,7 @@ function BattingMiniTable({
           <TableRow key={idx}>
             <TableCell className="text-gray-400">{idx + 1}</TableCell>
             <TableCell>
-              <PlayerLink
-                name={entry.playerName}
-                contentfulEntryId={entry.contentfulEntryId}
-                profileMap={profileMap}
-              />
+              <span className="font-medium">{entry.playerName}</span>
             </TableCell>
             <TableCell className="text-right">{entry.innings}</TableCell>
             <TableCell className="text-right font-bold">{entry.runs}</TableCell>
@@ -124,10 +65,8 @@ function BattingMiniTable({
 
 function BowlingMiniTable({
   entries,
-  profileMap,
 }: {
-  entries: BowlingEntry[];
-  profileMap: Map<string, PersonProfile>;
+  entries: Array<{ playerName: string; wickets: number; overs: string; average: number | null }>;
 }) {
   if (entries.length === 0) return null;
 
@@ -147,11 +86,7 @@ function BowlingMiniTable({
           <TableRow key={idx}>
             <TableCell className="text-gray-400">{idx + 1}</TableCell>
             <TableCell>
-              <PlayerLink
-                name={entry.playerName}
-                contentfulEntryId={entry.contentfulEntryId}
-                profileMap={profileMap}
-              />
+              <span className="font-medium">{entry.playerName}</span>
             </TableCell>
             <TableCell className="text-right">{entry.overs}</TableCell>
             <TableCell className="text-right font-bold">
@@ -177,13 +112,12 @@ function LoadingSkeleton() {
   );
 }
 
-export function LeaderboardEmbed({
+function LeaderboardEmbedInner({
   title,
   season: explicitSeason,
   discipline = "both",
   category = "seniors",
   limit = 10,
-  profileMap,
 }: Props) {
   const targetSeason = explicitSeason ?? currentCricketSeason();
   const isJunior = category === "juniors";
@@ -195,24 +129,44 @@ export function LeaderboardEmbed({
 
   const battingQuery = useQuery({
     queryKey: ["leaderboard-embed-batting", targetSeason, isJunior],
-    queryFn: () =>
-      fetchWithSeasonFallback(
-        (s) =>
-          actions.playCricket.getBattingLeaderboard({ season: s, isJunior }),
-        targetSeason,
-      ),
+    queryFn: async () => {
+      const primary = await actions.playCricket.getBattingLeaderboard({
+        season: targetSeason,
+        isJunior,
+      });
+      if (primary.error) throw primary.error;
+      if (primary.data && primary.data.entries.length > 0) {
+        return { data: primary.data, season: targetSeason };
+      }
+      const fallback = await actions.playCricket.getBattingLeaderboard({
+        season: targetSeason - 1,
+        isJunior,
+      });
+      if (fallback.error) throw fallback.error;
+      return { data: fallback.data, season: targetSeason - 1 };
+    },
     staleTime: 10 * 60 * 1000,
     enabled: showBatting,
   });
 
   const bowlingQuery = useQuery({
     queryKey: ["leaderboard-embed-bowling", targetSeason, isJunior],
-    queryFn: () =>
-      fetchWithSeasonFallback(
-        (s) =>
-          actions.playCricket.getBowlingLeaderboard({ season: s, isJunior }),
-        targetSeason,
-      ),
+    queryFn: async () => {
+      const primary = await actions.playCricket.getBowlingLeaderboard({
+        season: targetSeason,
+        isJunior,
+      });
+      if (primary.error) throw primary.error;
+      if (primary.data && primary.data.entries.length > 0) {
+        return { data: primary.data, season: targetSeason };
+      }
+      const fallback = await actions.playCricket.getBowlingLeaderboard({
+        season: targetSeason - 1,
+        isJunior,
+      });
+      if (fallback.error) throw fallback.error;
+      return { data: fallback.data, season: targetSeason - 1 };
+    },
     staleTime: 10 * 60 * 1000,
     enabled: showBowling,
   });
@@ -224,12 +178,14 @@ export function LeaderboardEmbed({
 
   if (hasError) return null;
 
-  const battingEntries = (
-    (battingQuery.data?.data?.entries ?? []) as BattingEntry[]
-  ).slice(0, limit);
-  const bowlingEntries = (
-    (bowlingQuery.data?.data?.entries ?? []) as BowlingEntry[]
-  ).slice(0, limit);
+  const battingEntries = (battingQuery.data?.data?.entries ?? []).slice(
+    0,
+    limit,
+  );
+  const bowlingEntries = (bowlingQuery.data?.data?.entries ?? []).slice(
+    0,
+    limit,
+  );
 
   const effectiveSeason =
     battingQuery.data?.season ?? bowlingQuery.data?.season ?? targetSeason;
@@ -254,9 +210,9 @@ export function LeaderboardEmbed({
         {isLoading ? (
           <LoadingSkeleton />
         ) : discipline === "batting" ? (
-          <BattingMiniTable entries={battingEntries} profileMap={profileMap} />
+          <BattingMiniTable entries={battingEntries} />
         ) : (
-          <BowlingMiniTable entries={bowlingEntries} profileMap={profileMap} />
+          <BowlingMiniTable entries={bowlingEntries} />
         )}
         <div className="mt-3 text-right">
           <a
@@ -290,16 +246,10 @@ export function LeaderboardEmbed({
             <TabsTrigger value="bowling">Bowling</TabsTrigger>
           </TabsList>
           <TabsContent value="batting">
-            <BattingMiniTable
-              entries={battingEntries}
-              profileMap={profileMap}
-            />
+            <BattingMiniTable entries={battingEntries} />
           </TabsContent>
           <TabsContent value="bowling">
-            <BowlingMiniTable
-              entries={bowlingEntries}
-              profileMap={profileMap}
-            />
+            <BowlingMiniTable entries={bowlingEntries} />
           </TabsContent>
         </Tabs>
       )}
@@ -312,5 +262,17 @@ export function LeaderboardEmbed({
         </a>
       </div>
     </div>
+  );
+}
+
+// Player profile linking is handled by the full leaderboard page (/leaderboard/[year]).
+// This embed renders player names as plain text with a "View full leaderboard" CTA.
+export function LeaderboardEmbed(props: Props) {
+  const [queryClient] = useState(() => new QueryClient());
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <LeaderboardEmbedInner {...props} />
+    </QueryClientProvider>
   );
 }
