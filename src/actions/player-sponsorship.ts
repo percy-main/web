@@ -3,17 +3,26 @@ import { currentCricketSeason } from "@/lib/cricket-season";
 import { client } from "@/lib/db/client";
 import { stripe } from "@/lib/payments/client";
 import { paymentData } from "@/lib/payments/config";
+import { getStripePrice } from "@/lib/payments/getStripePrice";
 import { resolveStripeCustomer } from "@/lib/payments/resolveStripeCustomer";
 import { ActionError, defineAction } from "astro:actions";
 import { CONTEXT } from "astro:env/client";
 import { DEPLOY_PRIME_URL } from "astro:env/server";
 import { z } from "astro:schema";
 import { randomUUID } from "crypto";
-import type Stripe from "stripe";
 
 const MAX_LOGO_SIZE_BYTES = 150_000;
 
 export const playerSponsorship = {
+  getPrice: defineAction({
+    handler: async () => {
+      const { amount, currency, productName } = await getStripePrice(
+        paymentData.prices.playerSponsorship,
+      );
+      return { amountPence: amount, currency, productName };
+    },
+  }),
+
   createPayment: defineAction({
     input: z.object({
       contentfulEntryId: z.string(),
@@ -64,20 +73,9 @@ export const playerSponsorship = {
           });
         }
 
-        const priceId = paymentData.prices.playerSponsorship;
-        const price = await stripe.prices.retrieve(priceId, {
-          expand: ["product"],
-        });
-
-        const product = price.product as Stripe.Product;
-        const amount = price.unit_amount;
-
-        if (!amount) {
-          throw new ActionError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Player sponsorship price not configured",
-          });
-        }
+        const { amount, currency, productName } = await getStripePrice(
+          paymentData.prices.playerSponsorship,
+        );
 
         const sponsorshipId = randomUUID();
 
@@ -111,7 +109,7 @@ export const playerSponsorship = {
 
         const paymentIntent = await stripe.paymentIntents.create({
           amount,
-          currency: price.currency,
+          currency,
           automatic_payment_methods: { enabled: true },
           ...(customerId ? { customer: customerId } : {}),
           metadata: enrichedMetadata,
@@ -133,7 +131,7 @@ export const playerSponsorship = {
         return {
           clientSecret: paymentIntent.client_secret,
           amount,
-          productName: product.name,
+          productName,
         };
       } catch (err) {
         if (err instanceof ActionError) throw err;

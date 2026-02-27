@@ -13,8 +13,10 @@ import {
   QueryClient,
   QueryClientProvider,
   useMutation,
+  useQuery,
 } from "@tanstack/react-query";
 import { actions } from "astro:actions";
+import { formatPrice } from "@/lib/formatPrice";
 import { type ChangeEvent, type FC, useCallback, useState } from "react";
 import { PaymentForm } from "./PaymentForm";
 
@@ -158,6 +160,16 @@ const PlayerSponsorCheckoutInner: FC<Props> = ({
     },
   });
 
+  const priceQuery = useQuery({
+    queryKey: ["player-sponsorship-price"],
+    queryFn: async () => {
+      const result = await actions.playerSponsorship.getPrice();
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const isFormValid =
     sponsorName.trim().length > 0 &&
     sponsorEmail.trim().length > 0 &&
@@ -211,10 +223,32 @@ const PlayerSponsorCheckoutInner: FC<Props> = ({
         <p className="text-sm text-gray-600">
           Sponsor {playerName} for the current season. Your details will appear
           on their profile and alongside their name in leaderboards and
-          scorecards.
+          scorecards.{" "}
+          <a
+            href="/cricket/become-a-sponsor/"
+            className="text-blue-600 underline hover:text-blue-800"
+          >
+            Learn about all the benefits of sponsoring
+          </a>
+          .
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {priceQuery.isPending && (
+          <p className="text-sm text-gray-500">Loading price...</p>
+        )}
+        {priceQuery.isError && (
+          <Alert variant="destructive">
+            <AlertDescription>
+              Could not load pricing. Please refresh and try again.
+            </AlertDescription>
+          </Alert>
+        )}
+        {priceQuery.data && (
+          <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+            <strong>Price:</strong> {formatPrice(priceQuery.data.amountPence)}
+          </div>
+        )}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="sponsorName">Your Name / Company Name *</Label>
           <Input

@@ -13,12 +13,12 @@ import {
   QueryClient,
   QueryClientProvider,
   useMutation,
+  useQuery,
 } from "@tanstack/react-query";
 import { actions } from "astro:actions";
+import { formatPrice } from "@/lib/formatPrice";
 import { type ChangeEvent, type FC, useCallback, useState } from "react";
 import { PaymentForm } from "./PaymentForm";
-
-const queryClient = new QueryClient();
 
 type Props = {
   gameId: string;
@@ -36,7 +36,7 @@ type State =
   | { step: "success" };
 
 const MAX_MESSAGE_LENGTH = 100;
-const MAX_LOGO_SIZE_BYTES = 100_000;
+const MAX_LOGO_SIZE_BYTES = 150_000;
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -152,6 +152,16 @@ const SponsorCheckoutInner: FC<Props> = ({ gameId, gameTitle }) => {
     },
   });
 
+  const priceQuery = useQuery({
+    queryKey: ["sponsorship-price"],
+    queryFn: async () => {
+      const result = await actions.sponsorship.getPrice();
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const isFormValid =
     sponsorName.trim().length > 0 &&
     sponsorEmail.trim().length > 0 &&
@@ -194,8 +204,34 @@ const SponsorCheckoutInner: FC<Props> = ({ gameId, gameTitle }) => {
       <CardHeader>
         <CardTitle>Sponsor This Game</CardTitle>
         <p className="text-sm text-gray-600">{gameTitle}</p>
+        <p className="text-sm text-gray-600">
+          Sponsor this game and your details will be displayed on the match
+          page.{" "}
+          <a
+            href="/cricket/become-a-sponsor/"
+            className="text-blue-600 underline hover:text-blue-800"
+          >
+            Learn about all the benefits of sponsoring
+          </a>
+          .
+        </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {priceQuery.isPending && (
+          <p className="text-sm text-gray-500">Loading price...</p>
+        )}
+        {priceQuery.isError && (
+          <Alert variant="destructive">
+            <AlertDescription>
+              Could not load pricing. Please refresh and try again.
+            </AlertDescription>
+          </Alert>
+        )}
+        {priceQuery.data && (
+          <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+            <strong>Price:</strong> {formatPrice(priceQuery.data.amountPence)}
+          </div>
+        )}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="sponsorName">Your Name / Company Name *</Label>
           <Input
@@ -294,8 +330,11 @@ const SponsorCheckoutInner: FC<Props> = ({ gameId, gameTitle }) => {
   );
 };
 
-export const SponsorCheckout: FC<Props> = (props) => (
-  <QueryClientProvider client={queryClient}>
-    <SponsorCheckoutInner {...props} />
-  </QueryClientProvider>
-);
+export const SponsorCheckout: FC<Props> = (props) => {
+  const [queryClient] = useState(() => new QueryClient());
+  return (
+    <QueryClientProvider client={queryClient}>
+      <SponsorCheckoutInner {...props} />
+    </QueryClientProvider>
+  );
+};
