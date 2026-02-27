@@ -19,9 +19,9 @@ type BattingEntry = {
   position: number;
   name: string;
   id: string;
-  howOut: string;
-  fielderName: string;
-  bowlerName: string;
+  howOut: string | null | undefined;
+  fielderName: string | null | undefined;
+  bowlerName: string | null | undefined;
   runs: number;
   balls: number;
   fours: number;
@@ -109,7 +109,7 @@ function formatDismissal(entry: BattingEntry): string {
     case "dnb":
       return "did not bat";
     default:
-      return howOut || "unknown";
+      return howOut ?? "unknown";
   }
 }
 

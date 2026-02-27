@@ -1,4 +1,3 @@
 ---
-const currentYear = new Date().getFullYear();
-return Astro.redirect(`/leaderboard/${currentYear}`);
+return Astro.redirect(`/leaderboard/${new Date().getFullYear()}`);
 ---

@@ -131,7 +131,7 @@ const handleSponsorGame = async (
 
 const handleSponsorPlayer = async (
   event: Stripe.PaymentIntentSucceededEvent,
-  contentfulEntryId: string,
+  _contentfulEntryId: string,
   sponsorshipId: string,
 ) => {
   const paidAt = stripeDate(event.created);

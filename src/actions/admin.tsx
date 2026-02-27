@@ -290,7 +290,7 @@ export const admin = {
       userId: z.string(),
       role: z.enum(["user", "admin"]),
     }),
-    handler: async ({ userId, role }, session, context) => {
+    handler: async ({ userId, role }, _session, context) => {
       // When changing to user or admin, clean up any junior_manager team assignments
       await client
         .deleteFrom("junior_team_manager")

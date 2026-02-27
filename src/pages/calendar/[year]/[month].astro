@@ -60,8 +60,12 @@ export const getStaticPaths = (async () => {
     [PLAY_CRICKET_2XI_ID]: 1,
   };
 
+  const itemsWithDates = calendarItems.filter(
+    (item): item is typeof item & { data: { when: Date } } => item.data.when != null,
+  );
+
   const calendarItemGroups = _.groupBy(
-    calendarItems.sort(({ data: g1 }, { data: g2 }) => {
+    itemsWithDates.sort(({ data: g1 }, { data: g2 }) => {
       const g1D = getDate(g1.when);
       const g2D = getDate(g2.when);
 
@@ -134,7 +138,11 @@ export const getStaticPaths = (async () => {
       };
     });
 
-    const calendar = generateCalendar(date, rawItems);
+    const itemsWithDates = rawItems.filter(
+      (item): item is (typeof rawItems)[number] & { data: { when: Date } } =>
+        item.data.when != null,
+    );
+    const calendar = generateCalendar(date, itemsWithDates);
     const calendarDays = calendar.map((day) => ({
       date: day.date.toISOString(),
       isExtra: day.isExtra,

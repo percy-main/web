@@ -1,6 +1,6 @@
 ---
 import Container from "@/layouts/Container.astro";
-import Leaderboard from "@/components/be-the-keeper/Leaderboard";
+import BtkLeaderboard from "@/components/be-the-keeper/Leaderboard";
 ---
 
 <Container title="Leaderboard — Be The Keeper">
@@ -14,6 +14,6 @@ import Leaderboard from "@/components/be-the-keeper/Leaderboard";
     </h1>
     <p class="mb-8 text-gray-600">Top 25 keepers at Percy Main CC</p>
 
-    <Leaderboard client:only="react" />
+    <BtkLeaderboard client:only="react" />
   </div>
 </Container>

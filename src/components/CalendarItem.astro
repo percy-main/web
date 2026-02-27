@@ -20,6 +20,8 @@ type Props = {
 };
 
 const { id, title, calendarItem } = Astro.props;
+const itemWhen = calendarItem.when ?? undefined;
+const itemFinish = calendarItem.finish ?? undefined;
 ---
 
 <div class="flex flex-col items-start gap-4">
@@ -49,30 +51,30 @@ const { id, title, calendarItem } = Astro.props;
         .exhaustive()
     }
     <div class="flex flex-row flex-wrap items-center gap-2 md:gap-4">
-      <AddToCalendarButton
-        client:only="react"
-        hideBranding
-        name={title}
-        options={[
-          "Apple",
-          "Google",
-          "iCal",
-          "Microsoft365",
-          "MicrosoftTeams",
-          "Outlook.com",
-          "Yahoo",
-        ]}
-        location={calendarItem.location?.name}
-        startDate={formatDate(calendarItem.when, "yyyy-MM-dd")}
-        endDate={calendarItem.finish &&
-          formatDate(calendarItem.finish, "yyyy-MM-dd")}
-        startTime={formatDate(calendarItem.when, "HH:mm")}
-        endTime={calendarItem.finish &&
-          formatDate(calendarItem.finish, "HH:mm")}
-        timeZone="GMT"
-        hideRichData
-      />
-      <When start={calendarItem.when} end={calendarItem.finish} />
+      {itemWhen && (
+        <AddToCalendarButton
+          client:only="react"
+          hideBranding
+          name={title}
+          options={[
+            "Apple",
+            "Google",
+            "iCal",
+            "Microsoft365",
+            "MicrosoftTeams",
+            "Outlook.com",
+            "Yahoo",
+          ]}
+          location={calendarItem.location?.name}
+          startDate={formatDate(itemWhen, "yyyy-MM-dd")}
+          endDate={itemFinish && formatDate(itemFinish, "yyyy-MM-dd")}
+          startTime={formatDate(itemWhen, "HH:mm")}
+          endTime={itemFinish && formatDate(itemFinish, "HH:mm")}
+          timeZone="GMT"
+          hideRichData
+        />
+      )}
+      {itemWhen && <When start={itemWhen} end={itemFinish} />}
     </div>
   </div>
 

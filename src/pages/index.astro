@@ -24,7 +24,11 @@ const teamOrder: Record<string, number> = {
   [PLAY_CRICKET_2XI_ID]: 1,
 };
 
-const next5calendarItems = calendarItems
+const itemsWithDates = calendarItems.filter(
+  (item): item is typeof item & { data: { when: Date } } => item.data.when != null,
+);
+
+const next5calendarItems = itemsWithDates
   .sort(({ data: g1 }, { data: g2 }) => {
     if (isSameDay(g1.when, g2.when)) {
       if (g1.type === "game" && g2.type === "game") {

@@ -1,5 +1,5 @@
 ---
-import { paymentData } from "../lib/payments/config";
-
-return Astro.rewrite(`/purchase/${paymentData.prices.nets}`);
+return Astro.rewrite(
+  `/purchase/${(await import("../lib/payments/config")).paymentData.prices.nets}`,
+);
 ---

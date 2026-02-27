@@ -26,7 +26,7 @@ type LiveMatch = {
   awayTeam: string;
   awayTeamId: string;
   matchDate: string;
-  matchTime: string;
+  matchTime?: string;
   status: "not_started" | "in_progress" | "completed";
   toss: string | null;
   battedFirst: string | null;
