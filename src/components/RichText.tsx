@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { LeaderboardEmbed } from "@/components/LeaderboardEmbed";
 import { LeagueTable } from "@/components/LeagueTable";
 import {
   documentToReactComponents,
@@ -88,6 +89,18 @@ const renderOptions = (page: string, games: Game[]): Options => ({
           <LeagueTable
             divisionId={node.data.target.fields.divisionId}
             name={node.data.target.fields.name}
+          />
+        );
+      } else if (contentTypeId === "cricketLeaderboard") {
+        const fields = node.data.target.fields;
+        return (
+          <LeaderboardEmbed
+            title={fields.title}
+            season={fields.season ?? undefined}
+            discipline={fields.discipline ?? "both"}
+            category={fields.category ?? "seniors"}
+            limit={fields.limit ?? 10}
+            profileMap={new Map()}
           />
         );
       } else if (contentTypeId === "assetLink") {
