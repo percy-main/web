@@ -66,9 +66,12 @@ interface SyncResult {
 
 // --- Main sync logic ---
 
+const DEADLINE_MS = 10 * 60 * 1000; // 10 minutes — stop starting new API calls after this
+
 async function syncMatches(
   db: DbClient,
   config: SyncConfig,
+  startTime: number,
 ): Promise<SyncResult> {
   const { apiKey, siteId } = config;
   const errors: string[] = [];
@@ -139,6 +142,27 @@ async function syncMatches(
     const matchId = match.id.toString();
 
     try {
+      // Skip matches we've already processed
+      const existingBat = await db.execute({
+        sql: `SELECT 1 FROM match_performance_batting WHERE match_id = ? LIMIT 1`,
+        args: [matchId],
+      });
+      const existingBowl = await db.execute({
+        sql: `SELECT 1 FROM match_performance_bowling WHERE match_id = ? LIMIT 1`,
+        args: [matchId],
+      });
+      if (existingBat.rows.length > 0 || existingBowl.rows.length > 0) {
+        continue;
+      }
+
+      // Stop starting new matches after the deadline
+      if (Date.now() - startTime > DEADLINE_MS) {
+        console.log(
+          `Reached ${DEADLINE_MS / 60_000}m deadline after ${matchesProcessed} matches — stopping`,
+        );
+        return { matchesProcessed, errors };
+      }
+
       const detailJson = await fetchApi(
         `https://play-cricket.com/api/v2/match_detail.json?match_id=${matchId}&api_token=${apiKey}`,
         `Get match detail ${matchId}`,
@@ -308,9 +332,10 @@ export async function runSync(config: SyncConfig): Promise<SyncResult> {
   );
 
   const db = createClient({ url: config.dbUrl, authToken: config.dbToken });
+  const startTime = Date.now();
 
   try {
-    const result = await syncMatches(db, config);
+    const result = await syncMatches(db, config, startTime);
 
     // Log the sync
     await db.execute({
