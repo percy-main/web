@@ -1,6 +1,7 @@
 ---
 import { formatDate } from "date-fns";
 import type { CalendarItem } from "@/collections/calendarItem";
+import { GameCardSponsor } from "@/components/GameCardSponsor";
 
 type Props = {
   id: string;
@@ -16,6 +17,10 @@ const displayName =
     : item.name;
 const dateStr = item.when ? formatDate(item.when, "EEE dd MMM") : "TBC";
 const timeStr = item.when ? formatDate(item.when, "h:mm a") : "";
+const ssrSponsor =
+  item.type === "game" && item.sponsor
+    ? { name: item.sponsor.name, logoUrl: item.sponsor.logoUrl }
+    : undefined;
 ---
 
 <a
@@ -53,4 +58,13 @@ const timeStr = item.when ? formatDate(item.when, "h:mm a") : "";
   </div>
   <p class="text-sm font-medium text-dark line-clamp-2">{displayName}</p>
   {timeStr && <p class="mt-1 text-xs text-gray-500">{timeStr}</p>}
+  {
+    item.type === "game" && (
+      <GameCardSponsor
+        client:load
+        gameId={id}
+        ssrSponsor={ssrSponsor}
+      />
+    )
+  }
 </a>
