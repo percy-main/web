@@ -3,6 +3,7 @@
     "stripeEnv": "live",
     "prices": {
       "sponsorship": "price_1QeNAEIoYmCDxYlku6fuUon5",
+      "playerSponsorship": "price_1T5OHzIoYmCDxYlkFusp3IzK",
       "donation": "price_1Qg3v7IoYmCDxYlkVFuUKYXX",
       "nets": "price_1QgUuVIoYmCDxYlke2hIm9ku"
     },
@@ -15,6 +16,7 @@
     "stripeEnv": "test",
     "prices": {
       "sponsorship": "price_1QlwpNIoYmCDxYlk50mvNJ6R",
+      "playerSponsorship": "price_1T5OIUIoYmCDxYlk19ArCJpi",
       "donation": "price_1PHSBTIoYmCDxYlkBoo86Xdb",
       "nets": "price_1QnTf1IoYmCDxYlkLJelFvkH"
     },

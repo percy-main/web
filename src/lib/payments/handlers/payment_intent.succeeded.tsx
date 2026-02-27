@@ -9,9 +9,14 @@ import { render } from "@react-email/render";
 import { BASE_URL } from "astro:env/client";
 import type Stripe from "stripe";
 import { MembershipCreated } from "~/emails/MembershipUpdated";
+import { PlayerSponsorshipConfirmation } from "~/emails/PlayerSponsorshipConfirmation";
 import { SponsorshipConfirmation } from "~/emails/SponsorshipConfirmation";
 import { stripe } from "../client";
-import { gameSponsoredSchema, membershipSchema } from "../metadata";
+import {
+  gameSponsoredSchema,
+  membershipSchema,
+  playerSponsoredSchema,
+} from "../metadata";
 
 const handleCharges = async (event: Stripe.PaymentIntentSucceededEvent) => {
   const paymentIntentId = event.data.object.id;
@@ -124,6 +129,68 @@ const handleSponsorGame = async (
   }
 };
 
+const handleSponsorPlayer = async (
+  event: Stripe.PaymentIntentSucceededEvent,
+  contentfulEntryId: string,
+  sponsorshipId: string,
+) => {
+  const paidAt = stripeDate(event.created);
+  const email =
+    event.data.object.metadata.email ?? event.data.object.receipt_email;
+
+  await client
+    .updateTable("player_sponsorship")
+    .set({
+      paid_at: paidAt.toISOString(),
+      stripe_payment_intent_id: event.data.object.id,
+    })
+    .where("id", "=", sponsorshipId)
+    .execute();
+
+  const sponsorship = await client
+    .selectFrom("player_sponsorship")
+    .where("id", "=", sponsorshipId)
+    .select([
+      "sponsor_name",
+      "sponsor_email",
+      "sponsor_message",
+      "player_name",
+    ])
+    .executeTakeFirst();
+
+  if (sponsorship) {
+    await sendMessage(
+      `Player ${sponsorship.player_name} was sponsored by ${sponsorship.sponsor_name}. Review at ${BASE_URL}/admin`,
+    );
+
+    await send({
+      to: sponsorship.sponsor_email,
+      subject: PlayerSponsorshipConfirmation.subject,
+      html: await render(
+        <PlayerSponsorshipConfirmation.component
+          imageBaseUrl={`${BASE_URL}/images`}
+          sponsorName={sponsorship.sponsor_name}
+          playerName={sponsorship.player_name}
+          message={sponsorship.sponsor_message ?? undefined}
+        />,
+        { pretty: true },
+      ),
+    });
+  }
+
+  if (email) {
+    await createPaymentCharge({
+      memberEmail: email,
+      description: "Player sponsorship",
+      amountPence: event.data.object.amount,
+      chargeDate: paidAt,
+      type: "sponsorship",
+      source: "webhook",
+      stripePaymentIntentId: event.data.object.id,
+    });
+  }
+};
+
 const handleMembership = async (
   event: Stripe.PaymentIntentSucceededEvent,
   membershipType: string,
@@ -193,6 +260,16 @@ export const paymentIntentSucceeded = async (
       event,
       sponsored.data.gameId,
       sponsored.data.sponsorshipId,
+    );
+    return;
+  }
+
+  const playerSponsored = playerSponsoredSchema.safeParse(metadata);
+  if (playerSponsored.success) {
+    await handleSponsorPlayer(
+      event,
+      playerSponsored.data.contentfulEntryId,
+      playerSponsored.data.sponsorshipId,
     );
     return;
   }

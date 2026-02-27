@@ -145,32 +145,50 @@ function TeamFilter({
   );
 }
 
+type SponsorInfo = {
+  contentfulEntryId: string;
+  sponsorName: string;
+  sponsorWebsite: string | null;
+};
+
 function PlayerName({
   entry,
   profileMap,
+  sponsorMap,
 }: {
   entry: { playerName: string; contentfulEntryId: string | null };
   profileMap: Map<string, PersonProfile>;
+  sponsorMap: Map<string, SponsorInfo>;
 }) {
   const profile = entry.contentfulEntryId
     ? profileMap.get(entry.contentfulEntryId)
     : null;
+  const sponsor = entry.contentfulEntryId
+    ? sponsorMap.get(entry.contentfulEntryId)
+    : null;
 
-  if (profile) {
-    return (
-      <a
-        href={`/person/${profile.slug}`}
-        className="font-medium text-green-800 underline decoration-green-800/30 underline-offset-2 hover:decoration-green-800"
-      >
-        {entry.playerName}
-      </a>
-    );
-  }
-
-  return <span className="font-medium">{entry.playerName}</span>;
+  return (
+    <div className="flex flex-col">
+      {profile ? (
+        <a
+          href={`/person/${profile.slug}`}
+          className="font-medium text-green-800 underline decoration-green-800/30 underline-offset-2 hover:decoration-green-800"
+        >
+          {entry.playerName}
+        </a>
+      ) : (
+        <span className="font-medium">{entry.playerName}</span>
+      )}
+      {sponsor && (
+        <span className="text-xs text-gray-500">
+          Sponsored by {sponsor.sponsorName}
+        </span>
+      )}
+    </div>
+  );
 }
 
-function BattingTable({ entries, profileMap }: { entries: BattingEntry[]; profileMap: Map<string, PersonProfile> }) {
+function BattingTable({ entries, profileMap, sponsorMap }: { entries: BattingEntry[]; profileMap: Map<string, PersonProfile>; sponsorMap: Map<string, SponsorInfo> }) {
   if (entries.length === 0) {
     return <EmptyState message="No batting data available yet." />;
   }
@@ -198,7 +216,7 @@ function BattingTable({ entries, profileMap }: { entries: BattingEntry[]; profil
           <TableRow key={entry.playerId}>
             <TableCell className="text-gray-500">{idx + 1}</TableCell>
             <TableCell>
-              <PlayerName entry={entry} profileMap={profileMap} />
+              <PlayerName entry={entry} profileMap={profileMap} sponsorMap={sponsorMap} />
             </TableCell>
             <TableCell className="text-right">{entry.innings}</TableCell>
             <TableCell className="hidden text-right sm:table-cell">
@@ -231,7 +249,7 @@ function BattingTable({ entries, profileMap }: { entries: BattingEntry[]; profil
   );
 }
 
-function BowlingTable({ entries, profileMap }: { entries: BowlingEntry[]; profileMap: Map<string, PersonProfile> }) {
+function BowlingTable({ entries, profileMap, sponsorMap }: { entries: BowlingEntry[]; profileMap: Map<string, PersonProfile>; sponsorMap: Map<string, SponsorInfo> }) {
   if (entries.length === 0) {
     return <EmptyState message="No bowling data available yet." />;
   }
@@ -257,7 +275,7 @@ function BowlingTable({ entries, profileMap }: { entries: BowlingEntry[]; profil
           <TableRow key={entry.playerId}>
             <TableCell className="text-gray-500">{idx + 1}</TableCell>
             <TableCell>
-              <PlayerName entry={entry} profileMap={profileMap} />
+              <PlayerName entry={entry} profileMap={profileMap} sponsorMap={sponsorMap} />
             </TableCell>
             <TableCell className="text-right">{entry.overs}</TableCell>
             <TableCell className="hidden text-right sm:table-cell">
@@ -297,6 +315,21 @@ function LeaderboardInner({ season, personProfiles }: { season: number; personPr
   const profileMap = useMemo(
     () => new Map(personProfiles.map((p) => [p.contentfulId, p])),
     [personProfiles],
+  );
+
+  const sponsorsQuery = useQuery({
+    queryKey: ["player-sponsors", season],
+    queryFn: async () => {
+      const result = await actions.playerSponsorship.getAllApproved({ season });
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const sponsorMap = useMemo(
+    () => new Map((sponsorsQuery.data ?? []).map((s) => [s.contentfulEntryId, s])),
+    [sponsorsQuery.data],
   );
 
   const teamsQuery = useQuery({
@@ -406,7 +439,7 @@ function LeaderboardInner({ season, personProfiles }: { season: number; personPr
           ) : battingQuery.error ? (
             <EmptyState message="Failed to load batting leaderboard." />
           ) : (
-            <BattingTable entries={battingQuery.data?.entries ?? []} profileMap={profileMap} />
+            <BattingTable entries={battingQuery.data?.entries ?? []} profileMap={profileMap} sponsorMap={sponsorMap} />
           )}
           <p className="mt-2 text-xs text-gray-400">
             Averages shown for players with 3+ innings.
@@ -419,7 +452,7 @@ function LeaderboardInner({ season, personProfiles }: { season: number; personPr
           ) : bowlingQuery.error ? (
             <EmptyState message="Failed to load bowling leaderboard." />
           ) : (
-            <BowlingTable entries={bowlingQuery.data?.entries ?? []} profileMap={profileMap} />
+            <BowlingTable entries={bowlingQuery.data?.entries ?? []} profileMap={profileMap} sponsorMap={sponsorMap} />
           )}
           <p className="mt-2 text-xs text-gray-400">
             Averages and strike rates shown for bowlers with 10+ overs.

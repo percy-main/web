@@ -6,6 +6,7 @@ import { RichText } from "@/components/RichText";
 import LDJson from "@/components/LDJson.astro";
 import dbsChecked from "@/components/dbs.png";
 import { Picture } from "astro:assets";
+import { PlayerSponsor } from "@/components/PlayerSponsor";
 import PlayerStatsDeferred from "@/components/PlayerStatsDeferred.astro";
 import { Breadcrumbs } from "astro-breadcrumbs";
 import { IoChevronForward } from "react-icons/io5";
@@ -51,70 +52,82 @@ const pageData = Object.entries(person.pageData);
       <IoChevronForward slot="separator" />
     </Breadcrumbs>
   </div>
-  <div
-    class="mb-4 flex flex-col items-center justify-between gap-4 md:flex-row"
-  >
-    <div class="flex flex-col items-center justify-start gap-4 md:flex-row">
+  <div class="flex flex-col gap-6 md:flex-row">
+    <div class="flex-1">
+      <div
+        class="mb-4 flex flex-col items-center justify-between gap-4 md:flex-row"
+      >
+        <div class="flex flex-col items-center justify-start gap-4 md:flex-row">
+          {
+            person.photo && (
+              <img
+                class={`mb-0 max-h-48 rounded-full`}
+                src={person.photo.url}
+                alt={person.photo.title}
+                width={132}
+                height={132}
+              />
+            )
+          }
+        </div>
+        {
+          person.isDBSChecked && (
+            <Picture
+              src={dbsChecked}
+              formats={["avif", "webp"]}
+              alt="DBS Checked"
+              height={64}
+            />
+          )
+        }
+      </div>
+
       {
-        person.photo && (
-          <img
-            class={`mb-0 max-h-48 rounded-full`}
-            src={person.photo.url}
-            alt={person.photo.title}
-            width={132}
-            height={132}
-          />
+        person.bio && (
+          <section>
+            <RichText
+              client:load
+              document={person.bio}
+              page={pathname}
+              games={games.filter((g) => g.data.type === "game").map((g) => g.data)}
+            />
+          </section>
+        )
+      }
+
+      {
+        pageData.length > 0 && (
+          <section>
+            <h5>Club Roles</h5>
+            <ul>
+              {pageData.map(([slug, role]) => (
+                <li>
+                  <a
+                    class="text-sm text-blue-900 underline"
+                    href={
+                      slug.startsWith("page$")
+                        ? slug.substring("page$".length)
+                        : slug
+                    }
+                  >
+                    {role}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
         )
       }
     </div>
-    {
-      person.isDBSChecked && (
-        <Picture
-          src={dbsChecked}
-          formats={["avif", "webp"]}
-          alt="DBS Checked"
-          height={64}
-        />
-      )
-    }
+
+    <aside class="w-full shrink-0 md:w-64">
+      <PlayerSponsor
+        client:load
+        contentfulEntryId={contentfulEntryId}
+        playerSlug={person.slug}
+      />
+    </aside>
   </div>
-
-  {
-    person.bio && (
-      <section>
-        <RichText
-          client:load
-          document={person.bio}
-          page={pathname}
-          games={games.filter((g) => g.data.type === "game").map((g) => g.data)}
-        />
-      </section>
-    )
-  }
-
-  {
-    pageData.length > 0 && (
-      <section>
-        <h5>Club Roles</h5>
-        <ul>
-          {pageData.map(([slug, role]) => (
-            <li>
-              <a
-                class="text-sm text-blue-900 underline"
-                href={
-                  slug.startsWith("page$")
-                    ? slug.substring("page$".length)
-                    : slug
-                }
-              >
-                {role}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </section>
-    )
-  }
 
   <PlayerStatsDeferred server:defer contentfulEntryId={contentfulEntryId}>
     <div slot="fallback" class="mt-8">

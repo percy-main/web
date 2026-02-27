@@ -12,6 +12,7 @@ import { membership } from "./membership";
 import { playCricket } from "./play-cricket";
 import { recordLinking } from "./record-linking";
 import { purchase } from "./purchase";
+import { playerSponsorship } from "./player-sponsorship";
 import { sponsorship } from "./sponsorship";
 import { subscribe } from "./subscribe";
 import { subscriptions } from "./subscriptions";
@@ -25,6 +26,7 @@ export const server = {
   addDependents,
   dependents,
   juniorManager,
+  playerSponsorship,
   purchase,
   sponsorship,
   subscribe,
