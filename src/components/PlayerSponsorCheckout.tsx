@@ -16,6 +16,7 @@ import {
   useQuery,
 } from "@tanstack/react-query";
 import { actions } from "astro:actions";
+import { formatPrice } from "@/lib/formatPrice";
 import { type ChangeEvent, type FC, useCallback, useState } from "react";
 import { PaymentForm } from "./PaymentForm";
 
@@ -169,10 +170,6 @@ const PlayerSponsorCheckoutInner: FC<Props> = ({
     staleTime: 5 * 60 * 1000,
   });
 
-  const formatPrice = (amountPence: number) => {
-    return `\u00A3${(amountPence / 100).toFixed(amountPence % 100 === 0 ? 0 : 2)}`;
-  };
-
   const isFormValid =
     sponsorName.trim().length > 0 &&
     sponsorEmail.trim().length > 0 &&
@@ -237,6 +234,16 @@ const PlayerSponsorCheckoutInner: FC<Props> = ({
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {priceQuery.isPending && (
+          <p className="text-sm text-gray-500">Loading price...</p>
+        )}
+        {priceQuery.isError && (
+          <Alert variant="destructive">
+            <AlertDescription>
+              Could not load pricing. Please refresh and try again.
+            </AlertDescription>
+          </Alert>
+        )}
         {priceQuery.data && (
           <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
             <strong>Price:</strong> {formatPrice(priceQuery.data.amountPence)}
