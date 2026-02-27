@@ -105,7 +105,7 @@ export const playCricket = {
             runs: parseInt(inn.runs, 10) || 0,
             wickets: parseInt(inn.wickets, 10) || 0,
             overs: inn.overs,
-            declared: inn.declared,
+            declared: inn.declared ?? false,
           },
         })),
       };
@@ -153,11 +153,13 @@ export const playCricket = {
         .execute();
 
       return {
-        teams: rows.map((r) => ({
-          id: r.id ?? "",
-          name: r.name,
-          isJunior: r.is_junior === 1,
-        })),
+        teams: rows
+          .filter((r) => r.id !== null)
+          .map((r) => ({
+            id: r.id!,
+            name: r.name,
+            isJunior: r.is_junior === 1,
+          })),
       };
     },
   }),

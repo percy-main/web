@@ -58,7 +58,7 @@ type InningsTotal = {
   runs: number;
   wickets: number;
   overs: string;
-  declared: boolean | null;
+  declared: boolean;
 };
 
 type ScorecardInnings = {
