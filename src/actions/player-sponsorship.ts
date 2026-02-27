@@ -137,6 +137,16 @@ export const playerSponsorship = {
         };
       } catch (err) {
         if (err instanceof ActionError) throw err;
+        // Handle unique constraint violation (race condition: two concurrent payments)
+        if (
+          err instanceof Error &&
+          err.message.includes("UNIQUE constraint failed")
+        ) {
+          throw new ActionError({
+            code: "BAD_REQUEST",
+            message: "This player already has a sponsor for this season.",
+          });
+        }
         console.error(err);
         throw new ActionError({
           code: "INTERNAL_SERVER_ERROR",

@@ -18,8 +18,6 @@ import { actions } from "astro:actions";
 import { type ChangeEvent, type FC, useCallback, useState } from "react";
 import { PaymentForm } from "./PaymentForm";
 
-const queryClient = new QueryClient();
-
 type Props = {
   contentfulEntryId: string;
   playerName: string;
@@ -37,7 +35,7 @@ type State =
   | { step: "success" };
 
 const MAX_MESSAGE_LENGTH = 100;
-const MAX_LOGO_SIZE_BYTES = 100_000;
+const MAX_LOGO_SIZE_BYTES = 150_000;
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -316,8 +314,11 @@ const PlayerSponsorCheckoutInner: FC<Props> = ({
   );
 };
 
-export const PlayerSponsorCheckout: FC<Props> = (props) => (
-  <QueryClientProvider client={queryClient}>
-    <PlayerSponsorCheckoutInner {...props} />
-  </QueryClientProvider>
-);
+export const PlayerSponsorCheckout: FC<Props> = (props) => {
+  const [queryClient] = useState(() => new QueryClient());
+  return (
+    <QueryClientProvider client={queryClient}>
+      <PlayerSponsorCheckoutInner {...props} />
+    </QueryClientProvider>
+  );
+};
