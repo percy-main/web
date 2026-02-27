@@ -18,7 +18,7 @@ const { id, item } = Astro.props;
   >
     {
       match(item)
-        .with({ type: "game" }, (game) => <GamePreview game={game} id={id} />)
+        .with({ type: "game" }, (game) => <GamePreview client:load game={game} id={id} />)
         .with({ type: "event" }, (event) => (
           <EventPreview event={event} id={id} />
         ))

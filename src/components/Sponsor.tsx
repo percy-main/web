@@ -30,6 +30,8 @@ function SponsorInner({ id, when, ssrSponsor }: Props) {
       return result.data;
     },
     initialData: ssrSponsor ? { sponsor: ssrSponsor } : undefined,
+    initialDataUpdatedAt: ssrSponsor ? 0 : undefined,
+    staleTime: 5 * 60 * 1000,
   });
 
   const sponsor = data?.sponsor ?? ssrSponsor;
