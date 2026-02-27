@@ -58,7 +58,7 @@ type GameOption = {
 };
 
 const MAX_MESSAGE_LENGTH = 100;
-const MAX_LOGO_SIZE_BYTES = 100_000;
+const MAX_LOGO_SIZE_BYTES = 150_000;
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -489,7 +489,7 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
   const [editingLogo, setEditingLogo] = useState(false);
   const [newLogoDataUrl, setNewLogoDataUrl] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
+
 
   const sponsorshipId = sponsorship.id ?? "";
 
@@ -614,7 +614,6 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
                 />
               ) : null}
               <input
-                ref={logoInputRef}
                 type="file"
                 accept="image/*"
                 onChange={(e) => void handleLogoFileChange(e)}
@@ -827,7 +826,7 @@ const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
   const [editingLogo, setEditingLogo] = useState(false);
   const [newLogoDataUrl, setNewLogoDataUrl] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
+
 
   const sponsorshipId = sponsorship.id ?? "";
 
@@ -946,7 +945,6 @@ const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
                 />
               ) : null}
               <input
-                ref={logoInputRef}
                 type="file"
                 accept="image/*"
                 onChange={(e) => void handleLogoFileChange(e)}
