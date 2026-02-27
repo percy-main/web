@@ -154,9 +154,9 @@ export const playCricket = {
 
       return {
         teams: rows
-          .filter((r) => r.id !== null)
+          .filter((r): r is typeof r & { id: string } => r.id !== null)
           .map((r) => ({
-            id: r.id!,
+            id: r.id,
             name: r.name,
             isJunior: r.is_junior === 1,
           })),

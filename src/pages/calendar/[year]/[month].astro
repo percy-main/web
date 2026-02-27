@@ -60,29 +60,29 @@ export const getStaticPaths = (async () => {
     [PLAY_CRICKET_2XI_ID]: 1,
   };
 
+  const itemsWithDates = calendarItems.filter(
+    (item): item is typeof item & { data: { when: Date } } => item.data.when != null,
+  );
+
   const calendarItemGroups = _.groupBy(
-    calendarItems
-      .filter(({ data }) => data.when != null)
-      .sort(({ data: g1 }, { data: g2 }) => {
-        const g1When = g1.when!;
-        const g2When = g2.when!;
-        const g1D = getDate(g1When);
-        const g2D = getDate(g2When);
+    itemsWithDates.sort(({ data: g1 }, { data: g2 }) => {
+      const g1D = getDate(g1.when);
+      const g2D = getDate(g2.when);
 
-        if (g1D === g2D) {
-          if (g1.type === "game" && g2.type === "game") {
-            const t1 = teamOrder[g1.team.id] ?? 0;
-            const t2 = teamOrder[g2.team.id] ?? 0;
+      if (g1D === g2D) {
+        if (g1.type === "game" && g2.type === "game") {
+          const t1 = teamOrder[g1.team.id] ?? 0;
+          const t2 = teamOrder[g2.team.id] ?? 0;
 
-            return t2 - t1;
-          }
-
-          return g1.type === "game" ? 1 : -1;
+          return t2 - t1;
         }
 
-        return compareAsc(g1When, g2When);
-      }),
-    (item) => `${getYear(item.data.when!)}-${getMonth(item.data.when!)}`,
+        return g1.type === "game" ? 1 : -1;
+      }
+
+      return compareAsc(g1.when, g2.when);
+    }),
+    (item) => `${getYear(item.data.when)}-${getMonth(item.data.when)}`,
   );
 
   const now = new Date();

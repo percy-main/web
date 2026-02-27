@@ -655,7 +655,7 @@ function DetailModal({
           const term = linkSearch.toLowerCase().trim();
           return (
             p.name.toLowerCase().includes(term) ||
-            p.slug?.toLowerCase().includes(term) ||
+            (p.slug?.toLowerCase().includes(term) ?? false) ||
             p.score > 0.3
           );
         }

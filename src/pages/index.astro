@@ -24,10 +24,13 @@ const teamOrder: Record<string, number> = {
   [PLAY_CRICKET_2XI_ID]: 1,
 };
 
-const next5calendarItems = calendarItems
-  .filter(({ data }) => data.when != null)
+const itemsWithDates = calendarItems.filter(
+  (item): item is typeof item & { data: { when: Date } } => item.data.when != null,
+);
+
+const next5calendarItems = itemsWithDates
   .sort(({ data: g1 }, { data: g2 }) => {
-    if (isSameDay(g1.when!, g2.when!)) {
+    if (isSameDay(g1.when, g2.when)) {
       if (g1.type === "game" && g2.type === "game") {
         const t1 = teamOrder[g1.team.id] ?? 0;
         const t2 = teamOrder[g2.team.id] ?? 0;
@@ -38,9 +41,9 @@ const next5calendarItems = calendarItems
       return g1.type === "game" ? 1 : -1;
     }
 
-    return compareAsc(g1.when!, g2.when!);
+    return compareAsc(g1.when, g2.when);
   })
-  .filter(({ data }) => isAfter(data.when!, new Date()))
+  .filter(({ data }) => isAfter(data.when, new Date()))
   .slice(0, 5);
 
 const people = await getCollection("person");

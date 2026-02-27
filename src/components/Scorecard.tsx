@@ -109,7 +109,7 @@ function formatDismissal(entry: BattingEntry): string {
     case "dnb":
       return "did not bat";
     default:
-      return howOut || "unknown";
+      return howOut ?? "unknown";
   }
 }
 
