@@ -545,7 +545,7 @@ export const admin = {
     roles: ["admin"],
     input: z.object({
       page: z.number().int().min(1),
-      pageSize: z.number().int().min(1).max(200),
+      pageSize: z.number().int().min(1).max(100),
       search: z.string().optional(),
       sex: z.enum(["all", "male", "female"]).default("all"),
       ageGroup: z.enum(["all", ...AGE_GROUPS]).default("all"),

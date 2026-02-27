@@ -62,6 +62,7 @@ export function JuniorsTable() {
     }
     debounceTimerRef.current = setTimeout(() => {
       setDebouncedSearch(search);
+      setPage(1);
     }, 300);
     return () => {
       if (debounceTimerRef.current) {
@@ -69,11 +70,6 @@ export function JuniorsTable() {
       }
     };
   }, [search]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, ageGroupFilter, sexFilter, membershipFilter]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: [
@@ -144,9 +140,10 @@ export function JuniorsTable() {
         />
         <select
           value={ageGroupFilter}
-          onChange={(e) =>
-            setAgeGroupFilter(e.target.value as AgeGroup | "all")
-          }
+          onChange={(e) => {
+            setAgeGroupFilter(e.target.value as AgeGroup | "all");
+            setPage(1);
+          }}
           className="rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="all">All Age Groups</option>
@@ -158,7 +155,10 @@ export function JuniorsTable() {
         </select>
         <select
           value={sexFilter}
-          onChange={(e) => setSexFilter(e.target.value as SexFilter)}
+          onChange={(e) => {
+            setSexFilter(e.target.value as SexFilter);
+            setPage(1);
+          }}
           className="rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="all">All Genders</option>
@@ -167,9 +167,10 @@ export function JuniorsTable() {
         </select>
         <select
           value={membershipFilter}
-          onChange={(e) =>
-            setMembershipFilter(e.target.value as MembershipFilter)
-          }
+          onChange={(e) => {
+            setMembershipFilter(e.target.value as MembershipFilter);
+            setPage(1);
+          }}
           className="rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
           <option value="all">All Memberships</option>
