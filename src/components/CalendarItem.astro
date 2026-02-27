@@ -28,7 +28,14 @@ const { id, title, calendarItem } = Astro.props;
   >
     {
       match(calendarItem)
-        .with({ type: "game" }, (game) => <Sponsor id={id} game={game} />)
+        .with({ type: "game" }, (game) => (
+          <Sponsor
+            client:load
+            id={id}
+            when={game.when ? game.when.toISOString() : null}
+            ssrSponsor={game.sponsor}
+          />
+        ))
         .with({ type: "event" }, (event) => (
           <RichText
             client:load
