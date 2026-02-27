@@ -181,7 +181,7 @@ async function hashPasswordForBetterAuth(password) {
   const { bytesToHex } = await import("@noble/hashes/utils.js");
   const { randomBytes } = await import("node:crypto");
 
-  const salt = randomBytes(16).toString("hex");
+  const salt = bytesToHex(randomBytes(16));
   const key = await scryptAsync(password.normalize("NFKC"), salt, {
     N: 16384,
     r: 16,
@@ -252,7 +252,7 @@ async function seedPreviewAdmin(url, authToken) {
       })
       .execute();
 
-    console.log(`Preview admin seeded — email: ${email}, password: ${password}`);
+    console.log(`Preview admin seeded — email: ${email}`);
   } finally {
     await db.destroy();
   }
