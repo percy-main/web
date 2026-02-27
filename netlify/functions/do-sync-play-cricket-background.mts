@@ -33,10 +33,7 @@ export const handler: Handler = async (event) => {
       siteId,
       dbUrl,
       dbToken,
-      // Temporarily sync all historical seasons (2000-2025) for all-time leaderboards.
-      // Current year (2026) is automatically included by runSync.
-      // Revert to [] after historical sync completes successfully.
-      extraSeasons: Array.from({ length: 26 }, (_, i) => 2000 + i),
+      extraSeasons: [],
     });
 
     return {
