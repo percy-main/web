@@ -486,6 +486,10 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
   const [displayName, setDisplayName] = useState(
     sponsorship.displayName ?? "",
   );
+  const [editingLogo, setEditingLogo] = useState(false);
+  const [newLogoDataUrl, setNewLogoDataUrl] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const sponsorshipId = sponsorship.id ?? "";
 
@@ -510,7 +514,11 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: { displayName?: string; notes?: string }) =>
+    mutationFn: (data: {
+      displayName?: string;
+      notes?: string;
+      sponsorLogoDataUrl?: string | null;
+    }) =>
       actions.sponsorship.update({
         sponsorshipId,
         ...data,
@@ -518,9 +526,36 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
     onSuccess: () => {
       setEditingNotes(false);
       setEditingDisplayName(false);
+      setEditingLogo(false);
+      setNewLogoDataUrl(null);
+      setLogoError(null);
       void queryClient.invalidateQueries({ queryKey: ["admin", "sponsorships"] });
     },
   });
+
+  const handleLogoFileChange = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      setLogoError(null);
+      const file = e.target.files?.[0];
+      if (!file) {
+        setNewLogoDataUrl(null);
+        return;
+      }
+      if (!file.type.startsWith("image/")) {
+        setLogoError("Please select an image file");
+        return;
+      }
+      try {
+        const dataUrl = await resizeImage(file, MAX_LOGO_SIZE_BYTES);
+        setNewLogoDataUrl(dataUrl);
+      } catch (err) {
+        setLogoError(
+          err instanceof Error ? err.message : "Failed to process image",
+        );
+      }
+    },
+    [],
+  );
 
   const getStatusBadge = () => {
     if (!sponsorship.paidAt) {
@@ -563,12 +598,85 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
               {sponsorship.sponsorWebsite}
             </a>
           )}
-          {sponsorship.sponsorLogoUrl && (
-            <img
-              src={sponsorship.sponsorLogoUrl}
-              alt="Sponsor logo"
-              className="mt-1 h-8 max-w-[80px] object-contain"
-            />
+          {editingLogo ? (
+            <div className="mt-1 flex flex-col gap-1">
+              {newLogoDataUrl ? (
+                <img
+                  src={newLogoDataUrl}
+                  alt="Logo preview"
+                  className="h-8 max-w-[80px] object-contain"
+                />
+              ) : sponsorship.sponsorLogoUrl ? (
+                <img
+                  src={sponsorship.sponsorLogoUrl}
+                  alt="Logo preview"
+                  className="h-8 max-w-[80px] object-contain"
+                />
+              ) : null}
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => void handleLogoFileChange(e)}
+                className="w-40 text-xs"
+              />
+              {logoError && (
+                <p className="text-xs text-red-600">{logoError}</p>
+              )}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  className="h-6 px-2 text-xs"
+                  onClick={() =>
+                    updateMutation.mutate({
+                      sponsorLogoDataUrl: newLogoDataUrl,
+                    })
+                  }
+                  disabled={!newLogoDataUrl || updateMutation.isPending}
+                >
+                  Save
+                </Button>
+                {sponsorship.sponsorLogoUrl && (
+                  <Button
+                    variant="outline"
+                    className="h-6 px-2 text-xs text-red-600"
+                    onClick={() =>
+                      updateMutation.mutate({ sponsorLogoDataUrl: null })
+                    }
+                    disabled={updateMutation.isPending}
+                  >
+                    Remove
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => {
+                    setEditingLogo(false);
+                    setNewLogoDataUrl(null);
+                    setLogoError(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {sponsorship.sponsorLogoUrl && (
+                <img
+                  src={sponsorship.sponsorLogoUrl}
+                  alt="Sponsor logo"
+                  className="mt-1 h-8 max-w-[80px] object-contain"
+                />
+              )}
+              <button
+                onClick={() => setEditingLogo(true)}
+                className="text-left text-xs text-blue-600 hover:underline"
+              >
+                {sponsorship.sponsorLogoUrl ? "Change logo" : "Add logo"}
+              </button>
+            </>
           )}
         </div>
       </TableCell>
@@ -716,6 +824,10 @@ const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
   const [displayName, setDisplayName] = useState(
     sponsorship.displayName ?? "",
   );
+  const [editingLogo, setEditingLogo] = useState(false);
+  const [newLogoDataUrl, setNewLogoDataUrl] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const sponsorshipId = sponsorship.id ?? "";
 
@@ -740,16 +852,47 @@ const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: { displayName?: string; notes?: string }) =>
+    mutationFn: (data: {
+      displayName?: string;
+      notes?: string;
+      sponsorLogoDataUrl?: string | null;
+    }) =>
       actions.playerSponsorship.update({ sponsorshipId, ...data }),
     onSuccess: () => {
       setEditingNotes(false);
       setEditingDisplayName(false);
+      setEditingLogo(false);
+      setNewLogoDataUrl(null);
+      setLogoError(null);
       void queryClient.invalidateQueries({
         queryKey: ["admin", "playerSponsorships"],
       });
     },
   });
+
+  const handleLogoFileChange = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      setLogoError(null);
+      const file = e.target.files?.[0];
+      if (!file) {
+        setNewLogoDataUrl(null);
+        return;
+      }
+      if (!file.type.startsWith("image/")) {
+        setLogoError("Please select an image file");
+        return;
+      }
+      try {
+        const dataUrl = await resizeImage(file, MAX_LOGO_SIZE_BYTES);
+        setNewLogoDataUrl(dataUrl);
+      } catch (err) {
+        setLogoError(
+          err instanceof Error ? err.message : "Failed to process image",
+        );
+      }
+    },
+    [],
+  );
 
   const getStatusBadge = () => {
     if (!sponsorship.paidAt) {
@@ -787,12 +930,85 @@ const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
               {sponsorship.sponsorWebsite}
             </a>
           )}
-          {sponsorship.sponsorLogoUrl && (
-            <img
-              src={sponsorship.sponsorLogoUrl}
-              alt="Sponsor logo"
-              className="mt-1 h-8 max-w-[80px] object-contain"
-            />
+          {editingLogo ? (
+            <div className="mt-1 flex flex-col gap-1">
+              {newLogoDataUrl ? (
+                <img
+                  src={newLogoDataUrl}
+                  alt="Logo preview"
+                  className="h-8 max-w-[80px] object-contain"
+                />
+              ) : sponsorship.sponsorLogoUrl ? (
+                <img
+                  src={sponsorship.sponsorLogoUrl}
+                  alt="Logo preview"
+                  className="h-8 max-w-[80px] object-contain"
+                />
+              ) : null}
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => void handleLogoFileChange(e)}
+                className="w-40 text-xs"
+              />
+              {logoError && (
+                <p className="text-xs text-red-600">{logoError}</p>
+              )}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  className="h-6 px-2 text-xs"
+                  onClick={() =>
+                    updateMutation.mutate({
+                      sponsorLogoDataUrl: newLogoDataUrl,
+                    })
+                  }
+                  disabled={!newLogoDataUrl || updateMutation.isPending}
+                >
+                  Save
+                </Button>
+                {sponsorship.sponsorLogoUrl && (
+                  <Button
+                    variant="outline"
+                    className="h-6 px-2 text-xs text-red-600"
+                    onClick={() =>
+                      updateMutation.mutate({ sponsorLogoDataUrl: null })
+                    }
+                    disabled={updateMutation.isPending}
+                  >
+                    Remove
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => {
+                    setEditingLogo(false);
+                    setNewLogoDataUrl(null);
+                    setLogoError(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {sponsorship.sponsorLogoUrl && (
+                <img
+                  src={sponsorship.sponsorLogoUrl}
+                  alt="Sponsor logo"
+                  className="mt-1 h-8 max-w-[80px] object-contain"
+                />
+              )}
+              <button
+                onClick={() => setEditingLogo(true)}
+                className="text-left text-xs text-blue-600 hover:underline"
+              >
+                {sponsorship.sponsorLogoUrl ? "Change logo" : "Add logo"}
+              </button>
+            </>
           )}
         </div>
       </TableCell>

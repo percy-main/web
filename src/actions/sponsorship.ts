@@ -281,14 +281,28 @@ export const sponsorship = {
       sponsorshipId: z.string(),
       displayName: z.string().optional(),
       notes: z.string().optional(),
+      sponsorLogoDataUrl: z.string().nullable().optional(),
     }),
-    handler: async ({ sponsorshipId, displayName, notes }) => {
+    handler: async ({ sponsorshipId, displayName, notes, sponsorLogoDataUrl }) => {
+      if (
+        sponsorLogoDataUrl &&
+        sponsorLogoDataUrl.length > MAX_LOGO_SIZE_BYTES
+      ) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Logo image is too large. Please use an image under 150KB.",
+        });
+      }
+
       const updates: Record<string, string | null> = {};
       if (displayName !== undefined) {
         updates.display_name = displayName || null;
       }
       if (notes !== undefined) {
         updates.notes = notes || null;
+      }
+      if (sponsorLogoDataUrl !== undefined) {
+        updates.sponsor_logo_url = sponsorLogoDataUrl;
       }
 
       if (Object.keys(updates).length > 0) {
