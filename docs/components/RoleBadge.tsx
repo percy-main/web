@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cn, useDoxla } from "doxla";
 
 const roleColors = {

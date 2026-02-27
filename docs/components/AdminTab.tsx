@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cn, useDoxla } from "doxla";
 
 export default function AdminTab({
@@ -5,7 +6,7 @@ export default function AdminTab({
   children,
 }: {
   name: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }) {
   const { theme } = useDoxla();
 

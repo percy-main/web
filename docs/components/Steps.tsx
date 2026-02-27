@@ -1,6 +1,7 @@
+import type { ReactNode } from "react";
 import { cn, useDoxla } from "doxla";
 
-export default function Steps({ children }: { children: React.ReactNode }) {
+export default function Steps({ children }: { children: ReactNode }) {
   const { theme } = useDoxla();
 
   return (
