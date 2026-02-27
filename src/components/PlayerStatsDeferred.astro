@@ -1,0 +1,91 @@
+---
+import { actions } from "astro:actions";
+import { PlayerSeasonSelector } from "./PlayerSeasonSelector";
+
+type Props = {
+  contentfulEntryId: string;
+};
+
+const { contentfulEntryId } = Astro.props;
+
+const { data: careerData, error: careerError } = await Astro.callAction(
+  actions.playCricket.getPlayerCareerStats,
+  { contentfulEntryId },
+);
+
+if (careerError) {
+  console.error("Failed to fetch player career stats:", careerError);
+}
+
+if (!careerData?.career) return;
+
+const { career, seasons } = careerData;
+const initialSeason = seasons[0] ?? null;
+
+let initialSeasonData = null;
+if (initialSeason !== null) {
+  const { data, error: seasonError } = await Astro.callAction(
+    actions.playCricket.getPlayerSeasonStats,
+    { contentfulEntryId, season: initialSeason },
+  );
+  if (seasonError) {
+    console.error("Failed to fetch player season stats:", seasonError);
+  }
+  initialSeasonData = data ?? null;
+}
+---
+
+<section class="mt-8">
+  <h5>Cricket Statistics</h5>
+
+  {/* Career headline stats — pure HTML, no JS */}
+  <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+    <div
+      class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-center"
+    >
+      <p class="text-lg font-bold text-green-800">{career.matches}</p>
+      <p class="text-xs text-gray-500">Matches</p>
+    </div>
+    <div
+      class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-center"
+    >
+      <p class="text-lg font-bold text-green-800">{career.runs}</p>
+      <p class="text-xs text-gray-500">Total Runs</p>
+    </div>
+    <div
+      class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-center"
+    >
+      <p class="text-lg font-bold text-green-800">{career.wickets}</p>
+      <p class="text-xs text-gray-500">Total Wickets</p>
+    </div>
+    {
+      career.highScore !== null && (
+        <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-center">
+          <p class="text-lg font-bold text-green-800">{career.highScore}</p>
+          <p class="text-xs text-gray-500">High Score</p>
+        </div>
+      )
+    }
+    {
+      career.bestBowling !== null && (
+        <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-center">
+          <p class="text-lg font-bold text-green-800">{career.bestBowling}</p>
+          <p class="text-xs text-gray-500">Best Bowling</p>
+        </div>
+      )
+    }
+  </div>
+
+  {/* Interactive season selector — React island */}
+  {
+    seasons.length > 0 && initialSeason !== null && (
+      <PlayerSeasonSelector
+        client:load
+        contentfulEntryId={contentfulEntryId}
+        seasons={seasons}
+        initialSeason={initialSeason}
+        initialSeasonData={initialSeasonData}
+      />
+    )
+  }
+</section>
