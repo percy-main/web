@@ -17,17 +17,11 @@ jobs:
           TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
           TURSO_ORG: percymain
         run: |
-          BRANCH="${{ github.head_ref }}"
-
-          # Sanitise to match the naming convention in the Netlify build plugin
-          SANITIZED=$(echo "$BRANCH" \
-            | tr '[:upper:]' '[:lower:]' \
-            | sed 's/[^a-z0-9-]/-/g' \
-            | sed 's/-\+/-/g' \
-            | sed 's/^-\|-$//g' \
-            | cut -c1-46)
-
-          DB_NAME="preview-${SANITIZED}"
+          # Netlify sets BRANCH to "pull/<number>/head" for deploy previews,
+          # which the migrate plugin sanitises to "pull-<number>-head".
+          # Use the PR number directly to match that convention.
+          PR_NUMBER="${{ github.event.number }}"
+          DB_NAME="preview-pull-${PR_NUMBER}-head"
 
           echo "Deleting preview database: ${DB_NAME}"
 
