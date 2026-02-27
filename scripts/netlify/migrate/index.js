@@ -21,8 +21,10 @@ function sanitizeBranchName(branch) {
 }
 
 /**
- * Create (or reuse) a Turso database branched from the deploy-preview DB.
- * TURSO_DB_NAME should be set to the shared preview database name.
+ * Create (or reuse) a Turso database branched from the production DB.
+ * TURSO_SEED_DB_NAME should be set to the production database name so that
+ * deploy previews get realistic data.  Falls back to TURSO_DB_NAME (the
+ * shared preview DB) for backward compatibility.
  * Returns the libsql:// URL for the branch, or null if branching is
  * not configured / fails.
  */
@@ -30,11 +32,12 @@ async function ensureBranchDatabase(branch) {
   const apiToken = process.env.TURSO_API_TOKEN;
   const org = process.env.TURSO_ORG;
   const parentDb = process.env.TURSO_DB_NAME;
+  const seedDb = process.env.TURSO_SEED_DB_NAME || parentDb;
   const group = process.env.TURSO_GROUP || "default";
 
-  if (!apiToken || !org || !parentDb) {
+  if (!apiToken || !org || !seedDb) {
     console.log(
-      "Turso branching env vars not configured (TURSO_API_TOKEN, TURSO_ORG, TURSO_DB_NAME) — using shared preview DB",
+      "Turso branching env vars not configured (TURSO_API_TOKEN, TURSO_ORG, TURSO_SEED_DB_NAME or TURSO_DB_NAME) — using shared preview DB",
     );
     return null;
   }
@@ -53,19 +56,22 @@ async function ensureBranchDatabase(branch) {
   if (checkRes.ok) {
     const data = await checkRes.json();
     const hostname = data.database?.Hostname || data.database?.hostname;
-    console.log(`Reusing existing branch database: ${hostname}`);
+    console.log(
+      `Reusing existing branch database: ${hostname}. ` +
+        `If seeded before TURSO_SEED_DB_NAME was configured, close and reopen the PR to reseed from production.`,
+    );
     return `libsql://${hostname}`;
   }
 
-  // Create branch DB seeded from the shared deploy-preview DB
-  console.log(`Creating branch database "${dbName}" from "${parentDb}"...`);
+  // Create branch DB seeded from the production DB (or shared preview DB as fallback)
+  console.log(`Creating branch database "${dbName}" seeded from "${seedDb}"...`);
   const createRes = await fetch(baseUrl, {
     method: "POST",
     headers,
     body: JSON.stringify({
       name: dbName,
       group,
-      seed: { type: "database", name: parentDb },
+      seed: { type: "database", name: seedDb },
     }),
   });
 
