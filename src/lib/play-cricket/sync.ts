@@ -137,21 +137,26 @@ async function syncMatches(
     }
   }
 
-  // Step 3: Fetch and store match detail for each match
+  // Step 3: Load already-processed match IDs in one query
+  const [processedBat, processedBowl] = await Promise.all([
+    db.execute({ sql: `SELECT DISTINCT match_id FROM match_performance_batting`, args: [] }),
+    db.execute({ sql: `SELECT DISTINCT match_id FROM match_performance_bowling`, args: [] }),
+  ]);
+  const processedMatchIds = new Set<string>();
+  for (const row of processedBat.rows) {
+    processedMatchIds.add(row.match_id as string);
+  }
+  for (const row of processedBowl.rows) {
+    processedMatchIds.add(row.match_id as string);
+  }
+  console.log(`Found ${processedMatchIds.size} already-processed matches — skipping those`);
+
+  // Step 4: Fetch and store match detail for each match
   for (const { match, season } of allMatches) {
     const matchId = match.id.toString();
 
     try {
-      // Skip matches we've already processed
-      const existingBat = await db.execute({
-        sql: `SELECT 1 FROM match_performance_batting WHERE match_id = ? LIMIT 1`,
-        args: [matchId],
-      });
-      const existingBowl = await db.execute({
-        sql: `SELECT 1 FROM match_performance_bowling WHERE match_id = ? LIMIT 1`,
-        args: [matchId],
-      });
-      if (existingBat.rows.length > 0 || existingBowl.rows.length > 0) {
+      if (processedMatchIds.has(matchId)) {
         continue;
       }
 
