@@ -13,6 +13,7 @@ import {
   useQuery,
 } from "@tanstack/react-query";
 import { actions } from "astro:actions";
+import { fetchLeaderboard } from "@/lib/leaderboard-client";
 import { useState } from "react";
 
 type PersonProfile = {
@@ -114,22 +115,18 @@ function SeasonLeadersInner({
   const battingQuery = useQuery({
     queryKey: ["season-leaders-batting", season],
     queryFn: async () => {
-      const primary = await actions.playCricket.getBattingLeaderboard({
+      const primary = await fetchLeaderboard("batting", {
         season,
-        isJunior: false,
         limit: 3,
       });
-      if (primary.error) throw primary.error;
-      if (primary.data && primary.data.entries.length > 0) {
-        return { data: primary.data, season };
+      if (primary.entries.length > 0) {
+        return { data: primary, season };
       }
-      const fallback = await actions.playCricket.getBattingLeaderboard({
+      const fallback = await fetchLeaderboard("batting", {
         season: season - 1,
-        isJunior: false,
         limit: 3,
       });
-      if (fallback.error) throw fallback.error;
-      return { data: fallback.data, season: season - 1 };
+      return { data: fallback, season: season - 1 };
     },
     staleTime: 10 * 60 * 1000,
   });
@@ -137,22 +134,18 @@ function SeasonLeadersInner({
   const bowlingQuery = useQuery({
     queryKey: ["season-leaders-bowling", season],
     queryFn: async () => {
-      const primary = await actions.playCricket.getBowlingLeaderboard({
+      const primary = await fetchLeaderboard("bowling", {
         season,
-        isJunior: false,
         limit: 3,
       });
-      if (primary.error) throw primary.error;
-      if (primary.data && primary.data.entries.length > 0) {
-        return { data: primary.data, season };
+      if (primary.entries.length > 0) {
+        return { data: primary, season };
       }
-      const fallback = await actions.playCricket.getBowlingLeaderboard({
+      const fallback = await fetchLeaderboard("bowling", {
         season: season - 1,
-        isJunior: false,
         limit: 3,
       });
-      if (fallback.error) throw fallback.error;
-      return { data: fallback.data, season: season - 1 };
+      return { data: fallback, season: season - 1 };
     },
     staleTime: 10 * 60 * 1000,
   });

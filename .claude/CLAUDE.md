@@ -87,6 +87,7 @@ When beginning work on a ticket, follow these steps:
 
 8. **Review the PR**
    - Use an appropriate agent (e.g., **code-reviewer**) to review the PR
+   - **Always instruct the reviewer to read files locally** (using Read/Glob/Grep tools) rather than fetching from GitHub via WebFetch — local reads are much faster
    - The subagent cannot post comments themselves, so ask for their review to be provided in a structured form
    - The supervising agent should ensure the review is posted on the PR
    - Comments MUST BE recorded on the pull request itself - check if the code-reviewer has recorded their comments, and if not, record them yourself. Use one comment per issue, ideally linked to the specific line of code, unless it is a broader more general comment.
