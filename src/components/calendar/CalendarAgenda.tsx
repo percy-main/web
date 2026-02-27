@@ -731,7 +731,7 @@ export function CalendarAgenda({
           ) : (
             grouped.map((group, i) => (
               <div key={group.dateStr}>
-                {dividerIndex === i - 1 && <PastUpcomingDivider />}
+                {dividerIndex >= 0 && dividerIndex === i - 1 && <PastUpcomingDivider />}
                 <DateGroup dateStr={group.dateStr} items={group.items} />
               </div>
             ))
