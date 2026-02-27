@@ -55,15 +55,17 @@ const timeStr = item.when ? formatDate(item.when, "h:mm a") : "";
   {timeStr && <p class="mt-1 text-xs text-gray-500">{timeStr}</p>}
   {
     item.type === "game" && item.sponsor && (
-      <div class="mt-auto flex items-center gap-1.5 border-t border-gray-100 pt-2 mt-2">
+      <div class="mt-auto flex items-center gap-1.5 border-t border-gray-100 pt-2">
         {item.sponsor.logoUrl ? (
           <img
             src={item.sponsor.logoUrl}
             alt={`Sponsored by ${item.sponsor.name}`}
+            width="60"
+            height="24"
             class="h-6 max-w-[60px] object-contain"
           />
         ) : (
-          <span class="text-[10px] font-medium text-gray-500 leading-tight truncate">
+          <span class="min-w-0 text-[10px] font-medium text-gray-500 leading-tight truncate">
             {item.sponsor.name}
           </span>
         )}
