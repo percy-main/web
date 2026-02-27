@@ -52,7 +52,7 @@ type PlayCricketPlayer = {
 type ContentfulPerson = {
   id: string;
   name: string;
-  slug: string;
+  slug?: string;
   photoUrl: string | null;
 };
 
@@ -655,7 +655,7 @@ function DetailModal({
           const term = linkSearch.toLowerCase().trim();
           return (
             p.name.toLowerCase().includes(term) ||
-            p.slug.toLowerCase().includes(term) ||
+            p.slug?.toLowerCase().includes(term) ||
             p.score > 0.3
           );
         }

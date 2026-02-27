@@ -23,7 +23,7 @@ export function normalizeName(name: string): string {
 function levenshtein(a: string, b: string): number {
   const m = a.length;
   const n = b.length;
-  const dp: number[][] = Array.from<number[], [number]>({ length: m + 1 }, () =>
+  const dp: number[][] = Array.from({ length: m + 1 }, () =>
     new Array<number>(n + 1).fill(0),
   );
 

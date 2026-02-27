@@ -4,6 +4,6 @@ import type { Kysely } from "kysely";
 // cleaned up via the admin merge tool. This file exists to keep migration
 // history consistent with deploy-preview branch databases.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function up(db: Kysely<unknown>): Promise<void> {
+export async function up(_db: Kysely<unknown>): Promise<void> {
   // intentionally empty
 }

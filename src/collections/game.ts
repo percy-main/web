@@ -124,7 +124,7 @@ export function buildInnings(
       runs,
       wickets,
       overs: inn.overs,
-      declared: inn.declared,
+      declared: inn.declared ?? false,
       allOut: wickets >= 10,
     };
   });

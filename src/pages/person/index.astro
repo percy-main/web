@@ -28,7 +28,7 @@ function walkNodes(node: Node) {
   }
   if ("content" in node && Array.isArray(node.content)) {
     for (const child of node.content) {
-      walkNodes(child);
+      walkNodes(child as Node);
     }
   }
 }

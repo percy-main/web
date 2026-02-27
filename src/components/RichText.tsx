@@ -151,24 +151,24 @@ const renderOptions = (page: string, games: Game[]): Options => ({
     [BLOCKS.EMBEDDED_ASSET]: (node) => {
       return renderEmbeddedAsset(node.data.target);
     },
-    [BLOCKS.UL_LIST]: (node, children) => {
+    [BLOCKS.UL_LIST]: (_node, children) => {
       return (
         <ul className="ml-4 list-disc has-[div.person]:ml-0 has-[div.person]:grid has-[div.person]:w-full has-[div.person]:list-none has-[div.person]:grid-cols-1 has-[div.person]:gap-4 sm:has-[div.person]:grid-cols-2 lg:has-[div.person]:grid-cols-4 [&>li]:mb-6 [&>li>ul]:list-[circle]">
           {children}
         </ul>
       );
     },
-    [BLOCKS.OL_LIST]: (node, children) => {
+    [BLOCKS.OL_LIST]: (_node, children) => {
       return <ol className="rich">{children}</ol>;
     },
-    [BLOCKS.QUOTE]: (node, children) => {
+    [BLOCKS.QUOTE]: (_node, children) => {
       return (
         <blockquote className="rounded-lg border-l-4 border-cta bg-white p-6 shadow-sm [&>div:last-child]:mt-2 [&>div:last-child]:text-sm [&>div:last-child]:not-italic">
           {children}
         </blockquote>
       );
     },
-    [BLOCKS.PARAGRAPH]: (node, children) => {
+    [BLOCKS.PARAGRAPH]: (_node, children) => {
       return <div>{children}</div>;
     },
     [INLINES.HYPERLINK]: (node, children) => {

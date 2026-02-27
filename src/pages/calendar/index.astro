@@ -1,11 +1,7 @@
 ---
 export const prerender = false;
 
-import { formatDate } from "date-fns";
-
-const now = new Date();
-
 return Astro.redirect(
-  `/calendar/${formatDate(now, "yyyy").toLocaleLowerCase()}/${formatDate(now, "MMMM").toLocaleLowerCase()}`,
+  `/calendar/${new Date().getFullYear()}/${new Date().toLocaleString("en-GB", { month: "long" }).toLowerCase()}`,
 );
 ---

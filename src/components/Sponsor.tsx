@@ -29,7 +29,16 @@ function SponsorInner({ id, when, ssrSponsor }: Props) {
       if (result.error) throw result.error;
       return result.data;
     },
-    initialData: ssrSponsor ? { sponsor: ssrSponsor } : undefined,
+    initialData: ssrSponsor
+      ? {
+          sponsor: {
+            name: ssrSponsor.name,
+            logoUrl: ssrSponsor.logoUrl,
+            message: ssrSponsor.message,
+            website: ssrSponsor.website,
+          },
+        }
+      : undefined,
     initialDataUpdatedAt: ssrSponsor ? 0 : undefined,
     staleTime: 5 * 60 * 1000,
   });

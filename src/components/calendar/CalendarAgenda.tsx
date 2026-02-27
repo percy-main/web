@@ -587,15 +587,7 @@ export function CalendarAgenda({
     return -1;
   }, [grouped]);
 
-  // Deserialise calendarDays dates (they come as strings from SSG)
-  const parsedCalendarDays = useMemo(
-    () =>
-      calendarDays.map((d) => ({
-        ...d,
-        date: new Date(d.date),
-      })),
-    [calendarDays],
-  );
+
 
   const totalFixtures = items.filter((i) => i.type === "game").length;
   const totalResults = items.filter((i) => i.outcome).length;
@@ -688,7 +680,7 @@ export function CalendarAgenda({
         <aside className="hidden w-64 shrink-0 lg:block">
           <div className="sticky top-4 space-y-4">
             <MiniCalendar
-              calendarDays={parsedCalendarDays}
+              calendarDays={calendarDays}
               selectedDay={selectedDay}
               onDayClick={handleDayClick}
               monthNumber={monthNumber}

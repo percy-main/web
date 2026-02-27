@@ -19,9 +19,9 @@ type BattingEntry = {
   position: number;
   name: string;
   id: string;
-  howOut: string;
-  fielderName: string;
-  bowlerName: string;
+  howOut: string | null | undefined;
+  fielderName: string | null | undefined;
+  bowlerName: string | null | undefined;
   runs: number;
   balls: number;
   fours: number;
@@ -58,7 +58,7 @@ type InningsTotal = {
   runs: number;
   wickets: number;
   overs: string;
-  declared: boolean;
+  declared: boolean | null;
 };
 
 type ScorecardInnings = {
