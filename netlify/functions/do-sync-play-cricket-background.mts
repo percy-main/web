@@ -1,4 +1,5 @@
 import type { Handler } from "@netlify/functions";
+import { purgeCache } from "@netlify/functions";
 import { runSync } from "../../src/lib/play-cricket/sync.js";
 
 // Background function — gets 15 minutes of execution time.
@@ -35,6 +36,8 @@ export const handler: Handler = async (event) => {
       dbToken,
       extraSeasons: [],
     });
+
+    await purgeCache({ tags: ["leaderboard"] });
 
     return {
       statusCode: 200,

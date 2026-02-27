@@ -8,12 +8,12 @@ import {
 } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { currentCricketSeason } from "@/lib/cricket-season";
+import { fetchLeaderboard } from "@/lib/leaderboard-client";
 import {
   QueryClient,
   QueryClientProvider,
   useQuery,
 } from "@tanstack/react-query";
-import { actions } from "astro:actions";
 import { useState } from "react";
 
 type Props = {
@@ -130,22 +130,20 @@ function LeaderboardEmbedInner({
   const battingQuery = useQuery({
     queryKey: ["leaderboard-embed-batting", targetSeason, isJunior, limit],
     queryFn: async () => {
-      const primary = await actions.playCricket.getBattingLeaderboard({
+      const primary = await fetchLeaderboard("batting", {
         season: targetSeason,
         isJunior,
         limit,
       });
-      if (primary.error) throw primary.error;
-      if (primary.data && primary.data.entries.length > 0) {
-        return { data: primary.data, season: targetSeason };
+      if (primary.entries.length > 0) {
+        return { data: primary, season: targetSeason };
       }
-      const fallback = await actions.playCricket.getBattingLeaderboard({
+      const fallback = await fetchLeaderboard("batting", {
         season: targetSeason - 1,
         isJunior,
         limit,
       });
-      if (fallback.error) throw fallback.error;
-      return { data: fallback.data, season: targetSeason - 1 };
+      return { data: fallback, season: targetSeason - 1 };
     },
     staleTime: 10 * 60 * 1000,
     enabled: showBatting,
@@ -154,22 +152,20 @@ function LeaderboardEmbedInner({
   const bowlingQuery = useQuery({
     queryKey: ["leaderboard-embed-bowling", targetSeason, isJunior, limit],
     queryFn: async () => {
-      const primary = await actions.playCricket.getBowlingLeaderboard({
+      const primary = await fetchLeaderboard("bowling", {
         season: targetSeason,
         isJunior,
         limit,
       });
-      if (primary.error) throw primary.error;
-      if (primary.data && primary.data.entries.length > 0) {
-        return { data: primary.data, season: targetSeason };
+      if (primary.entries.length > 0) {
+        return { data: primary, season: targetSeason };
       }
-      const fallback = await actions.playCricket.getBowlingLeaderboard({
+      const fallback = await fetchLeaderboard("bowling", {
         season: targetSeason - 1,
         isJunior,
         limit,
       });
-      if (fallback.error) throw fallback.error;
-      return { data: fallback.data, season: targetSeason - 1 };
+      return { data: fallback, season: targetSeason - 1 };
     },
     staleTime: 10 * 60 * 1000,
     enabled: showBowling,

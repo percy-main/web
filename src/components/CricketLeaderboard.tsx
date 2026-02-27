@@ -12,6 +12,7 @@ import {
   QueryClientProvider,
   useQuery,
 } from "@tanstack/react-query";
+import { fetchLeaderboard } from "@/lib/leaderboard-client";
 import { actions } from "astro:actions";
 import { useMemo, useState } from "react";
 
@@ -353,18 +354,14 @@ function LeaderboardInner({ season, personProfiles }: { season: number; personPr
       competitionTypes,
       isJunior,
     ],
-    queryFn: async () => {
-      const { data, error } =
-        await actions.playCricket.getBattingLeaderboard({
-          season,
-          teamId: teamId || undefined,
-          competitionTypes:
-            competitionTypes.length > 0 ? competitionTypes : undefined,
-          isJunior,
-        });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () =>
+      fetchLeaderboard("batting", {
+        season,
+        teamId: teamId || undefined,
+        competitionTypes:
+          competitionTypes.length > 0 ? competitionTypes : undefined,
+        isJunior,
+      }),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -376,18 +373,14 @@ function LeaderboardInner({ season, personProfiles }: { season: number; personPr
       competitionTypes,
       isJunior,
     ],
-    queryFn: async () => {
-      const { data, error } =
-        await actions.playCricket.getBowlingLeaderboard({
-          season,
-          teamId: teamId || undefined,
-          competitionTypes:
-            competitionTypes.length > 0 ? competitionTypes : undefined,
-          isJunior,
-        });
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () =>
+      fetchLeaderboard("bowling", {
+        season,
+        teamId: teamId || undefined,
+        competitionTypes:
+          competitionTypes.length > 0 ? competitionTypes : undefined,
+        isJunior,
+      }),
     staleTime: 5 * 60 * 1000,
   });
 
