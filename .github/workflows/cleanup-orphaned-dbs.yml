@@ -1,0 +1,57 @@
+name: Cleanup Orphaned Preview Databases
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: List and delete orphaned preview databases
+        env:
+          TURSO_API_TOKEN: ${{ secrets.TURSO_API_TOKEN }}
+          TURSO_ORG: percymain
+        run: |
+          echo "Fetching all databases..."
+          DBS=$(curl -s \
+            "https://api.turso.tech/v1/organizations/${TURSO_ORG}/databases" \
+            -H "Authorization: Bearer ${TURSO_API_TOKEN}")
+
+          # Extract database names matching preview-pull-*-head
+          PREVIEW_DBS=$(echo "$DBS" | python3 -c "
+          import sys, json, re
+          data = json.load(sys.stdin)
+          for db in data.get('databases', []):
+              name = db.get('Name', db.get('name', ''))
+              if re.match(r'^preview-pull-\d+-head$', name):
+                  print(name)
+          ")
+
+          if [ -z "$PREVIEW_DBS" ]; then
+            echo "No orphaned preview databases found."
+            exit 0
+          fi
+
+          echo "Found preview databases to delete:"
+          echo "$PREVIEW_DBS"
+          echo ""
+
+          for DB_NAME in $PREVIEW_DBS; do
+            echo "Deleting ${DB_NAME}..."
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
+              "https://api.turso.tech/v1/organizations/${TURSO_ORG}/databases/${DB_NAME}" \
+              -H "Authorization: Bearer ${TURSO_API_TOKEN}")
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "  Deleted: ${DB_NAME}"
+            else
+              echo "  Failed to delete ${DB_NAME}: HTTP ${HTTP_CODE}"
+            fi
+          done
+
+          echo ""
+          echo "Cleanup complete."
