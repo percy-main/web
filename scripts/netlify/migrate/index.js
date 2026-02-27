@@ -171,6 +171,93 @@ async function getMigrationProvider() {
   };
 }
 
+/**
+ * Hash a password using better-auth's scrypt format.
+ * Matches the format in better-auth/dist/crypto/password.mjs so that
+ * better-auth's verifyPassword can validate it at login time.
+ */
+async function hashPasswordForBetterAuth(password) {
+  const { scryptAsync } = await import("@noble/hashes/scrypt.js");
+  const { bytesToHex } = await import("@noble/hashes/utils.js");
+  const { randomBytes } = await import("node:crypto");
+
+  const salt = randomBytes(16).toString("hex");
+  const key = await scryptAsync(password.normalize("NFKC"), salt, {
+    N: 16384,
+    r: 16,
+    p: 1,
+    dkLen: 64,
+    maxmem: 128 * 16384 * 16 * 2,
+  });
+  return `${salt}:${bytesToHex(key)}`;
+}
+
+/**
+ * Seed a test admin user into deploy preview databases so that developers
+ * can log in and test admin functionality on preview deployments.
+ * Credentials are configurable via PREVIEW_ADMIN_EMAIL / PREVIEW_ADMIN_PASSWORD
+ * env vars, with sensible defaults.
+ *
+ * This is idempotent — if the user already exists, it's a no-op.
+ */
+async function seedPreviewAdmin(url, authToken) {
+  const email =
+    process.env.PREVIEW_ADMIN_EMAIL || "admin@preview.percymain.org";
+  const password = process.env.PREVIEW_ADMIN_PASSWORD || "PreviewAdmin123!";
+
+  const dialect = new LibsqlDialect({ url, authToken });
+  const db = new Kysely({ dialect });
+
+  try {
+    // Check if the preview admin already exists (idempotent)
+    const existing = await db
+      .selectFrom("user")
+      .select("id")
+      .where("email", "=", email)
+      .executeTakeFirst();
+
+    if (existing) {
+      console.log(`Preview admin already exists (${email}) — skipping seed`);
+      return;
+    }
+
+    const { randomUUID } = await import("node:crypto");
+    const hashedPassword = await hashPasswordForBetterAuth(password);
+    const userId = randomUUID();
+    const now = new Date().toISOString();
+
+    await db
+      .insertInto("user")
+      .values({
+        id: userId,
+        name: "Preview Admin",
+        email,
+        emailVerified: 1,
+        role: "admin",
+        createdAt: now,
+        updatedAt: now,
+      })
+      .execute();
+
+    await db
+      .insertInto("account")
+      .values({
+        id: randomUUID(),
+        userId,
+        accountId: userId,
+        providerId: "credential",
+        password: hashedPassword,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .execute();
+
+    console.log(`Preview admin seeded — email: ${email}, password: ${password}`);
+  } finally {
+    await db.destroy();
+  }
+}
+
 async function runMigrations(url, authToken) {
   const dialect = new LibsqlDialect({ url, authToken });
   const db = new Kysely({ dialect });
@@ -259,6 +346,16 @@ export const onPreBuild = async ({ utils, netlifyConfig }) => {
     }
 
     const failures = (results ?? []).filter((r) => r.status === "Error");
+
+    // Seed a test admin user on deploy previews so developers can log in
+    if (context === "deploy-preview" && !failures.length) {
+      try {
+        await seedPreviewAdmin(url, authToken);
+      } catch (seedError) {
+        // Non-fatal — log but don't fail the build
+        console.error("Failed to seed preview admin user:", seedError);
+      }
+    }
 
     utils.status.show({
       title: "DB Migrations",
