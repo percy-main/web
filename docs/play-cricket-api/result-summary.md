@@ -124,48 +124,48 @@ GET https://play-cricket.com/api/v2/result_summary.json?site_id=1234&season=2024
 
 ### Match-level fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | int | Match ID |
-| `status` | string | `"New"` or `"Deleted"` |
-| `published` | string | `"Yes"` or `"No"` |
-| `last_updated` | string | `dd/mm/yyyy` |
-| `league_name` | string | League name |
-| `league_id` | string | League ID |
-| `competition_name` | string | Division/cup name |
-| `competition_id` | string | Division/cup ID |
-| `competition_type` | string | `"League"`, `"Cup"`, or `"Friendly"` |
-| `match_type` | string | e.g. `"Limited Overs"`, `"Declaration"` |
-| `game_type` | string | e.g. `"Standard"` |
-| `match_date` | string | `dd/mm/yyyy` |
-| `match_time` | string | `HH:MM` |
-| `ground_name` | string | Ground name |
-| `ground_id` | string | Ground ID |
-| `home_team_name` | string | Home team name |
-| `home_team_id` | string | Home team ID |
-| `home_club_name` | string | Home club name |
-| `home_club_id` | string | Home club ID |
-| `away_team_name` | string | Away team name |
-| `away_team_id` | string | Away team ID |
-| `away_club_name` | string | Away club name |
-| `away_club_id` | string | Away club ID |
-| `umpire_1_name` | string | First umpire name |
-| `umpire_1_id` | string | First umpire ID |
-| `umpire_2_name` | string | Second umpire name |
-| `umpire_2_id` | string | Second umpire ID |
-| `umpire_3_id` | string | Third umpire ID |
-| `referee_id` | string | Referee ID |
-| `scorer_1_id` | string | First scorer ID |
-| `scorer_2_id` | string | Second scorer ID |
-| `toss_won_by_team_id` | string | Team ID that won the toss |
-| `toss` | string | Toss description text |
-| `batted_first` | string | Team ID that batted first |
-| `no_of_overs` | string | Number of overs (if applicable) |
-| `no_of_innings` | string | Number of innings per side |
-| `result` | string | Result code (e.g. `"W"`) |
-| `result_description` | string | Human-readable result |
-| `result_applied_to` | string | Team ID the result applies to |
-| `match_notes` | string | Free-text notes (may contain HTML) |
+| Field | Type | Always present? | Description |
+|-------|------|-----------------|-------------|
+| `id` | int | Yes | Match ID |
+| `status` | string | Yes | `"New"` or `"Deleted"` |
+| `published` | string | Yes | `"Yes"` or `"No"` |
+| `last_updated` | string | Yes | `dd/mm/yyyy` |
+| `league_name` | string | **No** | League name |
+| `league_id` | string | **No** | League ID |
+| `competition_name` | string | **No** | Division/cup name |
+| `competition_id` | string | **No** | Division/cup ID |
+| `competition_type` | string | **No** | `"League"`, `"Cup"`, or `"Friendly"` |
+| `match_type` | string | **No** | e.g. `"Limited Overs"`, `"Declaration"` |
+| `game_type` | string | **No** | e.g. `"Standard"` |
+| `match_date` | string | Yes | `dd/mm/yyyy` |
+| `match_time` | string | Yes | `HH:MM` |
+| `ground_name` | string | **No** | Ground name |
+| `ground_id` | string | **No** | Ground ID |
+| `home_team_name` | string | Yes | Home team name |
+| `home_team_id` | string | Yes | Home team ID |
+| `home_club_name` | string | Yes | Home club name |
+| `home_club_id` | string | Yes | Home club ID |
+| `away_team_name` | string | Yes | Away team name |
+| `away_team_id` | string | Yes | Away team ID |
+| `away_club_name` | string | Yes | Away club name |
+| `away_club_id` | string | Yes | Away club ID |
+| `umpire_1_name` | string | **No** | First umpire name |
+| `umpire_1_id` | string | **No** | First umpire ID |
+| `umpire_2_name` | string | **No** | Second umpire name |
+| `umpire_2_id` | string | **No** | Second umpire ID |
+| `umpire_3_id` | string | **No** | Third umpire ID |
+| `referee_id` | string | **No** | Referee ID |
+| `scorer_1_id` | string | **No** | First scorer ID |
+| `scorer_2_id` | string | **No** | Second scorer ID |
+| `toss_won_by_team_id` | string | **No** | Team ID that won the toss |
+| `toss` | string | **No** | Toss description text |
+| `batted_first` | string | **No** | Team ID that batted first |
+| `no_of_overs` | string | **No** | Number of overs (if applicable) |
+| `no_of_innings` | string | **No** | Number of innings per side |
+| `result` | string | Yes | Result code (e.g. `"W"`) |
+| `result_description` | string | **No** | Human-readable result |
+| `result_applied_to` | string | **No** | Team ID the result applies to |
+| `match_notes` | string | **No** | Free-text notes (may contain HTML) |
 
 ### Points object
 
@@ -204,3 +204,4 @@ GET https://play-cricket.com/api/v2/result_summary.json?site_id=1234&season=2024
 - Unlike Match Summary, this endpoint **requires** the `season` parameter.
 - Does not include individual batting/bowling figures - use [Match Detail](./match-detail.md) for full scorecards.
 - `match_notes` may contain HTML (e.g. `<br>`, `<b>` tags).
+- **Many fields are optional** for historical/older matches. League, competition, ground, umpire/scorer, toss, and result description fields may be absent. Always treat these as optional when parsing.

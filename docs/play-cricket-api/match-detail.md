@@ -212,7 +212,7 @@ One entry per innings bowled. Each contains batting (`bat`), fall of wickets (`f
 | `runs` | string | Total runs |
 | `wickets` | string | Wickets lost |
 | `overs` | string | Overs faced (e.g. `"10"`, `"9.5"`) |
-| `declared` | boolean | Whether the innings was declared |
+| `declared` | boolean / null | Whether the innings was declared. Can be `null` for historical matches. |
 | `revised_target_runs` | string | D/L revised target runs |
 | `revised_target_overs` | string | D/L revised target overs |
 
@@ -235,20 +235,20 @@ One entry per innings bowled. Each contains batting (`bat`), fall of wickets (`f
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `position` | string | Batting order position |
-| `batsman_name` | string | Batsman name |
-| `batsman_id` | string | Batsman ID |
-| `how_out` | string | Dismissal mode (see below) |
-| `fielder_name` | string | Fielder involved (if applicable) |
-| `fielder_id` | string | Fielder ID |
-| `bowler_name` | string | Bowler who took the wicket |
-| `bowler_id` | string | Bowler ID |
-| `runs` | string | Runs scored |
-| `fours` | string | Number of fours |
-| `sixes` | string | Number of sixes |
-| `balls` | string | Balls faced |
+| Field | Type | Nullable? | Description |
+|-------|------|-----------|-------------|
+| `position` | string | No | Batting order position |
+| `batsman_name` | string | No | Batsman name |
+| `batsman_id` | string | No | Batsman ID |
+| `how_out` | string | **Yes** | Dismissal mode (see below). Can be `null` for some historical matches. |
+| `fielder_name` | string | **Yes** | Fielder involved (if applicable). Can be `null` or `""`. |
+| `fielder_id` | string | **Yes** | Fielder ID. Can be `null` or `""`. |
+| `bowler_name` | string | **Yes** | Bowler who took the wicket. Can be `null` or `""`. |
+| `bowler_id` | string | **Yes** | Bowler ID. Can be `null` or `""`. |
+| `runs` | string | No | Runs scored |
+| `fours` | string | No | Number of fours |
+| `sixes` | string | No | Number of sixes |
+| `balls` | string | No | Balls faced |
 
 #### Dismissal Modes (`how_out`)
 
@@ -265,6 +265,8 @@ One entry per innings bowled. Each contains batting (`bat`), fall of wickets (`f
 | `"dnb"` | Did not bat |
 
 > The full set of dismissal codes is not documented by the ECB. The above are observed values.
+
+> **Note:** `how_out` can be `null` (not just an empty string or code) for some historical matches. When parsing, treat `null` as "did not bat" — the player appears in the team sheet but has no batting record.
 
 ### Fall of Wickets (`fow`) Array
 
@@ -315,3 +317,9 @@ One entry per innings bowled. Each contains batting (`bat`), fall of wickets (`f
 | `wides` | string | Wides bowled |
 | `wickets` | string | Wickets taken |
 | `no_balls` | string | No balls bowled |
+
+## Validation Notes
+
+- **Historical data is less complete.** Matches from older seasons (particularly pre-2010) may have `null` values in fields that are normally strings (e.g. `how_out`, `fielder_name`, `bowler_name`). Always handle `null` for these fields.
+- Match-level fields like `home_club_id` and `away_club_id` are optional and may be missing or empty for older matches.
+- The `competition_type`, `match_type`, and `season` fields at the match level are also optional.

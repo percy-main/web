@@ -95,7 +95,7 @@ export const ResultSummaryInnings = z.object({
   runs: z.string(),
   wickets: z.string(),
   overs: z.string(),
-  declared: z.boolean(),
+  declared: z.boolean().nullable().default(false),
   revised_target_runs: z.string(),
   revised_target_overs: z.string(),
 });
@@ -191,7 +191,7 @@ export const MatchDetailInnings = z.object({
   runs: z.string(),
   wickets: z.string(),
   overs: z.string(),
-  declared: z.boolean(),
+  declared: z.boolean().nullable().default(false),
   revised_target_runs: z.string(),
   revised_target_overs: z.string(),
   bat: z.array(MatchDetailBat),
