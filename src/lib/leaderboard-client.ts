@@ -1,5 +1,11 @@
-import type { BattingResponse } from "@/pages/api/leaderboard/batting";
-import type { BowlingResponse } from "@/pages/api/leaderboard/bowling";
+import {
+  BattingResponseSchema,
+  type BattingResponse,
+} from "@/pages/api/leaderboard/batting";
+import {
+  BowlingResponseSchema,
+  type BowlingResponse,
+} from "@/pages/api/leaderboard/bowling";
 
 type LeaderboardParams = {
   season: number;
@@ -37,5 +43,9 @@ export async function fetchLeaderboard(
     throw new Error(`Leaderboard fetch failed: ${res.status}`);
   }
 
-  return res.json() as Promise<BattingResponse | BowlingResponse>;
+  const json = await res.json();
+  if (discipline === "batting") {
+    return BattingResponseSchema.parse(json);
+  }
+  return BowlingResponseSchema.parse(json);
 }
