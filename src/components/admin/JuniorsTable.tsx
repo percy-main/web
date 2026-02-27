@@ -42,6 +42,8 @@ const TEAM_ORDER = AGE_GROUPS.flatMap((group) => [
   `${group} Girls`,
 ]);
 
+const PAGE_SIZE = 100;
+
 export function JuniorsTable() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -51,6 +53,7 @@ export function JuniorsTable() {
   const [sexFilter, setSexFilter] = useState<SexFilter>("all");
   const [membershipFilter, setMembershipFilter] =
     useState<MembershipFilter>("all");
+  const [page, setPage] = useState(1);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -67,50 +70,41 @@ export function JuniorsTable() {
     };
   }, [search]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, ageGroupFilter, sexFilter, membershipFilter]);
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ["admin", "listJuniors"],
-    queryFn: () => actions.admin.listJuniors(),
+    queryKey: [
+      "admin",
+      "listJuniors",
+      page,
+      PAGE_SIZE,
+      debouncedSearch,
+      sexFilter,
+      ageGroupFilter,
+      membershipFilter,
+    ],
+    queryFn: () =>
+      actions.admin.listJuniors({
+        page,
+        pageSize: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+        sex: sexFilter,
+        ageGroup: ageGroupFilter,
+        membershipStatus: membershipFilter,
+      }),
   });
 
-  const juniors = useMemo<Junior[]>(() => data?.data ?? [], [data]);
-
-  const filtered = useMemo(() => {
-    return juniors.filter((j) => {
-      if (
-        ageGroupFilter !== "all" &&
-        j.ageGroup !== ageGroupFilter
-      ) {
-        return false;
-      }
-
-      if (sexFilter !== "all" && j.sex.toLowerCase() !== sexFilter) {
-        return false;
-      }
-
-      if (membershipFilter === "paid" && !isMembershipActive(j.paidUntil)) {
-        return false;
-      }
-      if (membershipFilter === "unpaid" && isMembershipActive(j.paidUntil)) {
-        return false;
-      }
-
-      if (debouncedSearch.trim()) {
-        const term = debouncedSearch.trim().toLowerCase();
-        const matchesName = j.name.toLowerCase().includes(term);
-        const matchesParent = j.parentName.toLowerCase().includes(term);
-        if (!matchesName && !matchesParent) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [juniors, ageGroupFilter, sexFilter, membershipFilter, debouncedSearch]);
+  const juniors = useMemo<Junior[]>(() => data?.data?.juniors ?? [], [data]);
+  const total = data?.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const grouped = useMemo(() => {
     const groups = new Map<string, Junior[]>();
 
-    for (const junior of filtered) {
+    for (const junior of juniors) {
       const key = junior.teamName ?? "Overage";
       const existing = groups.get(key);
       if (existing) {
@@ -135,10 +129,7 @@ export function JuniorsTable() {
     }
 
     return sorted;
-  }, [filtered]);
-
-  const totalCount = juniors.length;
-  const filteredCount = filtered.length;
+  }, [juniors]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -189,8 +180,8 @@ export function JuniorsTable() {
 
       {/* Summary */}
       <p className="text-sm text-gray-500">
-        Showing {filteredCount} of {totalCount} junior
-        {totalCount !== 1 ? "s" : ""}
+        Showing {juniors.length} of {total} junior
+        {total !== 1 ? "s" : ""}
       </p>
 
       {/* Loading / Error */}
@@ -208,6 +199,31 @@ export function JuniorsTable() {
           {Array.from(grouped.entries()).map(([teamName, members]) => (
             <TeamCard key={teamName} teamName={teamName} members={members} />
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="rounded border px-3 py-1 text-sm disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-gray-600">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            className="rounded border px-3 py-1 text-sm disabled:opacity-50"
+          >
+            Next
+          </button>
         </div>
       )}
     </div>
