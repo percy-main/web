@@ -87,15 +87,18 @@ export const getStaticPaths = (async () => {
   const past12Months = Array.from(Array(historicalMonthCount), (_, i) =>
     addMonths(now, -i),
   ).reverse();
-  const next12Months = Array.from(Array(12), (_, i) => addMonths(now, i));
+  const next12Months = Array.from(Array(12), (_, i) => addMonths(now, i + 1));
 
   const paths = [...past12Months, ...next12Months].map((date, i, arr) => {
     const prevDate = addMonths(date, -1);
     const nextDate = addMonths(date, 1);
     const rawItems = calendarItemGroups[`${getYear(date)}-${getMonth(date)}`] ?? [];
 
-    const items: CalendarItem[] = rawItems.map((entry) => {
+    const items: CalendarItem[] = rawItems
+      .filter((entry) => entry.data.when != null)
+      .map((entry) => {
       const d = entry.data;
+      const when = d.when as Date;
       const cat = categorise(d);
 
       if (d.type === "game") {
@@ -103,7 +106,7 @@ export const getStaticPaths = (async () => {
           id: entry.id,
           type: "game" as const,
           category: cat,
-          when: d.when.toISOString(),
+          when: when.toISOString(),
           home: d.home,
           teamName: d.team.name,
           oppositionClub: d.opposition.club.name,
@@ -111,7 +114,7 @@ export const getStaticPaths = (async () => {
           leagueName: d.league.name,
           competitionName: d.competition.name,
           sponsorName: d.sponsor?.name,
-          sponsorCta: !d.sponsor && d.when && isAfter(d.when, now),
+          sponsorCta: !d.sponsor && isAfter(when, now),
           outcome: d.result?.outcome ?? null,
           scoreDescription: d.result?.innings
             ? buildScoreDescription(d.result.innings)
@@ -124,7 +127,7 @@ export const getStaticPaths = (async () => {
         id: entry.id,
         type: "event" as const,
         category: "event" as const,
-        when: d.when.toISOString(),
+        when: when.toISOString(),
         eventName: d.name,
         eventDescription:
           typeof d.description === "string" ? d.description : undefined,

@@ -25,7 +25,7 @@ export type CalendarItem = {
 };
 
 type CalendarDay = {
-  date: Date;
+  date: string;
   isExtra: boolean;
   itemCount: number;
 };
@@ -104,50 +104,53 @@ function MiniCalendar({
 
       <div className="grid grid-cols-7 text-center">
         {calendarDays.map((day, i) => {
-          const dayNum = day.date.getDate();
+          const dateObj = new Date(day.date);
+          const dayNum = dateObj.getDate();
           const isSelected =
             !day.isExtra && selectedDay === dayNum;
           const hasFixtures = !day.isExtra && day.itemCount > 0;
           const hasMultiple = !day.isExtra && day.itemCount > 1;
-          const isTodayDay = !day.isExtra && isToday(day.date);
+          const isTodayDay = !day.isExtra && isToday(dateObj);
+          const isInteractive = !day.isExtra && hasFixtures;
+
+          const classes = cn(
+            "relative rounded py-1.5 text-xs transition-colors",
+            day.isExtra && "text-text/25",
+            !day.isExtra && !hasFixtures && "text-text/70",
+            isInteractive &&
+              "cursor-pointer font-semibold text-dark hover:bg-primary-light/10",
+            isSelected && "!bg-primary !text-white",
+            isTodayDay && !isSelected && "ring-1 ring-primary/40",
+          );
+
+          const dot = hasFixtures && (
+            <span
+              className={cn(
+                "mx-auto mt-0.5 block rounded-full",
+                isSelected ? "bg-white" : "bg-primary",
+                hasMultiple ? "h-[5px] w-2 rounded-sm" : "h-[5px] w-[5px]",
+              )}
+            />
+          );
+
+          if (isInteractive) {
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => onDayClick(dayNum)}
+                className={classes}
+              >
+                {dayNum}
+                {dot}
+              </button>
+            );
+          }
 
           return (
-            <button
-              key={i}
-              onClick={() => {
-                if (!day.isExtra && hasFixtures) onDayClick(dayNum);
-              }}
-              className={cn(
-                "relative rounded py-1.5 text-xs transition-colors",
-                day.isExtra && "cursor-default text-text/25",
-                !day.isExtra && !hasFixtures && "text-text/70",
-                !day.isExtra &&
-                  hasFixtures &&
-                  "cursor-pointer font-semibold text-dark hover:bg-primary-light/10",
-                isSelected && "!bg-primary !text-white",
-                isTodayDay &&
-                  !isSelected &&
-                  "ring-1 ring-primary/40",
-              )}
-            >
+            <span key={i} className={classes}>
               {dayNum}
-              {hasFixtures && !isSelected && (
-                <span
-                  className={cn(
-                    "mx-auto mt-0.5 block rounded-full bg-primary",
-                    hasMultiple ? "h-[5px] w-2 rounded-sm" : "h-[5px] w-[5px]",
-                  )}
-                />
-              )}
-              {hasFixtures && isSelected && (
-                <span
-                  className={cn(
-                    "mx-auto mt-0.5 block rounded-full bg-white",
-                    hasMultiple ? "h-[5px] w-2 rounded-sm" : "h-[5px] w-[5px]",
-                  )}
-                />
-              )}
-            </button>
+            </span>
           );
         })}
       </div>
@@ -297,12 +300,7 @@ function FixtureCard({ item }: { item: CalendarItem }) {
   const when = new Date(item.when);
   const time = format(when, "HH:mm");
   const borderClass = TEAM_BORDER_CLASSES[item.category] ?? "";
-  const resultStripe =
-    item.outcome === "W"
-      ? "result-stripe-won"
-      : item.outcome === "L"
-        ? "result-stripe-lost"
-        : "";
+  const hasResultStripe = item.outcome === "W" || item.outcome === "L";
 
   return (
     <a
@@ -313,7 +311,7 @@ function FixtureCard({ item }: { item: CalendarItem }) {
       )}
     >
       {/* Result stripe (right edge) */}
-      {resultStripe && (
+      {hasResultStripe && (
         <span
           className={cn(
             "absolute top-0 right-0 bottom-0 w-[3px]",
