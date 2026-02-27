@@ -117,6 +117,7 @@ function SeasonLeadersInner({
       const primary = await actions.playCricket.getBattingLeaderboard({
         season,
         isJunior: false,
+        limit: 3,
       });
       if (primary.error) throw primary.error;
       if (primary.data && primary.data.entries.length > 0) {
@@ -125,6 +126,7 @@ function SeasonLeadersInner({
       const fallback = await actions.playCricket.getBattingLeaderboard({
         season: season - 1,
         isJunior: false,
+        limit: 3,
       });
       if (fallback.error) throw fallback.error;
       return { data: fallback.data, season: season - 1 };
@@ -138,6 +140,7 @@ function SeasonLeadersInner({
       const primary = await actions.playCricket.getBowlingLeaderboard({
         season,
         isJunior: false,
+        limit: 3,
       });
       if (primary.error) throw primary.error;
       if (primary.data && primary.data.entries.length > 0) {
@@ -146,6 +149,7 @@ function SeasonLeadersInner({
       const fallback = await actions.playCricket.getBowlingLeaderboard({
         season: season - 1,
         isJunior: false,
+        limit: 3,
       });
       if (fallback.error) throw fallback.error;
       return { data: fallback.data, season: season - 1 };
@@ -158,8 +162,8 @@ function SeasonLeadersInner({
 
   if (hasError) return null;
 
-  const battingEntries = (battingQuery.data?.data?.entries ?? []).slice(0, 3);
-  const bowlingEntries = (bowlingQuery.data?.data?.entries ?? []).slice(0, 3);
+  const battingEntries = battingQuery.data?.data?.entries ?? [];
+  const bowlingEntries = bowlingQuery.data?.data?.entries ?? [];
 
   const effectiveSeason =
     battingQuery.data?.season ?? bowlingQuery.data?.season ?? season;
