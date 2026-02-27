@@ -8,10 +8,14 @@ type Props = {
 
 const { contentfulEntryId } = Astro.props;
 
-const { data: careerData } = await Astro.callAction(
+const { data: careerData, error: careerError } = await Astro.callAction(
   actions.playCricket.getPlayerCareerStats,
   { contentfulEntryId },
 );
+
+if (careerError) {
+  console.error("Failed to fetch player career stats:", careerError);
+}
 
 if (!careerData?.career) return;
 
@@ -20,10 +24,13 @@ const initialSeason = seasons[0] ?? null;
 
 let initialSeasonData = null;
 if (initialSeason !== null) {
-  const { data } = await Astro.callAction(
+  const { data, error: seasonError } = await Astro.callAction(
     actions.playCricket.getPlayerSeasonStats,
     { contentfulEntryId, season: initialSeason },
   );
+  if (seasonError) {
+    console.error("Failed to fetch player season stats:", seasonError);
+  }
   initialSeasonData = data ?? null;
 }
 ---

@@ -16,33 +16,9 @@ import { useState } from "react";
 
 const queryClient = new QueryClient();
 
-type SeasonData = {
-  playerName: string;
-  season: number;
-  batting: {
-    innings: number;
-    notOuts: number;
-    runs: number;
-    highScore: number;
-    average: number | null;
-    strikeRate: number | null;
-    fours: number;
-    sixes: number;
-    fifties: number;
-    hundreds: number;
-  } | null;
-  bowling: {
-    matches: number;
-    overs: string;
-    maidens: number;
-    runs: number;
-    wickets: number;
-    average: number | null;
-    economy: number | null;
-    strikeRate: number | null;
-    bestBowling: string | null;
-  } | null;
-} | null;
+type SeasonData = Awaited<
+  ReturnType<typeof actions.playCricket.getPlayerSeasonStats>
+>["data"];
 
 type Props = {
   contentfulEntryId: string;
@@ -81,6 +57,8 @@ function PlayerSeasonSelectorInner({
     staleTime: 10 * 60 * 1000,
     initialData:
       selectedSeason === initialSeason ? initialSeasonData : undefined,
+    initialDataUpdatedAt:
+      selectedSeason === initialSeason ? 0 : undefined,
   });
 
   return (
