@@ -14,6 +14,28 @@ import type Stripe from "stripe";
 const MAX_LOGO_SIZE_BYTES = 150_000;
 
 export const sponsorship = {
+  getPrice: defineAction({
+    handler: async () => {
+      const priceId = paymentData.prices.sponsorship;
+      const price = await stripe.prices.retrieve(priceId, {
+        expand: ["product"],
+      });
+      const product = price.product as Stripe.Product;
+      const amount = price.unit_amount;
+      if (!amount) {
+        throw new ActionError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Sponsorship price not configured",
+        });
+      }
+      return {
+        amountPence: amount,
+        currency: price.currency,
+        productName: product.name,
+      };
+    },
+  }),
+
   getByGameId: defineAction({
     input: z.object({
       gameId: z.string(),
