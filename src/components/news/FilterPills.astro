@@ -1,0 +1,53 @@
+---
+import { getCategoryColor } from "./category-colors";
+
+type Props = {
+  tags: Array<{
+    slug: string;
+    title: string;
+    count: number;
+    isActive: boolean;
+  }>;
+  activeTag: string | null;
+  totalCount: number;
+};
+
+const { tags, activeTag, totalCount } = Astro.props;
+---
+
+<div class="flex flex-wrap gap-2 mb-6">
+  <a
+    href="/news/1"
+    class:list={[
+      "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-all duration-150",
+      activeTag === null
+        ? "bg-primary text-white shadow-sm"
+        : "border border-border bg-white text-text hover:border-primary hover:text-primary",
+    ]}
+  >
+    All <span class="text-[11px] font-normal opacity-70">{totalCount}</span>
+  </a>
+  {tags.map((tag) => {
+    const color = getCategoryColor(tag.title);
+    return (
+      <a
+        href={`/news/tag/${tag.slug}/1`}
+        class:list={[
+          "inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition-all duration-150",
+          tag.isActive
+            ? "bg-primary text-white shadow-sm"
+            : "border border-border bg-white text-text hover:border-primary hover:text-primary",
+        ]}
+      >
+        {!tag.isActive && (
+          <span
+            class="h-2 w-2 rounded-full shrink-0"
+            style={`background: ${color.dot}`}
+          />
+        )}
+        {tag.title}
+        <span class="text-[11px] font-normal opacity-70">{tag.count}</span>
+      </a>
+    );
+  })}
+</div>

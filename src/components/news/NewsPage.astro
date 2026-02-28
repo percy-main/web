@@ -1,0 +1,141 @@
+---
+import type { Page } from "astro";
+import type { News } from "@/collections/news";
+import FilterPills from "./FilterPills.astro";
+import ArticleCard from "./ArticleCard.astro";
+import FeaturedArticleCard from "./FeaturedArticleCard.astro";
+import NewsSidebar from "./NewsSidebar.astro";
+import Pagination from "./Pagination.astro";
+
+type Article = { id: string } & News;
+
+type Props = {
+  articles: Article[];
+  page: Pick<Page, "url" | "currentPage" | "lastPage">;
+  tags: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    count: number;
+    isActive: boolean;
+  }>;
+  activeTag: string | null;
+  totalArticleCount: number;
+  uniqueAuthorCount: number;
+  articlesByMonth: Array<{
+    month: string;
+    articles: Article[];
+  }>;
+  archiveMonths: Array<{ month: string; count: number }>;
+  baseUrl: string;
+};
+
+const {
+  articles,
+  page,
+  tags,
+  activeTag,
+  totalArticleCount,
+  uniqueAuthorCount,
+  articlesByMonth,
+  archiveMonths,
+  baseUrl,
+} = Astro.props;
+
+const showFeatured = page.currentPage === 1 && activeTag === null;
+const featuredArticle = showFeatured ? articles[0] : null;
+
+// Exclude the featured article from the month-grouped list to avoid rendering it twice
+const displayByMonth = featuredArticle
+  ? articlesByMonth
+      .map((group) => ({
+        ...group,
+        articles: group.articles.filter((a) => a.id !== featuredArticle.id),
+      }))
+      .filter((group) => group.articles.length > 0)
+  : articlesByMonth;
+---
+
+{/* Page header */}
+<div class="flex items-start justify-between mb-5 flex-col sm:flex-row gap-3">
+  <div>
+    <h1 class="text-[2rem] mb-1 leading-tight">News</h1>
+    <div class="text-sm text-text opacity-60">
+      {totalArticleCount} articles &middot; {tags.length} tags
+    </div>
+  </div>
+  {page.lastPage > 1 && (
+    <nav aria-label="Quick page navigation" class="inline-flex items-center gap-1">
+      {page.currentPage > 1 ? (
+        <a
+          href={`${baseUrl}${page.currentPage - 1}`}
+          class="w-9 h-9 rounded-full border-[1.5px] border-border bg-white flex items-center justify-center text-text hover:border-primary hover:text-primary transition-all duration-150"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+      ) : (
+        <span aria-disabled="true" class="w-9 h-9 rounded-full border-[1.5px] border-border bg-white flex items-center justify-center text-text opacity-30 pointer-events-none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </span>
+      )}
+      <span class="text-[13px] text-text opacity-50 px-2 min-w-[60px] text-center">
+        {page.currentPage} / {page.lastPage}
+      </span>
+      {page.currentPage < page.lastPage ? (
+        <a
+          href={`${baseUrl}${page.currentPage + 1}`}
+          class="w-9 h-9 rounded-full border-[1.5px] border-border bg-white flex items-center justify-center text-text hover:border-primary hover:text-primary transition-all duration-150"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      ) : (
+        <span aria-disabled="true" class="w-9 h-9 rounded-full border-[1.5px] border-border bg-white flex items-center justify-center text-text opacity-30 pointer-events-none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+      )}
+    </nav>
+  )}
+</div>
+
+{/* Filter pills */}
+<FilterPills
+  tags={tags}
+  activeTag={activeTag}
+  totalCount={totalArticleCount}
+/>
+
+{/* Main layout: sidebar + content */}
+<div class="flex gap-8">
+  <NewsSidebar
+    totalArticleCount={totalArticleCount}
+    totalTagCount={tags.length}
+    uniqueAuthorCount={uniqueAuthorCount}
+    archiveMonths={archiveMonths}
+  />
+
+  <div class="flex-1 min-w-0">
+    {/* Featured card — only page 1 unfiltered */}
+    {featuredArticle && (
+      <FeaturedArticleCard article={featuredArticle} />
+    )}
+
+    {/* Month-grouped articles */}
+    {displayByMonth.map((group) => (
+      <div class="mb-7">
+        <div class="font-secondary text-base font-bold text-dark mb-3.5 pb-2 border-b-2 border-primary inline-block">
+          {group.month}
+        </div>
+        {group.articles.map((article) => (
+          <ArticleCard article={article} />
+        ))}
+      </div>
+    ))}
+
+    {/* Bottom pagination */}
+    <Pagination
+      currentPage={page.currentPage}
+      lastPage={page.lastPage}
+      baseUrl={baseUrl}
+    />
+  </div>
+</div>

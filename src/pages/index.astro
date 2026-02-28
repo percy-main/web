@@ -1,7 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import Base from "@/layouts/Base.astro";
-import ArticlePreview from "@/components/ArticlePreview.astro";
+import ArticleCard from "@/components/news/ArticleCard.astro";
 import CalendarStripCard from "@/components/CalendarStripCard.astro";
 import SportCard from "@/components/SportCard.astro";
 import { compareDesc, compareAsc, isAfter, isSameDay } from "date-fns";
@@ -110,9 +110,7 @@ const donateUrl = `/purchase/${paymentData.prices.donation}`;
           {/* Top row: 2 articles */}
           <div class="grid gap-6 md:grid-cols-2">
             {top5.slice(0, 2).map((article) => (
-              <div class="rounded-lg bg-white p-6 shadow-sm">
-                <ArticlePreview {...article.data} />
-              </div>
+              <ArticleCard article={{ id: article.id, ...article.data }} />
             ))}
           </div>
 
@@ -120,9 +118,7 @@ const donateUrl = `/purchase/${paymentData.prices.donation}`;
           {top5.length > 2 && (
             <div class="mt-6 grid gap-6 md:grid-cols-3">
               {top5.slice(2, 5).map((article) => (
-                <div class="rounded-lg bg-white p-6 shadow-sm">
-                  <ArticlePreview {...article.data} />
-                </div>
+                <ArticleCard article={{ id: article.id, ...article.data }} />
               ))}
             </div>
           )}

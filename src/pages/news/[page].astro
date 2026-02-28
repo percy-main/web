@@ -2,7 +2,8 @@
 import type { GetStaticPathsOptions } from "astro";
 import { getCollection } from "astro:content";
 import _ from "lodash";
-import NewsPage from "@/components/NewsPage.astro";
+import { format } from "date-fns";
+import NewsPage from "@/components/news/NewsPage.astro";
 import Container from "@/layouts/Container.astro";
 import { Breadcrumbs } from "astro-breadcrumbs";
 import { IoChevronForward } from "react-icons/io5";
@@ -28,6 +29,22 @@ export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
     (p) => p.tag,
   );
 
+  const uniqueAuthors = _.uniqBy(
+    news.map((n) => n.data.author).filter(Boolean),
+    (a) => a.id,
+  );
+
+  const archiveMonths = _.chain(news)
+    .groupBy((n) => format(n.data.when, "MMMM yyyy"))
+    .map((articles, month) => ({ month, count: articles.length }))
+    .sortBy((m) => {
+      const first = news.find(
+        (n) => format(n.data.when, "MMMM yyyy") === m.month,
+      );
+      return first ? -first.data.when.getTime() : 0;
+    })
+    .value();
+
   return paginate(news, {
     pageSize: 5,
     props: {
@@ -37,11 +54,26 @@ export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
         count: tagPages[tag.slug]?.length ?? 0,
         isActive: false,
       })),
+      totalArticleCount: news.length,
+      uniqueAuthorCount: uniqueAuthors.length,
+      archiveMonths,
     },
   });
 }
 
-const { page, tags } = Astro.props;
+const { page, tags, totalArticleCount, uniqueAuthorCount, archiveMonths } =
+  Astro.props;
+
+const articles = page.data.map((article) => ({
+  id: article.id,
+  ...article.data,
+}));
+
+const articlesByMonth = _.chain(articles)
+  .groupBy((a) => format(a.when, "MMMM yyyy"))
+  .map((arts, month) => ({ month, articles: arts }))
+  .sortBy((g) => -g.articles[0].when.getTime())
+  .value();
 ---
 
 <Container title="News">
@@ -63,8 +95,14 @@ const { page, tags } = Astro.props;
   </div>
 
   <NewsPage
-    articles={page.data.map((article) => ({ id: article.id, ...article.data }))}
+    articles={articles}
     page={page}
     tags={tags}
+    activeTag={null}
+    totalArticleCount={totalArticleCount}
+    uniqueAuthorCount={uniqueAuthorCount}
+    articlesByMonth={articlesByMonth}
+    archiveMonths={archiveMonths}
+    baseUrl="/news/"
   />
 </Container>
