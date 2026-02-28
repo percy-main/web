@@ -60,11 +60,13 @@ const ssrSponsor =
   {timeStr && <p class="mt-1 text-xs text-gray-500">{timeStr}</p>}
   {
     item.type === "game" && (
-      <GameCardSponsor
-        client:load
-        gameId={id}
-        ssrSponsor={ssrSponsor}
-      />
+      <div class="mt-auto">
+        <GameCardSponsor
+          client:load
+          gameId={id}
+          ssrSponsor={ssrSponsor}
+        />
+      </div>
     )
   }
 </a>

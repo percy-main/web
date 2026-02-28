@@ -46,7 +46,7 @@ function GameCardSponsorInner({ gameId, ssrSponsor }: Props) {
   if (!sponsor) return null;
 
   return (
-    <div className="mt-auto flex flex-col items-center gap-1 border-t border-gray-100 pt-2">
+    <div className="flex flex-col items-center gap-1 border-t border-gray-100 pt-2">
       <span className="text-[10px] leading-tight text-gray-400">
         Sponsored
       </span>
