@@ -1,3 +1,11 @@
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
 import {
   Table,
   TableBody,
@@ -108,11 +116,9 @@ function CompetitionFilter({
           key={type.value}
           className="flex cursor-pointer items-center gap-1.5"
         >
-          <input
-            type="checkbox"
+          <Checkbox
             checked={selected.includes(type.value)}
-            onChange={() => toggle(type.value)}
-            className="h-4 w-4 rounded border-gray-300 text-green-700 focus:ring-green-700"
+            onCheckedChange={() => toggle(type.value)}
           />
           <span className="text-sm text-gray-700">{type.label}</span>
         </label>
@@ -131,18 +137,22 @@ function TeamFilter({
   onChange: (teamId: string) => void;
 }) {
   return (
-    <select
-      value={selected}
-      onChange={(e) => onChange(e.target.value)}
-      className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-green-700 focus:ring-green-700 focus:outline-none"
+    <Select
+      value={selected || "all"}
+      onValueChange={(v) => onChange(v === "all" ? "" : v)}
     >
-      <option value="">All teams</option>
-      {teams.map((team) => (
-        <option key={team.id} value={team.id}>
-          {team.name}
-        </option>
-      ))}
-    </select>
+      <SelectTrigger className="w-auto">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All teams</SelectItem>
+        {teams.map((team) => (
+          <SelectItem key={team.id} value={team.id}>
+            {team.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 

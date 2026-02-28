@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/input";
 import { useMutation } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { useCallback, useState, type FC } from "react";
@@ -44,24 +46,25 @@ export const CollectEmail: FC<Props> = ({ title, description, meta }) => {
             <label htmlFor="email-address" className="sr-only">
               Email address
             </label>
-            <input
+            <Input
               id="email-address"
               name="email"
               type="email"
               autoComplete="email"
               required
-              className="min-w-0 flex-auto rounded-md bg-white/5 px-3.5 py-2 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6"
+              className="min-w-0 flex-auto bg-white/5 text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500"
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            <button
+            <Button
               type="submit"
-              className="flex-none rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+              variant="cta"
+              className="flex-none"
               disabled={mutation.isPending}
             >
               Submit
-            </button>
+            </Button>
           </form>
           {mutation.isError ? (
             <p className="mt-4 text-red-500">

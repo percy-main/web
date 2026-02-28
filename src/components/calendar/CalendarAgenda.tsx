@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/util/index";
 import { format, isToday } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -227,31 +228,33 @@ function FilterPills({
 
         if (key === "all") {
           return (
-            <button
+            <Button
               key={key}
+              variant={isActive ? "default" : "outline"}
               onClick={() => onChange(key)}
               className={cn(
-                "rounded-full px-4 py-1.5 text-sm font-semibold transition-all",
+                "rounded-full",
                 isActive
-                  ? "bg-primary font-bold text-white shadow-md"
-                  : "border-2 border-primary/20 bg-white text-primary hover:border-primary/40",
+                  ? "bg-primary font-bold shadow-md hover:bg-primary-light"
+                  : "border-2 border-primary/20 text-primary hover:border-primary/40 hover:bg-transparent",
               )}
             >
               {label}
-            </button>
+            </Button>
           );
         }
 
         if (isEvent) {
           return (
-            <button
+            <Button
               key={key}
+              variant={isActive ? "cta" : "outline"}
               onClick={() => onChange(key)}
               className={cn(
-                "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold transition-all",
+                "rounded-full",
                 isActive
-                  ? "border-2 border-cta bg-cta font-bold text-white"
-                  : "border-2 border-cta/30 bg-white text-cta hover:border-cta/50",
+                  ? "border-2 border-cta font-bold"
+                  : "border-2 border-cta/30 text-cta hover:border-cta/50 hover:bg-transparent",
               )}
             >
               <svg
@@ -264,21 +267,22 @@ function FilterPills({
                 <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               {label}
-            </button>
+            </Button>
           );
         }
 
         const borderColor = FILTER_BORDER_INLINE[key];
 
         return (
-          <button
+          <Button
             key={key}
+            variant={isActive ? "default" : "outline"}
             onClick={() => onChange(key)}
             className={cn(
-              "rounded-full px-4 py-1.5 text-sm font-semibold transition-all",
+              "rounded-full",
               isActive
-                ? "bg-primary font-bold text-white shadow-md"
-                : "border-2 border-primary/20 bg-white text-primary hover:border-primary/40",
+                ? "bg-primary font-bold shadow-md hover:bg-primary-light"
+                : "border-2 border-primary/20 text-primary hover:border-primary/40 hover:bg-transparent",
             )}
             style={
               !isActive && borderColor
@@ -287,7 +291,7 @@ function FilterPills({
             }
           >
             {label}
-          </button>
+          </Button>
         );
       })}
     </div>
