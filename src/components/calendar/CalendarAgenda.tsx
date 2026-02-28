@@ -1,8 +1,17 @@
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/util/index";
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+} from "@tanstack/react-query";
+import { actions } from "astro:actions";
 import { format, isToday } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { OutcomeBadge } from "./OutcomeBadge";
+
+const queryClient = new QueryClient();
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -300,9 +309,35 @@ function FilterPills({
 
 // ─── Fixture Card ────────────────────────────────────────────────────
 
+function useSponsor(gameId: string, ssrSponsorName?: string) {
+  const { data } = useQuery({
+    queryKey: ["game-sponsor", gameId],
+    queryFn: async () => {
+      const result = await actions.sponsorship.getByGameId({ gameId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    initialData: ssrSponsorName
+      ? {
+          sponsor: {
+            name: ssrSponsorName,
+            logoUrl: undefined,
+            message: undefined,
+            website: undefined,
+          },
+        }
+      : undefined,
+    initialDataUpdatedAt: ssrSponsorName ? 0 : undefined,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  return data?.sponsor?.name ?? ssrSponsorName;
+}
+
 function FixtureCard({ item }: { item: CalendarItem }) {
   const when = new Date(item.when);
-  const time = format(when, "HH:mm");
+  const time = formatInTimeZone(when, "Europe/London", "HH:mm");
+  const sponsorName = useSponsor(item.id, item.sponsorName);
   const borderClass = TEAM_BORDER_CLASSES[item.category] ?? "";
   const hasResultStripe = item.outcome === "W" || item.outcome === "L";
 
@@ -356,15 +391,15 @@ function FixtureCard({ item }: { item: CalendarItem }) {
           <span className="text-xs text-text/50">
             {item.leagueName ?? item.competitionName}
           </span>
-          {item.sponsorName && (
+          {sponsorName && (
             <>
               <span className="mx-1 h-1 w-1 rounded-full bg-text/20" />
               <span className="text-xs font-medium text-cta">
-                Sponsored by {item.sponsorName}
+                Sponsored by {sponsorName}
               </span>
             </>
           )}
-          {item.sponsorCta && (
+          {!sponsorName && item.sponsorCta && (
             <>
               <span className="mx-1 h-1 w-1 rounded-full bg-text/20" />
               <span className="text-xs font-medium text-cta">
@@ -401,7 +436,7 @@ function FixtureCard({ item }: { item: CalendarItem }) {
 
 function EventCard({ item }: { item: CalendarItem }) {
   const when = new Date(item.when);
-  const time = format(when, "HH:mm");
+  const time = formatInTimeZone(when, "Europe/London", "HH:mm");
 
   return (
     <a
@@ -506,7 +541,15 @@ function PastUpcomingDivider() {
 
 // ─── Main Component ──────────────────────────────────────────────────
 
-export function CalendarAgenda({
+export function CalendarAgenda(props: Props) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <CalendarAgendaInner {...props} />
+    </QueryClientProvider>
+  );
+}
+
+function CalendarAgendaInner({
   items,
   year,
   month,

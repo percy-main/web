@@ -1,5 +1,6 @@
 ---
 import { formatDate } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import type { CalendarItem } from "@/collections/calendarItem";
 import { GameCardSponsor } from "@/components/GameCardSponsor";
 
@@ -16,7 +17,7 @@ const displayName =
     ? `${item.team.name} vs ${item.opposition.club.name}`
     : item.name;
 const dateStr = item.when ? formatDate(item.when, "EEE dd MMM") : "TBC";
-const timeStr = item.when ? formatDate(item.when, "h:mm a") : "";
+const timeStr = item.when ? formatInTimeZone(item.when, "Europe/London", "h:mm a") : "";
 const ssrSponsor =
   item.type === "game" && item.sponsor
     ? { name: item.sponsor.name, logoUrl: item.sponsor.logoUrl }

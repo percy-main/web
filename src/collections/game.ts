@@ -4,6 +4,7 @@ import { defineCollection, z } from "astro:content";
 import { PLAY_CRICKET_SITE_ID } from "astro:env/server";
 import type { Entry } from "contentful";
 import * as df from "date-fns";
+import { fromZonedTime } from "date-fns-tz";
 import _ from "lodash";
 import type {
   TypeGameDetailSkeleton,
@@ -257,10 +258,13 @@ export const loader = async () => {
 
     const when =
       match.match_date && match.match_time
-        ? df.parse(
-            `${match.match_date}-${match.match_time}`,
-            "dd/MM/yyyy-HH:mm",
-            new Date(),
+        ? fromZonedTime(
+            df.parse(
+              `${match.match_date}-${match.match_time}`,
+              "dd/MM/yyyy-HH:mm",
+              new Date(),
+            ),
+            "Europe/London",
           )
         : null;
 
