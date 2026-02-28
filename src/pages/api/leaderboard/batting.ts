@@ -1,36 +1,13 @@
 export const prerender = false;
 
 import { client } from "@/lib/db/client";
+import type { BattingEntry } from "@/lib/leaderboard-schemas";
 import type { APIContext } from "astro";
 import { sql } from "kysely";
-import { z } from "zod";
 
 const MAX_LIMIT = 50;
 const CACHE_MAX_AGE = 43200; // 12 hours
 const CACHE_SWR = 86400; // 24 hours stale-while-revalidate
-
-export const BattingEntrySchema = z.object({
-  playerId: z.string(),
-  playerName: z.string(),
-  contentfulEntryId: z.string().nullable(),
-  innings: z.number(),
-  notOuts: z.number(),
-  runs: z.number(),
-  highScore: z.number(),
-  average: z.number().nullable(),
-  strikeRate: z.number().nullable(),
-  fours: z.number(),
-  sixes: z.number(),
-  fifties: z.number(),
-  hundreds: z.number(),
-});
-
-export const BattingResponseSchema = z.object({
-  entries: z.array(BattingEntrySchema),
-});
-
-export type BattingEntry = z.infer<typeof BattingEntrySchema>;
-export type BattingResponse = z.infer<typeof BattingResponseSchema>;
 
 export async function GET({ url }: APIContext): Promise<Response> {
   const season = Number(url.searchParams.get("season"));

@@ -1,11 +1,9 @@
 import {
   BattingResponseSchema,
-  type BattingResponse,
-} from "@/pages/api/leaderboard/batting";
-import {
   BowlingResponseSchema,
+  type BattingResponse,
   type BowlingResponse,
-} from "@/pages/api/leaderboard/bowling";
+} from "@/lib/leaderboard-schemas";
 
 type LeaderboardParams = {
   season: number;

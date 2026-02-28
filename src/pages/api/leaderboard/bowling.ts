@@ -1,35 +1,13 @@
 export const prerender = false;
 
 import { client } from "@/lib/db/client";
+import type { BowlingEntry } from "@/lib/leaderboard-schemas";
 import type { APIContext } from "astro";
 import { sql } from "kysely";
-import { z } from "zod";
 
 const MAX_LIMIT = 50;
 const CACHE_MAX_AGE = 43200; // 12 hours
 const CACHE_SWR = 86400; // 24 hours stale-while-revalidate
-
-export const BowlingEntrySchema = z.object({
-  playerId: z.string(),
-  playerName: z.string(),
-  contentfulEntryId: z.string().nullable(),
-  matches: z.number(),
-  overs: z.string(),
-  maidens: z.number(),
-  runs: z.number(),
-  wickets: z.number(),
-  average: z.number().nullable(),
-  economy: z.number().nullable(),
-  strikeRate: z.number().nullable(),
-  bestWickets: z.number(),
-});
-
-export const BowlingResponseSchema = z.object({
-  entries: z.array(BowlingEntrySchema),
-});
-
-export type BowlingEntry = z.infer<typeof BowlingEntrySchema>;
-export type BowlingResponse = z.infer<typeof BowlingResponseSchema>;
 
 export async function GET({ url }: APIContext): Promise<Response> {
   const season = Number(url.searchParams.get("season"));
