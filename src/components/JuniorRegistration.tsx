@@ -224,7 +224,6 @@ const SelectInput: FC<{
   label: string;
   value: string;
   options: string[];
-  required?: boolean;
   onChange: (value: string) => void;
 }> = ({ id, label, value, options, onChange }) => (
   <div className="mt-2 mb-5 w-full space-y-2">
@@ -441,7 +440,6 @@ const JuniorRegistrationInner: FC = () => {
                 label="School Year"
                 value={dep.school_year}
                 options={SCHOOL_YEARS}
-                required
                 onChange={(val) => updateDependent(i, { school_year: val })}
               />
 

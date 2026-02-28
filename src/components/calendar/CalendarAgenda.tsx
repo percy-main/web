@@ -230,12 +230,12 @@ function FilterPills({
           return (
             <Button
               key={key}
-              variant={isActive ? "default" : "outline"}
+              variant="ghost"
               onClick={() => onChange(key)}
               className={cn(
                 "rounded-full",
                 isActive
-                  ? "bg-primary font-bold shadow-md hover:bg-primary-light"
+                  ? "bg-primary font-bold text-white shadow-md hover:bg-primary-light hover:text-white"
                   : "border-2 border-primary/20 text-primary hover:border-primary/40 hover:bg-transparent",
               )}
             >
@@ -276,12 +276,12 @@ function FilterPills({
         return (
           <Button
             key={key}
-            variant={isActive ? "default" : "outline"}
+            variant="ghost"
             onClick={() => onChange(key)}
             className={cn(
               "rounded-full",
               isActive
-                ? "bg-primary font-bold shadow-md hover:bg-primary-light"
+                ? "bg-primary font-bold text-white shadow-md hover:bg-primary-light hover:text-white"
                 : "border-2 border-primary/20 text-primary hover:border-primary/40 hover:bg-transparent",
             )}
             style={

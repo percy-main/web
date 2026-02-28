@@ -480,7 +480,7 @@ function JuniorManagerSection({
               const teamId = team.id ?? "";
               const isSelected = selectedTeams.has(teamId);
               return (
-                <label
+                <div
                   key={teamId}
                   className={`flex cursor-pointer items-center gap-2 rounded border px-3 py-2 text-sm transition-colors ${
                     isSelected
@@ -489,11 +489,12 @@ function JuniorManagerSection({
                   }`}
                 >
                   <Checkbox
+                    id={`team-${teamId}`}
                     checked={isSelected}
                     onCheckedChange={() => toggleTeam(teamId)}
                   />
-                  {team.name}
-                </label>
+                  <Label htmlFor={`team-${teamId}`} className="cursor-pointer">{team.name}</Label>
+                </div>
               );
             })}
           </div>

@@ -1,4 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -112,16 +113,17 @@ function CompetitionFilter({
   return (
     <div className="flex flex-wrap gap-2">
       {types.map((type) => (
-        <label
+        <div
           key={type.value}
-          className="flex cursor-pointer items-center gap-1.5"
+          className="flex items-center gap-1.5"
         >
           <Checkbox
+            id={`comp-filter-${type.value}`}
             checked={selected.includes(type.value)}
             onCheckedChange={() => toggle(type.value)}
           />
-          <span className="text-sm text-gray-700">{type.label}</span>
-        </label>
+          <Label htmlFor={`comp-filter-${type.value}`} className="cursor-pointer text-sm text-gray-700">{type.label}</Label>
+        </div>
       ))}
     </div>
   );

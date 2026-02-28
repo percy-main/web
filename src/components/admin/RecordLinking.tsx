@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -360,20 +361,22 @@ export function RecordLinking() {
           className="max-w-md"
         />
         <div className="flex items-center gap-3 text-sm">
-          <label className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5">
             <Checkbox
+              id="record-linking-show-linked"
               checked={showLinked}
               onCheckedChange={(checked) => setShowLinked(checked === true)}
             />
-            Fully linked
-          </label>
-          <label className="flex items-center gap-1.5">
+            <Label htmlFor="record-linking-show-linked">Fully linked</Label>
+          </div>
+          <div className="flex items-center gap-1.5">
             <Checkbox
+              id="record-linking-show-unlinked"
               checked={showUnlinked}
               onCheckedChange={(checked) => setShowUnlinked(checked === true)}
             />
-            Unlinked
-          </label>
+            <Label htmlFor="record-linking-show-unlinked">Unlinked</Label>
+          </div>
         </div>
         <Select
           value={personTypeFilter}
