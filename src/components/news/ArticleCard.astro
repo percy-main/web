@@ -1,0 +1,143 @@
+---
+import { RichText } from "@/components/RichText";
+import { formatDate } from "date-fns";
+import { getCategoryColor } from "./category-colors";
+import type { News } from "@/collections/news";
+
+type Props = {
+  article: { id: string } & News;
+};
+
+const { article } = Astro.props;
+const { title, when, summary, author, slug, pages } = article;
+const firstTag = pages[0];
+const accentColor = firstTag ? getCategoryColor(firstTag.title) : getCategoryColor("");
+const initials = author?.name
+  ? author.name
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  : "?";
+---
+
+<a
+  href={`/news/article/${slug}`}
+  class="article-card block relative bg-white rounded-[14px] mb-3.5 overflow-hidden cursor-pointer"
+  style={`--card-accent: ${accentColor.dot}`}
+>
+  <div class="px-5 py-5 sm:px-6 flex flex-col gap-3">
+    {/* Top row: tag badges + date */}
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-1.5 flex-wrap">
+        {pages.map((tag) => {
+          const c = getCategoryColor(tag.title);
+          return (
+            <span
+              class="inline-flex items-center gap-1 rounded-md px-2.5 py-0.5 text-[11px] font-semibold tracking-wide"
+              style={`background: ${c.bg}; color: ${c.text}`}
+            >
+              {tag.title}
+            </span>
+          );
+        })}
+      </div>
+      <span class="card-date text-[13px] text-text opacity-45 whitespace-nowrap shrink-0">
+        {formatDate(when, "EEEE, d MMMM yyyy")}
+      </span>
+    </div>
+
+    {/* Title */}
+    <h3 class="card-title font-secondary text-[20px] font-bold text-dark leading-snug m-0 transition-colors duration-150">
+      {title}
+    </h3>
+
+    {/* Summary */}
+    <div class="text-[14.5px] leading-relaxed text-text opacity-75 line-clamp-2">
+      <RichText
+        client:only="react"
+        page=""
+        document={summary}
+        games={[]}
+      />
+    </div>
+
+    {/* Bottom row: author + read more */}
+    <div class="flex items-center justify-between pt-3 border-t border-black/[0.04] mt-0.5">
+      <div class="flex items-center gap-2.5">
+        {author?.photo ? (
+          <img
+            class="h-7 w-7 rounded-full shrink-0"
+            src={author.photo.url}
+            alt={author.name}
+          />
+        ) : (
+          <div
+            class="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+            style={`background: ${accentColor.bg}; color: ${accentColor.text}`}
+          >
+            {initials}
+          </div>
+        )}
+        <span class="text-[13px] font-semibold text-dark">
+          {author?.name}
+        </span>
+      </div>
+      <span class="card-read-more inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary">
+        Read article
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </div>
+  </div>
+</a>
+
+<style>
+  .article-card {
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  }
+  .article-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(27, 61, 47, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
+  }
+  .article-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--card-accent, #1B3D2F);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .article-card:hover::before {
+    opacity: 1;
+  }
+  .article-card:hover .card-title {
+    color: #1B3D2F;
+  }
+  .card-read-more {
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .article-card:hover .card-read-more {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  @media (max-width: 768px) {
+    .card-date {
+      display: none;
+    }
+    .card-title {
+      font-size: 17px;
+    }
+    .card-read-more {
+      opacity: 1;
+      transform: none;
+    }
+  }
+</style>

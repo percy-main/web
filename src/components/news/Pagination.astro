@@ -1,0 +1,67 @@
+---
+type Props = {
+  currentPage: number;
+  lastPage: number;
+  baseUrl: string;
+};
+
+const { currentPage, lastPage, baseUrl } = Astro.props;
+
+function pageUrl(pageNum: number) {
+  return `${baseUrl}${pageNum}`;
+}
+
+const showPagination = lastPage > 1;
+---
+
+{showPagination && (
+  <nav class="flex items-center justify-center gap-2 mt-8 pt-6 border-t border-dashed border-border">
+    {/* Newer button (goes to previous page = lower number = newer articles) */}
+    {currentPage > 1 ? (
+      <a
+        href={pageUrl(currentPage - 1)}
+        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-border bg-white text-text hover:border-primary hover:text-primary transition-all duration-150"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Newer
+      </a>
+    ) : (
+      <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-border bg-white text-text opacity-30 pointer-events-none">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Newer
+      </span>
+    )}
+
+    {/* Page numbers */}
+    {Array.from({ length: lastPage }, (_, i) => i + 1).map((pageNum) => (
+      pageNum === currentPage ? (
+        <span class="w-8 h-8 rounded-lg flex items-center justify-center text-[13px] font-semibold bg-primary text-white">
+          {pageNum}
+        </span>
+      ) : (
+        <a
+          href={pageUrl(pageNum)}
+          class="w-8 h-8 rounded-lg flex items-center justify-center text-[13px] font-semibold border-[1.5px] border-border bg-white text-text hover:border-primary hover:text-primary transition-all duration-150"
+        >
+          {pageNum}
+        </a>
+      )
+    ))}
+
+    {/* Older button (goes to next page = higher number = older articles) */}
+    {currentPage < lastPage ? (
+      <a
+        href={pageUrl(currentPage + 1)}
+        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-border bg-white text-text hover:border-primary hover:text-primary transition-all duration-150"
+      >
+        Older
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </a>
+    ) : (
+      <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-border bg-white text-text opacity-30 pointer-events-none">
+        Older
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </span>
+    )}
+  </nav>
+)}

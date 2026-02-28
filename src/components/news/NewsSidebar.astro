@@ -1,0 +1,49 @@
+---
+type Props = {
+  totalArticleCount: number;
+  totalTagCount: number;
+  uniqueAuthorCount: number;
+  archiveMonths: Array<{ month: string; count: number }>;
+};
+
+const { totalArticleCount, totalTagCount, uniqueAuthorCount, archiveMonths } =
+  Astro.props;
+---
+
+<aside class="hidden lg:block w-[260px] shrink-0">
+  <div class="sticky top-4 flex flex-col gap-4">
+    {/* Overview stats */}
+    <div class="bg-white border border-black/[0.06] rounded-xl p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      <h3 class="text-sm font-bold mb-3">Overview</h3>
+      <div class="grid grid-cols-3 gap-2">
+        <div class="text-center p-2.5 rounded-lg bg-home-bg text-primary">
+          <div class="text-xl font-bold font-secondary leading-none">{totalArticleCount}</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wide mt-1">Articles</div>
+        </div>
+        <div class="text-center p-2.5 rounded-lg bg-[#dbeafe] text-[#2563eb]">
+          <div class="text-xl font-bold font-secondary leading-none">{totalTagCount}</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wide mt-1">Tags</div>
+        </div>
+        <div class="text-center p-2.5 rounded-lg bg-[#fef3c7] text-[#d97706]">
+          <div class="text-xl font-bold font-secondary leading-none">{uniqueAuthorCount}</div>
+          <div class="text-[10px] font-semibold uppercase tracking-wide mt-1">Authors</div>
+        </div>
+      </div>
+    </div>
+
+    {/* Archive months */}
+    <div class="bg-white border border-black/[0.06] rounded-xl p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      <h3 class="text-sm font-bold mb-3">Archive</h3>
+      <div class="flex flex-col">
+        {archiveMonths.map((m) => (
+          <div class="flex items-center justify-between py-1.5 text-[13px] text-text border-b border-black/[0.04] last:border-b-0">
+            <span>{m.month}</span>
+            <span class="text-[11px] bg-black/5 rounded-full px-2 py-0.5 font-semibold">
+              {m.count}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</aside>
