@@ -1,5 +1,6 @@
 ---
-import { formatDate, getYear } from "date-fns";
+import { getYear } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { RichText } from "@/components/RichText";
 import { Sponsor } from "@/components/Sponsor";
 import { MatchResult } from "@/components/MatchResult";
@@ -66,11 +67,11 @@ const itemFinish = calendarItem.finish ?? undefined;
             "Yahoo",
           ]}
           location={calendarItem.location?.name}
-          startDate={formatDate(itemWhen, "yyyy-MM-dd")}
-          endDate={itemFinish && formatDate(itemFinish, "yyyy-MM-dd")}
-          startTime={formatDate(itemWhen, "HH:mm")}
-          endTime={itemFinish && formatDate(itemFinish, "HH:mm")}
-          timeZone="GMT"
+          startDate={formatInTimeZone(itemWhen, "Europe/London", "yyyy-MM-dd")}
+          endDate={itemFinish && formatInTimeZone(itemFinish, "Europe/London", "yyyy-MM-dd")}
+          startTime={formatInTimeZone(itemWhen, "Europe/London", "HH:mm")}
+          endTime={itemFinish && formatInTimeZone(itemFinish, "Europe/London", "HH:mm")}
+          timeZone="Europe/London"
           hideRichData
         />
       )}

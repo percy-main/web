@@ -1,4 +1,4 @@
-import { formatDate } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import type { FC } from "react";
 import { IoCalendar } from "react-icons/io5";
 
@@ -12,12 +12,12 @@ export const When: FC<Props> = ({ start, end }) => (
     <div className="flex flex-col gap-4">
       <p>
         <span className="font-semibold">Start: </span>
-        {formatDate(start, "dd/MM/yyyy HH:mm")}
+        {formatInTimeZone(start, "Europe/London", "dd/MM/yyyy HH:mm")}
       </p>
       {end && (
         <p>
           <span className="font-semibold">Finish: </span>
-          {formatDate(end, "dd/MM/yyyy HH:mm")}
+          {formatInTimeZone(end, "Europe/London", "dd/MM/yyyy HH:mm")}
         </p>
       )}
     </div>
