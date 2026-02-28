@@ -318,7 +318,14 @@ function useSponsor(gameId: string, ssrSponsorName?: string) {
       return result.data;
     },
     initialData: ssrSponsorName
-      ? { sponsor: { name: ssrSponsorName } }
+      ? {
+          sponsor: {
+            name: ssrSponsorName,
+            logoUrl: undefined,
+            message: undefined,
+            website: undefined,
+          },
+        }
       : undefined,
     initialDataUpdatedAt: ssrSponsorName ? 0 : undefined,
     staleTime: 5 * 60 * 1000,
