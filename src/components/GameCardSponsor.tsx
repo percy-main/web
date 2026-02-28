@@ -47,9 +47,7 @@ function GameCardSponsorInner({ gameId, ssrSponsor }: Props) {
 
   return (
     <div className="flex flex-col items-center gap-1 border-t border-gray-100 pt-2">
-      <span className="text-[10px] leading-tight text-gray-400">
-        Sponsored
-      </span>
+      <span className="text-[10px] leading-tight text-gray-400">Sponsored</span>
       {sponsor.logoUrl ? (
         <img
           src={sponsor.logoUrl}
@@ -59,7 +57,7 @@ function GameCardSponsorInner({ gameId, ssrSponsor }: Props) {
           className="h-6 max-w-[60px] object-contain"
         />
       ) : (
-        <span className="text-[10px] font-medium leading-tight text-gray-500">
+        <span className="h-6 text-[10px] leading-tight font-medium text-gray-500">
           {sponsor.name}
         </span>
       )}
