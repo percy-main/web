@@ -1,5 +1,15 @@
 import { SimpleInput } from "@/components/form/SimpleInput";
 import { RadioButtons } from "@/components/form/RadioButtons";
+import { Button, buttonVariants } from "@/components/ui/Button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { actions } from "astro:actions";
@@ -172,12 +182,6 @@ const validateConsentsStep = (deps: Dependent[]): string[] => {
   });
 };
 
-const btnPrimary =
-  "rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 focus:outline-none";
-const btnSecondary =
-  "rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-center text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-4 focus:ring-blue-300 focus:outline-none";
-const btnDanger =
-  "rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 focus:ring-2 focus:ring-red-300 focus:outline-none";
 
 const StepIndicator: FC<{ currentStep: Step }> = ({ currentStep }) => {
   const currentIndex = STEPS.indexOf(currentStep);
@@ -222,29 +226,21 @@ const SelectInput: FC<{
   options: string[];
   required?: boolean;
   onChange: (value: string) => void;
-}> = ({ id, label, value, options, required, onChange }) => (
-  <div className="group relative z-0 mt-2 mb-5 w-full">
-    <select
-      id={id}
-      name={id}
-      value={value}
-      required={required}
-      onChange={(e) => onChange(e.target.value)}
-      className="peer block w-full appearance-none border-0 border-b-2 border-gray-300 bg-transparent py-2.5 text-sm text-gray-900 focus:border-blue-600 focus:ring-0 focus:outline-none dark:border-gray-600 dark:text-white dark:focus:border-blue-500"
-    >
-      <option value="">Select {label}</option>
-      {options.map((opt) => (
-        <option key={opt} value={opt}>
-          {opt}
-        </option>
-      ))}
-    </select>
-    <label
-      htmlFor={id}
-      className="absolute top-3 origin-[0] -translate-y-7 scale-75 transform text-sm text-gray-500 duration-300 peer-focus:start-0 peer-focus:-translate-y-7 peer-focus:scale-75 peer-focus:font-medium peer-focus:text-blue-600 dark:text-gray-400 peer-focus:dark:text-blue-500"
-    >
-      {label}
-    </label>
+}> = ({ id, label, value, options, onChange }) => (
+  <div className="mt-2 mb-5 w-full space-y-2">
+    <Label htmlFor={id}>{label}</Label>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger id={id}>
+        <SelectValue placeholder={`Select ${label}`} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((opt) => (
+          <SelectItem key={opt} value={opt}>
+            {opt}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   </div>
 );
 
@@ -256,23 +252,17 @@ const TextAreaInput: FC<{
   placeholder?: string;
   onChange: (value: string) => void;
 }> = ({ id, label, value, required, placeholder, onChange }) => (
-  <div className="group relative z-0 mt-2 mb-5 w-full">
-    <textarea
+  <div className="mt-2 mb-5 w-full space-y-2">
+    <Label htmlFor={id}>{label}</Label>
+    <Textarea
       id={id}
       name={id}
       value={value}
       required={required}
-      placeholder={placeholder ?? " "}
+      placeholder={placeholder}
       rows={3}
       onChange={(e) => onChange(e.target.value)}
-      className="peer block w-full appearance-none border-0 border-b-2 border-gray-300 bg-transparent text-sm text-gray-900 focus:border-blue-600 focus:ring-0 focus:outline-none dark:border-gray-600 dark:text-white dark:focus:border-blue-500"
     />
-    <label
-      htmlFor={id}
-      className="absolute top-3 origin-[0] -translate-y-7 scale-75 transform text-sm text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:start-0 peer-focus:-translate-y-7 peer-focus:scale-75 peer-focus:font-medium peer-focus:text-blue-600 dark:text-gray-400 peer-focus:dark:text-blue-500"
-    >
-      {label}
-    </label>
   </div>
 );
 
@@ -375,7 +365,7 @@ const JuniorRegistrationInner: FC = () => {
             Your junior members have been registered and a charge has been
             created. Head to the payments tab in the members area to pay.
           </p>
-          <a href="/members?tab=payments" className={btnPrimary + " inline-block"}>
+          <a href="/members?tab=payments" className={buttonVariants()}>
             Go to Payments
           </a>
         </div>
@@ -406,13 +396,14 @@ const JuniorRegistrationInner: FC = () => {
                   {` — £${priceForChild(existingCount, i)}`}
                 </h5>
                 {dependents.length > 1 && (
-                  <button
+                  <Button
                     type="button"
-                    className={btnDanger}
+                    variant="destructive"
+                    size="sm"
                     onClick={() => removeChild(i)}
                   >
                     Remove
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -461,16 +452,15 @@ const JuniorRegistrationInner: FC = () => {
           ))}
 
           <div className="mb-8 flex flex-wrap gap-3">
-            <button type="button" className={btnSecondary} onClick={addChild}>
+            <Button type="button" variant="outline" onClick={addChild}>
               + Add Another Child
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className={btnPrimary}
               onClick={() => validateAndAdvance("cricket")}
             >
               Next: Cricket Experience
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -578,9 +568,11 @@ const JuniorRegistrationInner: FC = () => {
                 Alternative Contact
               </h6>
               {i > 0 && (
-                <button
+                <Button
                   type="button"
-                  className="mb-3 text-xs text-blue-600 hover:text-blue-800"
+                  variant="link"
+                  size="sm"
+                  className="mb-3"
                   onClick={() =>
                     updateDependent(i, {
                       alt_contact_name: dependents[0].alt_contact_name,
@@ -591,7 +583,7 @@ const JuniorRegistrationInner: FC = () => {
                   }
                 >
                   Copy from {dependents[0].name || "Child 1"}
-                </button>
+                </Button>
               )}
               <SimpleInput
                 id={`dep-alt-name-${i}`}
@@ -665,9 +657,11 @@ const JuniorRegistrationInner: FC = () => {
               <h5 className="mb-3 text-sm font-semibold">{dep.name}</h5>
 
               {i > 0 && (
-                <button
+                <Button
                   type="button"
-                  className="mb-3 text-xs text-blue-600 hover:text-blue-800"
+                  variant="link"
+                  size="sm"
+                  className="mb-3"
                   onClick={() =>
                     updateDependent(i, {
                       gp_surgery: dependents[0].gp_surgery,
@@ -676,7 +670,7 @@ const JuniorRegistrationInner: FC = () => {
                   }
                 >
                   Copy GP details from {dependents[0].name || "Child 1"}
-                </button>
+                </Button>
               )}
 
               <SimpleInput
@@ -995,23 +989,22 @@ const JuniorRegistrationInner: FC = () => {
           )}
 
           <div className="mb-8 flex flex-wrap gap-3">
-            <button
+            <Button
               type="button"
-              className={btnSecondary}
+              variant="outline"
               onClick={() => setStep("consents")}
             >
               Back
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className={btnPrimary}
               disabled={addDependentsMutation.isPending}
               onClick={handleSubmit}
             >
               {addDependentsMutation.isPending
                 ? "Processing..."
                 : "Confirm & Pay"}
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -1027,12 +1020,12 @@ const StepNav: FC<{
   nextLabel: string;
 }> = ({ onBack, onNext, nextLabel }) => (
   <div className="mb-8 flex flex-wrap gap-3">
-    <button type="button" className={btnSecondary} onClick={onBack}>
+    <Button type="button" variant="outline" onClick={onBack}>
       Back
-    </button>
-    <button type="button" className={btnPrimary} onClick={onNext}>
+    </Button>
+    <Button type="button" onClick={onNext}>
       {nextLabel}
-    </button>
+    </Button>
   </div>
 );
 
@@ -1055,7 +1048,7 @@ const SocialMembershipUpsell: FC = () => {
       </p>
       <a
         href="/membership/pay"
-        className={btnSecondary + " inline-block text-sm"}
+        className={buttonVariants({ variant: "outline" })}
       >
         Become a Social Member
       </a>

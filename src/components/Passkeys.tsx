@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/Button";
 import { authClient } from "@/lib/auth/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDate } from "date-fns";
@@ -38,14 +39,16 @@ export const Passkeys = () => {
             key={passkey.id}
             className="flex max-w-max flex-row items-center justify-start rounded-2xl border border-gray-500 bg-blue-100 p-4"
           >
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               className="mr-4"
               onClick={() => {
                 deletePasskey.mutate(passkey.id);
               }}
             >
               <IoTrashBinOutline />
-            </button>
+            </Button>
             <div>
               <p>{passkey.name}</p>
               <p className="text-sm">
@@ -72,13 +75,13 @@ export const Passkeys = () => {
           required
           autoComplete="false"
         />
-        <button
+        <Button
           type="submit"
-          className="text-dark cursor-pointer justify-self-start rounded border-1 border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
+          variant="outline"
           disabled={!newPasskeyName}
         >
           Add new passkey
-        </button>
+        </Button>
       </form>
     </section>
   );

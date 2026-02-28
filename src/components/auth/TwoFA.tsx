@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/Button";
 import {
   InputOTP,
   InputOTPGroup,
@@ -63,22 +64,22 @@ export const TwoFA: FC<Props> = ({ setPhase }) => {
             <InputOTPSlot index={5} />
           </InputOTPGroup>
         </InputOTP>
-        <button
+        <Button
           type="submit"
-          className="focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800 w-full rounded-lg bg-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-700 focus:ring-4 focus:outline-hidden"
+          className="w-full"
         >
           Submit
-        </button>
+        </Button>
         {error && (
           <p className="text-sm font-light text-red-800">{error.message}</p>
         )}
-        <button
+        <Button
           type="button"
+          variant="link"
           onClick={() => setPhase("recovery")}
-          className="focus:ring-primary-300 text-sm hover:underline"
         >
           Stuck? Use a recovery code.
-        </button>
+        </Button>
       </form>
     </section>
   );
