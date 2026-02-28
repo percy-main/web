@@ -15,7 +15,7 @@ const showPagination = lastPage > 1;
 ---
 
 {showPagination && (
-  <nav class="flex items-center justify-center gap-2 mt-8 pt-6 border-t border-dashed border-border">
+  <nav aria-label="Page navigation" class="flex items-center justify-center gap-2 mt-8 pt-6 border-t border-dashed border-border">
     {/* Newer button (goes to previous page = lower number = newer articles) */}
     {currentPage > 1 ? (
       <a
@@ -26,7 +26,7 @@ const showPagination = lastPage > 1;
         Newer
       </a>
     ) : (
-      <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-border bg-white text-text opacity-30 pointer-events-none">
+      <span aria-disabled="true" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-border bg-white text-text opacity-30 pointer-events-none">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
         Newer
       </span>
@@ -58,7 +58,7 @@ const showPagination = lastPage > 1;
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </a>
     ) : (
-      <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-border bg-white text-text opacity-30 pointer-events-none">
+      <span aria-disabled="true" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-border bg-white text-text opacity-30 pointer-events-none">
         Older
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </span>
