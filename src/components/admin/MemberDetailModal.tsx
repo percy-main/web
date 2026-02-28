@@ -1,4 +1,21 @@
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/Table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { formatDate } from "date-fns";
@@ -42,35 +59,11 @@ export function MemberDetailModal({
   const detail = data?.data;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">User Details</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-            aria-label="Close modal"
-          >
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
+    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-h-[90vh] w-full max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>User Details</DialogTitle>
+        </DialogHeader>
 
         {isLoading && <p className="text-gray-500">Loading...</p>}
         {error && (
@@ -112,8 +105,9 @@ export function MemberDetailModal({
               {/* Role management */}
               <div className="mt-3">
                 {confirmRole === null ? (
-                  <button
-                    className="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-100"
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() =>
                       setConfirmRole(
                         detail.user.role === "admin" ? "user" : "admin",
@@ -123,14 +117,15 @@ export function MemberDetailModal({
                     {detail.user.role === "admin"
                       ? "Demote to User"
                       : "Promote to Admin"}
-                  </button>
+                  </Button>
                 ) : (
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-600">
                       Change role to &quot;{confirmRole}&quot;?
                     </span>
-                    <button
-                      className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700 disabled:opacity-50"
+                    <Button
+                      variant="destructive"
+                      size="sm"
                       disabled={roleMutation.isPending}
                       onClick={() =>
                         roleMutation.mutate(
@@ -139,13 +134,14 @@ export function MemberDetailModal({
                       }
                     >
                       {roleMutation.isPending ? "Saving..." : "Confirm"}
-                    </button>
-                    <button
-                      className="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-100"
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setConfirmRole(null)}
                     >
                       Cancel
-                    </button>
+                    </Button>
                   </div>
                 )}
                 {roleMutation.isError && (
@@ -365,8 +361,8 @@ export function MemberDetailModal({
             )}
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -492,11 +488,9 @@ function JuniorManagerSection({
                       : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={isSelected}
-                    onChange={() => toggleTeam(teamId)}
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    onCheckedChange={() => toggleTeam(teamId)}
                   />
                   {team.name}
                 </label>
@@ -610,12 +604,13 @@ function ChargesSection({ memberId }: { memberId: string }) {
     <section>
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-lg font-medium">Payments</h3>
-        <button
-          className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+        <Button
+          variant={showAddForm ? "outline" : "default"}
+          size="sm"
           onClick={() => setShowAddForm(!showAddForm)}
         >
           {showAddForm ? "Cancel" : "Add Payment"}
-        </button>
+        </Button>
       </div>
 
       {showAddForm && (
@@ -625,29 +620,23 @@ function ChargesSection({ memberId }: { memberId: string }) {
         >
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
-              <label
-                htmlFor="charge-description"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <Label htmlFor="charge-description">
                 Description
-              </label>
-              <input
+              </Label>
+              <Input
                 id="charge-description"
                 name="description"
                 type="text"
                 required
                 placeholder="e.g. Match fee"
-                className="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                className="mt-1"
               />
             </div>
             <div>
-              <label
-                htmlFor="charge-amount"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <Label htmlFor="charge-amount">
                 Amount (GBP)
-              </label>
-              <input
+              </Label>
+              <Input
                 id="charge-amount"
                 name="amount"
                 type="number"
@@ -655,34 +644,31 @@ function ChargesSection({ memberId }: { memberId: string }) {
                 min="0.01"
                 step="0.01"
                 placeholder="5.00"
-                className="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                className="mt-1"
               />
             </div>
             <div>
-              <label
-                htmlFor="charge-date"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <Label htmlFor="charge-date">
                 Date
-              </label>
-              <input
+              </Label>
+              <Input
                 id="charge-date"
                 name="chargeDate"
                 type="date"
                 required
                 defaultValue={new Date().toISOString().split("T")[0]}
-                className="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                className="mt-1"
               />
             </div>
           </div>
           <div className="mt-3 flex gap-2">
-            <button
+            <Button
               type="submit"
+              size="sm"
               disabled={addChargeMutation.isPending}
-              className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {addChargeMutation.isPending ? "Adding..." : "Add Payment"}
-            </button>
+            </Button>
           </div>
           {addChargeMutation.isError && (
             <p className="mt-2 text-sm text-red-600">
@@ -706,35 +692,35 @@ function ChargesSection({ memberId }: { memberId: string }) {
 
       {charges && charges.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b text-xs uppercase text-gray-500">
-              <tr>
-                <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Description</th>
-                <th className="px-3 py-2">Amount</th>
-                <th className="px-3 py-2">Source</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Source</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {charges.map((charge) => (
-                <tr key={charge.id} className="border-b">
-                  <td className="px-3 py-2">
+                <TableRow key={charge.id}>
+                  <TableCell>
                     {formatDate(charge.charge_date, "dd/MM/yyyy")}
-                  </td>
-                  <td className="px-3 py-2">{charge.description}</td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell>{charge.description}</TableCell>
+                  <TableCell>
                     {currencyFormatter.format(charge.amount_pence / 100)}
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell>
                     <StatusPill
                       variant={charge.source === "admin" ? "gray" : "blue"}
                     >
                       {charge.source}
                     </StatusPill>
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell>
                     {charge.paid_at ? (
                       <StatusPill variant="green">Paid</StatusPill>
                     ) : charge.payment_confirmed_at ? (
@@ -742,22 +728,23 @@ function ChargesSection({ memberId }: { memberId: string }) {
                     ) : (
                       <StatusPill variant="yellow">Unpaid</StatusPill>
                     )}
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableCell>
+                  <TableCell>
                     {!charge.paid_at && !charge.payment_confirmed_at && (
                       <>
                         {deleteTarget === charge.id ? (
                           <div className="flex flex-col gap-1">
-                            <input
+                            <Input
                               type="text"
                               placeholder="Reason for deletion"
                               value={deleteReason}
                               onChange={(e) => setDeleteReason(e.target.value)}
-                              className="rounded border border-gray-300 px-2 py-1 text-xs"
+                              className="h-7 text-xs"
                             />
                             <div className="flex gap-1">
-                              <button
-                                className="rounded bg-red-600 px-2 py-0.5 text-xs text-white hover:bg-red-700 disabled:opacity-50"
+                              <Button
+                                variant="destructive"
+                                size="sm"
                                 disabled={
                                   deleteChargeMutation.isPending ||
                                   !deleteReason.trim()
@@ -772,33 +759,36 @@ function ChargesSection({ memberId }: { memberId: string }) {
                                 {deleteChargeMutation.isPending
                                   ? "Deleting..."
                                   : "Confirm"}
-                              </button>
-                              <button
-                                className="rounded border border-gray-300 px-2 py-0.5 text-xs hover:bg-gray-100"
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 onClick={() => {
                                   setDeleteTarget(null);
                                   setDeleteReason("");
                                 }}
                               >
                                 Cancel
-                              </button>
+                              </Button>
                             </div>
                           </div>
                         ) : (
-                          <button
-                            className="text-xs text-red-600 hover:text-red-800"
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-800"
                             onClick={() => setDeleteTarget(charge.id)}
                           >
                             Delete
-                          </button>
+                          </Button>
                         )}
                       </>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </section>

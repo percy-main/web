@@ -1,3 +1,13 @@
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/Table";
 import { useQuery } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { formatDate } from "date-fns";
@@ -57,12 +67,12 @@ export function ContactSubmissionsTable() {
     <div className="flex flex-col gap-4">
       {/* Search */}
       <div>
-        <input
+        <Input
           type="text"
           placeholder="Search by name or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="max-w-md"
         />
       </div>
 
@@ -72,61 +82,59 @@ export function ContactSubmissionsTable() {
 
       {result && (
         <>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Message</th>
-                  <th className="px-4 py-3">Page</th>
-                  <th className="px-4 py-3">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.submissions.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-4 py-6 text-center text-gray-500"
-                    >
-                      No submissions found.
-                    </td>
-                  </tr>
-                )}
-                {result.submissions.map((submission) => {
-                  const isExpanded = expandedId === submission.id;
-                  return (
-                    <tr
-                      key={submission.id}
-                      className="cursor-pointer border-b hover:bg-gray-50"
-                      onClick={() =>
-                        setExpandedId(isExpanded ? null : submission.id)
-                      }
-                    >
-                      <td className="px-4 py-3 font-medium">
-                        {submission.name}
-                      </td>
-                      <td className="px-4 py-3">{submission.email}</td>
-                      <td className="px-4 py-3">
-                        {isExpanded ? (
-                          <span className="whitespace-pre-wrap">
-                            {submission.message}
-                          </span>
-                        ) : (
-                          truncateMessage(submission.message)
-                        )}
-                      </td>
-                      <td className="px-4 py-3">{submission.page}</td>
-                      <td className="px-4 py-3">
-                        {formatDate(submission.createdAt, "dd/MM/yyyy HH:mm")}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Message</TableHead>
+                <TableHead>Page</TableHead>
+                <TableHead>Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {result.submissions.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="py-6 text-center text-gray-500"
+                  >
+                    No submissions found.
+                  </TableCell>
+                </TableRow>
+              )}
+              {result.submissions.map((submission) => {
+                const isExpanded = expandedId === submission.id;
+                return (
+                  <TableRow
+                    key={submission.id}
+                    className="cursor-pointer"
+                    onClick={() =>
+                      setExpandedId(isExpanded ? null : submission.id)
+                    }
+                  >
+                    <TableCell className="font-medium">
+                      {submission.name}
+                    </TableCell>
+                    <TableCell>{submission.email}</TableCell>
+                    <TableCell>
+                      {isExpanded ? (
+                        <span className="whitespace-pre-wrap">
+                          {submission.message}
+                        </span>
+                      ) : (
+                        truncateMessage(submission.message)
+                      )}
+                    </TableCell>
+                    <TableCell>{submission.page}</TableCell>
+                    <TableCell>
+                      {formatDate(submission.createdAt, "dd/MM/yyyy HH:mm")}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
 
           {/* Pagination */}
           <div className="flex items-center justify-between text-sm">
@@ -134,23 +142,25 @@ export function ContactSubmissionsTable() {
               {result.total} submission{result.total !== 1 ? "s" : ""} total
             </span>
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="rounded border border-gray-300 px-3 py-1 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Previous
-              </button>
+              </Button>
               <span className="text-gray-600">
                 Page {page} of {totalPages}
               </span>
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
-                className="rounded border border-gray-300 px-3 py-1 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Next
-              </button>
+              </Button>
             </div>
           </div>
         </>

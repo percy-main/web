@@ -1,6 +1,15 @@
 import { AGE_GROUPS, type AgeGroup } from "@/lib/util/ageGroup";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
 import {
   Table,
   TableBody,
@@ -131,52 +140,64 @@ export function JuniorsTable() {
     <div className="flex flex-col gap-4">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <input
+        <Input
           type="text"
           placeholder="Search by junior or parent name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-xs rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="max-w-xs"
         />
-        <select
+        <Select
           value={ageGroupFilter}
-          onChange={(e) => {
-            setAgeGroupFilter(e.target.value as AgeGroup | "all");
+          onValueChange={(value) => {
+            setAgeGroupFilter(value as AgeGroup | "all");
             setPage(1);
           }}
-          className="rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
-          <option value="all">All Age Groups</option>
-          {AGE_GROUPS.map((g) => (
-            <option key={g} value={g}>
-              {g}
-            </option>
-          ))}
-        </select>
-        <select
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All Age Groups" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Age Groups</SelectItem>
+            {AGE_GROUPS.map((g) => (
+              <SelectItem key={g} value={g}>
+                {g}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
           value={sexFilter}
-          onChange={(e) => {
-            setSexFilter(e.target.value as SexFilter);
+          onValueChange={(value) => {
+            setSexFilter(value as SexFilter);
             setPage(1);
           }}
-          className="rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
-          <option value="all">All Genders</option>
-          <option value="male">Boys</option>
-          <option value="female">Girls</option>
-        </select>
-        <select
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="All Genders" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Genders</SelectItem>
+            <SelectItem value="male">Boys</SelectItem>
+            <SelectItem value="female">Girls</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
           value={membershipFilter}
-          onChange={(e) => {
-            setMembershipFilter(e.target.value as MembershipFilter);
+          onValueChange={(value) => {
+            setMembershipFilter(value as MembershipFilter);
             setPage(1);
           }}
-          className="rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
-          <option value="all">All Memberships</option>
-          <option value="paid">Paid</option>
-          <option value="unpaid">Unpaid</option>
-        </select>
+          <SelectTrigger className="w-[170px]">
+            <SelectValue placeholder="All Memberships" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Memberships</SelectItem>
+            <SelectItem value="paid">Paid</SelectItem>
+            <SelectItem value="unpaid">Unpaid</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Summary */}
@@ -206,25 +227,25 @@ export function JuniorsTable() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="rounded border px-3 py-1 text-sm disabled:opacity-50"
           >
             Previous
-          </button>
+          </Button>
           <span className="text-sm text-gray-600">
             Page {page} of {totalPages}
           </span>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
-            className="rounded border px-3 py-1 text-sm disabled:opacity-50"
           >
             Next
-          </button>
+          </Button>
         </div>
       )}
     </div>

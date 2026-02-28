@@ -1,7 +1,20 @@
 import { Badge } from "@/ui/Badge";
 import { Button } from "@/ui/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/ui/dialog";
 import { Input } from "@/ui/input";
 import { Label } from "@/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/ui/Select";
 import {
   Table,
   TableBody,
@@ -207,17 +220,18 @@ const GameSelector: FC<{
             </div>
           )}
           {games.map((game) => (
-            <button
+            <Button
               key={game.id}
               type="button"
-              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100"
+              variant="ghost"
+              className="w-full justify-start rounded-none px-3 py-2 text-sm"
               onClick={() => {
                 onSelect(game);
                 setIsOpen(false);
               }}
             >
               {game.date} — {game.team} vs {game.opposition}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -309,16 +323,11 @@ const CreateSponsorshipModal: FC<{ onClose: () => void }> = ({ onClose }) => {
     !logoError;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="fixed inset-0 bg-black/50"
-        onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onClose();
-        }}
-      />
-      <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-auto rounded-lg bg-white p-6 shadow-xl">
-        <h2 className="mb-4 text-lg font-semibold">Create Manual Sponsorship</h2>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-h-[90vh] overflow-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Create Manual Sponsorship</DialogTitle>
+        </DialogHeader>
 
         <div className="flex flex-col gap-4">
           {/* Game selector */}
@@ -471,8 +480,8 @@ const CreateSponsorshipModal: FC<{ onClose: () => void }> = ({ onClose }) => {
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -613,11 +622,11 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
                   className="h-8 max-w-[80px] object-contain"
                 />
               ) : null}
-              <input
+              <Input
                 type="file"
                 accept="image/*"
                 onChange={(e) => void handleLogoFileChange(e)}
-                className="w-40 text-xs"
+                className="h-auto w-40 text-xs"
               />
               {logoError && (
                 <p className="text-xs text-red-600">{logoError}</p>
@@ -669,12 +678,13 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
                   className="mt-1 h-8 max-w-[80px] object-contain"
                 />
               )}
-              <button
+              <Button
+                variant="link"
+                className="h-auto justify-start p-0 text-xs text-blue-600"
                 onClick={() => setEditingLogo(true)}
-                className="text-left text-xs text-blue-600 hover:underline"
               >
                 {sponsorship.sponsorLogoUrl ? "Change logo" : "Add logo"}
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -697,11 +707,11 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
         <div className="flex flex-col gap-1">
           {editingDisplayName ? (
             <div className="flex items-center gap-1">
-              <input
+              <Input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-32 rounded border px-1 py-0.5 text-xs"
+                className="h-auto w-32 px-1 py-0.5 text-xs"
                 placeholder="Display name"
               />
               <Button
@@ -723,20 +733,21 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
               </Button>
             </div>
           ) : (
-            <button
+            <Button
+              variant="link"
+              className="h-auto justify-start p-0 text-xs text-blue-600"
               onClick={() => setEditingDisplayName(true)}
-              className="text-left text-xs text-blue-600 hover:underline"
             >
               {sponsorship.displayName ?? "Set display name"}
-            </button>
+            </Button>
           )}
           {editingNotes ? (
             <div className="flex items-center gap-1">
-              <input
+              <Input
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-32 rounded border px-1 py-0.5 text-xs"
+                className="h-auto w-32 px-1 py-0.5 text-xs"
                 placeholder="Notes"
               />
               <Button
@@ -756,12 +767,13 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
               </Button>
             </div>
           ) : (
-            <button
+            <Button
+              variant="link"
+              className="h-auto justify-start p-0 text-xs text-blue-600"
               onClick={() => setEditingNotes(true)}
-              className="text-left text-xs text-blue-600 hover:underline"
             >
               {sponsorship.notes ?? "Add notes"}
-            </button>
+            </Button>
           )}
         </div>
       </TableCell>
@@ -944,11 +956,11 @@ const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
                   className="h-8 max-w-[80px] object-contain"
                 />
               ) : null}
-              <input
+              <Input
                 type="file"
                 accept="image/*"
                 onChange={(e) => void handleLogoFileChange(e)}
-                className="w-40 text-xs"
+                className="h-auto w-40 text-xs"
               />
               {logoError && (
                 <p className="text-xs text-red-600">{logoError}</p>
@@ -1000,12 +1012,13 @@ const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
                   className="mt-1 h-8 max-w-[80px] object-contain"
                 />
               )}
-              <button
+              <Button
+                variant="link"
+                className="h-auto justify-start p-0 text-xs text-blue-600"
                 onClick={() => setEditingLogo(true)}
-                className="text-left text-xs text-blue-600 hover:underline"
               >
                 {sponsorship.sponsorLogoUrl ? "Change logo" : "Add logo"}
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -1030,11 +1043,11 @@ const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
         <div className="flex flex-col gap-1">
           {editingDisplayName ? (
             <div className="flex items-center gap-1">
-              <input
+              <Input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-32 rounded border px-1 py-0.5 text-xs"
+                className="h-auto w-32 px-1 py-0.5 text-xs"
                 placeholder="Display name"
               />
               <Button
@@ -1054,20 +1067,21 @@ const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
               </Button>
             </div>
           ) : (
-            <button
+            <Button
+              variant="link"
+              className="h-auto justify-start p-0 text-xs text-blue-600"
               onClick={() => setEditingDisplayName(true)}
-              className="text-left text-xs text-blue-600 hover:underline"
             >
               {sponsorship.displayName ?? "Set display name"}
-            </button>
+            </Button>
           )}
           {editingNotes ? (
             <div className="flex items-center gap-1">
-              <input
+              <Input
                 type="text"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-32 rounded border px-1 py-0.5 text-xs"
+                className="h-auto w-32 px-1 py-0.5 text-xs"
                 placeholder="Notes"
               />
               <Button
@@ -1087,12 +1101,13 @@ const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
               </Button>
             </div>
           ) : (
-            <button
+            <Button
+              variant="link"
+              className="h-auto justify-start p-0 text-xs text-blue-600"
               onClick={() => setEditingNotes(true)}
-              className="text-left text-xs text-blue-600 hover:underline"
             >
               {sponsorship.notes ?? "Add notes"}
-            </button>
+            </Button>
           )}
         </div>
       </TableCell>
@@ -1168,50 +1183,50 @@ export function SponsorshipsTable() {
     <div className="flex flex-col gap-4">
       {/* Tab pills */}
       <div className="flex items-center gap-2">
-        <button
+        <Button
+          variant={tab === "game" ? "default" : "secondary"}
+          className={`rounded-full ${tab === "game" ? "bg-green-700 hover:bg-green-800" : ""}`}
+          size="sm"
           onClick={() => {
             setTab("game");
             setPage(1);
           }}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-            tab === "game"
-              ? "bg-green-700 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          }`}
         >
           Game Sponsorships
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={tab === "player" ? "default" : "secondary"}
+          className={`rounded-full ${tab === "player" ? "bg-blue-700 hover:bg-blue-800" : ""}`}
+          size="sm"
           onClick={() => {
             setTab("player");
             setPage(1);
           }}
-          className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-            tab === "player"
-              ? "bg-blue-700 text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-          }`}
         >
           Player Sponsorships
-        </button>
+        </Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Filter:</label>
-          <select
+          <Label className="text-sm font-medium text-gray-700">Filter:</Label>
+          <Select
             value={filter}
-            onChange={(e) => {
-              setFilter(e.target.value as Filter);
+            onValueChange={(value) => {
+              setFilter(value as Filter);
               setPage(1);
             }}
-            className="rounded border border-gray-300 px-2 py-1.5 text-sm"
           >
-            <option value="all">All</option>
-            <option value="pending_payment">Pending Payment</option>
-            <option value="pending_approval">Pending Approval</option>
-            <option value="approved">Approved</option>
-          </select>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="pending_payment">Pending Payment</SelectItem>
+              <SelectItem value="pending_approval">Pending Approval</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         {result && (
           <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -1288,23 +1303,25 @@ export function SponsorshipsTable() {
               {result.total} sponsorship{result.total !== 1 ? "s" : ""} total
             </span>
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="rounded border border-gray-300 px-3 py-1 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Previous
-              </button>
+              </Button>
               <span className="text-gray-600">
                 Page {page} of {totalPages}
               </span>
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
-                className="rounded border border-gray-300 px-3 py-1 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Next
-              </button>
+              </Button>
             </div>
           </div>
         </>

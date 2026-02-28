@@ -1,5 +1,27 @@
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/Table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -339,37 +361,35 @@ export function RecordLinking() {
         />
         <div className="flex items-center gap-3 text-sm">
           <label className="flex items-center gap-1.5">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={showLinked}
-              onChange={(e) => setShowLinked(e.target.checked)}
-              className="h-4 w-4 rounded"
+              onCheckedChange={(checked) => setShowLinked(checked === true)}
             />
             Fully linked
           </label>
           <label className="flex items-center gap-1.5">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={showUnlinked}
-              onChange={(e) => setShowUnlinked(e.target.checked)}
-              className="h-4 w-4 rounded"
+              onCheckedChange={(checked) => setShowUnlinked(checked === true)}
             />
             Unlinked
           </label>
         </div>
-        <select
+        <Select
           value={personTypeFilter}
-          onChange={(e) =>
-            setPersonTypeFilter(
-              e.target.value as "all" | "member" | "dependent",
-            )
+          onValueChange={(value) =>
+            setPersonTypeFilter(value as "all" | "member" | "dependent")
           }
-          className="rounded border border-gray-300 px-3 py-2 text-sm"
         >
-          <option value="all">All types</option>
-          <option value="member">Members only</option>
-          <option value="dependent">Juniors only</option>
-        </select>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="All types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            <SelectItem value="member">Members only</SelectItem>
+            <SelectItem value="dependent">Juniors only</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
@@ -379,97 +399,95 @@ export function RecordLinking() {
       )}
 
       {linkingData && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">
-              <tr>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3 text-center">Play-Cricket</th>
-                <th className="px-4 py-3 text-center">Contentful</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPeople.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-4 py-6 text-center text-gray-500"
-                  >
-                    No matching people found.
-                  </td>
-                </tr>
-              )}
-              {filteredPeople.map((person) => {
-                const contentfulPerson = person.contentfulEntryId
-                  ? contentfulPersonMap.get(person.contentfulEntryId)
-                  : null;
-                return (
-                  <tr
-                    key={`${person.type}-${person.id}`}
-                    className="cursor-pointer border-b hover:bg-gray-50"
-                    onClick={() =>
-                      setDetailModal({ person, linking: null })
-                    }
-                  >
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{person.name}</div>
-                      {person.parentName && (
-                        <div className="text-xs text-gray-500">
-                          Parent: {person.parentName}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusPill
-                        variant={
-                          person.type === "member" ? "blue" : "green"
-                        }
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead className="text-center">Play-Cricket</TableHead>
+              <TableHead className="text-center">Contentful</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredPeople.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  className="py-6 text-center text-gray-500"
+                >
+                  No matching people found.
+                </TableCell>
+              </TableRow>
+            )}
+            {filteredPeople.map((person) => {
+              const contentfulPerson = person.contentfulEntryId
+                ? contentfulPersonMap.get(person.contentfulEntryId)
+                : null;
+              return (
+                <TableRow
+                  key={`${person.type}-${person.id}`}
+                  className="cursor-pointer"
+                  onClick={() =>
+                    setDetailModal({ person, linking: null })
+                  }
+                >
+                  <TableCell>
+                    <div className="font-medium">{person.name}</div>
+                    {person.parentName && (
+                      <div className="text-xs text-gray-500">
+                        Parent: {person.parentName}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <StatusPill
+                      variant={
+                        person.type === "member" ? "blue" : "green"
+                      }
+                    >
+                      {person.type === "member" ? "Member" : "Junior"}
+                    </StatusPill>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {person.playCricketId ? (
+                      <span
+                        className="inline-block text-green-600"
+                        title={`PC #${person.playCricketId}${playerNameById.get(person.playCricketId) ? ` - ${playerNameById.get(person.playCricketId)}` : ""}`}
                       >
-                        {person.type === "member" ? "Member" : "Junior"}
-                      </StatusPill>
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {person.playCricketId ? (
-                        <span
-                          className="inline-block text-green-600"
-                          title={`PC #${person.playCricketId}${playerNameById.get(person.playCricketId) ? ` - ${playerNameById.get(person.playCricketId)}` : ""}`}
-                        >
-                          <CheckIcon />
-                        </span>
-                      ) : (
-                        <span className="inline-block text-gray-300">
-                          <CrossIcon />
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {person.type === "dependent" ? (
-                        <span
-                          className="inline-block text-gray-200"
-                          title="Not applicable for juniors"
-                        >
-                          &mdash;
-                        </span>
-                      ) : person.contentfulEntryId ? (
-                        <span
-                          className="inline-block text-green-600"
-                          title={contentfulPerson ? `${contentfulPerson.name} (/person/${contentfulPerson.slug})` : "Linked"}
-                        >
-                          <CheckIcon />
-                        </span>
-                      ) : (
-                        <span className="inline-block text-gray-300">
-                          <CrossIcon />
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                        <CheckIcon />
+                      </span>
+                    ) : (
+                      <span className="inline-block text-gray-300">
+                        <CrossIcon />
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {person.type === "dependent" ? (
+                      <span
+                        className="inline-block text-gray-200"
+                        title="Not applicable for juniors"
+                      >
+                        &mdash;
+                      </span>
+                    ) : person.contentfulEntryId ? (
+                      <span
+                        className="inline-block text-green-600"
+                        title={contentfulPerson ? `${contentfulPerson.name} (/person/${contentfulPerson.slug})` : "Linked"}
+                      >
+                        <CheckIcon />
+                      </span>
+                    ) : (
+                      <span className="inline-block text-gray-300">
+                        <CrossIcon />
+                      </span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       )}
 
       {/* Detail Modal */}
@@ -666,49 +684,21 @@ function DetailModal({
   }, [contentfulPersons, linking, linkSearch, person.name]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
-        {/* Header */}
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">{person.name}</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <StatusPill
-                variant={person.type === "member" ? "blue" : "green"}
-              >
-                {person.type === "member" ? "Member" : "Junior"}
-              </StatusPill>
-              {person.parentName && (
-                <span>Parent: {person.parentName}</span>
-              )}
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            aria-label="Close modal"
-          >
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{person.name}</DialogTitle>
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <StatusPill
+              variant={person.type === "member" ? "blue" : "green"}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </Button>
-        </div>
+              {person.type === "member" ? "Member" : "Junior"}
+            </StatusPill>
+            {person.parentName && (
+              <span>Parent: {person.parentName}</span>
+            )}
+          </div>
+        </DialogHeader>
 
         {/* Play-Cricket section */}
         <div className="mb-4 rounded border border-gray-200 p-4">
@@ -967,7 +957,7 @@ function DetailModal({
             )}
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,7 +1,7 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { useSession } from "@/lib/auth/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
-import { useState } from "react";
 import { ChargesTable } from "./ChargesTable";
 import { ContactSubmissionsTable } from "./ContactSubmissionsTable";
 import { DuplicateMembersTable } from "./DuplicateMembersTable";
@@ -12,11 +12,8 @@ import { SponsorshipsTable } from "./SponsorshipsTable";
 
 const queryClient = new QueryClient();
 
-type Tab = "members" | "juniors" | "charges" | "contacts" | "sponsorships" | "duplicates" | "record-linking";
-
 export function AdminPanel() {
   const session = useSession();
-  const [activeTab, setActiveTab] = useState<Tab>("members");
 
   if (session.isPending) {
     return <p className="text-gray-500">Loading...</p>;
@@ -44,57 +41,38 @@ export function AdminPanel() {
             Back to Members Area
           </a>
         </div>
-        <div className="flex border-b border-gray-200">
-          <button
-            className={`px-4 py-2 text-sm font-medium ${activeTab === "members" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-            onClick={() => setActiveTab("members")}
-          >
-            Members
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium ${activeTab === "juniors" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-            onClick={() => setActiveTab("juniors")}
-          >
-            Juniors
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium ${activeTab === "charges" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-            onClick={() => setActiveTab("charges")}
-          >
-            Charges
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium ${activeTab === "contacts" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-            onClick={() => setActiveTab("contacts")}
-          >
-            Contact Submissions
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium ${activeTab === "sponsorships" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-            onClick={() => setActiveTab("sponsorships")}
-          >
-            Sponsorships
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium ${activeTab === "duplicates" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-            onClick={() => setActiveTab("duplicates")}
-          >
-            Duplicates
-          </button>
-          <button
-            className={`px-4 py-2 text-sm font-medium ${activeTab === "record-linking" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-            onClick={() => setActiveTab("record-linking")}
-          >
-            Record Linking
-          </button>
-        </div>
-        {activeTab === "members" && <MemberTable />}
-        {activeTab === "juniors" && <JuniorsTable />}
-        {activeTab === "charges" && <ChargesTable />}
-        {activeTab === "contacts" && <ContactSubmissionsTable />}
-        {activeTab === "sponsorships" && <SponsorshipsTable />}
-        {activeTab === "duplicates" && <DuplicateMembersTable />}
-        {activeTab === "record-linking" && <RecordLinking />}
+        <Tabs defaultValue="members">
+          <TabsList className="flex-wrap">
+            <TabsTrigger value="members">Members</TabsTrigger>
+            <TabsTrigger value="juniors">Juniors</TabsTrigger>
+            <TabsTrigger value="charges">Charges</TabsTrigger>
+            <TabsTrigger value="contacts">Contact Submissions</TabsTrigger>
+            <TabsTrigger value="sponsorships">Sponsorships</TabsTrigger>
+            <TabsTrigger value="duplicates">Duplicates</TabsTrigger>
+            <TabsTrigger value="record-linking">Record Linking</TabsTrigger>
+          </TabsList>
+          <TabsContent value="members">
+            <MemberTable />
+          </TabsContent>
+          <TabsContent value="juniors">
+            <JuniorsTable />
+          </TabsContent>
+          <TabsContent value="charges">
+            <ChargesTable />
+          </TabsContent>
+          <TabsContent value="contacts">
+            <ContactSubmissionsTable />
+          </TabsContent>
+          <TabsContent value="sponsorships">
+            <SponsorshipsTable />
+          </TabsContent>
+          <TabsContent value="duplicates">
+            <DuplicateMembersTable />
+          </TabsContent>
+          <TabsContent value="record-linking">
+            <RecordLinking />
+          </TabsContent>
+        </Tabs>
       </div>
     </QueryClientProvider>
   );
