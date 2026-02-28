@@ -11,6 +11,9 @@ export default defineConfig({
   integrations: [react(), sitemap()],
   vite: {
     plugins: [tailwindcss()],
+    ssr: {
+      noExternal: ["lucide-react", "react-icons"],
+    },
     optimizeDeps: {
       include: [
         "@stripe/stripe-js",

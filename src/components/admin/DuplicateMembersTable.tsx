@@ -1,3 +1,19 @@
+import { Button } from "@/components/ui/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/Table";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { useState } from "react";
@@ -105,26 +121,26 @@ function DuplicateGroup({
         </StatusPill>
       </div>
 
-      <table className="w-full text-left text-sm">
-        <thead className="border-b text-xs uppercase text-gray-500">
-          <tr>
-            <th className="px-3 py-2">Keep</th>
-            <th className="px-3 py-2">ID</th>
-            <th className="px-3 py-2">Name</th>
-            {!isEmailMatch && <th className="px-3 py-2">Email</th>}
-            <th className="px-3 py-2">Stripe</th>
-            <th className="px-3 py-2">Memberships</th>
-            <th className="px-3 py-2">Dependents</th>
-            <th className="px-3 py-2">Charges</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Keep</TableHead>
+            <TableHead>ID</TableHead>
+            <TableHead>Name</TableHead>
+            {!isEmailMatch && <TableHead>Email</TableHead>}
+            <TableHead>Stripe</TableHead>
+            <TableHead>Memberships</TableHead>
+            <TableHead>Dependents</TableHead>
+            <TableHead>Charges</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {group.members.map((member) => (
-            <tr
+            <TableRow
               key={member.id}
-              className={`border-b ${keepId === member.id ? "bg-green-50" : ""}`}
+              className={keepId === member.id ? "bg-green-50" : ""}
             >
-              <td className="px-3 py-2">
+              <TableCell>
                 <input
                   type="radio"
                   name={`keep-${group.matchType}-${group.matchKey}`}
@@ -132,39 +148,39 @@ function DuplicateGroup({
                   onChange={() => setKeepId(member.id)}
                   className="h-4 w-4 text-blue-600"
                 />
-              </td>
-              <td className="px-3 py-2 font-mono text-xs text-gray-500">
+              </TableCell>
+              <TableCell className="font-mono text-xs text-gray-500">
                 {member.id.slice(0, 8)}...
-              </td>
-              <td className="px-3 py-2">{member.name}</td>
+              </TableCell>
+              <TableCell>{member.name}</TableCell>
               {!isEmailMatch && (
-                <td className="px-3 py-2 text-gray-600">{member.email}</td>
+                <TableCell className="text-gray-600">{member.email}</TableCell>
               )}
-              <td className="px-3 py-2">
+              <TableCell>
                 {member.stripeCustomerId ? (
                   <StatusPill variant="green">Yes</StatusPill>
                 ) : (
                   <StatusPill variant="gray">No</StatusPill>
                 )}
-              </td>
-              <td className="px-3 py-2">{member.membershipCount}</td>
-              <td className="px-3 py-2">{member.dependentCount}</td>
-              <td className="px-3 py-2">{member.chargeCount}</td>
-            </tr>
+              </TableCell>
+              <TableCell>{member.membershipCount}</TableCell>
+              <TableCell>{member.dependentCount}</TableCell>
+              <TableCell>{member.chargeCount}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
 
       {keepId && removeMembers.length > 0 && (
         <div className="mt-3 flex gap-2">
           {removeMembers.map((rm) => (
-            <button
+            <Button
               key={rm.id}
-              className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+              size="sm"
               onClick={() => onPreview(keepId, rm.id)}
             >
               Preview merge (remove {rm.id.slice(0, 8)}...)
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -200,35 +216,11 @@ function MergePreviewModal({
   const preview = data?.data;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Merge Preview</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-            aria-label="Close modal"
-          >
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="1.5"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>Merge Preview</DialogTitle>
+        </DialogHeader>
 
         {isLoading && <p className="text-gray-500">Loading preview...</p>}
         {error && (
@@ -302,22 +294,23 @@ function MergePreviewModal({
                 This action cannot be undone. Type &quot;{preview.isCrossEmailMerge ? "MERGE" : "merge"}&quot; to confirm.
               </p>
               <div className="flex items-center gap-3">
-                <input
+                <Input
                   type="text"
                   value={confirmText}
                   onChange={(e) => setConfirmText(e.target.value)}
                   placeholder={preview.isCrossEmailMerge ? 'Type "MERGE"' : 'Type "merge"'}
-                  className="rounded border border-gray-300 px-3 py-1.5 text-sm"
+                  className="w-auto"
                 />
-                <button
+                <Button
+                  variant="destructive"
+                  size="sm"
                   disabled={
                     confirmText !== (preview.isCrossEmailMerge ? "MERGE" : "merge") || mergeMutation.isPending
                   }
                   onClick={() => mergeMutation.mutate()}
-                  className="rounded bg-red-600 px-4 py-1.5 text-sm text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {mergeMutation.isPending ? "Merging..." : "Merge Members"}
-                </button>
+                </Button>
               </div>
               {mergeMutation.isError && (
                 <p className="mt-2 text-sm text-red-600">
@@ -330,8 +323,8 @@ function MergePreviewModal({
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

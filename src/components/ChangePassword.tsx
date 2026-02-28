@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/Button";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { authClient } from "../lib/auth/client";
@@ -133,13 +134,14 @@ export const ChangePassword = () => {
             {changePassword.data.error.message}
           </p>
         )}
-        <button
+        <Button
           type="submit"
+          variant="outline"
           disabled={changePassword.isPending}
-          className="text-dark cursor-pointer justify-self-start rounded border-1 border-gray-800 px-4 py-2 text-sm hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="justify-self-start"
         >
           {changePassword.isPending ? "Changing..." : "Change Password"}
-        </button>
+        </Button>
       </form>
     </section>
   );

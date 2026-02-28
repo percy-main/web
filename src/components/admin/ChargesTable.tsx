@@ -2,6 +2,16 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
 import {
   Table,
   TableBody,
@@ -273,32 +283,36 @@ export function ChargesTable() {
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-3">
-        <input
+        <Input
           type="text"
           placeholder="Search member or description..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-xs rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full max-w-xs"
         />
-        <select
+        <Select
           value={status}
-          onChange={(e) => {
-            setStatus(e.target.value as ChargeStatus);
+          onValueChange={(value) => {
+            setStatus(value as ChargeStatus);
             setPage(1);
           }}
-          className="rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
         >
-          <option value="all">All Statuses</option>
-          <option value="unpaid">Unpaid</option>
-          <option value="pending">Pending</option>
-          <option value="paid">Paid</option>
-          <option value="abandoned">Abandoned</option>
-        </select>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="unpaid">Unpaid</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="paid">Paid</SelectItem>
+            <SelectItem value="abandoned">Abandoned</SelectItem>
+          </SelectContent>
+        </Select>
         <div className="flex items-center gap-1">
-          <label htmlFor="charges-date-from" className="text-sm text-gray-500">
+          <Label htmlFor="charges-date-from" className="text-gray-500">
             From
-          </label>
-          <input
+          </Label>
+          <Input
             id="charges-date-from"
             type="date"
             value={dateFrom}
@@ -306,14 +320,14 @@ export function ChargesTable() {
               setDateFrom(e.target.value);
               setPage(1);
             }}
-            className="rounded border border-gray-300 px-2 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-auto"
           />
         </div>
         <div className="flex items-center gap-1">
-          <label htmlFor="charges-date-to" className="text-sm text-gray-500">
+          <Label htmlFor="charges-date-to" className="text-gray-500">
             To
-          </label>
-          <input
+          </Label>
+          <Input
             id="charges-date-to"
             type="date"
             value={dateTo}
@@ -321,21 +335,22 @@ export function ChargesTable() {
               setDateTo(e.target.value);
               setPage(1);
             }}
-            className="rounded border border-gray-300 px-2 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-auto"
           />
         </div>
-        <label className="flex items-center gap-1.5 text-sm text-gray-600">
-          <input
-            type="checkbox"
+        <div className="flex items-center gap-1.5">
+          <Checkbox
+            id="charges-show-deleted"
             checked={showDeleted}
-            onChange={(e) => {
-              setShowDeleted(e.target.checked);
+            onCheckedChange={(checked) => {
+              setShowDeleted(checked === true);
               setPage(1);
             }}
-            className="rounded border-gray-300"
           />
-          Show deleted
-        </label>
+          <Label htmlFor="charges-show-deleted" className="text-gray-600">
+            Show deleted
+          </Label>
+        </div>
         {(dateFrom || dateTo || search || status !== "all" || showDeleted) && (
           <Button
             variant="ghost"

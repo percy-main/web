@@ -1,13 +1,10 @@
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { APIProvider, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { MAPS_API_KEY } from "astro:env/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { z } from "astro:schema";
-
-const inputClass =
-  "peer block w-full appearance-none border-0 border-b-2 border-gray-300 bg-transparent text-sm text-gray-900 focus:border-blue-600 focus:ring-0 focus:outline-none dark:border-gray-600 dark:text-white dark:focus:border-blue-500";
-
-const labelClass =
-  "absolute top-3 origin-[0] -translate-y-7 scale-75 transform text-sm text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:start-0 peer-focus:-translate-y-7 peer-focus:scale-75 peer-focus:font-medium peer-focus:text-blue-600 rtl:peer-focus:left-auto rtl:peer-focus:translate-x-1/4 dark:text-gray-400 peer-focus:dark:text-blue-500";
 
 const addressComponentsSchema = z.object({
   houseNumber: z.string().default(""),
@@ -121,100 +118,81 @@ export function AddressLookupInner({
       )}
 
       {/* Search input with Google Places Autocomplete */}
-      <div className="group relative z-0 mt-2 mb-5 w-full">
-        <input
+      <div className="mt-2 mb-5 w-full space-y-2">
+        <Label htmlFor="address-search">Start typing your address...</Label>
+        <Input
           ref={inputRef}
           id="address-search"
           type="text"
           autoComplete="off"
-          className={inputClass}
-          placeholder=" "
         />
-        <label htmlFor="address-search" className={labelClass}>
-          Start typing your address...
-        </label>
       </div>
 
       {/* Enter address manually link */}
       {!showFields && (
-        <button
+        <Button
           type="button"
+          variant="link"
           onClick={handleManualEntry}
-          className="mb-4 text-sm text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+          className="mb-4"
         >
           Enter address manually
-        </button>
+        </Button>
       )}
 
       {/* Address fields - revealed after place selection or manual entry */}
       {showFields && (
-        <div className="space-y-1">
+        <div className="space-y-4">
           {/* House Number / Name */}
-          <div className="group relative z-0 mt-2 mb-5 w-full">
-            <input
+          <div className="w-full space-y-2">
+            <Label htmlFor="house-number">House Number / Name</Label>
+            <Input
               id="house-number"
               type="text"
               required
               autoComplete="address-line1"
               value={houseNumber}
               onChange={(e) => setHouseNumber(e.target.value)}
-              className={inputClass}
-              placeholder=" "
             />
-            <label htmlFor="house-number" className={labelClass}>
-              House Number / Name
-            </label>
           </div>
 
           {/* Street Address */}
-          <div className="group relative z-0 mt-2 mb-5 w-full">
-            <input
+          <div className="w-full space-y-2">
+            <Label htmlFor="street-address">Street Address</Label>
+            <Input
               id="street-address"
               type="text"
               required
               autoComplete="address-line2"
               value={street}
               onChange={(e) => setStreet(e.target.value)}
-              className={inputClass}
-              placeholder=" "
             />
-            <label htmlFor="street-address" className={labelClass}>
-              Street Address
-            </label>
           </div>
 
           {/* Town / City */}
-          <div className="group relative z-0 mt-2 mb-5 w-full">
-            <input
+          <div className="w-full space-y-2">
+            <Label htmlFor="town-city">Town / City</Label>
+            <Input
               id="town-city"
               type="text"
               required
               autoComplete="address-level2"
               value={town}
               onChange={(e) => setTown(e.target.value)}
-              className={inputClass}
-              placeholder=" "
             />
-            <label htmlFor="town-city" className={labelClass}>
-              Town / City
-            </label>
           </div>
 
           {/* Postcode */}
-          <div className="group relative z-0 mt-2 mb-5 w-full">
-            <input
+          <div className="w-full space-y-2">
+            <Label htmlFor="postcode-input">Postcode</Label>
+            <Input
               id="postcode-input"
               type="text"
               required
               autoComplete="postal-code"
               value={postcode}
               onChange={(e) => setPostcode(e.target.value.toUpperCase())}
-              className={inputClass}
-              placeholder=" "
             />
-            <label htmlFor="postcode-input" className={labelClass}>
-              Postcode
-            </label>
           </div>
         </div>
       )}

@@ -1,4 +1,5 @@
 import { SimpleInput } from "@/components/form/SimpleInput";
+import { Button } from "@/components/ui/Button";
 import { useSearchParam } from "@/hooks/useSearchParams";
 import { authClient } from "@/lib/auth/client";
 import { useMutation } from "@tanstack/react-query";
@@ -55,13 +56,14 @@ export const ResetPassword: FC<Props> = ({ setPhase }) => {
       <section>
         <h1>Something went wrong</h1>
         <p>We can't reset your password right now.</p>
-        <button
+        <Button
           onClick={() => setPhase("forgot")}
           type="button"
-          className="text-primary-600 dark:text-primary-500 text-sm font-medium hover:underline"
+          variant="link"
+          className="text-primary-600 dark:text-primary-500"
         >
           Try again
-        </button>
+        </Button>
       </section>
     );
   }
@@ -72,13 +74,14 @@ export const ResetPassword: FC<Props> = ({ setPhase }) => {
         <h1>How did you get here?</h1>
         <p>You sneaky devil.</p>
         <p> Let's try resetting your password again.</p>
-        <button
+        <Button
           onClick={() => setPhase("forgot")}
           type="button"
-          className="text-primary-600 dark:text-primary-500 text-sm font-medium hover:underline"
+          variant="link"
+          className="text-primary-600 dark:text-primary-500"
         >
           Try again
-        </button>
+        </Button>
       </section>
     );
   }
@@ -99,12 +102,12 @@ export const ResetPassword: FC<Props> = ({ setPhase }) => {
           value={newPassword}
           onChange={(e) => setNewPassword(e.currentTarget.value)}
         />
-        <button
+        <Button
           type="submit"
-          className="focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800 w-full rounded-lg bg-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-700 focus:ring-4 focus:outline-hidden"
+          className="w-full"
         >
           Submit
-        </button>
+        </Button>
         {error && (
           <p className="text-sm font-light text-red-800">{error.message}</p>
         )}

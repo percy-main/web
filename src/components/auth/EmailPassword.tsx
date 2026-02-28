@@ -1,4 +1,5 @@
 import { SimpleInput } from "@/components/form/SimpleInput";
+import { Button } from "@/components/ui/Button";
 import { authClient } from "@/lib/auth/client";
 import { useMutation } from "@tanstack/react-query";
 import {
@@ -100,15 +101,16 @@ export const EmailPassword: FC<Props> = ({ setPhase }) => {
         Sign in to your account
       </h1>
       <div className="space-y-4 md:space-y-6">
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => googleSignIn.mutate()}
           disabled={googleSignIn.isPending}
-          className="flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:ring-4 focus:ring-gray-100 focus:outline-hidden dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:focus:ring-gray-700"
+          className="w-full"
         >
           <GoogleIcon />
           Sign in with Google
-        </button>
+        </Button>
         <div className="flex items-center">
           <div className="h-px flex-1 bg-gray-300 dark:bg-gray-600" />
           <span className="px-4 text-sm text-gray-500 dark:text-gray-400">
@@ -144,20 +146,21 @@ export const EmailPassword: FC<Props> = ({ setPhase }) => {
             autoComplete="password web-authn"
           />
           <div className="flex items-center justify-end">
-            <button
+            <Button
               onClick={() => setPhase("forgot")}
               type="button"
-              className="text-primary-600 dark:text-primary-500 text-sm font-medium hover:underline"
+              variant="link"
+              className="text-primary-600 dark:text-primary-500"
             >
               Forgot password?
-            </button>
+            </Button>
           </div>
-          <button
+          <Button
             type="submit"
-            className="focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800 w-full rounded-lg bg-blue-500 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-700 focus:ring-4 focus:outline-hidden"
+            className="w-full"
           >
             Sign in
-          </button>
+          </Button>
           {error && (
             <p className="text-sm font-light text-red-800">{error.message}</p>
           )}

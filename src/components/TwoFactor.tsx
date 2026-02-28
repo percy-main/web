@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/Button";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useState, type FC } from "react";
 import QRCode from "react-qr-code";
@@ -72,14 +73,13 @@ export const TwoFactor: FC<Props> = ({ user }) => {
               <p>Two-Factor Authentication is enabled</p>
               <p>Recovery codes - save these somewhere safe!</p>
               <pre>{backupCodes.join("\r\n")}</pre>
-              <button
+              <Button
                 type="button"
                 key="saved"
                 onClick={reset}
-                className="text-dark cursor-pointer justify-self-start rounded border-1 border-gray-800 bg-green-200 px-4 py-2 text-sm hover:bg-green-400"
               >
                 I saved them!
-              </button>
+              </Button>
             </div>
           ),
         )
@@ -119,13 +119,12 @@ export const TwoFactor: FC<Props> = ({ user }) => {
               />
               {verifyTotp.data?.error && <p>{verifyTotp.data.error.message}</p>}
               <div className="flex flex-row gap-4">
-                <button
+                <Button
                   type="submit"
                   key="submit"
-                  className="text-dark cursor-pointer justify-self-start rounded border-1 border-gray-800 bg-green-200 px-4 py-2 text-sm hover:bg-green-400"
                 >
                   Verify
-                </button>
+                </Button>
               </div>
             </form>
           ),
@@ -159,21 +158,20 @@ export const TwoFactor: FC<Props> = ({ user }) => {
               />
               {enable2FA?.data?.error && <p>{enable2FA.data.error.message}</p>}
               <div className="flex flex-row gap-4">
-                <button
+                <Button
                   type="submit"
                   key="submit"
-                  className="text-dark cursor-pointer justify-self-start rounded border-1 border-gray-800 bg-green-200 px-4 py-2 text-sm hover:bg-green-400"
                 >
                   Enable
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   key="cancel"
+                  variant="outline"
                   onClick={reset}
-                  className="text-dark cursor-pointer justify-self-start rounded border-1 border-red-800 px-4 py-2 text-sm hover:bg-red-200"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </form>
           ),
@@ -184,14 +182,14 @@ export const TwoFactor: FC<Props> = ({ user }) => {
             user: { twoFactorEnabled: P.union(false, P.nullish) },
           },
           () => (
-            <button
+            <Button
               type="button"
               key="enable"
+              variant="outline"
               onClick={() => setIsEnabling(true)}
-              className="text-dark cursor-pointer justify-self-start rounded border-1 border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
             >
               Enable
-            </button>
+            </Button>
           ),
         )
 
@@ -221,35 +219,35 @@ export const TwoFactor: FC<Props> = ({ user }) => {
                 <p>{disable2FA.data.error.message}</p>
               )}
               <div className="flex flex-row gap-4">
-                <button
+                <Button
                   type="submit"
                   key="submit"
-                  className="text-dark cursor-pointer justify-self-start rounded border-1 border-gray-800 bg-green-200 px-4 py-2 text-sm hover:bg-green-400"
+                  variant="destructive"
                 >
                   Disable
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   key="cancel"
+                  variant="outline"
                   onClick={reset}
-                  className="text-dark cursor-pointer justify-self-start rounded border-1 border-red-800 px-4 py-2 text-sm hover:bg-red-200"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </form>
           ),
         )
         .with({ user: { twoFactorEnabled: true } }, () => (
           <div>
-            <button
+            <Button
               type="button"
               key="disable"
+              variant="outline"
               onClick={() => setIsDisabling(true)}
-              className="text-dark cursor-pointer justify-self-start rounded border-1 border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
             >
               Disable
-            </button>
+            </Button>
           </div>
         ))
         .otherwise(() => (

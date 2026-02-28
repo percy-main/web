@@ -1,3 +1,6 @@
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useMutation } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { useCallback, useState, type FC } from "react";
@@ -46,13 +49,12 @@ export const ContactForm: FC<Props> = ({ title, description, page }) => {
             <label htmlFor="contact-name" className="sr-only">
               Name
             </label>
-            <input
+            <Input
               id="contact-name"
               name="name"
               type="text"
               autoComplete="name"
               required
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
               placeholder="Your name"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -60,13 +62,12 @@ export const ContactForm: FC<Props> = ({ title, description, page }) => {
             <label htmlFor="contact-email" className="sr-only">
               Email address
             </label>
-            <input
+            <Input
               id="contact-email"
               name="email"
               type="email"
               autoComplete="email"
               required
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
               placeholder="Your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -74,23 +75,21 @@ export const ContactForm: FC<Props> = ({ title, description, page }) => {
             <label htmlFor="contact-message" className="sr-only">
               Message
             </label>
-            <textarea
+            <Textarea
               id="contact-message"
               name="message"
               required
               rows={4}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
               placeholder="Your message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
-            <button
+            <Button
               type="submit"
-              className="rounded-md border border-gray-800 bg-gray-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={mutation.isPending}
             >
               {mutation.isPending ? "Sending..." : "Send Message"}
-            </button>
+            </Button>
           </form>
           {mutation.isError ? (
             <p className="mt-3 text-sm text-red-600">
