@@ -46,7 +46,10 @@ function GameCardSponsorInner({ gameId, ssrSponsor }: Props) {
   if (!sponsor) return null;
 
   return (
-    <div className="mt-auto flex items-center gap-1.5 border-t border-gray-100 pt-2">
+    <div className="mt-auto flex flex-col items-center gap-1 border-t border-gray-100 pt-2">
+      <span className="text-[10px] leading-tight text-gray-400">
+        Sponsored
+      </span>
       {sponsor.logoUrl ? (
         <img
           src={sponsor.logoUrl}
@@ -56,13 +59,10 @@ function GameCardSponsorInner({ gameId, ssrSponsor }: Props) {
           className="h-6 max-w-[60px] object-contain"
         />
       ) : (
-        <span className="min-w-0 truncate text-[10px] font-medium leading-tight text-gray-500">
+        <span className="text-[10px] font-medium leading-tight text-gray-500">
           {sponsor.name}
         </span>
       )}
-      <span className="shrink-0 text-[10px] leading-tight text-gray-400">
-        Sponsored
-      </span>
     </div>
   );
 }
