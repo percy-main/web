@@ -102,13 +102,17 @@ When beginning work on a ticket, follow these steps:
    - Using chrome and/or playwright, verify expected behaviour changes on the deploy preview
    - If there are any issues, then fix the issues, push, and re-test the new preview.
 
-11. **Merge the PR**
+11. **FInalising PR**
     - Ensure all PR checks pass
       - Check the status of the checks and ensure they are all passing, not pending or failed.
     - Ensure all review comments are addressed
-    - Merge the PR to `main`
 
 12. **Clean up**
     - Ensure any local running frontend app processes are stopped
     - Ensure any local running backend app processes are stopped
     - Delete the local branch and worktree
+
+13. **Report to user**
+    - Notify the user that the PR is ready for merge after their review and approval.
+    - Give them a short summary of the changes made and the issues addressed.
+    - Provide a link to the PR for easy access.

@@ -5,7 +5,7 @@ import type { GetStaticPaths } from "astro";
 import { getCollection } from "astro:content";
 
 export const getStaticPaths = (() => {
-  const firstYear = 2025;
+  const firstYear = 2012;
   const currentYear = new Date().getFullYear();
   const years = [];
   for (let y = firstYear; y <= currentYear; y++) {
@@ -17,7 +17,7 @@ export const getStaticPaths = (() => {
 const { year } = Astro.params;
 const season = parseInt(year, 10);
 const currentYear = new Date().getFullYear();
-const firstYear = 2025;
+const firstYear = 2012;
 const prevYear = season > firstYear ? season - 1 : null;
 const nextYear = season < currentYear ? season + 1 : null;
 
@@ -48,33 +48,41 @@ const personProfiles = people
       </div>
 
       <nav class="flex items-center gap-2">
-        {prevYear ? (
-          <a
-            href={`/leaderboard/${prevYear}`}
-            class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-          >
-            &larr; {prevYear}
-          </a>
-        ) : (
-          <span class="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-300">
-            &larr; {season - 1}
-          </span>
-        )}
-        {nextYear ? (
-          <a
-            href={`/leaderboard/${nextYear}`}
-            class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-          >
-            {nextYear} &rarr;
-          </a>
-        ) : (
-          <span class="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-300">
-            {season + 1} &rarr;
-          </span>
-        )}
+        {
+          prevYear ? (
+            <a
+              href={`/leaderboard/${prevYear}`}
+              class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              &larr; {prevYear}
+            </a>
+          ) : (
+            <span class="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-300">
+              &larr; {season - 1}
+            </span>
+          )
+        }
+        {
+          nextYear ? (
+            <a
+              href={`/leaderboard/${nextYear}`}
+              class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              {nextYear} &rarr;
+            </a>
+          ) : (
+            <span class="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-300">
+              {season + 1} &rarr;
+            </span>
+          )
+        }
       </nav>
     </div>
 
-    <CricketLeaderboard client:load season={season} personProfiles={personProfiles} />
+    <CricketLeaderboard
+      client:load
+      season={season}
+      personProfiles={personProfiles}
+    />
   </div>
 </Container>
