@@ -44,6 +44,26 @@ export function getMembershipTypeDisplay(type: string | null): {
   }
 }
 
+export function getMemberCategoryDisplay(category: string | null): {
+  label: string;
+  variant: Variant;
+} {
+  switch (category) {
+    case "senior":
+      return { label: "Senior", variant: "blue" };
+    case "junior":
+      return { label: "Junior", variant: "green" };
+    case "student":
+      return { label: "Student", variant: "yellow" };
+    case "bursary":
+      return { label: "Bursary", variant: "yellow" };
+    case "guest":
+      return { label: "Guest", variant: "gray" };
+    default:
+      return { label: "-", variant: "gray" };
+  }
+}
+
 export function getMembershipStatus(paidUntil: string | null): {
   label: string;
   variant: Variant;

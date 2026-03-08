@@ -12,7 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { useEffect, useRef, useState } from "react";
 import { MemberDetailModal } from "./MemberDetailModal";
-import { StatusPill, getMembershipStatus, getMembershipTypeDisplay } from "./StatusPill";
+import { StatusPill, getMemberCategoryDisplay, getMembershipStatus, getMembershipTypeDisplay } from "./StatusPill";
 
 const PAGE_SIZE = 20;
 
@@ -78,6 +78,7 @@ export function MemberTable() {
                 <TableHead>Member</TableHead>
                 <TableHead>Membership Status</TableHead>
                 <TableHead>Membership Type</TableHead>
+                <TableHead>Category</TableHead>
                 <TableHead>Role</TableHead>
               </TableRow>
             </TableHeader>
@@ -85,7 +86,7 @@ export function MemberTable() {
               {result.users.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="py-6 text-center text-gray-500"
                   >
                     No users found.
@@ -95,6 +96,7 @@ export function MemberTable() {
               {result.users.map((user) => {
                 const membershipStatus = getMembershipStatus(user.paidUntil);
                 const typeDisplay = getMembershipTypeDisplay(user.membershipType);
+                const categoryDisplay = getMemberCategoryDisplay(user.memberCategory);
                 return (
                   <TableRow
                     key={user.id}
@@ -118,6 +120,11 @@ export function MemberTable() {
                     <TableCell>
                       <StatusPill variant={typeDisplay.variant}>
                         {typeDisplay.label}
+                      </StatusPill>
+                    </TableCell>
+                    <TableCell>
+                      <StatusPill variant={categoryDisplay.variant}>
+                        {categoryDisplay.label}
                       </StatusPill>
                     </TableCell>
                     <TableCell>

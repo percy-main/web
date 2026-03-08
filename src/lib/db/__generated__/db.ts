@@ -174,6 +174,7 @@ export interface Member {
   emergency_contact_name: string;
   emergency_contact_telephone: string;
   id: string;
+  member_category: string | null;
   name: string;
   play_cricket_id: string | null;
   postcode: string;

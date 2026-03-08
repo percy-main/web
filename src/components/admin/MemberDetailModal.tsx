@@ -9,6 +9,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -16,11 +23,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
+import {
+  MEMBER_CATEGORIES,
+  MEMBER_CATEGORY_LABELS,
+  type MemberCategory,
+} from "@/lib/member/categories";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { formatDate } from "date-fns";
 import { type FormEvent, useEffect, useState } from "react";
-import { StatusPill, getMembershipStatus } from "./StatusPill";
+import { StatusPill, getMemberCategoryDisplay, getMembershipStatus } from "./StatusPill";
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", {
   style: "currency",
@@ -184,6 +196,14 @@ export function MemberDetailModal({
                 </p>
               )}
             </section>
+
+            {/* Member Category */}
+            {detail.member && (
+              <MemberCategorySection
+                memberId={detail.member.id}
+                currentCategory={detail.member.member_category}
+              />
+            )}
 
             {/* Membership Info */}
             <section>
@@ -363,6 +383,66 @@ export function MemberDetailModal({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function MemberCategorySection({
+  memberId,
+  currentCategory,
+}: {
+  memberId: string;
+  currentCategory: string | null;
+}) {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: (memberCategory: MemberCategory | null) =>
+      actions.admin.updateMemberCategory({ memberId, memberCategory }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "userDetail"],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "listUsers"] });
+    },
+  });
+
+  const categoryDisplay = getMemberCategoryDisplay(currentCategory);
+
+  return (
+    <section>
+      <h3 className="mb-2 text-lg font-medium">Member Category</h3>
+      <div className="flex items-center gap-3">
+        <Select
+          value={currentCategory ?? "unset"}
+          onValueChange={(value) => {
+            const newCategory = value === "unset" ? null : (value as MemberCategory);
+            mutation.mutate(newCategory);
+          }}
+        >
+          <SelectTrigger className="w-48">
+            <SelectValue>
+              <StatusPill variant={categoryDisplay.variant}>
+                {categoryDisplay.label}
+              </StatusPill>
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="unset">Not set</SelectItem>
+            {MEMBER_CATEGORIES.map((cat) => (
+              <SelectItem key={cat} value={cat}>
+                {MEMBER_CATEGORY_LABELS[cat]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {mutation.isPending && (
+          <span className="text-sm text-gray-500">Saving...</span>
+        )}
+        {mutation.isError && (
+          <span className="text-sm text-red-600">Failed to update.</span>
+        )}
+      </div>
+    </section>
   );
 }
 
