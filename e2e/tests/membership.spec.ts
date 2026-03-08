@@ -94,10 +94,7 @@ test.describe("Membership", () => {
     // ─── 9. Select Annual ───
     await page.locator('label:has-text("Annually")').click();
 
-    // ─── 10. Select Online payment ───
-    await page.locator('label:has-text("Online")').click();
-
-    // ─── 11. Click "Pay Online" link ───
+    // ─── 10. Click "Pay Online" link ───
     const payLink = page.getByRole("link", { name: /pay online/i });
     await expect(payLink).toBeVisible({ timeout: 5_000 });
     const payHref = await payLink.getAttribute("href");

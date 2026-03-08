@@ -1,9 +1,7 @@
 import type { Price } from "@/collections/price";
-import { BankDetails } from "@/components/BankDetails";
 import { RadioButtons } from "@/components/form/RadioButtons";
 import { PaymentLink } from "@/components/PaymentLink";
 import { useState, type FC } from "react";
-import { match } from "ts-pattern";
 import { paymentData } from "../lib/payments/config";
 import { MenuItem } from "./MenuItem";
 
@@ -17,15 +15,18 @@ type Props = {
       monthly: Price;
       annually: Price;
     };
+    concessionary: {
+      monthly: Price;
+      annually: Price;
+    };
   };
 };
 
 export const PayMembership: FC<Props> = ({ options }) => {
   const [membership, setMembership] = useState<
-    "senior_player" | "social" | "senior_women_player"
+    "senior_player" | "social" | "senior_women_player" | "concessionary"
   >();
   const [schedule, setSchedule] = useState<"annually" | "monthly">();
-  const [payment, setPayment] = useState<"online" | "bank">();
 
   const price =
     membership === "senior_women_player"
@@ -59,6 +60,11 @@ export const PayMembership: FC<Props> = ({ options }) => {
                 title: "Social",
                 description: "For supporters and friends of the club.",
                 value: "social",
+              },
+              {
+                title: "Student / Concessionary",
+                description: "For students and concessionary members.",
+                value: "concessionary",
               },
               {
                 title: "Women's Player",
@@ -114,77 +120,20 @@ export const PayMembership: FC<Props> = ({ options }) => {
               />
             </section>
             {schedule && (
-              <>
-                <section className="mb-12">
-                  <h5>How would you like to pay?</h5>
-
-                  <RadioButtons
-                    id="payment"
-                    onChange={setPayment}
-                    value={payment}
-                    options={[
-                      {
-                        title: "Online",
-                        description: `Pay online through our secure payment processor.`,
-                        value: "online",
-                      },
-                      {
-                        title: "Bank Transfer",
-                        description: `Set up through your own bank.`,
-                        value: "bank",
-                      },
-                    ]}
-                  />
-                </section>
-                {payment && (
-                  <section className="mb-12">
-                    {match({ payment, schedule })
-                      .with({ payment: "bank", schedule: "monthly" }, () => (
-                        <>
-                          <p>
-                            Please setup a monthly standing order for{" "}
-                            {price.monthly.formattedPrice} to the following bank
-                            details:
-                          </p>
-                          <BankDetails />
-                        </>
-                      ))
-                      .with({ payment: "bank", schedule: "annually" }, () => (
-                        <>
-                          <p>
-                            Please make a payment of{" "}
-                            {price.annually.formattedPrice} to the following
-                            bank details:
-                          </p>
-                          <BankDetails />
-                        </>
-                      ))
-                      .with({ payment: "online", schedule: "annually" }, () => (
-                        <PaymentLink
-                          email={email}
-                          priceId={price.annually.id}
-                          metadata={{ type: "membership", membership }}
-                          className="w-full rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 focus:outline-none sm:w-auto dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                        >
-                          Pay Online
-                        </PaymentLink>
-                      ))
-                      .with({ payment: "online", schedule: "monthly" }, () => (
-                        <PaymentLink
-                          email={email}
-                          priceId={price.monthly.id}
-                          metadata={{ type: "membership", membership }}
-                          className="w-full rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 focus:outline-none sm:w-auto dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-                        >
-                          Pay Online
-                        </PaymentLink>
-                      ))
-                      .otherwise(() => (
-                        <></>
-                      ))}
-                  </section>
-                )}
-              </>
+              <section className="mb-12">
+                <PaymentLink
+                  email={email}
+                  priceId={
+                    schedule === "annually"
+                      ? price.annually.id
+                      : price.monthly.id
+                  }
+                  metadata={{ type: "membership", membership }}
+                  className="w-full rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 focus:outline-none sm:w-auto dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                  Pay Online
+                </PaymentLink>
+              </section>
             )}
           </>
         )

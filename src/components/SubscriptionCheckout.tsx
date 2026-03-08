@@ -38,16 +38,18 @@ const SubscriptionCheckoutInner: FC<Props> = ({ price }) => {
 
   const email = useSearchParam({
     param: "email",
-    schema: z.string(),
+    schema: z.string().optional(),
   });
 
   const subscribeMutation = useMutation({
-    mutationFn: () =>
-      actions.subscribe({
+    mutationFn: () => {
+      if (!email) throw new Error("Email is required");
+      return actions.subscribe({
         priceId: price.id,
         membership: metadata.membership,
         email,
-      }),
+      });
+    },
     onSuccess: (result) => {
       if (result.data) {
         setState({
@@ -57,6 +59,25 @@ const SubscriptionCheckoutInner: FC<Props> = ({ price }) => {
       }
     },
   });
+
+  if (!email) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Missing Email</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>
+            An email address is required to set up a subscription. Please{" "}
+            <a href="/membership/join" className="text-blue-600 underline">
+              join the club
+            </a>{" "}
+            first.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (state.step === "success") {
     return (

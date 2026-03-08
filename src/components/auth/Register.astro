@@ -70,6 +70,7 @@ import LinkButton from "../LinkButton.astro";
       If you'd prefer, you can just pay your membership fees without an account.
     </p>
     <LinkButton
+      id="pay-without-account"
       href="/membership/pay"
       class="mt-4"
       text="Pay Without Account"
@@ -83,6 +84,14 @@ import LinkButton from "../LinkButton.astro";
   const form: HTMLFormElement = document.getElementById(
     "register-form",
   ) as HTMLFormElement;
+
+  const emailParam = new URLSearchParams(window.location.search).get("email");
+  if (emailParam) {
+    const payLink = document.getElementById("pay-without-account") as HTMLAnchorElement | null;
+    if (payLink) {
+      payLink.href = `/membership/pay?email=${encodeURIComponent(emailParam)}`;
+    }
+  }
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();

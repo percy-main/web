@@ -37,6 +37,8 @@ export function getMembershipTypeDisplay(type: string | null): {
       return { label: "Social", variant: "yellow" };
     case "junior":
       return { label: "Junior", variant: "green" };
+    case "concessionary":
+      return { label: "Student / Concessionary", variant: "yellow" };
     default:
       return { label: "-", variant: "gray" };
   }

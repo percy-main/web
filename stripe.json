@@ -9,7 +9,8 @@
     },
     "product": {
       "subs_player": "prod_RYaHXiECGLyH9k",
-      "subs_social": "prod_RYaMScmSF06OQp"
+      "subs_social": "prod_RYaMScmSF06OQp",
+      "subs_concessionary": "prod_U72kxbH8P7IZy3"
     }
   },
   "dev": {
@@ -22,7 +23,8 @@
     },
     "product": {
       "subs_player": "prod_RfHLa2wMmBDJcK",
-      "subs_social": "prod_RfHN1rXeCNb2a9"
+      "subs_social": "prod_RfHN1rXeCNb2a9",
+      "subs_concessionary": "prod_U72ie4uTjyR3NY"
     }
   }
 }
