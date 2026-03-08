@@ -21,6 +21,7 @@ export const membershipSchema = z.object({
     z.literal("social"),
     z.literal("senior_player"),
     z.literal("senior_women_player"),
+    z.literal("concessionary"),
   ]),
 });
 

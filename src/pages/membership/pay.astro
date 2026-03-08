@@ -26,12 +26,24 @@ const socialAnnual = prices.find(
     price.data.product.id === paymentData.product.subs_social &&
     price.data.mode === "payment",
 );
+const concessionaryMonthly = prices.find(
+  (price) =>
+    price.data.product.id === paymentData.product.subs_concessionary &&
+    price.data.mode === "subscription",
+);
+const concessionaryAnnual = prices.find(
+  (price) =>
+    price.data.product.id === paymentData.product.subs_concessionary &&
+    price.data.mode === "payment",
+);
 
 if (
   !seniorPlayerMonthly ||
   !seniorPlayerAnnual ||
   !socialMonthly ||
-  !socialAnnual
+  !socialAnnual ||
+  !concessionaryMonthly ||
+  !concessionaryAnnual
 ) {
   throw new Error("Missing price data");
 }
@@ -46,6 +58,11 @@ const options = {
     name: "Social",
     monthly: socialMonthly.data,
     annually: socialAnnual.data,
+  },
+  concessionary: {
+    name: "Student / Concessionary",
+    monthly: concessionaryMonthly.data,
+    annually: concessionaryAnnual.data,
   },
 };
 ---
