@@ -37,6 +37,7 @@ export const Membership: FC<Props> = ({ email }) => {
                 .with("senior_player", () => "Playing Member (Senior)")
                 .with("social", () => "Social Member")
                 .with("junior", () => "Junior Member")
+                .with("concessionary", () => "Student / Concessionary Member")
                 .otherwise(() => "Unknown membership type")}
             </div>
             <p className="text-sm">

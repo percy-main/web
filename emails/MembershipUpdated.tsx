@@ -56,6 +56,7 @@ const Component: FC<Props> = ({
               .with("senior_player", () => "Senior Player")
               .with("social", () => "Social")
               .with("junior", () => "Junior")
+              .with("concessionary", () => "Student / Concessionary")
               .otherwise(() => "Unknown")}
           </li>
           <li>
