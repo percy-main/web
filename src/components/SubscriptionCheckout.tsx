@@ -38,7 +38,7 @@ const SubscriptionCheckoutInner: FC<Props> = ({ price }) => {
 
   const email = useSearchParam({
     param: "email",
-    schema: z.string(),
+    schema: z.string().optional(),
   });
 
   const subscribeMutation = useMutation({
