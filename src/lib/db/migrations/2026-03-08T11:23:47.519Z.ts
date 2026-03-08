@@ -7,8 +7,10 @@ export async function up(db: Kysely<never>): Promise<void> {
     .addColumn("member_category", "text")
     .execute();
 
-  // Backfill existing members based on their current membership type
-  // senior_player, senior_women_player, social → senior
+  // Backfill existing members based on their current membership type.
+  // Senior types are set first (higher priority). The junior UPDATE below
+  // uses AND member_category IS NULL to avoid overwriting a senior category
+  // for members who happen to hold both membership types.
   await sql`
     UPDATE member
     SET member_category = 'senior'

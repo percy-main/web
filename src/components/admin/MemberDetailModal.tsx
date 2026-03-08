@@ -27,6 +27,7 @@ import {
   MEMBER_CATEGORIES,
   MEMBER_CATEGORY_LABELS,
   type MemberCategory,
+  memberCategorySchema,
 } from "@/lib/member/categories";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { actions } from "astro:actions";
@@ -200,6 +201,7 @@ export function MemberDetailModal({
             {/* Member Category */}
             {detail.member && (
               <MemberCategorySection
+                userId={userId}
                 memberId={detail.member.id}
                 currentCategory={detail.member.member_category}
               />
@@ -387,9 +389,11 @@ export function MemberDetailModal({
 }
 
 function MemberCategorySection({
+  userId,
   memberId,
   currentCategory,
 }: {
+  userId: string;
   memberId: string;
   currentCategory: string | null;
 }) {
@@ -400,7 +404,7 @@ function MemberCategorySection({
       actions.admin.updateMemberCategory({ memberId, memberCategory }),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: ["admin", "userDetail"],
+        queryKey: ["admin", "userDetail", userId],
       });
       void queryClient.invalidateQueries({ queryKey: ["admin", "listUsers"] });
     },
@@ -415,7 +419,7 @@ function MemberCategorySection({
         <Select
           value={currentCategory ?? "unset"}
           onValueChange={(value) => {
-            const newCategory = value === "unset" ? null : (value as MemberCategory);
+            const newCategory = value === "unset" ? null : memberCategorySchema.parse(value);
             mutation.mutate(newCategory);
           }}
         >

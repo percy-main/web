@@ -103,6 +103,18 @@ export const updateMembership = async ({
       .returningAll()
       .executeTakeFirstOrThrow();
 
+    // Auto-derive member_category if not already set
+    if (!member.member_category) {
+      const category = defaultCategoryForMembershipType(membershipType);
+      if (category) {
+        await db.client
+          .updateTable("member")
+          .set({ member_category: category })
+          .where("id", "=", member.member_id)
+          .execute();
+      }
+    }
+
     return {
       ...membership,
       name: member.name,
