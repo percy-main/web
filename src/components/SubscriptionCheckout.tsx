@@ -41,6 +41,25 @@ const SubscriptionCheckoutInner: FC<Props> = ({ price }) => {
     schema: z.string().optional(),
   });
 
+  const subscribeMutation = useMutation({
+    mutationFn: () => {
+      if (!email) throw new Error("Email is required");
+      return actions.subscribe({
+        priceId: price.id,
+        membership: metadata.membership,
+        email,
+      });
+    },
+    onSuccess: (result) => {
+      if (result.data) {
+        setState({
+          step: "paying",
+          clientSecret: result.data.clientSecret,
+        });
+      }
+    },
+  });
+
   if (!email) {
     return (
       <Card>
@@ -59,23 +78,6 @@ const SubscriptionCheckoutInner: FC<Props> = ({ price }) => {
       </Card>
     );
   }
-
-  const subscribeMutation = useMutation({
-    mutationFn: () =>
-      actions.subscribe({
-        priceId: price.id,
-        membership: metadata.membership,
-        email,
-      }),
-    onSuccess: (result) => {
-      if (result.data) {
-        setState({
-          step: "paying",
-          clientSecret: result.data.clientSecret,
-        });
-      }
-    },
-  });
 
   if (state.step === "success") {
     return (
