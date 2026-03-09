@@ -11,6 +11,7 @@ import { MatchFeeRatesTable } from "./MatchFeeRatesTable";
 import { GameReportsTable } from "./GameReportsTable";
 import { RecordLinking } from "./RecordLinking";
 import { SponsorshipsTable } from "./SponsorshipsTable";
+import { TreasurerDashboard } from "./TreasurerDashboard";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ export function AdminPanel() {
             <TabsTrigger value="match-fees">Match Fee Rates</TabsTrigger>
             <TabsTrigger value="record-linking">Record Linking</TabsTrigger>
             <TabsTrigger value="game-reports">Game Reports</TabsTrigger>
+            <TabsTrigger value="treasurer">Treasurer</TabsTrigger>
           </TabsList>
           <TabsContent value="members">
             <MemberTable />
@@ -81,6 +83,9 @@ export function AdminPanel() {
           </TabsContent>
           <TabsContent value="game-reports">
             <GameReportsTable />
+          </TabsContent>
+          <TabsContent value="treasurer">
+            <TreasurerDashboard />
           </TabsContent>
         </Tabs>
       </div>

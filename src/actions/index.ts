@@ -17,6 +17,7 @@ import { playerSponsorship } from "./player-sponsorship";
 import { sponsorship } from "./sponsorship";
 import { subscribe } from "./subscribe";
 import { subscriptions } from "./subscriptions";
+import { treasurer } from "./treasurer";
 
 export const server = {
   admin,
@@ -39,5 +40,6 @@ export const server = {
   gameScore,
   leaderboard,
   matchday,
+  treasurer,
   updateMemberDetails,
 };
