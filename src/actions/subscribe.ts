@@ -5,6 +5,7 @@ import { ActionError, defineAction } from "astro:actions";
 import { CONTEXT } from "astro:env/client";
 import { DEPLOY_PRIME_URL } from "astro:env/server";
 import { z } from "astro:schema";
+import { add } from "date-fns";
 import type Stripe from "stripe";
 
 export const subscribe = defineAction({
@@ -38,11 +39,11 @@ export const subscribe = defineAction({
       let cancelAt: number | undefined;
       if (membership === "senior_women_player") {
         const now = new Date();
-        const sixMonths = new Date(now);
-        sixMonths.setMonth(sixMonths.getMonth() + 6);
+        const sixMonths = add(now, { months: 6 });
 
-        const year = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
-        const endOfSep = new Date(year, 8, 30, 23, 59, 59);
+        // If already in Sep or later, target next year's Sep 30
+        const year = now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear();
+        const endOfSep = new Date(Date.UTC(year, 8, 30, 23, 59, 59));
 
         cancelAt = Math.floor(Math.min(sixMonths.getTime(), endOfSep.getTime()) / 1000);
       }
