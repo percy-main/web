@@ -86,6 +86,24 @@ export const admin = {
             "membership.type as membershipType",
             "membership.paid_until as paidUntil",
           ])
+          .select((eb) => [
+            eb
+              .exists(
+                eb
+                  .selectFrom("junior_team_manager")
+                  .whereRef("junior_team_manager.user_id", "=", "user.id")
+                  .select(sql.lit(1).as("one")),
+              )
+              .as("isJuniorManager"),
+            eb
+              .exists(
+                eb
+                  .selectFrom("team_official")
+                  .whereRef("team_official.user_id", "=", "user.id")
+                  .select(sql.lit(1).as("one")),
+              )
+              .as("isOfficial"),
+          ])
           .orderBy("user.createdAt", "desc")
           .limit(pageSize)
           .offset(offset)
@@ -100,6 +118,8 @@ export const admin = {
           role: u.role,
           createdAt: u.createdAt,
           isMember: u.memberId !== null,
+          isJuniorManager: Boolean(u.isJuniorManager),
+          isOfficial: Boolean(u.isOfficial),
           memberCategory: u.memberCategory ?? null,
           membershipType: u.membershipType ?? null,
           paidUntil: u.paidUntil ?? null,
@@ -127,6 +147,24 @@ export const admin = {
           "user.role",
           "user.createdAt",
           "user.emailVerified",
+        ])
+        .select((eb) => [
+          eb
+            .exists(
+              eb
+                .selectFrom("junior_team_manager")
+                .whereRef("junior_team_manager.user_id", "=", "user.id")
+                .select(sql.lit(1).as("one")),
+            )
+            .as("isJuniorManager"),
+          eb
+            .exists(
+              eb
+                .selectFrom("team_official")
+                .whereRef("team_official.user_id", "=", "user.id")
+                .select(sql.lit(1).as("one")),
+            )
+            .as("isOfficial"),
         ])
         .executeTakeFirst();
 
@@ -208,6 +246,8 @@ export const admin = {
           role: user.role,
           createdAt: user.createdAt,
           emailVerified: !!user.emailVerified,
+          isJuniorManager: Boolean(user.isJuniorManager),
+          isOfficial: Boolean(user.isOfficial),
         },
         member: member ?? null,
         membership,

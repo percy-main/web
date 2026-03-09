@@ -95,22 +95,22 @@ export function MemberDetailModal({
                 <dd>{detail.user.email}</dd>
                 <dt className="font-medium text-gray-500">Role</dt>
                 <dd>
-                  <StatusPill
-                    variant={
-                      detail.user.role === "admin"
-                        ? "blue"
-                        : detail.user.role === "junior_manager" ||
-                            detail.user.role === "official"
-                          ? "green"
-                          : "gray"
-                    }
-                  >
-                    {detail.user.role === "junior_manager"
-                      ? "Junior Manager"
-                      : detail.user.role === "official"
-                        ? "Official"
-                        : (detail.user.role ?? "user")}
-                  </StatusPill>
+                  <div className="flex flex-wrap gap-1">
+                    {detail.user.role === "admin" && (
+                      <StatusPill variant="blue">admin</StatusPill>
+                    )}
+                    {detail.user.isJuniorManager && (
+                      <StatusPill variant="green">Junior Manager</StatusPill>
+                    )}
+                    {detail.user.isOfficial && (
+                      <StatusPill variant="green">Official</StatusPill>
+                    )}
+                    {detail.user.role !== "admin" &&
+                      !detail.user.isJuniorManager &&
+                      !detail.user.isOfficial && (
+                        <StatusPill variant="gray">user</StatusPill>
+                      )}
+                  </div>
                 </dd>
                 <dt className="font-medium text-gray-500">Email Verified</dt>
                 <dd>{detail.user.emailVerified ? "Yes" : "No"}</dd>
