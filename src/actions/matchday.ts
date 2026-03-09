@@ -4,8 +4,11 @@ import * as playCricketApi from "@/lib/play-cricket";
 import { PLAY_CRICKET_SITE_ID } from "astro:env/server";
 import { ActionError } from "astro:actions";
 import { z } from "astro:schema";
-import { parse, isBefore, startOfDay, subDays } from "date-fns";
+import { parse, isBefore, startOfDay, subDays, formatDate } from "date-fns";
 import { randomUUID } from "crypto";
+
+const PAYMENT_METHODS = ["cash", "bank_transfer", "card"] as const;
+const paymentMethodSchema = z.enum(PAYMENT_METHODS);
 
 /**
  * Returns the user's role from the DB.
@@ -425,6 +428,316 @@ export const matchday = {
       await client
         .deleteFrom("matchday_player")
         .where("id", "=", matchdayPlayerId)
+        .execute();
+
+      return { success: true };
+    },
+  }),
+
+  /** Confirm the team and generate match fees. */
+  confirmTeam: defineAuthAction({
+    roles: ["official", "admin"],
+    input: z.object({
+      matchdayId: z.string(),
+      playerStatuses: z.array(
+        z.object({
+          matchdayPlayerId: z.string(),
+          status: z.enum(["playing", "dropped_out", "no_show"]),
+        }),
+      ),
+    }),
+    handler: async ({ matchdayId, playerStatuses }, { user }) => {
+      const matchday = await client
+        .selectFrom("matchday")
+        .where("id", "=", matchdayId)
+        .selectAll()
+        .executeTakeFirst();
+
+      if (!matchday) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Matchday not found.",
+        });
+      }
+
+      if (matchday.status !== "pending") {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Matchday has already been confirmed.",
+        });
+      }
+
+      const accessibleIds = await getAccessibleTeamIds(user.id);
+      if (!accessibleIds.includes(matchday.play_cricket_team_id)) {
+        throw new ActionError({
+          code: "UNAUTHORIZED",
+          message: "You do not have access to this matchday.",
+        });
+      }
+
+      // Update matchday status
+      await client
+        .updateTable("matchday")
+        .set({
+          status: "confirmed",
+          confirmed_at: new Date().toISOString(),
+          confirmed_by: user.id,
+        })
+        .where("id", "=", matchdayId)
+        .execute();
+
+      // Update player statuses
+      for (const { matchdayPlayerId, status } of playerStatuses) {
+        await client
+          .updateTable("matchday_player")
+          .set({ status })
+          .where("id", "=", matchdayPlayerId)
+          .where("matchday_id", "=", matchdayId)
+          .execute();
+      }
+
+      // Generate match fees for "playing" players
+      const playingPlayers = await client
+        .selectFrom("matchday_player")
+        .leftJoin("member", "member.id", "matchday_player.member_id")
+        .where("matchday_player.matchday_id", "=", matchdayId)
+        .where("matchday_player.status", "=", "playing")
+        .select([
+          "matchday_player.id as matchdayPlayerId",
+          "matchday_player.member_id",
+          "matchday_player.player_name",
+          "member.member_category",
+        ])
+        .execute();
+
+      // Look up fee rates for this team
+      const feeRates = await client
+        .selectFrom("match_fee_rate")
+        .where((eb) =>
+          eb.or([
+            eb("play_cricket_team_id", "=", matchday.play_cricket_team_id),
+            eb("play_cricket_team_id", "is", null),
+          ]),
+        )
+        .selectAll()
+        .execute();
+
+      for (const player of playingPlayers) {
+        if (!player.member_id) continue;
+
+        const category = player.member_category ?? "guest";
+
+        // Skip bursary members (they pay nothing)
+        if (category === "bursary") continue;
+
+        // Find the most specific rate: team-specific > generic
+        const rate =
+          feeRates.find(
+            (r) =>
+              r.play_cricket_team_id === matchday.play_cricket_team_id &&
+              r.member_category === category,
+          ) ??
+          feeRates.find(
+            (r) =>
+              r.play_cricket_team_id === null &&
+              r.member_category === category,
+          );
+
+        if (!rate || rate.amount_pence === 0) continue;
+
+        const chargeId = randomUUID();
+        await client
+          .insertInto("charge")
+          .values({
+            id: chargeId,
+            member_id: player.member_id,
+            description: `Match fee - ${matchday.opposition} (${formatDate(matchday.match_date, "dd/MM/yyyy")})`,
+            amount_pence: rate.amount_pence,
+            charge_date: matchday.match_date,
+            created_by: user.id,
+            type: "match_fee",
+            source: "matchday",
+          })
+          .execute();
+
+        // Link charge to matchday_player
+        await client
+          .updateTable("matchday_player")
+          .set({ charge_id: chargeId })
+          .where("id", "=", player.matchdayPlayerId)
+          .execute();
+      }
+
+      return { success: true };
+    },
+  }),
+
+  /** Update a single player's status (for replacements during confirmation). */
+  updatePlayerStatus: defineAuthAction({
+    roles: ["official", "admin"],
+    input: z.object({
+      matchdayPlayerId: z.string(),
+      status: z.enum(["playing", "dropped_out", "no_show", "replaced"]),
+    }),
+    handler: async ({ matchdayPlayerId, status }, { user }) => {
+      const player = await client
+        .selectFrom("matchday_player")
+        .innerJoin("matchday", "matchday.id", "matchday_player.matchday_id")
+        .where("matchday_player.id", "=", matchdayPlayerId)
+        .select([
+          "matchday_player.id",
+          "matchday.play_cricket_team_id",
+          "matchday.status as matchday_status",
+        ])
+        .executeTakeFirst();
+
+      if (!player) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Player not found.",
+        });
+      }
+
+      const accessibleIds = await getAccessibleTeamIds(user.id);
+      if (!accessibleIds.includes(player.play_cricket_team_id)) {
+        throw new ActionError({
+          code: "UNAUTHORIZED",
+          message: "You do not have access to this matchday.",
+        });
+      }
+
+      await client
+        .updateTable("matchday_player")
+        .set({ status })
+        .where("id", "=", matchdayPlayerId)
+        .execute();
+
+      return { success: true };
+    },
+  }),
+
+  /** Mark a player's match fee as paid. */
+  markMatchFeePaid: defineAuthAction({
+    roles: ["official", "admin"],
+    input: z.object({
+      matchdayPlayerId: z.string(),
+      paymentMethod: paymentMethodSchema,
+    }),
+    handler: async ({ matchdayPlayerId, paymentMethod }, { user }) => {
+      const player = await client
+        .selectFrom("matchday_player")
+        .innerJoin("matchday", "matchday.id", "matchday_player.matchday_id")
+        .where("matchday_player.id", "=", matchdayPlayerId)
+        .select([
+          "matchday_player.id",
+          "matchday_player.charge_id",
+          "matchday.play_cricket_team_id",
+        ])
+        .executeTakeFirst();
+
+      if (!player) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Player not found.",
+        });
+      }
+
+      const accessibleIds = await getAccessibleTeamIds(user.id);
+      if (!accessibleIds.includes(player.play_cricket_team_id)) {
+        throw new ActionError({
+          code: "UNAUTHORIZED",
+          message: "You do not have access to this matchday.",
+        });
+      }
+
+      if (!player.charge_id) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "No match fee charge found for this player.",
+        });
+      }
+
+      await client
+        .updateTable("charge")
+        .set({
+          paid_at: new Date().toISOString(),
+          payment_method: paymentMethod,
+        })
+        .where("id", "=", player.charge_id)
+        .where("paid_at", "is", null)
+        .execute();
+
+      return { success: true };
+    },
+  }),
+
+  /** List match fee rates (admin). */
+  listMatchFeeRates: defineAuthAction({
+    roles: ["admin"],
+    handler: async () => {
+      const rates = await client
+        .selectFrom("match_fee_rate")
+        .leftJoin(
+          "play_cricket_team",
+          "play_cricket_team.id",
+          "match_fee_rate.play_cricket_team_id",
+        )
+        .select([
+          "match_fee_rate.id",
+          "match_fee_rate.play_cricket_team_id",
+          "match_fee_rate.competition_type",
+          "match_fee_rate.member_category",
+          "match_fee_rate.amount_pence",
+          "play_cricket_team.name as team_name",
+        ])
+        .orderBy("match_fee_rate.member_category", "asc")
+        .execute();
+
+      return rates;
+    },
+  }),
+
+  /** Add a match fee rate (admin). */
+  addMatchFeeRate: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      playCricketTeamId: z.string().optional(),
+      competitionType: z.string().optional(),
+      memberCategory: z.string(),
+      amountPence: z.number().int().min(0),
+    }),
+    handler: async ({
+      playCricketTeamId,
+      competitionType,
+      memberCategory,
+      amountPence,
+    }) => {
+      const id = randomUUID();
+      await client
+        .insertInto("match_fee_rate")
+        .values({
+          id,
+          play_cricket_team_id: playCricketTeamId ?? null,
+          competition_type: competitionType ?? null,
+          member_category: memberCategory,
+          amount_pence: amountPence,
+        })
+        .execute();
+
+      return { id };
+    },
+  }),
+
+  /** Delete a match fee rate (admin). */
+  deleteMatchFeeRate: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      rateId: z.string(),
+    }),
+    handler: async ({ rateId }) => {
+      await client
+        .deleteFrom("match_fee_rate")
+        .where("id", "=", rateId)
         .execute();
 
       return { success: true };

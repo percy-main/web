@@ -1,6 +1,13 @@
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
 import { useSession } from "@/lib/auth/client";
 import {
   QueryClient,
@@ -13,6 +20,12 @@ import { actions } from "astro:actions";
 import { navigate } from "astro:transitions/client";
 import { parse, format } from "date-fns";
 import { useState } from "react";
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: "Cash",
+  bank_transfer: "Bank Transfer",
+  card: "Card",
+};
 
 const queryClient = new QueryClient();
 
@@ -266,6 +279,11 @@ function MatchdayView({
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [adHocName, setAdHocName] = useState("");
+  const [confirmingTeam, setConfirmingTeam] = useState(false);
+  const [playerStatuses, setPlayerStatuses] = useState<
+    Record<string, "playing" | "dropped_out" | "no_show">
+  >({});
+  const [payingPlayerId, setPayingPlayerId] = useState<string | null>(null);
 
   const matchdayQuery = useQuery({
     queryKey: ["official", "matchday", matchdayId],
@@ -303,12 +321,80 @@ function MatchdayView({
     },
   });
 
+  const confirmTeamMutation = useMutation({
+    mutationFn: (input: {
+      matchdayId: string;
+      playerStatuses: Array<{
+        matchdayPlayerId: string;
+        status: "playing" | "dropped_out" | "no_show";
+      }>;
+    }) => actions.matchday.confirmTeam(input),
+    onSuccess: () => {
+      setConfirmingTeam(false);
+      setPlayerStatuses({});
+      void queryClient.invalidateQueries({
+        queryKey: ["official", "matchday", matchdayId],
+      });
+    },
+  });
+
+  const markPaidMutation = useMutation({
+    mutationFn: (input: {
+      matchdayPlayerId: string;
+      paymentMethod: "cash" | "bank_transfer" | "card";
+    }) => actions.matchday.markMatchFeePaid(input),
+    onSuccess: () => {
+      setPayingPlayerId(null);
+      void queryClient.invalidateQueries({
+        queryKey: ["official", "matchday", matchdayId],
+      });
+    },
+  });
+
   const data = matchdayQuery.data?.data;
   const players = data?.players ?? [];
   const searchResults = searchMembersQuery.data?.data ?? [];
   const existingMemberIds = new Set(
     players.filter((p) => p.member_id).map((p) => p.member_id),
   );
+
+  const handleStartConfirm = () => {
+    // Initialize all players as "playing" by default
+    const initial: Record<string, "playing" | "dropped_out" | "no_show"> = {};
+    for (const p of players) {
+      if (p.id) initial[p.id] = "playing";
+    }
+    setPlayerStatuses(initial);
+    setConfirmingTeam(true);
+  };
+
+  const handleConfirm = () => {
+    confirmTeamMutation.mutate({
+      matchdayId,
+      playerStatuses: Object.entries(playerStatuses).map(
+        ([matchdayPlayerId, status]) => ({
+          matchdayPlayerId,
+          status,
+        }),
+      ),
+    });
+  };
+
+  const statusColors: Record<string, string> = {
+    selected: "bg-gray-100 text-gray-700",
+    playing: "bg-green-100 text-green-800",
+    dropped_out: "bg-yellow-100 text-yellow-800",
+    no_show: "bg-red-100 text-red-800",
+    replaced: "bg-orange-100 text-orange-800",
+  };
+
+  const statusLabels: Record<string, string> = {
+    selected: "Selected",
+    playing: "Playing",
+    dropped_out: "Dropped Out",
+    no_show: "No Show",
+    replaced: "Replaced",
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -328,6 +414,17 @@ function MatchdayView({
                 new Date(data.matchday.match_date),
                 "EEEE d MMMM yyyy",
               )}
+              <span
+                className={`ml-2 inline-block rounded px-2 py-0.5 text-xs font-medium ${
+                  data.matchday.status === "pending"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : data.matchday.status === "confirmed"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
+                }`}
+              >
+                {data.matchday.status}
+              </span>
             </p>
           </div>
         ) : null}
@@ -344,14 +441,24 @@ function MatchdayView({
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>Squad ({players.length})</span>
-                {data.matchday.status === "pending" && (
-                  <Button
-                    size="sm"
-                    onClick={() => setShowAddForm(!showAddForm)}
-                  >
-                    {showAddForm ? "Cancel" : "Add Player"}
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {data.matchday.status === "pending" && !confirmingTeam && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowAddForm(!showAddForm)}
+                      >
+                        {showAddForm ? "Cancel" : "Add Player"}
+                      </Button>
+                      {players.length > 0 && (
+                        <Button size="sm" onClick={handleStartConfirm}>
+                          Confirm Team
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -359,7 +466,73 @@ function MatchdayView({
                 <p className="text-sm text-gray-500">
                   No players selected yet.
                 </p>
+              ) : confirmingTeam ? (
+                /* Confirmation mode */
+                <div className="flex flex-col gap-3">
+                  <p className="text-sm text-gray-600">
+                    Set each player&apos;s status and confirm the team.
+                  </p>
+                  {players.map((player) => (
+                    <div
+                      key={player.id}
+                      className="flex items-center justify-between rounded border border-gray-200 px-3 py-2"
+                    >
+                      <div>
+                        <p className="font-medium">{player.player_name}</p>
+                        {player.member_category && (
+                          <p className="text-xs capitalize text-gray-400">
+                            {player.member_category}
+                          </p>
+                        )}
+                      </div>
+                      <Select
+                        value={playerStatuses[player.id!] ?? "playing"}
+                        onValueChange={(
+                          value: "playing" | "dropped_out" | "no_show",
+                        ) =>
+                          setPlayerStatuses((prev) => ({
+                            ...prev,
+                            [player.id!]: value,
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="w-36">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="playing">Playing</SelectItem>
+                          <SelectItem value="dropped_out">
+                            Dropped Out
+                          </SelectItem>
+                          <SelectItem value="no_show">No Show</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleConfirm}
+                      disabled={confirmTeamMutation.isPending}
+                    >
+                      {confirmTeamMutation.isPending
+                        ? "Confirming..."
+                        : "Confirm Team"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setConfirmingTeam(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                  {confirmTeamMutation.isError && (
+                    <p className="text-sm text-red-600">
+                      Failed to confirm team.
+                    </p>
+                  )}
+                </div>
               ) : (
+                /* Normal view - shows player list with statuses */
                 <div className="flex flex-col gap-2">
                   {players.map((player, idx) => (
                     <div
@@ -372,26 +545,93 @@ function MatchdayView({
                         </span>
                         <div>
                           <p className="font-medium">{player.player_name}</p>
-                          {player.member_category && (
-                            <p className="text-xs capitalize text-gray-400">
-                              {player.member_category}
-                            </p>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {player.member_category && (
+                              <span className="text-xs capitalize text-gray-400">
+                                {player.member_category}
+                              </span>
+                            )}
+                            {data.matchday.status !== "pending" && (
+                              <span
+                                className={`rounded px-1.5 py-0.5 text-xs font-medium ${statusColors[player.status] ?? ""}`}
+                              >
+                                {statusLabels[player.status] ?? player.status}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      {data.matchday.status === "pending" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-800"
-                          disabled={removePlayerMutation.isPending}
-                          onClick={() =>
-                            removePlayerMutation.mutate(player.id!)
-                          }
-                        >
-                          Remove
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {/* Match fee payment controls for confirmed matchdays */}
+                        {data.matchday.status === "confirmed" &&
+                          player.status === "playing" &&
+                          player.charge_id && (
+                            <>
+                              {payingPlayerId === player.id ? (
+                                <div className="flex items-center gap-1">
+                                  {(
+                                    ["cash", "bank_transfer", "card"] as const
+                                  ).map((method) => (
+                                    <Button
+                                      key={method}
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={markPaidMutation.isPending}
+                                      onClick={() =>
+                                        markPaidMutation.mutate({
+                                          matchdayPlayerId: player.id!,
+                                          paymentMethod: method,
+                                        })
+                                      }
+                                    >
+                                      {PAYMENT_METHOD_LABELS[method]}
+                                    </Button>
+                                  ))}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setPayingPlayerId(null)}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    setPayingPlayerId(player.id!)
+                                  }
+                                >
+                                  Mark Paid
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        {/* Show paid status */}
+                        {player.charge_id &&
+                          data.matchday.status !== "pending" &&
+                          player.status === "playing" &&
+                          payingPlayerId !== player.id && (
+                            <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800">
+                              Fee pending
+                            </span>
+                          )}
+                        {/* Remove button for pending matchdays */}
+                        {data.matchday.status === "pending" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-800"
+                            disabled={removePlayerMutation.isPending}
+                            onClick={() =>
+                              removePlayerMutation.mutate(player.id!)
+                            }
+                          >
+                            Remove
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -406,7 +646,6 @@ function MatchdayView({
                 <CardTitle>Add Player</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                {/* Member search */}
                 <div>
                   <Input
                     placeholder="Search members by name..."
@@ -435,7 +674,9 @@ function MatchdayView({
                             }
                           >
                             <div>
-                              <span className="font-medium">{member.name}</span>
+                              <span className="font-medium">
+                                {member.name}
+                              </span>
                               {member.member_category && (
                                 <span className="ml-2 text-xs capitalize text-gray-400">
                                   {member.member_category}
@@ -451,7 +692,6 @@ function MatchdayView({
                   )}
                 </div>
 
-                {/* Ad-hoc player */}
                 <div className="border-t border-gray-200 pt-4">
                   <p className="mb-2 text-sm text-gray-600">
                     Or add a player not in the system:
@@ -486,6 +726,12 @@ function MatchdayView({
                 )}
               </CardContent>
             </Card>
+          )}
+
+          {markPaidMutation.isError && (
+            <p className="text-sm text-red-600">
+              Failed to mark payment.
+            </p>
           )}
         </>
       )}
