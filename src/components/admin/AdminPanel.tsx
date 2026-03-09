@@ -8,6 +8,7 @@ import { DuplicateMembersTable } from "./DuplicateMembersTable";
 import { JuniorsTable } from "./JuniorsTable";
 import { MemberTable } from "./MemberTable";
 import { MatchFeeRatesTable } from "./MatchFeeRatesTable";
+import { GameReportsTable } from "./GameReportsTable";
 import { RecordLinking } from "./RecordLinking";
 import { SponsorshipsTable } from "./SponsorshipsTable";
 
@@ -52,6 +53,7 @@ export function AdminPanel() {
             <TabsTrigger value="duplicates">Duplicates</TabsTrigger>
             <TabsTrigger value="match-fees">Match Fee Rates</TabsTrigger>
             <TabsTrigger value="record-linking">Record Linking</TabsTrigger>
+            <TabsTrigger value="game-reports">Game Reports</TabsTrigger>
           </TabsList>
           <TabsContent value="members">
             <MemberTable />
@@ -76,6 +78,9 @@ export function AdminPanel() {
           </TabsContent>
           <TabsContent value="record-linking">
             <RecordLinking />
+          </TabsContent>
+          <TabsContent value="game-reports">
+            <GameReportsTable />
           </TabsContent>
         </Tabs>
       </div>
