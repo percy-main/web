@@ -228,7 +228,7 @@ function TeamMatchesView({
                   {match.matchdayId ? (
                     <Button
                       size="sm"
-                      onClick={() => onSelectMatchday(match.matchdayId!)}
+                      onClick={() => onSelectMatchday(match.matchdayId ?? "")}
                     >
                       {match.matchdayStatus === "confirmed"
                         ? "View Confirmed"
@@ -361,7 +361,9 @@ function MatchdayView({
   });
 
   const data = matchdayQuery.data?.data;
-  const players = data?.players ?? [];
+  const players = (data?.players ?? []).filter(
+    (p): p is typeof p & { id: string } => p.id !== null,
+  );
   const searchResults = searchMembersQuery.data?.data ?? [];
   const existingMemberIds = new Set(
     players.filter((p) => p.member_id).map((p) => p.member_id),
@@ -495,13 +497,13 @@ function MatchdayView({
                         )}
                       </div>
                       <Select
-                        value={playerStatuses[player.id!] ?? "playing"}
+                        value={playerStatuses[player.id] ?? "playing"}
                         onValueChange={(
                           value: "playing" | "dropped_out" | "no_show",
                         ) =>
                           setPlayerStatuses((prev) => ({
                             ...prev,
-                            [player.id!]: value,
+                            [player.id]: value,
                           }))
                         }
                       >
@@ -588,7 +590,7 @@ function MatchdayView({
                                       disabled={markPaidMutation.isPending}
                                       onClick={() =>
                                         markPaidMutation.mutate({
-                                          matchdayPlayerId: player.id!,
+                                          matchdayPlayerId: player.id,
                                           paymentMethod: method,
                                         })
                                       }
@@ -609,7 +611,7 @@ function MatchdayView({
                                   size="sm"
                                   variant="outline"
                                   onClick={() =>
-                                    setPayingPlayerId(player.id!)
+                                    setPayingPlayerId(player.id)
                                   }
                                 >
                                   Mark Paid
@@ -639,7 +641,7 @@ function MatchdayView({
                             className="text-red-600 hover:text-red-800"
                             disabled={removePlayerMutation.isPending}
                             onClick={() =>
-                              removePlayerMutation.mutate(player.id!)
+                              removePlayerMutation.mutate(player.id)
                             }
                           >
                             Remove
