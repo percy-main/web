@@ -163,6 +163,9 @@ function SummaryCards({
   const expenses = expensesQuery.data?.data;
   const sponsorship = sponsorshipQuery.data?.data;
 
+  if (aggregatesQuery.isError) {
+    return <p className="text-red-600">Failed to load financial summary.</p>;
+  }
   if (!aggregates) {
     return <p className="text-gray-500">Loading summary...</p>;
   }
@@ -184,9 +187,9 @@ function SummaryCards({
         variant="warning"
       />
       <SummaryCard
-        title="Membership"
+        title="Other Income"
         amount={aggregates.totalPaid - sponsorshipIncome}
-        subtitle="(charges excl. sponsorship)"
+        subtitle="(membership, donations, manual)"
         variant="default"
       />
       <SummaryCard
@@ -715,6 +718,12 @@ function OutstandingPayments() {
                             Chase
                           </Button>
                         )}
+                        {chaseMutation.isError &&
+                          chasingChargeId === charge.id && (
+                            <p className="mt-1 text-xs text-red-600">
+                              Failed to send reminder.
+                            </p>
+                          )}
                       </TableCell>
                     </TableRow>
                   ))}

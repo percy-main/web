@@ -31,17 +31,17 @@ export const treasurer = {
         .where("charge.paid_at", "is not", null)
         .where("charge.deleted_at", "is", null);
 
-      if (dateFrom) query = query.where("charge.charge_date", ">=", dateFrom);
-      if (dateTo) query = query.where("charge.charge_date", "<=", dateTo);
+      if (dateFrom) query = query.where("charge.paid_at", ">=", dateFrom);
+      if (dateTo) query = query.where("charge.paid_at", "<=", dateTo);
 
       const rows = await query
         .select([
-          sql<string>`strftime('%Y-%m', charge.charge_date)`.as("month"),
+          sql<string>`strftime('%Y-%m', charge.paid_at)`.as("month"),
           "charge.type",
           sql<number>`SUM(charge.amount_pence)`.as("total"),
         ])
-        .groupBy([sql`strftime('%Y-%m', charge.charge_date)`, "charge.type"])
-        .orderBy(sql`strftime('%Y-%m', charge.charge_date)`, "asc")
+        .groupBy([sql`strftime('%Y-%m', charge.paid_at)`, "charge.type"])
+        .orderBy(sql`strftime('%Y-%m', charge.paid_at)`, "asc")
         .execute();
 
       // Pivot into { month, membership, sponsorship, donation, manual, ... }
@@ -93,7 +93,7 @@ export const treasurer = {
         .select([
           "membership.type",
           sql<number>`COUNT(CASE WHEN membership.paid_until >= ${now} THEN 1 END)`.as("active"),
-          sql<number>`COUNT(CASE WHEN membership.paid_until < ${now} THEN 1 END)`.as("lapsed"),
+          sql<number>`COUNT(CASE WHEN membership.paid_until IS NULL OR membership.paid_until < ${now} THEN 1 END)`.as("lapsed"),
         ])
         .groupBy("membership.type")
         .execute();
@@ -110,28 +110,33 @@ export const treasurer = {
     roles: ["admin"],
     handler: async () => {
       // Fetch annual (one-time payment) prices for each membership product from Stripe
-      const prices: Array<{ type: string; annualPence: number }> = [];
+      const results = await Promise.all(
+        Object.entries(productToMembershipType).map(
+          async ([productId, membershipType]) => {
+            try {
+              const stripePrices = await stripe.prices.list({
+                product: productId,
+                active: true,
+                type: "one_time",
+                limit: 1,
+              });
+              if (stripePrices.data.length > 0 && stripePrices.data[0].unit_amount) {
+                return {
+                  type: membershipType,
+                  annualPence: stripePrices.data[0].unit_amount,
+                };
+              }
+            } catch {
+              // Skip if product not found
+            }
+            return null;
+          },
+        ),
+      );
 
-      for (const [productId, membershipType] of Object.entries(productToMembershipType)) {
-        try {
-          const stripePrices = await stripe.prices.list({
-            product: productId,
-            active: true,
-            type: "one_time",
-            limit: 1,
-          });
-          if (stripePrices.data.length > 0 && stripePrices.data[0].unit_amount) {
-            prices.push({
-              type: membershipType,
-              annualPence: stripePrices.data[0].unit_amount,
-            });
-          }
-        } catch {
-          // Skip if product not found
-        }
-      }
-
-      return prices;
+      return results.filter(
+        (r): r is { type: string; annualPence: number } => r !== null,
+      );
     },
   }),
 
@@ -152,12 +157,13 @@ export const treasurer = {
         .innerJoin("member", "member.id", "charge.member_id")
         .where("charge.paid_at", "is", null)
         .where("charge.deleted_at", "is", null)
+        // Exclude pending (in-flight Stripe payments)
+        .where("charge.payment_confirmed_at", "is", null)
         // Exclude abandoned (Stripe PI that's been pending > threshold)
         .where((eb) =>
           eb.or([
             eb("charge.stripe_payment_intent_id", "is", null),
             eb("charge.created_at", ">=", abandonedCutoff),
-            eb("charge.payment_confirmed_at", "is not", null),
           ]),
         );
 
