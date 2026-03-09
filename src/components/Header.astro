@@ -54,6 +54,14 @@ const menu: Array<TMenuItem & { purpose: "cta" | "menu" }> = [
     purpose: "menu",
   },
   ...pagesMenu,
+  {
+    name: "Members Guide",
+    url: "/guide",
+    match: {
+      start: "/guide",
+    },
+    purpose: "menu",
+  },
 ];
 
 const donateUrl = `/purchase/${paymentData.prices.donation}`;

@@ -1,0 +1,284 @@
+---
+import Container from "@/layouts/Container.astro";
+
+const sections = [
+  { id: "sign-up", title: "How to sign up" },
+  { id: "pay-membership", title: "How to pay your membership" },
+  { id: "junior-members", title: "How to add junior members" },
+  { id: "reset-password", title: "How to reset your password" },
+  { id: "account-management", title: "Managing your account" },
+];
+---
+
+<Container title="Members Guide">
+  <div class="mx-auto max-w-3xl">
+    <h1>Members Guide</h1>
+    <p class="mb-8 text-lg text-text">
+      Everything you need to know about joining and using your Percy Main
+      Community Sports Club membership.
+    </p>
+
+    {/* Table of contents */}
+    <nav class="mb-12 rounded-lg border border-border bg-creamy p-6">
+      <h2 class="mb-3 text-h5">On this page</h2>
+      <ul class="space-y-2">
+        {
+          sections.map((s) => (
+            <li>
+              <a
+                href={`#${s.id}`}
+                class="text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary"
+              >
+                {s.title}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div class="prose prose-lg max-w-none [&_h2]:scroll-mt-24 [&_h3]:scroll-mt-24">
+      {/* ── Sign Up ─────────────────────────────── */}
+      <h2 id="sign-up">How to sign up</h2>
+
+      <h3>Step 1: Fill in your details</h3>
+      <p>
+        Visit the <a href="/membership/join">Join The Club</a> page. You'll be asked
+        for some basic information:
+      </p>
+      <ul>
+        <li>Your name, title and date of birth</li>
+        <li>Your address (you can search by postcode)</li>
+        <li>A telephone number and email address</li>
+        <li>An emergency contact name and phone number</li>
+      </ul>
+
+      <h3>Step 2: Create your account</h3>
+      <p>
+        After submitting your details, you'll be taken to a registration page
+        where you set a password for your account. This is separate from the
+        membership form — your email address will be pre-filled.
+      </p>
+
+      <h3>Step 3: Verify your email</h3>
+      <p>
+        We'll send a verification email to the address you provided. Click the
+        link in the email to confirm your account. Once verified, you can log in
+        and proceed to pay your membership.
+      </p>
+
+      <div class="not-prose my-6 rounded-lg border border-primary/20 bg-primary/5 p-4">
+        <p class="text-sm text-text">
+          <strong>Ready to join?</strong>
+          <a
+            href="/membership/join"
+            class="ml-2 inline-block rounded bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-light"
+          >
+            Sign up now
+          </a>
+        </p>
+      </div>
+
+      {/* ── Pay Membership ──────────────────────── */}
+      <h2 id="pay-membership">How to pay your membership</h2>
+
+      <h3>Step 1: Choose your membership category</h3>
+      <p>
+        Visit the <a href="/membership/pay">Pay Membership</a> page. We offer
+        several membership categories:
+      </p>
+      <ul>
+        <li><strong>Senior Player</strong> — for adult players</li>
+        <li><strong>Social</strong> — for supporters and friends of the club</li>
+        <li>
+          <strong>Student / Concessionary</strong> — reduced rate for students and
+          concessions
+        </li>
+        <li><strong>Women's Player</strong> — for women's team members</li>
+      </ul>
+
+      <h3>Step 2: Pick a payment schedule</h3>
+      <p>
+        Most categories offer a choice between paying annually (one-off payment)
+        or monthly (recurring subscription). Women's Player memberships can be
+        paid per season or monthly.
+      </p>
+
+      <h3>Step 3: Complete payment</h3>
+      <p>
+        Payment is handled securely through Stripe. You can pay by card. Once
+        payment is confirmed, your membership is active immediately.
+      </p>
+
+      <h3>Viewing your payments</h3>
+      <p>
+        You can view your payment history and manage subscriptions in the
+        <a href="/members?tab=payments">Payments tab</a> of the Members Area.
+      </p>
+
+      <div class="not-prose my-6 rounded-lg border border-primary/20 bg-primary/5 p-4">
+        <p class="text-sm text-text">
+          <strong>Ready to pay?</strong>
+          <a
+            href="/membership/pay"
+            class="ml-2 inline-block rounded bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-light"
+          >
+            Pay membership
+          </a>
+        </p>
+      </div>
+
+      {/* ── Junior Members ──────────────────────── */}
+      <h2 id="junior-members">How to add junior members</h2>
+
+      <p>
+        Junior registration is available to logged-in members with a verified
+        email address. Visit the
+        <a href="/membership/junior">Junior Registration</a> page to get started.
+      </p>
+
+      <h3>The registration process</h3>
+      <p>
+        Junior registration is a 6-step process:
+      </p>
+      <ol>
+        <li>
+          <strong>Children's information</strong> — name, gender, date of birth
+          and school year for each child. You can register multiple children at
+          once.
+        </li>
+        <li>
+          <strong>Cricket experience</strong> — whether your child has played
+          before, and where.
+        </li>
+        <li>
+          <strong>Contact details</strong> — WhatsApp consent for team group
+          chats, plus an alternative contact (e.g. a grandparent).
+        </li>
+        <li>
+          <strong>Medical information</strong> — GP details, any disabilities or
+          medical conditions, and emergency medical consent.
+        </li>
+        <li>
+          <strong>Consents</strong> — data protection and photo/video consent.
+        </li>
+        <li>
+          <strong>Review &amp; payment</strong> — check the summary and proceed to
+          pay.
+        </li>
+      </ol>
+
+      <h3>Pricing</h3>
+      <p>
+        Junior membership costs <strong>&pound;50</strong> for the first child
+        and <strong>&pound;30</strong> for each additional child. This is a
+        one-off payment valid until the end of the calendar year.
+      </p>
+
+      <div class="not-prose my-6 rounded-lg border border-primary/20 bg-primary/5 p-4">
+        <p class="text-sm text-text">
+          <strong>Register a junior?</strong>
+          <a
+            href="/membership/junior"
+            class="ml-2 inline-block rounded bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-light"
+          >
+            Junior registration
+          </a>
+        </p>
+      </div>
+
+      {/* ── Reset Password ──────────────────────── */}
+      <h2 id="reset-password">How to reset your password</h2>
+
+      <h3>If you've forgotten your password</h3>
+      <ol>
+        <li>
+          Go to the <a href="/auth/login">Login page</a>.
+        </li>
+        <li>Click <strong>"Forgot password?"</strong>.</li>
+        <li>
+          Enter the email address you registered with and submit. We'll send you a
+          password reset link.
+        </li>
+        <li>
+          Click the link in the email. You'll be taken to a page where you can set
+          a new password.
+        </li>
+        <li>
+          Once set, you can log in with your new password straight away.
+        </li>
+      </ol>
+
+      <h3>If you know your current password</h3>
+      <p>
+        You can change your password at any time from the
+        <a href="/members?tab=security">Security tab</a> in the Members Area
+        without needing a reset email.
+      </p>
+
+      {/* ── Account Management ──────────────────── */}
+      <h2 id="account-management">Managing your account</h2>
+
+      <p>
+        The <a href="/members">Members Area</a> is your hub for managing
+        everything about your membership. It has four tabs:
+      </p>
+
+      <h3>Membership tab</h3>
+      <p>
+        View your current membership status and category.
+      </p>
+
+      <h3>Details tab</h3>
+      <p>
+        Update your personal information including your name, address, contact
+        details and emergency contact. Keep these up to date so we can reach you
+        when needed.
+      </p>
+
+      <h3>Security tab</h3>
+      <p>The security tab lets you:</p>
+      <ul>
+        <li>
+          <strong>Change your password</strong> — enter your current password and
+          choose a new one.
+        </li>
+        <li>
+          <strong>Manage passkeys</strong> — set up passkeys (e.g. fingerprint or
+          Face ID) for faster, password-free login.
+        </li>
+        <li>
+          <strong>Two-factor authentication (2FA)</strong> — add an extra layer of
+          security by enabling a time-based one-time password (TOTP) using an
+          authenticator app. You'll also get recovery codes in case you lose
+          access to your authenticator.
+        </li>
+      </ul>
+
+      <h3>Payments tab</h3>
+      <p>View your payment history, including:</p>
+      <ul>
+        <li>
+          <strong>One-off payments</strong> — annual membership fees, junior
+          registrations, and donations.
+        </li>
+        <li>
+          <strong>Subscriptions</strong> — monthly membership payments. You can
+          see your active subscriptions and their status here.
+        </li>
+      </ul>
+
+      <div class="not-prose my-6 rounded-lg border border-primary/20 bg-primary/5 p-4">
+        <p class="text-sm text-text">
+          <strong>Go to your account</strong>
+          <a
+            href="/members"
+            class="ml-2 inline-block rounded bg-primary px-4 py-1.5 text-sm font-medium text-white hover:bg-primary-light"
+          >
+            Members Area
+          </a>
+        </p>
+      </div>
+    </div>
+  </div>
+</Container>
