@@ -901,10 +901,23 @@ function ExpensesSection({
 
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount_pence, 0);
 
+  const resetForm = () => {
+    setDescription("");
+    setAmount("");
+    setMatchBallCost("");
+    setMatchBallUsed(true);
+  };
+
+  const handleExpenseTypeChange = (newType: ExpenseType) => {
+    setExpenseType(newType);
+    resetForm();
+  };
+
   const handleAddExpense = () => {
     if (expenseType === "match_ball") {
       if (!matchBallUsed) return;
       const amountPence = Math.round(parseFloat(matchBallCost || "0") * 100);
+      if (amountPence <= 0) return;
       addExpenseMutation.mutate(
         {
           matchdayId,
@@ -1027,7 +1040,7 @@ function ExpensesSection({
                 </label>
                 <Select
                   value={expenseType}
-                  onValueChange={(v: ExpenseType) => setExpenseType(v)}
+                  onValueChange={(v: ExpenseType) => handleExpenseTypeChange(v)}
                 >
                   <SelectTrigger className="w-48">
                     <SelectValue />
@@ -1129,8 +1142,7 @@ function ExpensesSection({
                   variant="outline"
                   onClick={() => {
                     setShowAddForm(false);
-                    setDescription("");
-                    setAmount("");
+                    resetForm();
                   }}
                 >
                   Cancel

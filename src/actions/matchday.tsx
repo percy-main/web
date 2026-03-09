@@ -1032,10 +1032,12 @@ export const matchday = {
         });
       }
 
-      if (matchday.status === "pending") {
+      if (matchday.status !== "confirmed") {
         throw new ActionError({
           code: "BAD_REQUEST",
-          message: "Cannot add expenses to a pending matchday. Confirm the team first.",
+          message: matchday.status === "pending"
+            ? "Cannot add expenses to a pending matchday. Confirm the team first."
+            : "Cannot add expenses to a finished matchday.",
         });
       }
 
@@ -1078,6 +1080,7 @@ export const matchday = {
         .select([
           "matchday_expense.id",
           "matchday.play_cricket_team_id",
+          "matchday.status as matchday_status",
         ])
         .executeTakeFirst();
 
@@ -1085,6 +1088,13 @@ export const matchday = {
         throw new ActionError({
           code: "NOT_FOUND",
           message: "Expense not found.",
+        });
+      }
+
+      if (expense.matchday_status === "finished") {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Cannot delete expenses from a finished matchday.",
         });
       }
 
@@ -1240,13 +1250,15 @@ export const matchday = {
         query = query.where("matchday.play_cricket_team_id", "=", teamId);
       }
 
-      const total = await client
+      let countQuery = client
         .selectFrom("matchday")
-        .$if(!!teamId, (qb) =>
-          qb.where("play_cricket_team_id", "=", teamId ?? ""),
-        )
-        .select(client.fn.countAll<number>().as("count"))
-        .executeTakeFirst();
+        .select(client.fn.countAll<number>().as("count"));
+
+      if (teamId) {
+        countQuery = countQuery.where("play_cricket_team_id", "=", teamId);
+      }
+
+      const total = await countQuery.executeTakeFirst();
 
       const matchdays = await query
         .limit(limit ?? 50)
