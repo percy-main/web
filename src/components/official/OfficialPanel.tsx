@@ -351,6 +351,15 @@ function MatchdayView({
     },
   });
 
+  const finishMatchMutation = useMutation({
+    mutationFn: () => actions.matchday.finishMatch({ matchdayId }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["official", "matchday", matchdayId],
+      });
+    },
+  });
+
   const data = matchdayQuery.data?.data;
   const players = data?.players ?? [];
   const searchResults = searchMembersQuery.data?.data ?? [];
@@ -732,6 +741,55 @@ function MatchdayView({
             <p className="text-sm text-red-600">
               Failed to mark payment.
             </p>
+          )}
+
+          {/* Finish Match button for confirmed matchdays */}
+          {data.matchday.status === "confirmed" && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Finish Match</p>
+                    <p className="text-sm text-gray-500">
+                      Unpaid match fees will remain as charges and notification
+                      emails will be sent.
+                    </p>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    disabled={finishMatchMutation.isPending}
+                    onClick={() => finishMatchMutation.mutate()}
+                  >
+                    {finishMatchMutation.isPending
+                      ? "Finishing..."
+                      : "Finish Match"}
+                  </Button>
+                </div>
+                {finishMatchMutation.isError && (
+                  <p className="mt-2 text-sm text-red-600">
+                    Failed to finish match.
+                  </p>
+                )}
+                {finishMatchMutation.isSuccess && (
+                  <p className="mt-2 text-sm text-green-600">
+                    Match finished. Notification emails sent for unpaid fees.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Finished status message */}
+          {data.matchday.status === "finished" && (
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-sm text-gray-500">
+                  This match has been finished.
+                  {data.matchday.finished_at &&
+                    ` Completed on ${format(new Date(data.matchday.finished_at), "dd/MM/yyyy HH:mm")}.`}
+                </p>
+              </CardContent>
+            </Card>
           )}
         </>
       )}

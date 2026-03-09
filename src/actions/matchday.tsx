@@ -1,11 +1,15 @@
 import { defineAuthAction } from "@/lib/auth/api";
 import { client } from "@/lib/db/client";
+import { send } from "@/lib/email/send";
 import * as playCricketApi from "@/lib/play-cricket";
-import { PLAY_CRICKET_SITE_ID } from "astro:env/server";
+import { render } from "@react-email/render";
 import { ActionError } from "astro:actions";
+import { BASE_URL } from "astro:env/client";
+import { PLAY_CRICKET_SITE_ID } from "astro:env/server";
 import { z } from "astro:schema";
-import { parse, isBefore, startOfDay, subDays, formatDate } from "date-fns";
 import { randomUUID } from "crypto";
+import { parse, isBefore, startOfDay, subDays, formatDate, format } from "date-fns";
+import { ChargeNotification } from "~/emails/ChargeNotification";
 
 const PAYMENT_METHODS = ["cash", "bank_transfer", "card"] as const;
 const paymentMethodSchema = z.enum(PAYMENT_METHODS);
@@ -741,6 +745,190 @@ export const matchday = {
         .execute();
 
       return { success: true };
+    },
+  }),
+
+  /** Finish a match — unpaid fees remain as charges and notifications are sent. */
+  finishMatch: defineAuthAction({
+    roles: ["official", "admin"],
+    input: z.object({
+      matchdayId: z.string(),
+    }),
+    handler: async ({ matchdayId }, { user }) => {
+      const matchday = await client
+        .selectFrom("matchday")
+        .where("id", "=", matchdayId)
+        .selectAll()
+        .executeTakeFirst();
+
+      if (!matchday) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Matchday not found.",
+        });
+      }
+
+      if (matchday.status !== "confirmed") {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Can only finish a confirmed matchday.",
+        });
+      }
+
+      const accessibleIds = await getAccessibleTeamIds(user.id);
+      if (!accessibleIds.includes(matchday.play_cricket_team_id)) {
+        throw new ActionError({
+          code: "UNAUTHORIZED",
+          message: "You do not have access to this matchday.",
+        });
+      }
+
+      // Set matchday to finished
+      await client
+        .updateTable("matchday")
+        .set({
+          status: "finished",
+          finished_at: new Date().toISOString(),
+          finished_by: user.id,
+        })
+        .where("id", "=", matchdayId)
+        .execute();
+
+      // Find unpaid charges for this matchday and send notification emails
+      const unpaidPlayers = await client
+        .selectFrom("matchday_player")
+        .innerJoin("charge", "charge.id", "matchday_player.charge_id")
+        .innerJoin("member", "member.id", "matchday_player.member_id")
+        .where("matchday_player.matchday_id", "=", matchdayId)
+        .where("charge.paid_at", "is", null)
+        .where("charge.deleted_at", "is", null)
+        .select([
+          "member.name as member_name",
+          "member.email as member_email",
+          "charge.description as charge_description",
+          "charge.amount_pence",
+          "charge.charge_date",
+        ])
+        .execute();
+
+      const currencyFormatter = new Intl.NumberFormat("en-GB", {
+        style: "currency",
+        currency: "GBP",
+      });
+
+      // Send emails to members with unpaid fees (skip those without email)
+      for (const player of unpaidPlayers) {
+        if (!player.member_email) continue;
+
+        const amountFormatted = currencyFormatter.format(
+          player.amount_pence / 100,
+        );
+
+        await send({
+          to: player.member_email,
+          subject: ChargeNotification.subject,
+          html: await render(
+            <ChargeNotification.component
+              imageBaseUrl={`${BASE_URL}/images`}
+              name={player.member_name}
+              description={player.charge_description}
+              amount={amountFormatted}
+              chargeDate={formatDate(player.charge_date, "dd/MM/yyyy")}
+              loginUrl={`${BASE_URL}/auth/login`}
+            />,
+            { pretty: true },
+          ),
+        });
+      }
+
+      return {
+        success: true,
+        emailsSent: unpaidPlayers.filter((p) => p.member_email).length,
+      };
+    },
+  }),
+
+  /** Check for discrepancies between our confirmed team and Play-Cricket's team sheet (admin). */
+  checkDiscrepancies: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      matchdayId: z.string(),
+      playCricketMatchId: z.string(),
+    }),
+    handler: async ({ matchdayId, playCricketMatchId }) => {
+      const matchday = await client
+        .selectFrom("matchday")
+        .where("id", "=", matchdayId)
+        .selectAll()
+        .executeTakeFirst();
+
+      if (!matchday) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Matchday not found.",
+        });
+      }
+
+      // Get our confirmed playing squad
+      const ourPlayers = await client
+        .selectFrom("matchday_player")
+        .where("matchday_id", "=", matchdayId)
+        .where("status", "=", "playing")
+        .select(["player_name", "member_id"])
+        .execute();
+
+      // Get Play-Cricket match details
+      const { match_details } = await playCricketApi.getMatchDetail({
+        matchId: playCricketMatchId,
+      });
+
+      const match = match_details[0];
+      if (!match) {
+        return {
+          discrepancies: [],
+          message: "Could not fetch Play-Cricket match details.",
+        };
+      }
+
+      // Extract player names from Play-Cricket innings data
+      const pcPlayerNames = new Set<string>();
+      for (const inn of match.innings) {
+        if (inn.team_batting_id === matchday.play_cricket_team_id) {
+          for (const bat of inn.bat) {
+            if (bat.batsman_name) pcPlayerNames.add(bat.batsman_name);
+          }
+        }
+        // Check bowlers too
+        for (const bowl of inn.bowl) {
+          if (bowl.bowler_name) pcPlayerNames.add(bowl.bowler_name);
+        }
+      }
+
+      const ourPlayerNames = new Set(ourPlayers.map((p) => p.player_name));
+
+      const inOursNotPC = [...ourPlayerNames].filter(
+        (name) => !pcPlayerNames.has(name),
+      );
+      const inPCNotOurs = [...pcPlayerNames].filter(
+        (name) => !ourPlayerNames.has(name),
+      );
+
+      return {
+        discrepancies: [
+          ...inOursNotPC.map((name) => ({
+            type: "in_ours_not_play_cricket" as const,
+            playerName: name,
+          })),
+          ...inPCNotOurs.map((name) => ({
+            type: "in_play_cricket_not_ours" as const,
+            playerName: name,
+          })),
+        ],
+        message:
+          inOursNotPC.length === 0 && inPCNotOurs.length === 0
+            ? "No discrepancies found."
+            : null,
+      };
     },
   }),
 };
