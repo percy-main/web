@@ -11,6 +11,15 @@ import { randomUUID } from "crypto";
 import { parse, isBefore, startOfDay, subDays, formatDate } from "date-fns";
 import { ChargeNotification } from "~/emails/ChargeNotification";
 
+const EXPENSE_TYPES = [
+  "umpire_fee",
+  "scorer_fee",
+  "match_ball",
+  "teas",
+  "miscellaneous",
+] as const;
+const expenseTypeSchema = z.enum(EXPENSE_TYPES);
+
 const PAYMENT_METHODS = ["cash", "bank_transfer", "card"] as const;
 const paymentMethodSchema = z.enum(PAYMENT_METHODS);
 
@@ -224,8 +233,9 @@ export const matchday = {
         .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
       opposition: z.string().min(1),
       competitionType: z.string().optional(),
+      playCricketMatchId: z.string().optional(),
     }),
-    handler: async ({ teamId, matchDate, opposition, competitionType }, { user }) => {
+    handler: async ({ teamId, matchDate, opposition, competitionType, playCricketMatchId }, { user }) => {
       const accessibleIds = await getAccessibleTeamIds(user.id);
       if (!accessibleIds.includes(teamId)) {
         throw new ActionError({
@@ -258,6 +268,7 @@ export const matchday = {
           match_date: matchDate,
           opposition,
           competition_type: competitionType ?? null,
+          play_cricket_match_id: playCricketMatchId ?? null,
           status: "pending",
           created_by: user.id,
         })
@@ -320,10 +331,18 @@ export const matchday = {
         .select(["id", "name"])
         .executeTakeFirst();
 
+      const expenses = await client
+        .selectFrom("matchday_expense")
+        .where("matchday_id", "=", matchdayId)
+        .selectAll()
+        .orderBy("created_at", "asc")
+        .execute();
+
       return {
         matchday,
         team: team ?? null,
         players,
+        expenses,
       };
     },
   }),
@@ -986,6 +1005,269 @@ export const matchday = {
       return {
         success: true,
         emailsSent: unpaidPlayers.filter((p) => p.member_email).length,
+      };
+    },
+  }),
+
+  /** Add an expense to a matchday. */
+  addExpense: defineAuthAction({
+    roles: ["official", "admin"],
+    input: z.object({
+      matchdayId: z.string(),
+      expenseType: expenseTypeSchema,
+      description: z.string().optional(),
+      amountPence: z.number().int().min(0),
+    }),
+    handler: async ({ matchdayId, expenseType, description, amountPence }, { user }) => {
+      const matchday = await client
+        .selectFrom("matchday")
+        .where("id", "=", matchdayId)
+        .select(["id", "play_cricket_team_id", "status"])
+        .executeTakeFirst();
+
+      if (!matchday) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Matchday not found.",
+        });
+      }
+
+      if (matchday.status !== "confirmed") {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: matchday.status === "pending"
+            ? "Cannot add expenses to a pending matchday. Confirm the team first."
+            : "Cannot add expenses to a finished matchday.",
+        });
+      }
+
+      const accessibleIds = await getAccessibleTeamIds(user.id);
+      if (!accessibleIds.includes(matchday.play_cricket_team_id)) {
+        throw new ActionError({
+          code: "UNAUTHORIZED",
+          message: "You do not have access to this matchday.",
+        });
+      }
+
+      const id = randomUUID();
+      await client
+        .insertInto("matchday_expense")
+        .values({
+          id,
+          matchday_id: matchdayId,
+          expense_type: expenseType,
+          description: description ?? null,
+          amount_pence: amountPence,
+          created_by: user.id,
+        })
+        .execute();
+
+      return { id };
+    },
+  }),
+
+  /** Delete an expense from a matchday. */
+  deleteExpense: defineAuthAction({
+    roles: ["official", "admin"],
+    input: z.object({
+      expenseId: z.string(),
+    }),
+    handler: async ({ expenseId }, { user }) => {
+      const expense = await client
+        .selectFrom("matchday_expense")
+        .innerJoin("matchday", "matchday.id", "matchday_expense.matchday_id")
+        .where("matchday_expense.id", "=", expenseId)
+        .select([
+          "matchday_expense.id",
+          "matchday.play_cricket_team_id",
+          "matchday.status as matchday_status",
+        ])
+        .executeTakeFirst();
+
+      if (!expense) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Expense not found.",
+        });
+      }
+
+      if (expense.matchday_status === "finished") {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Cannot delete expenses from a finished matchday.",
+        });
+      }
+
+      const accessibleIds = await getAccessibleTeamIds(user.id);
+      if (!accessibleIds.includes(expense.play_cricket_team_id)) {
+        throw new ActionError({
+          code: "UNAUTHORIZED",
+          message: "You do not have access to this matchday.",
+        });
+      }
+
+      await client
+        .deleteFrom("matchday_expense")
+        .where("id", "=", expenseId)
+        .execute();
+
+      return { success: true };
+    },
+  }),
+
+  /** Get a financial report for a matchday (admin only). */
+  getMatchdayReport: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      matchdayId: z.string(),
+    }),
+    handler: async ({ matchdayId }) => {
+      const matchday = await client
+        .selectFrom("matchday")
+        .where("id", "=", matchdayId)
+        .selectAll()
+        .executeTakeFirst();
+
+      if (!matchday) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Matchday not found.",
+        });
+      }
+
+      // Get players with charge info
+      const players = await client
+        .selectFrom("matchday_player")
+        .leftJoin("member", "member.id", "matchday_player.member_id")
+        .leftJoin("charge", "charge.id", "matchday_player.charge_id")
+        .where("matchday_player.matchday_id", "=", matchdayId)
+        .select([
+          "matchday_player.id",
+          "matchday_player.player_name",
+          "matchday_player.status",
+          "matchday_player.member_id",
+          "member.member_category",
+          "charge.amount_pence as charge_amount_pence",
+          "charge.paid_at as charge_paid_at",
+          "charge.payment_method as charge_payment_method",
+          "charge.deleted_at as charge_deleted_at",
+        ])
+        .orderBy("matchday_player.created_at", "asc")
+        .execute();
+
+      // Get expenses
+      const expenses = await client
+        .selectFrom("matchday_expense")
+        .where("matchday_id", "=", matchdayId)
+        .selectAll()
+        .orderBy("created_at", "asc")
+        .execute();
+
+      // Get team info
+      const team = await client
+        .selectFrom("play_cricket_team")
+        .where("id", "=", matchday.play_cricket_team_id)
+        .select(["id", "name"])
+        .executeTakeFirst();
+
+      // Get game sponsorship if we have a Play-Cricket match ID
+      let sponsorship = null;
+      if (matchday.play_cricket_match_id) {
+        sponsorship = await client
+          .selectFrom("game_sponsorship")
+          .where("game_id", "=", matchday.play_cricket_match_id)
+          .where("approved", "=", 1)
+          .where("paid_at", "is not", null)
+          .selectAll()
+          .executeTakeFirst() ?? null;
+      }
+
+      // Calculate totals
+      const activeCharges = players.filter(
+        (p) => p.charge_amount_pence != null && p.charge_deleted_at == null,
+      );
+      const totalIncoming = activeCharges.reduce(
+        (sum, p) => sum + (p.charge_amount_pence ?? 0),
+        0,
+      );
+      const totalPaid = activeCharges
+        .filter((p) => p.charge_paid_at != null)
+        .reduce((sum, p) => sum + (p.charge_amount_pence ?? 0), 0);
+      const totalOutstanding = totalIncoming - totalPaid;
+      const totalExpenses = expenses.reduce(
+        (sum, e) => sum + e.amount_pence,
+        0,
+      );
+      const sponsorshipIncome = sponsorship?.amount_pence ?? 0;
+      const profitLoss = totalIncoming + sponsorshipIncome - totalExpenses;
+
+      return {
+        matchday,
+        team: team ?? null,
+        players,
+        expenses,
+        sponsorship,
+        summary: {
+          totalIncoming,
+          totalPaid,
+          totalOutstanding,
+          totalExpenses,
+          sponsorshipIncome,
+          profitLoss,
+        },
+      };
+    },
+  }),
+
+  /** List matchdays for the admin game reports (admin only). */
+  listMatchdays: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      teamId: z.string().optional(),
+      limit: z.number().int().min(1).max(100).optional(),
+      offset: z.number().int().min(0).optional(),
+    }),
+    handler: async ({ teamId, limit, offset }) => {
+      let query = client
+        .selectFrom("matchday")
+        .leftJoin(
+          "play_cricket_team",
+          "play_cricket_team.id",
+          "matchday.play_cricket_team_id",
+        )
+        .select([
+          "matchday.id",
+          "matchday.match_date",
+          "matchday.opposition",
+          "matchday.status",
+          "matchday.play_cricket_team_id",
+          "matchday.competition_type",
+          "play_cricket_team.name as team_name",
+        ])
+        .orderBy("matchday.match_date", "desc");
+
+      if (teamId) {
+        query = query.where("matchday.play_cricket_team_id", "=", teamId);
+      }
+
+      let countQuery = client
+        .selectFrom("matchday")
+        .select(client.fn.countAll<number>().as("count"));
+
+      if (teamId) {
+        countQuery = countQuery.where("play_cricket_team_id", "=", teamId);
+      }
+
+      const total = await countQuery.executeTakeFirst();
+
+      const matchdays = await query
+        .limit(limit ?? 50)
+        .offset(offset ?? 0)
+        .execute();
+
+      return {
+        matchdays,
+        total: total?.count ?? 0,
       };
     },
   }),

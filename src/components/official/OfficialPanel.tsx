@@ -27,6 +27,19 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   card: "Card",
 };
 
+const EXPENSE_TYPE_LABELS: Record<string, string> = {
+  umpire_fee: "Umpire Fee",
+  scorer_fee: "Scorer Fee",
+  match_ball: "Match Ball",
+  teas: "Teas",
+  miscellaneous: "Miscellaneous",
+};
+
+const currencyFormatter = new Intl.NumberFormat("en-GB", {
+  style: "currency",
+  currency: "GBP",
+});
+
 const queryClient = new QueryClient();
 
 export function OfficialPanel() {
@@ -170,6 +183,7 @@ function TeamMatchesView({
       matchDate: string;
       opposition: string;
       competitionType?: string;
+      playCricketMatchId?: string;
     }) => actions.matchday.createMatchday(input),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({
@@ -254,6 +268,7 @@ function TeamMatchesView({
                           opposition: match.opposition,
                           competitionType:
                             match.competitionType ?? undefined,
+                          playCricketMatchId: match.matchId,
                         })
                       }
                     >
@@ -361,6 +376,30 @@ function MatchdayView({
 
   const finishMatchMutation = useMutation({
     mutationFn: () => actions.matchday.finishMatch({ matchdayId }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["official", "matchday", matchdayId],
+      });
+    },
+  });
+
+  const addExpenseMutation = useMutation({
+    mutationFn: (input: {
+      matchdayId: string;
+      expenseType: "umpire_fee" | "scorer_fee" | "match_ball" | "teas" | "miscellaneous";
+      description?: string;
+      amountPence: number;
+    }) => actions.matchday.addExpense(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["official", "matchday", matchdayId],
+      });
+    },
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: (expenseId: string) =>
+      actions.matchday.deleteExpense({ expenseId }),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["official", "matchday", matchdayId],
@@ -762,6 +801,17 @@ function MatchdayView({
             </p>
           )}
 
+          {/* Expenses section - visible for confirmed and finished matchdays */}
+          {data.matchday.status !== "pending" && (
+            <ExpensesSection
+              matchdayId={matchdayId}
+              expenses={data.expenses ?? []}
+              isFinished={data.matchday.status === "finished"}
+              addExpenseMutation={addExpenseMutation}
+              deleteExpenseMutation={deleteExpenseMutation}
+            />
+          )}
+
           {/* Finish Match button for confirmed matchdays */}
           {data.matchday.status === "confirmed" && (
             <Card>
@@ -813,5 +863,307 @@ function MatchdayView({
         </>
       )}
     </div>
+  );
+}
+
+type ExpenseType = "umpire_fee" | "scorer_fee" | "match_ball" | "teas" | "miscellaneous";
+
+function ExpensesSection({
+  matchdayId,
+  expenses,
+  isFinished,
+  addExpenseMutation,
+  deleteExpenseMutation,
+}: {
+  matchdayId: string;
+  expenses: Array<{
+    id: string | null;
+    expense_type: string;
+    description: string | null;
+    amount_pence: number;
+    created_at: string;
+  }>;
+  isFinished: boolean;
+  addExpenseMutation: ReturnType<typeof useMutation<unknown, Error, {
+    matchdayId: string;
+    expenseType: ExpenseType;
+    description?: string;
+    amountPence: number;
+  }>>;
+  deleteExpenseMutation: ReturnType<typeof useMutation<unknown, Error, string>>;
+}) {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [expenseType, setExpenseType] = useState<ExpenseType>("umpire_fee");
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [matchBallUsed, setMatchBallUsed] = useState(true);
+  const [matchBallCost, setMatchBallCost] = useState("");
+
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount_pence, 0);
+
+  const resetForm = () => {
+    setDescription("");
+    setAmount("");
+    setMatchBallCost("");
+    setMatchBallUsed(true);
+  };
+
+  const handleExpenseTypeChange = (newType: ExpenseType) => {
+    setExpenseType(newType);
+    resetForm();
+  };
+
+  const handleAddExpense = () => {
+    if (expenseType === "match_ball") {
+      if (!matchBallUsed) return;
+      const amountPence = Math.round(parseFloat(matchBallCost || "0") * 100);
+      if (amountPence <= 0) return;
+      addExpenseMutation.mutate(
+        {
+          matchdayId,
+          expenseType: "match_ball",
+          description: "New match ball",
+          amountPence,
+        },
+        {
+          onSuccess: () => {
+            setMatchBallCost("");
+            setMatchBallUsed(true);
+            setShowAddForm(false);
+          },
+        },
+      );
+      return;
+    }
+
+    const amountPence = Math.round(parseFloat(amount) * 100);
+    if (isNaN(amountPence) || amountPence < 0) return;
+
+    addExpenseMutation.mutate(
+      {
+        matchdayId,
+        expenseType,
+        description: description.trim() || undefined,
+        amountPence,
+      },
+      {
+        onSuccess: () => {
+          setDescription("");
+          setAmount("");
+          setShowAddForm(false);
+        },
+      },
+    );
+  };
+
+  const hasMatchBall = expenses.some((e) => e.expense_type === "match_ball");
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>
+            Expenses
+            {totalExpenses > 0 && (
+              <span className="ml-2 text-sm font-normal text-gray-500">
+                (Total: {currencyFormatter.format(totalExpenses / 100)})
+              </span>
+            )}
+          </span>
+          {!isFinished && !showAddForm && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowAddForm(true)}
+            >
+              Add Expense
+            </Button>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {/* Existing expenses */}
+        {expenses.length === 0 ? (
+          <p className="text-sm text-gray-500">No expenses recorded yet.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {expenses.map((expense) => {
+              const expenseId = expense.id;
+              if (!expenseId) return null;
+              return (
+                <div
+                  key={expenseId}
+                  className="flex items-center justify-between rounded border border-gray-200 px-3 py-2"
+                >
+                  <div>
+                    <p className="text-sm font-medium">
+                      {EXPENSE_TYPE_LABELS[expense.expense_type] ??
+                        expense.expense_type}
+                    </p>
+                    {expense.description && (
+                      <p className="text-xs text-gray-500">
+                        {expense.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">
+                      {currencyFormatter.format(expense.amount_pence / 100)}
+                    </span>
+                    {!isFinished && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-800"
+                        disabled={deleteExpenseMutation.isPending}
+                        onClick={() =>
+                          deleteExpenseMutation.mutate(expenseId)
+                        }
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Add expense form */}
+        {showAddForm && (
+          <div className="mt-4 rounded border border-gray-200 bg-gray-50 p-4">
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium">
+                  Expense Type
+                </label>
+                <Select
+                  value={expenseType}
+                  onValueChange={(v: ExpenseType) => handleExpenseTypeChange(v)}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="umpire_fee">Umpire Fee</SelectItem>
+                    <SelectItem value="scorer_fee">Scorer Fee</SelectItem>
+                    {!hasMatchBall && (
+                      <SelectItem value="match_ball">Match Ball</SelectItem>
+                    )}
+                    <SelectItem value="teas">Teas</SelectItem>
+                    <SelectItem value="miscellaneous">Miscellaneous</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {expenseType === "match_ball" ? (
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={matchBallUsed}
+                      onChange={(e) => setMatchBallUsed(e.target.checked)}
+                      className="rounded"
+                    />
+                    New match ball used
+                  </label>
+                  {matchBallUsed && (
+                    <div>
+                      <label className="mb-1 block text-sm font-medium">
+                        Cost
+                      </label>
+                      <Input
+                        className="w-32"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={matchBallCost}
+                        onChange={(e) => setMatchBallCost(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">
+                      {expenseType === "umpire_fee"
+                        ? "Umpire Name"
+                        : expenseType === "scorer_fee"
+                          ? "Scorer Name"
+                          : expenseType === "miscellaneous"
+                            ? "Description"
+                            : "Description (optional)"}
+                    </label>
+                    <Input
+                      placeholder={
+                        expenseType === "umpire_fee"
+                          ? "e.g. J. Smith"
+                          : expenseType === "scorer_fee"
+                            ? "e.g. A. Jones"
+                            : "Description"
+                      }
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">
+                      Amount
+                    </label>
+                    <Input
+                      className="w-32"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleAddExpense}
+                  disabled={
+                    addExpenseMutation.isPending ||
+                    (expenseType === "match_ball"
+                      ? !matchBallUsed
+                      : !amount)
+                  }
+                >
+                  {addExpenseMutation.isPending ? "Adding..." : "Add"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddForm(false);
+                    resetForm();
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+
+              {addExpenseMutation.isError && (
+                <p className="text-sm text-red-600">
+                  Failed to add expense.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {deleteExpenseMutation.isError && (
+          <p className="mt-2 text-sm text-red-600">
+            Failed to remove expense.
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }

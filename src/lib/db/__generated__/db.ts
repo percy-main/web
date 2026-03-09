@@ -142,8 +142,19 @@ export interface Matchday {
   id: string | null;
   match_date: string;
   opposition: string;
+  play_cricket_match_id: string | null;
   play_cricket_team_id: string;
   status: Generated<string>;
+}
+
+export interface MatchdayExpense {
+  amount_pence: number;
+  created_at: Generated<string>;
+  created_by: string;
+  description: string | null;
+  expense_type: string;
+  id: string;
+  matchday_id: string;
 }
 
 export interface MatchdayPlayer {
@@ -348,6 +359,7 @@ export interface DB {
   match_performance_batting: MatchPerformanceBatting;
   match_performance_bowling: MatchPerformanceBowling;
   matchday: Matchday;
+  matchday_expense: MatchdayExpense;
   matchday_player: MatchdayPlayer;
   member: Member;
   membership: Membership;
