@@ -50,6 +50,52 @@ async function getAccessibleTeamIds(userId: string): Promise<string[]> {
   return assignments.map((a) => a.play_cricket_team_id);
 }
 
+/**
+ * Find the best matching fee rate. Priority:
+ * 1. team + competition + category
+ * 2. team + any competition + category
+ * 3. any team + competition + category
+ * 4. any team + any competition + category
+ */
+function findFeeRate(
+  rates: Array<{
+    play_cricket_team_id: string | null;
+    competition_type: string | null;
+    member_category: string;
+    amount_pence: number;
+  }>,
+  teamId: string,
+  competitionType: string | null,
+  category: string,
+) {
+  return (
+    rates.find(
+      (r) =>
+        r.play_cricket_team_id === teamId &&
+        r.competition_type === competitionType &&
+        r.member_category === category,
+    ) ??
+    rates.find(
+      (r) =>
+        r.play_cricket_team_id === teamId &&
+        r.competition_type === null &&
+        r.member_category === category,
+    ) ??
+    rates.find(
+      (r) =>
+        r.play_cricket_team_id === null &&
+        r.competition_type === competitionType &&
+        r.member_category === category,
+    ) ??
+    rates.find(
+      (r) =>
+        r.play_cricket_team_id === null &&
+        r.competition_type === null &&
+        r.member_category === category,
+    )
+  );
+}
+
 export const matchday = {
   /** List teams accessible to the current official/admin. */
   listMyTeams: defineAuthAction({
@@ -177,8 +223,9 @@ export const matchday = {
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD format"),
       opposition: z.string().min(1),
+      competitionType: z.string().optional(),
     }),
-    handler: async ({ teamId, matchDate, opposition }, { user }) => {
+    handler: async ({ teamId, matchDate, opposition, competitionType }, { user }) => {
       const accessibleIds = await getAccessibleTeamIds(user.id);
       if (!accessibleIds.includes(teamId)) {
         throw new ActionError({
@@ -210,6 +257,7 @@ export const matchday = {
           play_cricket_team_id: teamId,
           match_date: matchDate,
           opposition,
+          competition_type: competitionType ?? null,
           status: "pending",
           created_by: user.id,
         })
@@ -565,18 +613,12 @@ export const matchday = {
         // Skip bursary members (they pay nothing)
         if (category === "bursary") continue;
 
-        // Find the most specific rate: team-specific > generic
-        const rate =
-          feeRates.find(
-            (r) =>
-              r.play_cricket_team_id === matchday.play_cricket_team_id &&
-              r.member_category === category,
-          ) ??
-          feeRates.find(
-            (r) =>
-              r.play_cricket_team_id === null &&
-              r.member_category === category,
-          );
+        const rate = findFeeRate(
+          feeRates,
+          matchday.play_cricket_team_id,
+          matchday.competition_type,
+          category,
+        );
 
         if (!rate || rate.amount_pence === 0) continue;
 
@@ -862,18 +904,12 @@ export const matchday = {
           const category = player.member_category ?? "guest";
           if (category === "bursary") continue;
 
-          const rate =
-            feeRates.find(
-              (r) =>
-                r.play_cricket_team_id ===
-                  matchday.play_cricket_team_id &&
-                r.member_category === category,
-            ) ??
-            feeRates.find(
-              (r) =>
-                r.play_cricket_team_id === null &&
-                r.member_category === category,
-            );
+          const rate = findFeeRate(
+            feeRates,
+            matchday.play_cricket_team_id,
+            matchday.competition_type,
+            category,
+          );
 
           if (!rate || rate.amount_pence === 0) continue;
 

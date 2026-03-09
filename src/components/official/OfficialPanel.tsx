@@ -169,6 +169,7 @@ function TeamMatchesView({
       teamId: string;
       matchDate: string;
       opposition: string;
+      competitionType?: string;
     }) => actions.matchday.createMatchday(input),
     onSuccess: (result) => {
       void queryClient.invalidateQueries({
@@ -218,8 +219,13 @@ function TeamMatchesView({
                     {format(matchDate, "EEEE d MMMM yyyy")}
                     {match.matchTime ? ` at ${match.matchTime}` : ""}
                   </p>
-                  {match.competitionName && (
+                  {(match.competitionName ?? match.competitionType) && (
                     <p className="text-xs text-gray-400">
+                      {match.competitionType && (
+                        <span className="mr-1 rounded bg-gray-100 px-1 py-0.5 font-medium text-gray-600">
+                          {match.competitionType}
+                        </span>
+                      )}
                       {match.competitionName}
                     </p>
                   )}
@@ -246,6 +252,8 @@ function TeamMatchesView({
                           teamId,
                           matchDate: isoDate,
                           opposition: match.opposition,
+                          competitionType:
+                            match.competitionType ?? undefined,
                         })
                       }
                     >

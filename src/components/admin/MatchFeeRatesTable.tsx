@@ -27,6 +27,8 @@ const MEMBER_CATEGORIES = [
   "guest",
 ] as const;
 
+const COMPETITION_TYPES = ["League", "Cup", "Friendly"] as const;
+
 const currencyFormatter = new Intl.NumberFormat("en-GB", {
   style: "currency",
   currency: "GBP",
@@ -140,12 +142,24 @@ export function MatchFeeRatesTable() {
               <label className="mb-1 block text-sm font-medium">
                 Competition Type
               </label>
-              <Input
-                className="w-36"
-                placeholder="Any (optional)"
-                value={newCompetitionType}
-                onChange={(e) => setNewCompetitionType(e.target.value)}
-              />
+              <Select
+                value={newCompetitionType || "any"}
+                onValueChange={(v) =>
+                  setNewCompetitionType(v === "any" ? "" : v)
+                }
+              >
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any (default)</SelectItem>
+                  {COMPETITION_TYPES.map((ct) => (
+                    <SelectItem key={ct} value={ct}>
+                      {ct}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Amount</label>
