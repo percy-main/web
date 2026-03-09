@@ -1,4 +1,5 @@
 import * as db from "@/lib/db/client";
+import { defaultCategoryForMembershipType } from "@/lib/member/categories";
 import { randomUUID } from "crypto";
 import { add, type Duration } from "date-fns";
 import { NoMemberWithEmailError } from "./errors";
@@ -39,6 +40,7 @@ export const updateMembership = async ({
       "membership.id as membership_id",
       "membership.paid_until as paid_until",
       "member.name as name",
+      "member.member_category as member_category",
     ])
     .where("member.email", "=", email)
     .executeTakeFirst();
@@ -65,6 +67,18 @@ export const updateMembership = async ({
       .returningAll()
       .executeTakeFirstOrThrow();
 
+    // Auto-derive member_category if not already set
+    if (!member.member_category) {
+      const category = defaultCategoryForMembershipType(membershipType);
+      if (category) {
+        await db.client
+          .updateTable("member")
+          .set({ member_category: category })
+          .where("id", "=", member.member_id)
+          .execute();
+      }
+    }
+
     return {
       ...membership,
       name: member.name,
@@ -88,6 +102,18 @@ export const updateMembership = async ({
       .where("id", "=", member.membership_id)
       .returningAll()
       .executeTakeFirstOrThrow();
+
+    // Auto-derive member_category if not already set
+    if (!member.member_category) {
+      const category = defaultCategoryForMembershipType(membershipType);
+      if (category) {
+        await db.client
+          .updateTable("member")
+          .set({ member_category: category })
+          .where("id", "=", member.member_id)
+          .execute();
+      }
+    }
 
     return {
       ...membership,

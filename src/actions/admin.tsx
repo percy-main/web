@@ -2,6 +2,7 @@ import { defineAuthAction } from "@/lib/auth/api";
 import { auth } from "@/lib/auth/server";
 import { client } from "@/lib/db/client";
 import { send } from "@/lib/email/send";
+import { memberCategorySchema } from "@/lib/member/categories";
 import { syncStripeCharges } from "@/lib/payments/syncStripeCharges";
 import { AGE_GROUPS, getAgeGroup, getTeamName } from "@/lib/util/ageGroup";
 import { nameSimilarity, normalizeName } from "@/lib/util/nameSimilarity";
@@ -81,6 +82,7 @@ export const admin = {
             "user.role",
             "user.createdAt",
             "member.id as memberId",
+            "member.member_category as memberCategory",
             "membership.type as membershipType",
             "membership.paid_until as paidUntil",
           ])
@@ -98,6 +100,7 @@ export const admin = {
           role: u.role,
           createdAt: u.createdAt,
           isMember: u.memberId !== null,
+          memberCategory: u.memberCategory ?? null,
           membershipType: u.membershipType ?? null,
           paidUntil: u.paidUntil ?? null,
         })),
@@ -148,6 +151,7 @@ export const admin = {
           "member.telephone",
           "member.emergency_contact_name",
           "member.emergency_contact_telephone",
+          "member.member_category",
         ])
         .executeTakeFirst();
 
@@ -209,6 +213,36 @@ export const admin = {
         membership,
         dependents,
       };
+    },
+  }),
+
+  updateMemberCategory: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      memberId: z.string(),
+      memberCategory: memberCategorySchema.nullable(),
+    }),
+    handler: async ({ memberId, memberCategory }) => {
+      const member = await client
+        .selectFrom("member")
+        .where("id", "=", memberId)
+        .select("id")
+        .executeTakeFirst();
+
+      if (!member) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Member not found",
+        });
+      }
+
+      await client
+        .updateTable("member")
+        .set({ member_category: memberCategory })
+        .where("id", "=", memberId)
+        .execute();
+
+      return { success: true };
     },
   }),
 
