@@ -5,6 +5,7 @@ import { ActionError, defineAction } from "astro:actions";
 import { CONTEXT } from "astro:env/client";
 import { DEPLOY_PRIME_URL } from "astro:env/server";
 import { z } from "astro:schema";
+import { add } from "date-fns";
 import type Stripe from "stripe";
 
 export const subscribe = defineAction({
@@ -33,6 +34,20 @@ export const subscribe = defineAction({
           : {}),
       };
 
+      // Women's player monthly subscriptions: max 6 payments, last possible in September.
+      // cancel_at = whichever comes first: 6 months from now, or Sep 30.
+      let cancelAt: number | undefined;
+      if (membership === "senior_women_player") {
+        const now = new Date();
+        const sixMonths = add(now, { months: 6 });
+
+        // If already in Sep or later, target next year's Sep 30
+        const year = now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear();
+        const endOfSep = new Date(Date.UTC(year, 8, 30, 23, 59, 59));
+
+        cancelAt = Math.floor(Math.min(sixMonths.getTime(), endOfSep.getTime()) / 1000);
+      }
+
       // Create subscription with incomplete status — payment collected via PaymentElement
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
@@ -43,6 +58,7 @@ export const subscribe = defineAction({
         },
         expand: ["latest_invoice.payment_intent"],
         metadata: subscriptionMetadata,
+        ...(cancelAt ? { cancel_at: cancelAt } : {}),
       });
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;

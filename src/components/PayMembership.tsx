@@ -2,8 +2,6 @@ import type { Price } from "@/collections/price";
 import { RadioButtons } from "@/components/form/RadioButtons";
 import { PaymentLink } from "@/components/PaymentLink";
 import { useState, type FC } from "react";
-import { paymentData } from "../lib/payments/config";
-import { MenuItem } from "./MenuItem";
 
 type Props = {
   options: {
@@ -19,6 +17,10 @@ type Props = {
       monthly: Price;
       annually: Price;
     };
+    senior_women_player: {
+      monthly: Price;
+      annually: Price;
+    };
   };
 };
 
@@ -28,15 +30,12 @@ export const PayMembership: FC<Props> = ({ options }) => {
   >();
   const [schedule, setSchedule] = useState<"annually" | "monthly">();
 
-  const price =
-    membership === "senior_women_player"
-      ? null
-      : membership
-        ? options[membership]
-        : null;
+  const price = membership ? options[membership] : null;
 
   const emailParam = new URLSearchParams(location.search).get("email");
   const email = emailParam == null ? undefined : decodeURIComponent(emailParam);
+
+  const isWomen = membership === "senior_women_player";
 
   return (
     <>
@@ -76,39 +75,21 @@ export const PayMembership: FC<Props> = ({ options }) => {
         </section>
       </div>
 
-      {membership === "senior_women_player" ? (
-        <>
-          <p>
-            We don't currently charge annual fees for women's team players, but
-            if you want to support the club you could donate
-          </p>
-          <p>
-            <MenuItem
-              purpose="cta"
-              isActive={false}
-              width="maxContent"
-              item={{
-                name: "Donate Now",
-                url: `/purchase/${paymentData.prices.donation}`,
-                match: "never",
-              }}
-            />
-          </p>
-        </>
-      ) : (
-        price &&
+      {price &&
         membership && (
           <>
             <section className="mb-12">
-              <h5>You can choose to pay annually or monthly.</h5>
+              <h5>You can choose to pay {isWomen ? "for the season or monthly." : "annually or monthly."}</h5>
               <RadioButtons
                 id="schedule"
                 onChange={setSchedule}
                 value={schedule}
                 options={[
                   {
-                    title: "Annually",
-                    description: `${price.annually.formattedPrice}/annum`,
+                    title: isWomen ? "Season" : "Annually",
+                    description: isWomen
+                      ? `${price.annually.formattedPrice}/season`
+                      : `${price.annually.formattedPrice}/annum`,
                     value: "annually",
                   },
                   {
@@ -136,8 +117,7 @@ export const PayMembership: FC<Props> = ({ options }) => {
               </section>
             )}
           </>
-        )
-      )}
+        )}
     </>
   );
 };

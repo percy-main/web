@@ -9,11 +9,13 @@ export const updateMembership = async ({
   email,
   addedDuration,
   paidAt,
+  paidUntil: explicitPaidUntil,
 }: {
   membershipType: string;
   email: string;
   addedDuration: Duration;
   paidAt: Date;
+  paidUntil?: Date;
 }) => {
   console.log(
     "Updating membership",
@@ -54,7 +56,9 @@ export const updateMembership = async ({
   if (!member.membership_id) {
     console.log("No existing membership for customer, creating membership ");
 
-    const paid_until = add(paidAt, addedDuration).toISOString();
+    const paid_until = explicitPaidUntil
+      ? explicitPaidUntil.toISOString()
+      : add(paidAt, addedDuration).toISOString();
 
     const membership = await db.client
       .insertInto("membership")
@@ -89,10 +93,12 @@ export const updateMembership = async ({
       "Existing membership for customer, adding duration to previous paid_until ",
     );
 
-    const paid_until = add(
-      member.paid_until ? new Date(member.paid_until) : paidAt,
-      addedDuration,
-    ).toISOString();
+    const paid_until = explicitPaidUntil
+      ? explicitPaidUntil.toISOString()
+      : add(
+          member.paid_until ? new Date(member.paid_until) : paidAt,
+          addedDuration,
+        ).toISOString();
 
     const membership = await db.client
       .updateTable("membership")
