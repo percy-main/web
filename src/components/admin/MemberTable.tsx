@@ -130,10 +130,19 @@ export function MemberTable() {
                     <TableCell>
                       <StatusPill
                         variant={
-                          user.role === "admin" ? "blue" : "gray"
+                          user.role === "admin"
+                            ? "blue"
+                            : user.role === "junior_manager" ||
+                                user.role === "official"
+                              ? "green"
+                              : "gray"
                         }
                       >
-                        {user.role ?? "user"}
+                        {user.role === "junior_manager"
+                          ? "Junior Manager"
+                          : user.role === "official"
+                            ? "Official"
+                            : (user.role ?? "user")}
                       </StatusPill>
                     </TableCell>
                   </TableRow>

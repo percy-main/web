@@ -325,9 +325,13 @@ export const admin = {
       role: z.enum(["user", "admin"]),
     }),
     handler: async ({ userId, role }, _session, context) => {
-      // When changing to user or admin, clean up any junior_manager team assignments
+      // When changing to user or admin, clean up any junior_manager and official team assignments
       await client
         .deleteFrom("junior_team_manager")
+        .where("user_id", "=", userId)
+        .execute();
+      await client
+        .deleteFrom("team_official")
         .where("user_id", "=", userId)
         .execute();
 
@@ -441,6 +445,118 @@ export const admin = {
         await client
           .updateTable("user")
           .set({ role: "junior_manager" })
+          .where("id", "=", userId)
+          .execute();
+      } else {
+        // No teams assigned — revert to user role
+        await client
+          .updateTable("user")
+          .set({ role: "user" })
+          .where("id", "=", userId)
+          .execute();
+      }
+
+      return { success: true };
+    },
+  }),
+
+  listPlayCricketTeams: defineAuthAction({
+    roles: ["admin"],
+    handler: async () => {
+      const teams = await client
+        .selectFrom("play_cricket_team")
+        .select(["id", "name", "is_junior"])
+        .orderBy("name", "asc")
+        .execute();
+
+      return teams.filter(
+        (t): t is typeof t & { id: string } => t.id !== null,
+      );
+    },
+  }),
+
+  getOfficialTeams: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      userId: z.string(),
+    }),
+    handler: async ({ userId }) => {
+      const assignments = await client
+        .selectFrom("team_official")
+        .where("user_id", "=", userId)
+        .select("play_cricket_team_id")
+        .execute();
+
+      return assignments.map((a) => a.play_cricket_team_id);
+    },
+  }),
+
+  setOfficial: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      userId: z.string(),
+      teamIds: z.array(z.string()),
+    }),
+    handler: async ({ userId, teamIds }) => {
+      const targetUser = await client
+        .selectFrom("user")
+        .where("id", "=", userId)
+        .select(["id", "role"])
+        .executeTakeFirst();
+
+      if (!targetUser) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+
+      if (targetUser.role === "admin") {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message:
+            "Cannot assign official role to an admin. Demote them first.",
+        });
+      }
+
+      // Clear existing official team assignments
+      await client
+        .deleteFrom("team_official")
+        .where("user_id", "=", userId)
+        .execute();
+
+      if (teamIds.length > 0) {
+        // Validate all team IDs exist
+        const existingTeams = await client
+          .selectFrom("play_cricket_team")
+          .select("id")
+          .execute();
+
+        const validIds = new Set(existingTeams.map((t) => t.id));
+        for (const id of teamIds) {
+          if (!validIds.has(id)) {
+            throw new ActionError({
+              code: "BAD_REQUEST",
+              message: `Invalid team ID: ${id}`,
+            });
+          }
+        }
+
+        // Insert new assignments
+        for (const teamId of teamIds) {
+          await client
+            .insertInto("team_official")
+            .values({
+              user_id: userId,
+              play_cricket_team_id: teamId,
+            })
+            .execute();
+        }
+
+        // Set role to official directly in DB
+        await client
+          .updateTable("user")
+          .set({ role: "official" })
           .where("id", "=", userId)
           .execute();
       } else {
