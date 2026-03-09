@@ -201,7 +201,8 @@ const handleMembership = async (
     expand: ["product"],
   });
 
-  // One-time membership purchases are always 12 months
+  // One-time membership purchases are always 12 months, except women's player
+  // which covers until end of the calendar year
   const addedDuration =
     price.type === "one_time"
       ? { months: 12 }
@@ -209,11 +210,18 @@ const handleMembership = async (
         ? { [`${price.recurring.interval}s`]: price.recurring.interval_count }
         : { days: 0 };
 
+  // Women's player season fee covers until 31 Dec of the current year
+  const paidUntil =
+    membershipType === "senior_women_player" && price.type === "one_time"
+      ? new Date(new Date().getFullYear(), 11, 31, 23, 59, 59)
+      : undefined;
+
   const membership = await updateMembership({
     membershipType,
     email,
     addedDuration,
     paidAt: stripeDate(event.created),
+    paidUntil,
   });
 
   await createPaymentCharge({

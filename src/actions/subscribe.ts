@@ -33,6 +33,14 @@ export const subscribe = defineAction({
           : {}),
       };
 
+      // Women's player monthly subscriptions auto-cancel at end of September
+      let cancelAt: number | undefined;
+      if (membership === "senior_women_player") {
+        const now = new Date();
+        const year = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+        cancelAt = Math.floor(new Date(year, 8, 30, 23, 59, 59).getTime() / 1000);
+      }
+
       // Create subscription with incomplete status — payment collected via PaymentElement
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
@@ -43,6 +51,7 @@ export const subscribe = defineAction({
         },
         expand: ["latest_invoice.payment_intent"],
         metadata: subscriptionMetadata,
+        ...(cancelAt ? { cancel_at: cancelAt } : {}),
       });
 
       const invoice = subscription.latest_invoice as Stripe.Invoice;

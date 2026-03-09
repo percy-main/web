@@ -10,7 +10,8 @@
     "product": {
       "subs_player": "prod_RYaHXiECGLyH9k",
       "subs_social": "prod_RYaMScmSF06OQp",
-      "subs_concessionary": "prod_U72kxbH8P7IZy3"
+      "subs_concessionary": "prod_U72kxbH8P7IZy3",
+      "subs_women_player": "prod_U7DLUVb24JKSJT"
     }
   },
   "dev": {
@@ -24,7 +25,8 @@
     "product": {
       "subs_player": "prod_RfHLa2wMmBDJcK",
       "subs_social": "prod_RfHN1rXeCNb2a9",
-      "subs_concessionary": "prod_U72ie4uTjyR3NY"
+      "subs_concessionary": "prod_U72ie4uTjyR3NY",
+      "subs_women_player": "prod_U7DNq47xD5h8tK"
     }
   }
 }
