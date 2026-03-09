@@ -1,0 +1,79 @@
+# Officials
+
+<AdminTab name="Members">
+Assign the match official role and manage team assignments via the Members tab.
+</AdminTab>
+
+The match official system lets designated people manage matchday squads, fees, and expenses for their assigned teams. This page covers the admin side — for how officials use the panel, see the [Official Guide](../official/README.mdx).
+
+## Assigning the Official Role
+
+<RoleBadge role="admin" /> Only admins can assign the official role.
+
+1. Go to the **Members** tab in the admin panel
+2. Find the user and click their row to open the detail modal
+3. Scroll to the **Match Official** section
+4. Select the teams they should manage using the checkboxes
+5. Click **Save Team Assignments**
+
+The user's role is automatically changed to <RoleBadge role="official" /> when teams are assigned.
+
+<Callout type="info">
+Admins always have full access to all teams in the official panel. If a user has the admin role, you'll see a message saying "Admins have full access to all teams. Demote to User first to assign specific teams."
+</Callout>
+
+## Removing Team Assignments
+
+To remove an official's access:
+
+1. Open their member detail modal
+2. Deselect all teams, or click **Remove All Teams**
+3. Their role automatically reverts to <RoleBadge role="user" />
+
+## Match Fee Rates
+
+Match fees are automatically charged to players when a team is confirmed. The fee amount depends on configurable rates based on:
+
+| Factor | Example |
+|--------|---------|
+| **Team** | 1st XI, 2nd XI (optional — omit for a default rate) |
+| **Competition type** | League, Cup, Friendly (optional) |
+| **Member category** | Senior, Junior, Concession, etc. |
+
+The system uses a fallback hierarchy: it first looks for a rate matching the specific team and competition type, then falls back to more generic rates.
+
+### Managing fee rates
+
+Fee rate management is available to admins. Rates are configured with:
+
+- **Team** (optional) — leave blank for a default rate that applies to all teams
+- **Competition type** (optional) — leave blank for a rate that applies to all competition types
+- **Member category** (required) — the member's category (e.g. senior, junior)
+- **Amount** — the fee in GBP
+
+## Matchday Reports
+
+Admins can view financial reports for any matchday via the admin panel. A matchday report includes:
+
+| Section | Details |
+|---------|---------|
+| **Players** | Name, status, charge amount, payment status, payment method |
+| **Expenses** | Type, description, amount |
+| **Sponsorship** | Game sponsorship income (if a paid, approved sponsorship is linked) |
+| **Summary** | Total incoming, total paid, outstanding, expenses, sponsorship income, net profit/loss |
+
+## Browsing Matchdays
+
+Admins can browse all matchdays across all teams, filtered by team if needed. Each entry shows the date, opposition, team, competition type, and status.
+
+## Matchday Lifecycle
+
+Every matchday goes through three stages:
+
+| Stage | Description |
+|-------|-------------|
+| **Pending** | Squad being assembled — players can be added/removed |
+| **Confirmed** | Team locked in — match fees generated for playing members |
+| **Finished** | Match complete — unpaid fees remain as charges, email notifications sent |
+
+For more detail on the official's workflow through these stages, see the [Official Guide](../official/README.mdx).

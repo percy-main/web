@@ -1,0 +1,121 @@
+# Official Guide
+
+This guide covers the Match Official panel — a tool for managing matchday squads, fees, and expenses.
+
+## Who is this for?
+
+This documentation is for club members with the <RoleBadge role="official" /> role. Officials are assigned to specific teams and manage matchday operations for those teams.
+
+<RoleBadge role="admin" /> admins also have full access to the official panel for all teams.
+
+## Accessing the Official Panel
+
+1. Log in to the website at [percymain.org](https://percymain.org)
+2. Navigate to `/official`
+3. You must have the <RoleBadge role="official" /> or <RoleBadge role="admin" /> role — regular members are redirected to the members area
+
+If you see "No teams assigned", contact an admin to be assigned as an official for your team(s).
+
+## Matchday Lifecycle
+
+Every matchday follows three stages:
+
+| Stage | What happens |
+|-------|-------------|
+| **Pending** | Squad is being assembled — add/remove players freely |
+| **Confirmed** | Team is locked in — match fees generated, payment tracking active |
+| **Finished** | Match complete — unpaid fees remain as charges, notification emails sent |
+
+Once a matchday moves to the next stage, it cannot go back.
+
+## Step-by-step: Managing a Matchday
+
+### 1. Select your team
+
+The official panel shows cards for each team you're assigned to. Click a team to see its upcoming matches (pulled from Play-Cricket).
+
+### 2. Create a matchday
+
+For each upcoming match, click **Select Team** to create a matchday record. This links the match to your squad management.
+
+If a matchday already exists, you'll see **Edit Squad** (pending), **View Confirmed** (confirmed), or **View Finished** (finished) instead.
+
+### 3. Build the squad
+
+While the matchday is in the **pending** stage:
+
+1. Click **Add Player** to open the player search
+2. Type at least 2 characters to search club members by name
+3. Click a member to add them to the squad
+4. To add someone not in the system, use the "Or add a player not in the system" field and click **Add**
+5. To remove a player, click **Remove** next to their name
+
+Players are numbered in the order they're added.
+
+### 4. Confirm the team
+
+When the squad is ready:
+
+1. Click **Confirm Team**
+2. Set each player's status using the dropdown:
+   - **Playing** — the player is playing and will be charged a match fee
+   - **Dropped Out** — the player dropped out before the match (no charge)
+   - **No Show** — the player didn't turn up (no charge)
+3. Click **Confirm Team** to lock it in
+
+<Callout type="warning">
+Confirming the team generates match fee charges for all players marked as **Playing**. This action cannot be undone.
+</Callout>
+
+### 5. Track match fee payments
+
+After confirmation, each playing player shows a fee status badge:
+
+| Badge | Meaning |
+|-------|---------|
+| **Fee paid** (green) | Payment received |
+| **Fee pending** (yellow) | Charge created, awaiting payment |
+| **No fee set** (grey) | No fee rate configured for this player/team combination |
+
+To record a payment:
+
+1. Click **Mark Paid** next to the player
+2. Choose the payment method: **Cash**, **Bank Transfer**, or **Card**
+
+### 6. Record expenses
+
+After the team is confirmed, the **Expenses** section appears. You can add:
+
+| Expense type | Description field |
+|-------------|-------------------|
+| **Umpire Fee** | Umpire name (e.g. "J. Smith") |
+| **Scorer Fee** | Scorer name (e.g. "A. Jones") |
+| **Match Ball** | Tick "New match ball used" and enter cost |
+| **Teas** | Description (optional) |
+| **Miscellaneous** | Description |
+
+To add an expense:
+
+1. Click **Add Expense**
+2. Select the expense type
+3. Fill in the description and amount
+4. Click **Add**
+
+To remove an expense, click **Remove** next to it. Expenses cannot be removed after the match is finished.
+
+<Callout type="info">
+Only one match ball expense can be added per matchday. If one already exists, the option is hidden.
+</Callout>
+
+### 7. Finish the match
+
+When all payments and expenses are recorded:
+
+1. Click **Finish Match**
+2. Read the confirmation — unpaid match fees will remain as charges and notification emails will be sent to members with outstanding fees
+
+<Callout type="warning">
+Finishing a match is permanent. Make sure all cash/bank transfer payments have been recorded first, as the match cannot be reopened.
+</Callout>
+
+After finishing, the matchday shows the completion date and switches to read-only mode. Expenses are still visible but cannot be modified.
