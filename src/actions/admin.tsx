@@ -406,9 +406,13 @@ export const admin = {
         });
       }
 
-      // Clear existing team assignments
+      // Clear existing team assignments (both junior_manager and official)
       await client
         .deleteFrom("junior_team_manager")
+        .where("user_id", "=", userId)
+        .execute();
+      await client
+        .deleteFrom("team_official")
         .where("user_id", "=", userId)
         .execute();
 
@@ -419,12 +423,14 @@ export const admin = {
           .select("id")
           .execute();
 
-        const validIds = new Set(existingTeams.map((t) => t.id));
+        const validIds = new Set(
+          existingTeams.map((t) => t.id).filter((id): id is string => id !== null),
+        );
         for (const id of teamIds) {
           if (!validIds.has(id)) {
             throw new ActionError({
               code: "BAD_REQUEST",
-              message: `Invalid team ID: ${id}`,
+              message: "Invalid team ID",
             });
           }
         }
@@ -532,12 +538,16 @@ export const admin = {
           .select("id")
           .execute();
 
-        const validIds = new Set(existingTeams.map((t) => t.id));
+        const validIds = new Set(
+          existingTeams
+            .map((t) => t.id)
+            .filter((id): id is string => id !== null),
+        );
         for (const id of teamIds) {
           if (!validIds.has(id)) {
             throw new ActionError({
               code: "BAD_REQUEST",
-              message: `Invalid team ID: ${id}`,
+              message: "Invalid team ID",
             });
           }
         }
