@@ -617,15 +617,20 @@ function MatchdayView({
                               )}
                             </>
                           )}
-                        {/* Show paid status */}
+                        {/* Show fee status */}
                         {player.charge_id &&
                           data.matchday.status !== "pending" &&
                           player.status === "playing" &&
-                          payingPlayerId !== player.id && (
+                          payingPlayerId !== player.id &&
+                          (player.chargePaidAt ? (
                             <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800">
+                              Fee paid
+                            </span>
+                          ) : (
+                            <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">
                               Fee pending
                             </span>
-                          )}
+                          ))}
                         {/* Remove button for pending matchdays */}
                         {data.matchday.status === "pending" && (
                           <Button

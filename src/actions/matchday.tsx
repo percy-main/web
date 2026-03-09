@@ -8,7 +8,7 @@ import { BASE_URL } from "astro:env/client";
 import { PLAY_CRICKET_SITE_ID } from "astro:env/server";
 import { z } from "astro:schema";
 import { randomUUID } from "crypto";
-import { parse, isBefore, startOfDay, subDays, formatDate, format } from "date-fns";
+import { parse, isBefore, startOfDay, subDays, formatDate } from "date-fns";
 import { ChargeNotification } from "~/emails/ChargeNotification";
 
 const PAYMENT_METHODS = ["cash", "bank_transfer", "card"] as const;
@@ -242,6 +242,7 @@ export const matchday = {
         .selectFrom("matchday_player")
         .where("matchday_id", "=", matchdayId)
         .leftJoin("member", "member.id", "matchday_player.member_id")
+        .leftJoin("charge", "charge.id", "matchday_player.charge_id")
         .select([
           "matchday_player.id",
           "matchday_player.member_id",
@@ -251,6 +252,7 @@ export const matchday = {
           "matchday_player.charge_id",
           "matchday_player.created_at",
           "member.member_category",
+          "charge.paid_at as chargePaidAt",
         ])
         .orderBy("matchday_player.created_at", "asc")
         .execute();
@@ -365,6 +367,7 @@ export const matchday = {
           .values({
             id: newMemberId,
             name: playerName,
+            // These columns are NOT NULL in the schema, so we use empty string for guest placeholders
             email: "",
             title: "",
             address: "",
@@ -555,7 +558,7 @@ export const matchday = {
           .values({
             id: chargeId,
             member_id: player.member_id,
-            description: `Match fee - ${matchday.opposition} (${formatDate(matchday.match_date, "dd/MM/yyyy")})`,
+            description: `Match fee - ${matchday.opposition} (${formatDate(new Date(matchday.match_date), "dd/MM/yyyy")})`,
             amount_pence: rate.amount_pence,
             charge_date: matchday.match_date,
             created_by: user.id,
@@ -833,7 +836,7 @@ export const matchday = {
               name={player.member_name}
               description={player.charge_description}
               amount={amountFormatted}
-              chargeDate={formatDate(player.charge_date, "dd/MM/yyyy")}
+              chargeDate={formatDate(new Date(player.charge_date), "dd/MM/yyyy")}
               loginUrl={`${BASE_URL}/auth/login`}
             />,
             { pretty: true },
@@ -848,14 +851,14 @@ export const matchday = {
     },
   }),
 
-  /** Check for discrepancies between our confirmed team and Play-Cricket's team sheet (admin). */
+  /** Check for discrepancies between our confirmed team and Play-Cricket's team sheet. */
   checkDiscrepancies: defineAuthAction({
-    roles: ["admin"],
+    roles: ["official", "admin"],
     input: z.object({
       matchdayId: z.string(),
       playCricketMatchId: z.string(),
     }),
-    handler: async ({ matchdayId, playCricketMatchId }) => {
+    handler: async ({ matchdayId, playCricketMatchId }, { user }) => {
       const matchday = await client
         .selectFrom("matchday")
         .where("id", "=", matchdayId)
@@ -866,6 +869,14 @@ export const matchday = {
         throw new ActionError({
           code: "NOT_FOUND",
           message: "Matchday not found.",
+        });
+      }
+
+      const accessibleIds = await getAccessibleTeamIds(user.id);
+      if (!accessibleIds.includes(matchday.play_cricket_team_id)) {
+        throw new ActionError({
+          code: "UNAUTHORIZED",
+          message: "You do not have access to this matchday.",
         });
       }
 
