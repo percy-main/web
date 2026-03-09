@@ -33,12 +33,18 @@ export const subscribe = defineAction({
           : {}),
       };
 
-      // Women's player monthly subscriptions auto-cancel after 6 billing cycles
+      // Women's player monthly subscriptions: max 6 payments, last possible in September.
+      // cancel_at = whichever comes first: 6 months from now, or Sep 30.
       let cancelAt: number | undefined;
       if (membership === "senior_women_player") {
-        const sixMonthsFromNow = new Date();
-        sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
-        cancelAt = Math.floor(sixMonthsFromNow.getTime() / 1000);
+        const now = new Date();
+        const sixMonths = new Date(now);
+        sixMonths.setMonth(sixMonths.getMonth() + 6);
+
+        const year = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+        const endOfSep = new Date(year, 8, 30, 23, 59, 59);
+
+        cancelAt = Math.floor(Math.min(sixMonths.getTime(), endOfSep.getTime()) / 1000);
       }
 
       // Create subscription with incomplete status — payment collected via PaymentElement
