@@ -35,6 +35,7 @@ export const Membership: FC<Props> = ({ email }) => {
             <div className="mb-2 font-semibold">
               {match(membership.type)
                 .with("senior_player", () => "Playing Member (Senior)")
+                .with("senior_women_player", () => "Playing Member (Women's)")
                 .with("social", () => "Social Member")
                 .with("junior", () => "Junior Member")
                 .with("concessionary", () => "Student / Concessionary Member")
