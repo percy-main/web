@@ -90,13 +90,22 @@ export const matchday = {
       }
 
       const now = new Date();
-      const season = now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
-      const summary = await playCricketApi.getMatchesSummary({ season });
+      const currentYear = now.getFullYear();
+      // Fetch both current and next season when in Jan-Mar (fixtures for
+      // the upcoming season are already published in Play-Cricket)
+      const seasons =
+        now.getMonth() < 3
+          ? [currentYear - 1, currentYear]
+          : [currentYear];
+      const summaries = await Promise.all(
+        seasons.map((season) => playCricketApi.getMatchesSummary({ season })),
+      );
+      const allMatches = summaries.flatMap((s) => s.matches);
 
       // Filter to matches involving this team, from today onwards (include today)
       const cutoff = startOfDay(subDays(now, 1));
 
-      const upcoming = summary.matches
+      const upcoming = allMatches
         .filter((m) => {
           const isOurTeam =
             (m.home_club_id === PLAY_CRICKET_SITE_ID &&
