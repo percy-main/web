@@ -61,7 +61,8 @@ export const treasurer = {
             other: 0,
           });
         }
-        const entry = monthMap.get(row.month)!;
+        const entry = monthMap.get(row.month);
+        if (!entry) continue;
         const chargeType = row.type ?? "other";
         const total = Number(row.total);
 

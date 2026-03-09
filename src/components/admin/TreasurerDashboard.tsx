@@ -132,6 +132,16 @@ function SummaryCards({
   dateFrom: string;
   dateTo: string;
 }) {
+  // Use the same income-by-month data as the chart so cards and chart are consistent
+  const incomeQuery = useQuery({
+    queryKey: ["treasurer", "incomeByMonth", dateFrom, dateTo],
+    queryFn: () =>
+      actions.treasurer.getIncomeByMonth({
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      }),
+  });
+
   const aggregatesQuery = useQuery({
     queryKey: ["treasurer", "chargeAggregates", dateFrom, dateTo],
     queryFn: () =>
@@ -150,35 +160,32 @@ function SummaryCards({
       }),
   });
 
-  const sponsorshipQuery = useQuery({
-    queryKey: ["treasurer", "sponsorship", dateFrom, dateTo],
-    queryFn: () =>
-      actions.treasurer.getSponsorshipSummary({
-        dateFrom: dateFrom || undefined,
-        dateTo: dateTo || undefined,
-      }),
-  });
-
+  const income = incomeQuery.data?.data;
   const aggregates = aggregatesQuery.data?.data;
   const expenses = expensesQuery.data?.data;
-  const sponsorship = sponsorshipQuery.data?.data;
 
-  if (aggregatesQuery.isError) {
+  if (incomeQuery.isError || aggregatesQuery.isError) {
     return <p className="text-red-600">Failed to load financial summary.</p>;
   }
-  if (!aggregates) {
+  if (!income || !aggregates) {
     return <p className="text-gray-500">Loading summary...</p>;
   }
 
-  const sponsorshipIncome = sponsorship
-    ? sponsorship.game.paidRevenue + sponsorship.player.paidRevenue
-    : 0;
+  // Sum across all months from the income-by-month data (same source as chart)
+  const totals = income.reduce(
+    (acc, month) => ({
+      total: acc.total + month.membership + month.sponsorship + month.donation + month.manual + month.other,
+      membership: acc.membership + month.membership,
+      sponsorship: acc.sponsorship + month.sponsorship,
+    }),
+    { total: 0, membership: 0, sponsorship: 0 },
+  );
 
   return (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
       <SummaryCard
         title="Total Income"
-        amount={aggregates.totalPaid}
+        amount={totals.total}
         variant="success"
       />
       <SummaryCard
@@ -187,14 +194,13 @@ function SummaryCards({
         variant="warning"
       />
       <SummaryCard
-        title="Other Income"
-        amount={aggregates.totalPaid - sponsorshipIncome}
-        subtitle="(membership, donations, manual)"
+        title="Membership"
+        amount={totals.membership}
         variant="default"
       />
       <SummaryCard
         title="Sponsorship"
-        amount={sponsorshipIncome}
+        amount={totals.sponsorship}
         variant="default"
       />
       <SummaryCard
@@ -405,7 +411,7 @@ function MembershipSummary() {
                 </TableCell>
                 <TableCell className="text-right">
                   {priceMap.has(row.type)
-                    ? formatPence(priceMap.get(row.type)!)
+                    ? formatPence(priceMap.get(row.type) ?? 0)
                     : "-"}
                 </TableCell>
               </TableRow>
