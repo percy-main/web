@@ -10,6 +10,10 @@ const roleColors = {
     light: "bg-green-100 text-green-800 border-green-200",
     dark: "bg-green-900/40 text-green-300 border-green-700",
   },
+  official: {
+    light: "bg-purple-100 text-purple-800 border-purple-200",
+    dark: "bg-purple-900/40 text-purple-300 border-purple-700",
+  },
   user: {
     light: "bg-gray-100 text-gray-800 border-gray-200",
     dark: "bg-gray-800 text-gray-300 border-gray-600",
@@ -19,7 +23,7 @@ const roleColors = {
 export default function RoleBadge({
   role,
 }: {
-  role: "admin" | "junior-manager" | "user";
+  role: "admin" | "junior-manager" | "official" | "user";
 }) {
   const { theme } = useDoxla();
   const colors = roleColors[role] ?? roleColors.user;
