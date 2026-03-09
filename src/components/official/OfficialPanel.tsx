@@ -576,7 +576,8 @@ function MatchdayView({
                         {/* Match fee payment controls for confirmed matchdays */}
                         {data.matchday.status === "confirmed" &&
                           player.status === "playing" &&
-                          player.charge_id && (
+                          player.charge_id &&
+                          !player.chargePaidAt && (
                             <>
                               {payingPlayerId === player.id ? (
                                 <div className="flex items-center gap-1">
@@ -620,17 +621,20 @@ function MatchdayView({
                             </>
                           )}
                         {/* Show fee status */}
-                        {player.charge_id &&
-                          data.matchday.status !== "pending" &&
+                        {data.matchday.status !== "pending" &&
                           player.status === "playing" &&
                           payingPlayerId !== player.id &&
                           (player.chargePaidAt ? (
                             <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-800">
                               Fee paid
                             </span>
-                          ) : (
+                          ) : player.charge_id ? (
                             <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-xs font-medium text-yellow-800">
                               Fee pending
+                            </span>
+                          ) : (
+                            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-600">
+                              No fee set
                             </span>
                           ))}
                         {/* Remove button for pending matchdays */}

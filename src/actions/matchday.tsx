@@ -825,6 +825,81 @@ export const matchday = {
         .where("id", "=", matchdayId)
         .execute();
 
+      // Create charges for any playing players who don't have one yet
+      // (e.g. fee rates were added after team confirmation)
+      const uncharged = await client
+        .selectFrom("matchday_player")
+        .leftJoin("member", "member.id", "matchday_player.member_id")
+        .where("matchday_player.matchday_id", "=", matchdayId)
+        .where("matchday_player.status", "=", "playing")
+        .where("matchday_player.charge_id", "is", null)
+        .select([
+          "matchday_player.id as matchdayPlayerId",
+          "matchday_player.member_id",
+          "matchday_player.player_name",
+          "member.member_category",
+        ])
+        .execute();
+
+      if (uncharged.length > 0) {
+        const feeRates = await client
+          .selectFrom("match_fee_rate")
+          .where((eb) =>
+            eb.or([
+              eb(
+                "play_cricket_team_id",
+                "=",
+                matchday.play_cricket_team_id,
+              ),
+              eb("play_cricket_team_id", "is", null),
+            ]),
+          )
+          .selectAll()
+          .execute();
+
+        for (const player of uncharged) {
+          if (!player.member_id) continue;
+          const category = player.member_category ?? "guest";
+          if (category === "bursary") continue;
+
+          const rate =
+            feeRates.find(
+              (r) =>
+                r.play_cricket_team_id ===
+                  matchday.play_cricket_team_id &&
+                r.member_category === category,
+            ) ??
+            feeRates.find(
+              (r) =>
+                r.play_cricket_team_id === null &&
+                r.member_category === category,
+            );
+
+          if (!rate || rate.amount_pence === 0) continue;
+
+          const chargeId = randomUUID();
+          await client
+            .insertInto("charge")
+            .values({
+              id: chargeId,
+              member_id: player.member_id,
+              description: `Match fee - ${matchday.opposition} (${formatDate(new Date(matchday.match_date), "dd/MM/yyyy")})`,
+              amount_pence: rate.amount_pence,
+              charge_date: matchday.match_date,
+              created_by: user.id,
+              type: "match_fee",
+              source: "matchday",
+            })
+            .execute();
+
+          await client
+            .updateTable("matchday_player")
+            .set({ charge_id: chargeId })
+            .where("id", "=", player.matchdayPlayerId)
+            .execute();
+        }
+      }
+
       // Find unpaid charges for this matchday and send notification emails
       const unpaidPlayers = await client
         .selectFrom("matchday_player")
