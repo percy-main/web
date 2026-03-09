@@ -26,15 +26,16 @@ export const treasurer = {
     roles: ["admin"],
     input: dateRangeInput,
     handler: async ({ dateFrom, dateTo }) => {
-      let query = client
+      // 1. Income from the charge table (membership, donations, manual, etc.)
+      let chargeQuery = client
         .selectFrom("charge")
         .where("charge.paid_at", "is not", null)
         .where("charge.deleted_at", "is", null);
 
-      if (dateFrom) query = query.where("charge.paid_at", ">=", dateFrom);
-      if (dateTo) query = query.where("charge.paid_at", "<=", dateTo);
+      if (dateFrom) chargeQuery = chargeQuery.where("charge.paid_at", ">=", dateFrom);
+      if (dateTo) chargeQuery = chargeQuery.where("charge.paid_at", "<=", dateTo);
 
-      const rows = await query
+      const chargeRows = await chargeQuery
         .select([
           sql<string>`strftime('%Y-%m', charge.paid_at)`.as("month"),
           "charge.type",
@@ -44,25 +45,53 @@ export const treasurer = {
         .orderBy(sql`strftime('%Y-%m', charge.paid_at)`, "asc")
         .execute();
 
-      // Pivot into { month, membership, sponsorship, donation, manual, ... }
+      // 2. Sponsorship income from game_sponsorship + player_sponsorship tables
+      let gameSponQuery = client
+        .selectFrom("game_sponsorship")
+        .where("game_sponsorship.paid_at", "is not", null);
+      if (dateFrom) gameSponQuery = gameSponQuery.where("game_sponsorship.paid_at", ">=", dateFrom);
+      if (dateTo) gameSponQuery = gameSponQuery.where("game_sponsorship.paid_at", "<=", dateTo);
+
+      let playerSponQuery = client
+        .selectFrom("player_sponsorship")
+        .where("player_sponsorship.paid_at", "is not", null);
+      if (dateFrom) playerSponQuery = playerSponQuery.where("player_sponsorship.paid_at", ">=", dateFrom);
+      if (dateTo) playerSponQuery = playerSponQuery.where("player_sponsorship.paid_at", "<=", dateTo);
+
+      const [gameSponRows, playerSponRows] = await Promise.all([
+        gameSponQuery
+          .select([
+            sql<string>`strftime('%Y-%m', game_sponsorship.paid_at)`.as("month"),
+            sql<number>`SUM(game_sponsorship.amount_pence)`.as("total"),
+          ])
+          .groupBy(sql`strftime('%Y-%m', game_sponsorship.paid_at)`)
+          .execute(),
+        playerSponQuery
+          .select([
+            sql<string>`strftime('%Y-%m', player_sponsorship.paid_at)`.as("month"),
+            sql<number>`SUM(player_sponsorship.amount_pence)`.as("total"),
+          ])
+          .groupBy(sql`strftime('%Y-%m', player_sponsorship.paid_at)`)
+          .execute(),
+      ]);
+
+      // Pivot into { month, membership, sponsorship, donation, manual, other }
       const monthMap = new Map<
         string,
         { month: string; membership: number; sponsorship: number; donation: number; manual: number; other: number }
       >();
 
-      for (const row of rows) {
-        if (!monthMap.has(row.month)) {
-          monthMap.set(row.month, {
-            month: row.month,
-            membership: 0,
-            sponsorship: 0,
-            donation: 0,
-            manual: 0,
-            other: 0,
-          });
+      function getOrCreate(month: string) {
+        let entry = monthMap.get(month);
+        if (!entry) {
+          entry = { month, membership: 0, sponsorship: 0, donation: 0, manual: 0, other: 0 };
+          monthMap.set(month, entry);
         }
-        const entry = monthMap.get(row.month);
-        if (!entry) continue;
+        return entry;
+      }
+
+      for (const row of chargeRows) {
+        const entry = getOrCreate(row.month);
         const chargeType = row.type ?? "other";
         const total = Number(row.total);
 
@@ -79,7 +108,18 @@ export const treasurer = {
         }
       }
 
-      return Array.from(monthMap.values());
+      // Add sponsorship table revenue
+      for (const row of gameSponRows) {
+        getOrCreate(row.month).sponsorship += Number(row.total);
+      }
+      for (const row of playerSponRows) {
+        getOrCreate(row.month).sponsorship += Number(row.total);
+      }
+
+      // Sort by month
+      return Array.from(monthMap.values()).sort((a, b) =>
+        a.month.localeCompare(b.month),
+      );
     },
   }),
 
@@ -110,22 +150,37 @@ export const treasurer = {
   getMembershipPrices: defineAuthAction({
     roles: ["admin"],
     handler: async () => {
-      // Fetch annual (one-time payment) prices for each membership product from Stripe
+      // Fetch both annual (one-time) and monthly (recurring) prices for each membership product
       const results = await Promise.all(
         Object.entries(productToMembershipType).map(
           async ([productId, membershipType]) => {
             try {
-              const stripePrices = await stripe.prices.list({
-                product: productId,
-                active: true,
-                type: "one_time",
-                limit: 1,
-              });
-              if (stripePrices.data.length > 0 && stripePrices.data[0].unit_amount) {
-                return {
-                  type: membershipType,
-                  annualPence: stripePrices.data[0].unit_amount,
-                };
+              const [oneTimePrices, recurringPrices] = await Promise.all([
+                stripe.prices.list({
+                  product: productId,
+                  active: true,
+                  type: "one_time",
+                  limit: 1,
+                }),
+                stripe.prices.list({
+                  product: productId,
+                  active: true,
+                  type: "recurring",
+                  limit: 1,
+                }),
+              ]);
+
+              const annualPence =
+                oneTimePrices.data.length > 0
+                  ? (oneTimePrices.data[0].unit_amount ?? null)
+                  : null;
+              const monthlyPence =
+                recurringPrices.data.length > 0
+                  ? (recurringPrices.data[0].unit_amount ?? null)
+                  : null;
+
+              if (annualPence !== null || monthlyPence !== null) {
+                return { type: membershipType, annualPence, monthlyPence };
               }
             } catch {
               // Skip if product not found
@@ -136,7 +191,11 @@ export const treasurer = {
       );
 
       return results.filter(
-        (r): r is { type: string; annualPence: number } => r !== null,
+        (r): r is {
+          type: string;
+          annualPence: number | null;
+          monthlyPence: number | null;
+        } => r !== null,
       );
     },
   }),

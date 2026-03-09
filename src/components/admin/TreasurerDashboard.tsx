@@ -372,13 +372,11 @@ function MembershipSummary() {
     );
   }
 
-  const priceMap = new Map(prices?.map((p) => [p.type, p.annualPence]) ?? []);
+  const priceMap = new Map(
+    prices?.map((p) => [p.type, p]) ?? [],
+  );
   const totalActive = summary.reduce((s, r) => s + r.active, 0);
   const totalLapsed = summary.reduce((s, r) => s + r.lapsed, 0);
-  const expectedRevenue = summary.reduce((s, r) => {
-    const annual = priceMap.get(r.type) ?? 0;
-    return s + r.active * annual;
-  }, 0);
 
   return (
     <Card>
@@ -392,44 +390,48 @@ function MembershipSummary() {
               <TableHead>Type</TableHead>
               <TableHead className="text-right">Active</TableHead>
               <TableHead className="text-right">Lapsed</TableHead>
-              <TableHead className="text-right">Annual Price</TableHead>
+              <TableHead className="text-right">Monthly</TableHead>
+              <TableHead className="text-right">Annual</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {summary.map((row) => (
-              <TableRow key={row.type}>
-                <TableCell>
-                  {membershipTypeLabels[row.type] ?? row.type}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Badge variant="success">{row.active}</Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Badge variant={row.lapsed > 0 ? "warning" : "secondary"}>
-                    {row.lapsed}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  {priceMap.has(row.type)
-                    ? formatPence(priceMap.get(row.type) ?? 0)
-                    : "-"}
-                </TableCell>
-              </TableRow>
-            ))}
+            {summary.map((row) => {
+              const price = priceMap.get(row.type);
+              return (
+                <TableRow key={row.type}>
+                  <TableCell>
+                    {membershipTypeLabels[row.type] ?? row.type}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant="success">{row.active}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant={row.lapsed > 0 ? "warning" : "secondary"}>
+                      {row.lapsed}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {price?.monthlyPence != null
+                      ? formatPence(price.monthlyPence)
+                      : "-"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {price?.annualPence != null
+                      ? formatPence(price.annualPence)
+                      : "-"}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
             <TableRow className="font-semibold">
               <TableCell>Total</TableCell>
               <TableCell className="text-right">{totalActive}</TableCell>
               <TableCell className="text-right">{totalLapsed}</TableCell>
               <TableCell className="text-right">-</TableCell>
+              <TableCell className="text-right">-</TableCell>
             </TableRow>
           </TableBody>
         </Table>
-        {expectedRevenue > 0 && (
-          <p className="text-sm text-gray-600">
-            Expected annual membership revenue:{" "}
-            <span className="font-semibold">{formatPence(expectedRevenue)}</span>
-          </p>
-        )}
       </CardContent>
     </Card>
   );
