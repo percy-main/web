@@ -61,6 +61,7 @@ When the squad is ready:
    - **Playing** — the player is playing and will be charged a match fee
    - **Dropped Out** — the player dropped out before the match (no charge)
    - **No Show** — the player didn't turn up (no charge)
+   - **Replaced** — the player was replaced (may appear if status is changed after confirmation)
 3. Click **Confirm Team** to lock it in
 
 <Callout type="warning">
@@ -75,12 +76,16 @@ After confirmation, each playing player shows a fee status badge:
 |-------|---------|
 | **Fee paid** (green) | Payment received |
 | **Fee pending** (yellow) | Charge created, awaiting payment |
-| **No fee set** (grey) | No fee rate configured for this player/team combination |
+| **No fee set** (grey) | No fee rate configured for this player/team combination, or the player is not linked to a member account |
 
 To record a payment:
 
 1. Click **Mark Paid** next to the player
 2. Choose the payment method: **Cash**, **Bank Transfer**, or **Card**
+
+<Callout type="info">
+Match fee payments can only be recorded while the matchday is in the **Confirmed** stage. Once the match is finished, the Mark Paid controls are no longer available.
+</Callout>
 
 ### 6. Record expenses
 

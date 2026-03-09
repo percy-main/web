@@ -27,8 +27,12 @@ Admins always have full access to all teams in the official panel. If a user has
 To remove an official's access:
 
 1. Open their member detail modal
-2. Deselect all teams, or click **Remove All Teams**
-3. Their role automatically reverts to <RoleBadge role="user" />
+2. Deselect individual teams and click **Save Team Assignments**, or click **Remove All Teams** to immediately remove all assignments
+3. Their role automatically reverts to <RoleBadge role="user" /> when no teams are assigned
+
+<Callout type="warning">
+**Remove All Teams** takes effect immediately — there is no separate save step. Use the checkboxes if you want to review changes before saving.
+</Callout>
 
 ## Match Fee Rates
 
@@ -44,7 +48,7 @@ The system uses a fallback hierarchy: it first looks for a rate matching the spe
 
 ### Managing fee rates
 
-Fee rate management is available to admins. Rates are configured with:
+Fee rates are managed in the **Match Fee Rates** tab of the admin panel. Rates are configured with:
 
 - **Team** (optional) — leave blank for a default rate that applies to all teams
 - **Competition type** (optional) — leave blank for a rate that applies to all competition types
