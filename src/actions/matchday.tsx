@@ -348,45 +348,44 @@ export const matchday = {
       }
 
       const id = randomUUID();
-      await client
-        .insertInto("matchday_player")
-        .values({
-          id,
-          matchday_id: matchdayId,
-          member_id: memberId ?? null,
-          player_name: playerName,
-          status: "selected",
-        })
-        .execute();
 
-      // If this is an ad-hoc player (no member_id), create a member record
-      if (!memberId && playerName.trim()) {
-        const newMemberId = randomUUID();
-        await client
-          .insertInto("member")
+      // Use transaction to ensure matchday_player and guest member are created atomically
+      await client.transaction().execute(async (trx) => {
+        let finalMemberId = memberId ?? null;
+
+        // If this is an ad-hoc player (no member_id), create a guest member record first
+        if (!memberId && playerName.trim()) {
+          finalMemberId = randomUUID();
+          await trx
+            .insertInto("member")
+            .values({
+              id: finalMemberId,
+              name: playerName,
+              // These columns are NOT NULL in the schema, so we use empty string for guest placeholders
+              email: "",
+              title: "",
+              address: "",
+              postcode: "",
+              dob: "",
+              telephone: "",
+              emergency_contact_name: "",
+              emergency_contact_telephone: "",
+              member_category: "guest",
+            })
+            .execute();
+        }
+
+        await trx
+          .insertInto("matchday_player")
           .values({
-            id: newMemberId,
-            name: playerName,
-            // These columns are NOT NULL in the schema, so we use empty string for guest placeholders
-            email: "",
-            title: "",
-            address: "",
-            postcode: "",
-            dob: "",
-            telephone: "",
-            emergency_contact_name: "",
-            emergency_contact_telephone: "",
-            member_category: "guest",
+            id,
+            matchday_id: matchdayId,
+            member_id: finalMemberId,
+            player_name: playerName,
+            status: "selected",
           })
           .execute();
-
-        // Link the matchday_player to the new member
-        await client
-          .updateTable("matchday_player")
-          .set({ member_id: newMemberId })
-          .where("id", "=", id)
-          .execute();
-      }
+      });
 
       return { id };
     },
@@ -492,6 +491,26 @@ export const matchday = {
         })
         .where("id", "=", matchdayId)
         .execute();
+
+      // Validate all player IDs belong to this matchday
+      const playerIds = playerStatuses.map((ps) => ps.matchdayPlayerId);
+      if (playerIds.length > 0) {
+        const validPlayers = await client
+          .selectFrom("matchday_player")
+          .where("matchday_id", "=", matchdayId)
+          .where("id", "in", playerIds)
+          .select("id")
+          .execute();
+
+        const validIds = new Set(validPlayers.map((p) => p.id));
+        const invalid = playerIds.filter((id) => !validIds.has(id));
+        if (invalid.length > 0) {
+          throw new ActionError({
+            code: "BAD_REQUEST",
+            message: "One or more player IDs do not belong to this matchday.",
+          });
+        }
+      }
 
       // Update player statuses
       for (const { matchdayPlayerId, status } of playerStatuses) {
