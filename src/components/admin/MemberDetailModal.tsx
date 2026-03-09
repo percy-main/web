@@ -95,19 +95,22 @@ export function MemberDetailModal({
                 <dd>{detail.user.email}</dd>
                 <dt className="font-medium text-gray-500">Role</dt>
                 <dd>
-                  <StatusPill
-                    variant={
-                      detail.user.role === "admin"
-                        ? "blue"
-                        : detail.user.role === "junior_manager"
-                          ? "green"
-                          : "gray"
-                    }
-                  >
-                    {detail.user.role === "junior_manager"
-                      ? "Junior Manager"
-                      : (detail.user.role ?? "user")}
-                  </StatusPill>
+                  <div className="flex flex-wrap gap-1">
+                    {detail.user.role === "admin" && (
+                      <StatusPill variant="blue">admin</StatusPill>
+                    )}
+                    {detail.user.isJuniorManager && (
+                      <StatusPill variant="green">Junior Manager</StatusPill>
+                    )}
+                    {detail.user.isOfficial && (
+                      <StatusPill variant="green">Official</StatusPill>
+                    )}
+                    {detail.user.role !== "admin" &&
+                      !detail.user.isJuniorManager &&
+                      !detail.user.isOfficial && (
+                        <StatusPill variant="gray">user</StatusPill>
+                      )}
+                  </div>
                 </dd>
                 <dt className="font-medium text-gray-500">Email Verified</dt>
                 <dd>{detail.user.emailVerified ? "Yes" : "No"}</dd>
@@ -377,6 +380,9 @@ export function MemberDetailModal({
             {/* Junior Manager */}
             <JuniorManagerSection userId={userId} currentRole={detail.user.role} />
 
+            {/* Official */}
+            <OfficialSection userId={userId} currentRole={detail.user.role} />
+
             {/* Payments (charges) */}
             {detail.member && (
               <ChargesSection memberId={detail.member.id} />
@@ -596,6 +602,184 @@ function JuniorManagerSection({
                   : "Remove Junior Manager Role"}
             </Button>
             {isJuniorManager && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={mutation.isPending}
+                onClick={handleRemoveAll}
+              >
+                Remove All Teams
+              </Button>
+            )}
+          </div>
+
+          {mutation.isError && (
+            <p className="text-sm text-red-600">
+              Failed to update team assignments.
+            </p>
+          )}
+
+          {mutation.isSuccess && (
+            <p className="text-sm text-green-600">
+              Team assignments updated successfully.
+            </p>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function OfficialSection({
+  userId,
+  currentRole,
+}: {
+  userId: string;
+  currentRole: string | null;
+}) {
+  const queryClient = useQueryClient();
+  const [selectedTeams, setSelectedTeams] = useState<Set<string>>(new Set());
+  const [hasInitialised, setHasInitialised] = useState(false);
+
+  const teamsQuery = useQuery({
+    queryKey: ["admin", "listPlayCricketTeams"],
+    queryFn: () => actions.admin.listPlayCricketTeams(),
+  });
+
+  const assignedQuery = useQuery({
+    queryKey: ["admin", "officialTeams", userId],
+    queryFn: () => actions.admin.getOfficialTeams({ userId }),
+  });
+
+  useEffect(() => {
+    if (assignedQuery.data?.data && !hasInitialised) {
+      setSelectedTeams(new Set(assignedQuery.data.data));
+      setHasInitialised(true);
+    }
+  }, [assignedQuery.data, hasInitialised]);
+
+  const mutation = useMutation({
+    mutationFn: (teamIds: string[]) =>
+      actions.admin.setOfficial({ userId, teamIds }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "userDetail", userId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "officialTeams", userId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "listUsers"],
+      });
+    },
+  });
+
+  if (currentRole === "admin") {
+    return (
+      <section>
+        <h3 className="mb-2 text-lg font-medium">Match Official</h3>
+        <p className="text-sm text-gray-500">
+          Admins have full access to all teams. Demote to User first to assign
+          specific teams.
+        </p>
+      </section>
+    );
+  }
+
+  const allTeams = teamsQuery.data?.data ?? [];
+  const assignedTeamIds = assignedQuery.data?.data ?? [];
+
+  const toggleTeam = (teamId: string) => {
+    setSelectedTeams((prev) => {
+      const next = new Set(prev);
+      if (next.has(teamId)) {
+        next.delete(teamId);
+      } else {
+        next.add(teamId);
+      }
+      return next;
+    });
+  };
+
+  const hasChanges = (() => {
+    const current = new Set(assignedTeamIds);
+    if (current.size !== selectedTeams.size) return true;
+    for (const id of selectedTeams) {
+      if (!current.has(id)) return true;
+    }
+    return false;
+  })();
+
+  const handleSave = () => {
+    mutation.mutate(Array.from(selectedTeams));
+  };
+
+  const handleRemoveAll = () => {
+    setSelectedTeams(new Set());
+    mutation.mutate([]);
+  };
+
+  const isOfficial = currentRole === "official";
+
+  return (
+    <section>
+      <h3 className="mb-2 text-lg font-medium">Match Official</h3>
+
+      {teamsQuery.isLoading || assignedQuery.isLoading ? (
+        <p className="text-sm text-gray-500">Loading teams...</p>
+      ) : teamsQuery.isError || assignedQuery.isError ? (
+        <p className="text-sm text-red-600">Failed to load teams.</p>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {isOfficial && (
+            <p className="text-sm text-gray-600">
+              This user is a match official. Select the teams they can manage on
+              match days.
+            </p>
+          )}
+
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {allTeams.map((team) => {
+              const teamId = team.id;
+              const isSelected = selectedTeams.has(teamId);
+              return (
+                <div
+                  key={teamId}
+                  className={`flex cursor-pointer items-center gap-2 rounded border px-3 py-2 text-sm transition-colors ${
+                    isSelected
+                      ? "border-blue-500 bg-blue-50 text-blue-800"
+                      : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <Checkbox
+                    id={`official-team-${teamId}`}
+                    checked={isSelected}
+                    onCheckedChange={() => toggleTeam(teamId)}
+                  />
+                  <Label
+                    htmlFor={`official-team-${teamId}`}
+                    className="cursor-pointer"
+                  >
+                    {team.name}
+                  </Label>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              disabled={!hasChanges || mutation.isPending}
+              onClick={handleSave}
+            >
+              {mutation.isPending
+                ? "Saving..."
+                : selectedTeams.size > 0
+                  ? "Save Team Assignments"
+                  : "Remove Official Role"}
+            </Button>
+            {isOfficial && (
               <Button
                 variant="outline"
                 size="sm"

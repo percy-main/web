@@ -128,13 +128,24 @@ export function MemberTable() {
                       </StatusPill>
                     </TableCell>
                     <TableCell>
-                      <StatusPill
-                        variant={
-                          user.role === "admin" ? "blue" : "gray"
-                        }
-                      >
-                        {user.role ?? "user"}
-                      </StatusPill>
+                      <div className="flex flex-wrap gap-1">
+                        {user.role === "admin" && (
+                          <StatusPill variant="blue">admin</StatusPill>
+                        )}
+                        {user.isJuniorManager && (
+                          <StatusPill variant="green">
+                            Junior Manager
+                          </StatusPill>
+                        )}
+                        {user.isOfficial && (
+                          <StatusPill variant="green">Official</StatusPill>
+                        )}
+                        {user.role !== "admin" &&
+                          !user.isJuniorManager &&
+                          !user.isOfficial && (
+                            <StatusPill variant="gray">user</StatusPill>
+                          )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

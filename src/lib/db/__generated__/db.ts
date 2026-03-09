@@ -38,6 +38,7 @@ export interface Charge {
   member_id: string;
   paid_at: string | null;
   payment_confirmed_at: string | null;
+  payment_method: string | null;
   source: Generated<string>;
   stripe_payment_intent_id: string | null;
   type: Generated<string>;
@@ -128,6 +129,40 @@ export interface JuniorTeam {
 export interface JuniorTeamManager {
   junior_team_id: string;
   user_id: string;
+}
+
+export interface Matchday {
+  confirmed_at: string | null;
+  confirmed_by: string | null;
+  created_at: Generated<string>;
+  created_by: string;
+  finished_at: string | null;
+  finished_by: string | null;
+  id: string | null;
+  match_date: string;
+  opposition: string;
+  play_cricket_team_id: string;
+  status: Generated<string>;
+}
+
+export interface MatchdayPlayer {
+  charge_id: string | null;
+  created_at: Generated<string>;
+  id: string | null;
+  matchday_id: string;
+  member_id: string | null;
+  player_name: string;
+  replaced_by_matchday_player_id: string | null;
+  status: Generated<string>;
+}
+
+export interface MatchFeeRate {
+  amount_pence: number;
+  competition_type: string | null;
+  created_at: Generated<string>;
+  id: string | null;
+  member_category: string;
+  play_cricket_team_id: string | null;
 }
 
 export interface MatchPerformanceBatting {
@@ -261,6 +296,11 @@ export interface Session {
   userId: string;
 }
 
+export interface TeamOfficial {
+  play_cricket_team_id: string;
+  user_id: string;
+}
+
 export interface TwoFactor {
   backupCodes: string;
   id: string;
@@ -303,8 +343,11 @@ export interface DB {
   game_sponsorship: GameSponsorship;
   junior_team: JuniorTeam;
   junior_team_manager: JuniorTeamManager;
+  match_fee_rate: MatchFeeRate;
   match_performance_batting: MatchPerformanceBatting;
   match_performance_bowling: MatchPerformanceBowling;
+  matchday: Matchday;
+  matchday_player: MatchdayPlayer;
   member: Member;
   membership: Membership;
   passkey: Passkey;
@@ -313,6 +356,7 @@ export interface DB {
   play_cricket_team: PlayCricketTeam;
   player_sponsorship: PlayerSponsorship;
   session: Session;
+  team_official: TeamOfficial;
   twoFactor: TwoFactor;
   user: User;
   verification: Verification;
