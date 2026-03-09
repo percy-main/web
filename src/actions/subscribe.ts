@@ -33,7 +33,9 @@ export const subscribe = defineAction({
           : {}),
       };
 
-      // Women's player monthly subscriptions auto-cancel at end of September
+      // Women's player monthly subscriptions auto-cancel at end of September.
+      // If joining in Oct–Dec, the cancel date rolls to next year's September.
+      // September joiners still get their month (cancel is end of Sep).
       let cancelAt: number | undefined;
       if (membership === "senior_women_player") {
         const now = new Date();

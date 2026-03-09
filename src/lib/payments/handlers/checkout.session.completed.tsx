@@ -68,19 +68,20 @@ export const checkoutSessionCompleted = async (
         metadata,
         amount_total,
       }) => {
-        // Women's player season fee covers until 31 Dec of the current year
+        // Women's player season fee covers until 31 Dec of the year payment was made
+        const paidAt = stripeDate(event.created);
         const isWomenSeasonFee =
           metadata.membership === "senior_women_player" &&
           line_items.data?.some((li) => li.price?.type === "one_time");
         const paidUntil = isWomenSeasonFee
-          ? new Date(new Date().getFullYear(), 11, 31, 23, 59, 59)
+          ? new Date(paidAt.getFullYear(), 11, 31, 23, 59, 59)
           : undefined;
 
         const membership = await updateMembership({
           membershipType: metadata.membership,
           email,
           addedDuration: invoiceLinesToDuration(line_items.data ?? []),
-          paidAt: stripeDate(event.created),
+          paidAt,
           paidUntil,
         });
 

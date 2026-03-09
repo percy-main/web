@@ -210,17 +210,18 @@ const handleMembership = async (
         ? { [`${price.recurring.interval}s`]: price.recurring.interval_count }
         : { days: 0 };
 
-  // Women's player season fee covers until 31 Dec of the current year
+  // Women's player season fee covers until 31 Dec of the year payment was made
+  const paidAt = stripeDate(event.created);
   const paidUntil =
     membershipType === "senior_women_player" && price.type === "one_time"
-      ? new Date(new Date().getFullYear(), 11, 31, 23, 59, 59)
+      ? new Date(paidAt.getFullYear(), 11, 31, 23, 59, 59)
       : undefined;
 
   const membership = await updateMembership({
     membershipType,
     email,
     addedDuration,
-    paidAt: stripeDate(event.created),
+    paidAt,
     paidUntil,
   });
 
