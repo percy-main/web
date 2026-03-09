@@ -7,6 +7,7 @@ import { join } from "./join";
 import { addDependents, dependents } from "./junior";
 import { juniorManager } from "./junior-manager";
 import { leaderboard } from "./leaderboard";
+import { matchday } from "./matchday";
 import { getMemberDetails, updateMemberDetails } from "./member-details";
 import { membership } from "./membership";
 import { playCricket } from "./play-cricket";
@@ -37,5 +38,6 @@ export const server = {
   createEventSubscriber,
   gameScore,
   leaderboard,
+  matchday,
   updateMemberDetails,
 };

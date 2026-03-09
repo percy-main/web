@@ -132,6 +132,7 @@ export interface JuniorTeamManager {
 }
 
 export interface Matchday {
+  competition_type: string | null;
   confirmed_at: string | null;
   confirmed_by: string | null;
   created_at: Generated<string>;
