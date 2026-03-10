@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -20,6 +22,7 @@ export function MemberTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [includeArchived, setIncludeArchived] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -39,12 +42,13 @@ export function MemberTable() {
   }, [search]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["admin", "listUsers", page, PAGE_SIZE, debouncedSearch],
+    queryKey: ["admin", "listUsers", page, PAGE_SIZE, debouncedSearch, includeArchived],
     queryFn: () =>
       actions.admin.listUsers({
         page,
         pageSize: PAGE_SIZE,
         search: debouncedSearch || undefined,
+        includeArchived,
       }),
   });
 
@@ -53,8 +57,8 @@ export function MemberTable() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Search */}
-      <div>
+      {/* Search & filters */}
+      <div className="flex items-center gap-4">
         <Input
           type="text"
           placeholder="Search by name or email..."
@@ -62,6 +66,19 @@ export function MemberTable() {
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-md"
         />
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="include-archived"
+            checked={includeArchived}
+            onCheckedChange={(checked) => {
+              setIncludeArchived(checked === true);
+              setPage(1);
+            }}
+          />
+          <Label htmlFor="include-archived" className="cursor-pointer text-sm text-gray-600">
+            Show archived
+          </Label>
+        </div>
       </div>
 
       {/* Table */}
@@ -100,17 +117,21 @@ export function MemberTable() {
                 return (
                   <TableRow
                     key={user.id}
-                    className="cursor-pointer"
+                    className={`cursor-pointer ${user.isArchived ? "opacity-50" : ""}`}
                     onClick={() => setSelectedUserId(user.id)}
                   >
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <StatusPill
-                        variant={user.isMember ? "green" : "red"}
-                      >
-                        {user.isMember ? "Member" : "Not Member"}
-                      </StatusPill>
+                      {user.isArchived ? (
+                        <StatusPill variant="red">Archived</StatusPill>
+                      ) : (
+                        <StatusPill
+                          variant={user.isMember ? "green" : "red"}
+                        >
+                          {user.isMember ? "Member" : "Not Member"}
+                        </StatusPill>
+                      )}
                     </TableCell>
                     <TableCell>
                       <StatusPill variant={membershipStatus.variant}>

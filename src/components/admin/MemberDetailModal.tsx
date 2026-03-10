@@ -1,3 +1,12 @@
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -23,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
+import { Textarea } from "@/components/ui/textarea";
 import {
   MEMBER_CATEGORIES,
   MEMBER_CATEGORY_LABELS,
@@ -85,6 +95,22 @@ export function MemberDetailModal({
 
         {detail && (
           <div className="flex flex-col gap-6">
+            {/* Archived banner */}
+            {detail.member?.deleted_at && (
+              <div className="rounded-md border border-red-200 bg-red-50 p-3">
+                <p className="text-sm font-medium text-red-800">
+                  This member was archived
+                  {detail.member.deleted_reason
+                    ? `: ${detail.member.deleted_reason}`
+                    : ""}
+                </p>
+                <p className="mt-1 text-xs text-red-600">
+                  Archived on{" "}
+                  {formatDate(detail.member.deleted_at, "dd/MM/yyyy HH:mm")}
+                </p>
+              </div>
+            )}
+
             {/* User Info */}
             <section>
               <h3 className="mb-2 text-lg font-medium">Account</h3>
@@ -386,6 +412,15 @@ export function MemberDetailModal({
             {/* Payments (charges) */}
             {detail.member && (
               <ChargesSection memberId={detail.member.id} />
+            )}
+
+            {/* Archive / Restore */}
+            {detail.member && (
+              <ArchiveSection
+                userId={userId}
+                memberId={detail.member.id}
+                isArchived={!!detail.member.deleted_at}
+              />
             )}
           </div>
         )}
@@ -1060,6 +1095,166 @@ function ChargesSection({ memberId }: { memberId: string }) {
           </Table>
         </div>
       )}
+    </section>
+  );
+}
+
+function ArchiveSection({
+  userId,
+  memberId,
+  isArchived,
+}: {
+  userId: string;
+  memberId: string;
+  isArchived: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const [archiveReason, setArchiveReason] = useState("");
+
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+
+  const archiveMutation = useMutation({
+    mutationFn: (reason: string) =>
+      actions.admin.archiveMember({ memberId, reason }),
+    onSuccess: (result) => {
+      if (result.error) {
+        setArchiveError(result.error.message || "Failed to archive member.");
+        return;
+      }
+      setShowArchiveDialog(false);
+      setArchiveReason("");
+      setArchiveError(null);
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "userDetail", userId],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "listUsers"] });
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: () => actions.admin.restoreMember({ memberId }),
+    onSuccess: (result) => {
+      if (result.error) {
+        setRestoreError(result.error.message || "Failed to restore member.");
+        return;
+      }
+      setRestoreError(null);
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "userDetail", userId],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "listUsers"] });
+    },
+  });
+
+  return (
+    <section>
+      <h3 className="mb-2 text-lg font-medium">
+        {isArchived ? "Restore Member" : "Archive Member"}
+      </h3>
+
+      {isArchived ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-gray-600">
+            This member is archived. Restoring will re-enable their account and
+            make them visible in member lists again.
+          </p>
+          <div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={restoreMutation.isPending}
+              onClick={() => restoreMutation.mutate()}
+            >
+              {restoreMutation.isPending ? "Restoring..." : "Restore Member"}
+            </Button>
+          </div>
+          {restoreError && (
+            <p className="text-sm text-red-600">
+              {restoreError}
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-gray-600">
+            Archiving will hide the member from lists and disable their account.
+            Members with active Stripe subscriptions must have their subscription
+            cancelled first.
+          </p>
+          <div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowArchiveDialog(true)}
+            >
+              Archive Member
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <AlertDialog
+        open={showArchiveDialog}
+        onOpenChange={(open) => {
+          if (archiveMutation.isPending) return;
+          if (!open) {
+            setArchiveReason("");
+            setArchiveError(null);
+          }
+          setShowArchiveDialog(open);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will hide the member from all lists, disable their login, and
+              archive any linked junior members. This action can be reversed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <Label htmlFor="archive-reason">
+              Reason for archiving
+            </Label>
+            <Textarea
+              id="archive-reason"
+              value={archiveReason}
+              onChange={(e) => setArchiveReason(e.target.value)}
+              placeholder="e.g. Left the club, requested removal..."
+              className="mt-1"
+              rows={2}
+            />
+          </div>
+          {archiveError && (
+            <p className="text-sm text-red-600">
+              {archiveError}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setArchiveReason("");
+                setArchiveError(null);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <Button
+              disabled={
+                !archiveReason.trim() || archiveMutation.isPending
+              }
+              onClick={() => archiveMutation.mutate(archiveReason)}
+              variant="destructive"
+            >
+              {archiveMutation.isPending
+                ? "Archiving..."
+                : "Archive Member"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

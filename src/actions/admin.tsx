@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth/server";
 import { client } from "@/lib/db/client";
 import { send } from "@/lib/email/send";
 import { memberCategorySchema } from "@/lib/member/categories";
+import { stripe } from "@/lib/payments/client";
 import { syncStripeCharges } from "@/lib/payments/syncStripeCharges";
 import { AGE_GROUPS, getAgeGroup, getTeamName } from "@/lib/util/ageGroup";
 import { nameSimilarity, normalizeName } from "@/lib/util/nameSimilarity";
@@ -25,38 +26,15 @@ export const admin = {
       page: z.number().int().min(1),
       pageSize: z.number().int().min(1).max(100),
       search: z.string().optional(),
+      includeArchived: z.boolean().default(false),
     }),
-    handler: async ({ page, pageSize, search }) => {
-      let baseQuery = client
-        .selectFrom("user")
-        .leftJoin("member", "member.email", "user.email")
-        .leftJoin("membership", (join) =>
-          join
-            .onRef("membership.member_id", "=", "member.id")
-            .on("membership.dependent_id", "is", null),
-        );
-
-      if (search && search.trim().length > 0) {
-        const term = `%${search.trim()}%`;
-        baseQuery = baseQuery.where((eb) =>
-          eb.or([
-            eb("user.name", "like", term),
-            eb("user.email", "like", term),
-          ]),
-        );
-      }
-
-      const countResult = await baseQuery
-        .select((eb) => eb.fn.countAll().as("total"))
-        .executeTakeFirstOrThrow();
-
-      const total = Number(countResult.total);
-
-      const offset = (page - 1) * pageSize;
-
-      const users = await (() => {
-        let q = client
-          .selectFrom("user")
+    handler: async ({ page, pageSize, search, includeArchived }) => {
+      function applyFilters(
+        q: ReturnType<
+          typeof client.selectFrom<"user">
+        >,
+      ) {
+        let filtered = q
           .leftJoin("member", "member.email", "user.email")
           .leftJoin("membership", (join) =>
             join
@@ -64,9 +42,18 @@ export const admin = {
               .on("membership.dependent_id", "is", null),
           );
 
+        if (!includeArchived) {
+          filtered = filtered.where((eb) =>
+            eb.or([
+              eb("member.deleted_at", "is", null),
+              eb("member.id", "is", null),
+            ]),
+          );
+        }
+
         if (search && search.trim().length > 0) {
           const term = `%${search.trim()}%`;
-          q = q.where((eb) =>
+          filtered = filtered.where((eb) =>
             eb.or([
               eb("user.name", "like", term),
               eb("user.email", "like", term),
@@ -74,41 +61,51 @@ export const admin = {
           );
         }
 
-        return q
-          .select([
-            "user.id",
-            "user.name",
-            "user.email",
-            "user.role",
-            "user.createdAt",
-            "member.id as memberId",
-            "member.member_category as memberCategory",
-            "membership.type as membershipType",
-            "membership.paid_until as paidUntil",
-          ])
-          .select((eb) => [
-            eb
-              .exists(
-                eb
-                  .selectFrom("junior_team_manager")
-                  .whereRef("junior_team_manager.user_id", "=", "user.id")
-                  .select(sql.lit(1).as("one")),
-              )
-              .as("isJuniorManager"),
-            eb
-              .exists(
-                eb
-                  .selectFrom("team_official")
-                  .whereRef("team_official.user_id", "=", "user.id")
-                  .select(sql.lit(1).as("one")),
-              )
-              .as("isOfficial"),
-          ])
-          .orderBy("user.createdAt", "desc")
-          .limit(pageSize)
-          .offset(offset)
-          .execute();
-      })();
+        return filtered;
+      }
+
+      const countResult = await applyFilters(client.selectFrom("user"))
+        .select((eb) => eb.fn.countAll().as("total"))
+        .executeTakeFirstOrThrow();
+
+      const total = Number(countResult.total);
+      const offset = (page - 1) * pageSize;
+
+      const users = await applyFilters(client.selectFrom("user"))
+        .select([
+          "user.id",
+          "user.name",
+          "user.email",
+          "user.role",
+          "user.createdAt",
+          "member.id as memberId",
+          "member.member_category as memberCategory",
+          "member.deleted_at as memberDeletedAt",
+          "membership.type as membershipType",
+          "membership.paid_until as paidUntil",
+        ])
+        .select((eb) => [
+          eb
+            .exists(
+              eb
+                .selectFrom("junior_team_manager")
+                .whereRef("junior_team_manager.user_id", "=", "user.id")
+                .select(sql.lit(1).as("one")),
+            )
+            .as("isJuniorManager"),
+          eb
+            .exists(
+              eb
+                .selectFrom("team_official")
+                .whereRef("team_official.user_id", "=", "user.id")
+                .select(sql.lit(1).as("one")),
+            )
+            .as("isOfficial"),
+        ])
+        .orderBy("user.createdAt", "desc")
+        .limit(pageSize)
+        .offset(offset)
+        .execute();
 
       return {
         users: users.map((u) => ({
@@ -118,6 +115,7 @@ export const admin = {
           role: u.role,
           createdAt: u.createdAt,
           isMember: u.memberId !== null,
+          isArchived: u.memberDeletedAt !== null,
           isJuniorManager: Boolean(u.isJuniorManager),
           isOfficial: Boolean(u.isOfficial),
           memberCategory: u.memberCategory ?? null,
@@ -190,6 +188,8 @@ export const admin = {
           "member.emergency_contact_name",
           "member.emergency_contact_telephone",
           "member.member_category",
+          "member.deleted_at",
+          "member.deleted_reason",
         ])
         .executeTakeFirst();
 
@@ -760,7 +760,8 @@ export const admin = {
             join
               .onRef("membership.dependent_id", "=", "dependent.id")
               .on("membership.type", "=", "junior"),
-          );
+          )
+          .where("member.deleted_at", "is", null);
 
         // sex filter at SQL level
         if (sex !== "all") {
@@ -1087,9 +1088,10 @@ export const admin = {
     handler: async () => {
       const NAME_SIMILARITY_THRESHOLD = 0.7;
 
-      // Fetch all members
+      // Fetch all non-archived members
       const allMembers = await client
         .selectFrom("member")
+        .where("deleted_at", "is", null)
         .select(["id", "name", "email", "title", "stripe_customer_id"])
         .execute();
 
@@ -1286,6 +1288,160 @@ export const admin = {
           charges: removeCharges,
         },
       };
+    },
+  }),
+
+  archiveMember: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      memberId: z.string(),
+      reason: z.string().min(1),
+    }),
+    handler: async ({ memberId, reason }, session) => {
+      const member = await client
+        .selectFrom("member")
+        .where("id", "=", memberId)
+        .select(["id", "email", "stripe_customer_id", "deleted_at"])
+        .executeTakeFirst();
+
+      if (!member) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Member not found",
+        });
+      }
+
+      if (member.deleted_at) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Member is already archived",
+        });
+      }
+
+      // Check for active or trialing Stripe subscriptions
+      if (member.stripe_customer_id) {
+        try {
+          const subscriptions = await stripe.subscriptions.list({
+            customer: member.stripe_customer_id,
+          });
+
+          const hasActiveSub = subscriptions.data.some(
+            (s) => s.status === "active" || s.status === "trialing",
+          );
+
+          if (hasActiveSub) {
+            throw new ActionError({
+              code: "BAD_REQUEST",
+              message:
+                "Cannot archive a member with an active Stripe subscription. Cancel their subscription first.",
+            });
+          }
+        } catch (e) {
+          if (e instanceof ActionError) throw e;
+          console.error("Failed to check Stripe subscriptions:", e);
+          throw new ActionError({
+            code: "BAD_REQUEST",
+            message:
+              "Unable to verify Stripe subscription status. Please check their subscriptions manually before archiving.",
+          });
+        }
+      }
+
+      const now = new Date().toISOString();
+
+      // Archive the member
+      await client
+        .updateTable("member")
+        .set({
+          deleted_at: now,
+          deleted_by: session.user.id,
+          deleted_reason: reason,
+        })
+        .where("id", "=", memberId)
+        .execute();
+
+      // Dependents are implicitly archived via their parent's archive status.
+      // Queries for dependents join on member, so archived parent = hidden dependents.
+
+      // Ban the user account so they can't log in
+      const user = await client
+        .selectFrom("user")
+        .where("email", "=", member.email)
+        .select("id")
+        .executeTakeFirst();
+
+      if (user) {
+        await client
+          .updateTable("user")
+          .set({
+            banned: 1,
+            banReason: `Member archived: ${reason}`,
+          })
+          .where("id", "=", user.id)
+          .execute();
+      }
+
+      return { success: true };
+    },
+  }),
+
+  restoreMember: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      memberId: z.string(),
+    }),
+    handler: async ({ memberId }) => {
+      const member = await client
+        .selectFrom("member")
+        .where("id", "=", memberId)
+        .select(["id", "email", "deleted_at"])
+        .executeTakeFirst();
+
+      if (!member) {
+        throw new ActionError({
+          code: "NOT_FOUND",
+          message: "Member not found",
+        });
+      }
+
+      if (!member.deleted_at) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Member is not archived",
+        });
+      }
+
+      // Restore the member
+      await client
+        .updateTable("member")
+        .set({
+          deleted_at: null,
+          deleted_by: null,
+          deleted_reason: null,
+        })
+        .where("id", "=", memberId)
+        .execute();
+
+      // Unban the user account
+      const user = await client
+        .selectFrom("user")
+        .where("email", "=", member.email)
+        .select("id")
+        .executeTakeFirst();
+
+      if (user) {
+        await client
+          .updateTable("user")
+          .set({
+            banned: null,
+            banReason: null,
+            banExpires: null,
+          })
+          .where("id", "=", user.id)
+          .execute();
+      }
+
+      return { success: true };
     },
   }),
 

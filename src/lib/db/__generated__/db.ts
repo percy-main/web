@@ -217,6 +217,9 @@ export interface MatchPerformanceBowling {
 export interface Member {
   address: string;
   contentful_entry_id: string | null;
+  deleted_at: string | null;
+  deleted_by: string | null;
+  deleted_reason: string | null;
   dob: string;
   email: string;
   emergency_contact_name: string;
