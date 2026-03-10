@@ -27,8 +27,13 @@ export const admin = {
       pageSize: z.number().int().min(1).max(100),
       search: z.string().optional(),
       includeArchived: z.boolean().default(false),
+      isMember: z.enum(["all", "yes", "no"]).default("all"),
+      membershipStatus: z.enum(["all", "active", "expired", "none"]).default("all"),
+      membershipType: z.enum(["all", "senior_player", "senior_women_player", "social", "junior", "concessionary"]).default("all"),
+      memberCategory: z.union([z.literal("all"), memberCategorySchema]).default("all"),
+      role: z.enum(["all", "user", "admin", "official", "junior_manager"]).default("all"),
     }),
-    handler: async ({ page, pageSize, search, includeArchived }) => {
+    handler: async ({ page, pageSize, search, includeArchived, isMember, membershipStatus, membershipType, memberCategory, role }) => {
       function applyFilters(
         q: ReturnType<
           typeof client.selectFrom<"user">
@@ -59,6 +64,42 @@ export const admin = {
               eb("user.email", "like", term),
             ]),
           );
+        }
+
+        if (isMember === "yes") {
+          filtered = filtered.where("member.id", "is not", null);
+        } else if (isMember === "no") {
+          filtered = filtered.where("member.id", "is", null);
+        }
+
+        if (membershipStatus === "active") {
+          filtered = filtered.where("membership.paid_until", ">=", new Date().toISOString());
+        } else if (membershipStatus === "expired") {
+          filtered = filtered
+            .where("membership.paid_until", "is not", null)
+            .where("membership.paid_until", "<", new Date().toISOString());
+        } else if (membershipStatus === "none") {
+          filtered = filtered.where("membership.paid_until", "is", null);
+        }
+
+        if (membershipType !== "all") {
+          filtered = filtered.where("membership.type", "=", membershipType);
+        }
+
+        if (memberCategory !== "all") {
+          filtered = filtered.where("member.member_category", "=", memberCategory);
+        }
+
+        if (role === "junior_manager") {
+          filtered = filtered.where((eb) =>
+            eb.exists(
+              eb.selectFrom("junior_team_manager")
+                .whereRef("junior_team_manager.user_id", "=", "user.id")
+                .select(sql.lit(1).as("one"))
+            )
+          );
+        } else if (role !== "all") {
+          filtered = filtered.where("user.role", "=", role);
         }
 
         return filtered;
