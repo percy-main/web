@@ -8,6 +8,16 @@ import Container from "@/layouts/Container.astro";
 import { INLINES } from "@contentful/rich-text-types";
 import type { Node } from "@contentful/rich-text-types";
 
+// People page grouping rules:
+// - People with hasLeftClub are excluded entirely.
+// - Each person's pageData roles are matched against role-based groups
+//   (Governance, Coaches, Captains, Grounds Team, Social Media). A person
+//   can appear in multiple role groups if they hold multiple roles.
+// - The "Players" section includes anyone who either:
+//     (a) appears in a game calendar item's team sheet (embedded entry), OR
+//     (b) doesn't belong to any role-based group (so everyone shows up somewhere).
+//   This means a coach who also plays will appear in both Coaches and Players.
+
 const people = _.sortBy(
   (await getCollection("person")).filter((p) => !p.data.hasLeftClub),
   (p) => p.data.name.split(" ")[1],
@@ -87,7 +97,11 @@ for (const person of people) {
     }
   }
 
-  if (playerIds.has(person.id)) {
+  const inAnyRoleGroup = roleGroups.some((group) => {
+    return allRoles.some((r) => group.match(r));
+  });
+
+  if (playerIds.has(person.id) || !inAnyRoleGroup) {
     grouped.get("Players")?.push({ person, roles: [] });
   }
 }
