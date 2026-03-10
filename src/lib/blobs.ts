@@ -16,23 +16,35 @@ function isNetlify(): boolean {
 }
 
 /**
+ * Convert a Uint8Array to a proper ArrayBuffer (not SharedArrayBuffer).
+ * Needed because Node's Buffer.buffer can be a SharedArrayBuffer.
+ */
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const ab = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(ab).set(bytes);
+  return ab;
+}
+
+/**
  * Store an image in blob storage. Returns the key used to retrieve it.
  */
 export async function storeReceiptImage(
-  imageBuffer: Buffer,
+  imageBytes: Uint8Array,
   contentType: string,
 ): Promise<string> {
   const key = randomUUID();
 
   if (isNetlify()) {
     const store = getStore(STORE_NAME);
-    await store.set(key, imageBuffer, { metadata: { contentType } });
+    await store.set(key, toArrayBuffer(imageBytes), {
+      metadata: { contentType },
+    });
   } else {
     // Local fallback: store on filesystem
     if (!existsSync(LOCAL_DIR)) {
       mkdirSync(LOCAL_DIR, { recursive: true });
     }
-    writeFileSync(join(LOCAL_DIR, key), imageBuffer);
+    writeFileSync(join(LOCAL_DIR, key), imageBytes);
     writeFileSync(
       join(LOCAL_DIR, `${key}.meta`),
       JSON.stringify({ contentType }),
@@ -48,7 +60,7 @@ export async function storeReceiptImage(
  */
 export async function getReceiptImage(
   key: string,
-): Promise<{ data: Buffer; contentType: string } | null> {
+): Promise<{ data: ArrayBuffer; contentType: string } | null> {
   if (isNetlify()) {
     const store = getStore(STORE_NAME);
     const blob = await store.getWithMetadata(key, { type: "arrayBuffer" });
@@ -57,14 +69,15 @@ export async function getReceiptImage(
     const contentType = parsed.success
       ? (parsed.data.contentType ?? "image/jpeg")
       : "image/jpeg";
-    return { data: Buffer.from(blob.data), contentType };
+    return { data: blob.data, contentType };
   }
 
   // Local fallback
   const filePath = join(LOCAL_DIR, key);
   if (!existsSync(filePath)) return null;
 
-  const data = readFileSync(filePath);
+  const fileBytes = readFileSync(filePath);
+  const data = toArrayBuffer(fileBytes);
   let contentType = "image/jpeg";
   const metaPath = join(LOCAL_DIR, `${key}.meta`);
   if (existsSync(metaPath)) {

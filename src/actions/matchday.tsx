@@ -1065,17 +1065,19 @@ export const matchday = {
           });
         }
         const contentType = match[1];
-        const imageBuffer = Buffer.from(match[2], "base64");
+        const imageBytes = new Uint8Array(
+          Buffer.from(match[2], "base64"),
+        );
 
         // Reject images larger than 500KB after decode
-        if (imageBuffer.length > 500_000) {
+        if (imageBytes.byteLength > 500_000) {
           throw new ActionError({
             code: "BAD_REQUEST",
             message: "Receipt image is too large. Maximum size is 500KB.",
           });
         }
 
-        const key = await storeReceiptImage(imageBuffer, contentType);
+        const key = await storeReceiptImage(imageBytes, contentType);
         receiptImageUrl = `/api/receipt/${key}`;
       }
 
