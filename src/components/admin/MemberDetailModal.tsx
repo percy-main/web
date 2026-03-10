@@ -1,6 +1,5 @@
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -1113,17 +1112,20 @@ function ArchiveSection({
   const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const [archiveReason, setArchiveReason] = useState("");
 
+  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+
   const archiveMutation = useMutation({
-    mutationFn: async (reason: string) => {
-      const result = await actions.admin.archiveMember({ memberId, reason });
+    mutationFn: (reason: string) =>
+      actions.admin.archiveMember({ memberId, reason }),
+    onSuccess: (result) => {
       if (result.error) {
-        throw new Error(result.error.message || "Failed to archive member.");
+        setArchiveError(result.error.message || "Failed to archive member.");
+        return;
       }
-      return result.data;
-    },
-    onSuccess: () => {
       setShowArchiveDialog(false);
       setArchiveReason("");
+      setArchiveError(null);
       void queryClient.invalidateQueries({
         queryKey: ["admin", "userDetail", userId],
       });
@@ -1132,14 +1134,13 @@ function ArchiveSection({
   });
 
   const restoreMutation = useMutation({
-    mutationFn: async () => {
-      const result = await actions.admin.restoreMember({ memberId });
+    mutationFn: () => actions.admin.restoreMember({ memberId }),
+    onSuccess: (result) => {
       if (result.error) {
-        throw new Error(result.error.message || "Failed to restore member.");
+        setRestoreError(result.error.message || "Failed to restore member.");
+        return;
       }
-      return result.data;
-    },
-    onSuccess: () => {
+      setRestoreError(null);
       void queryClient.invalidateQueries({
         queryKey: ["admin", "userDetail", userId],
       });
@@ -1169,9 +1170,9 @@ function ArchiveSection({
               {restoreMutation.isPending ? "Restoring..." : "Restore Member"}
             </Button>
           </div>
-          {restoreMutation.isError && (
+          {restoreError && (
             <p className="text-sm text-red-600">
-              Failed to restore member.
+              {restoreError}
             </p>
           )}
         </div>
@@ -1200,7 +1201,7 @@ function ArchiveSection({
           if (archiveMutation.isPending) return;
           if (!open) {
             setArchiveReason("");
-            archiveMutation.reset();
+            setArchiveError(null);
           }
           setShowArchiveDialog(open);
         }}
@@ -1226,36 +1227,31 @@ function ArchiveSection({
               rows={2}
             />
           </div>
-          {archiveMutation.isError && (
+          {archiveError && (
             <p className="text-sm text-red-600">
-              {archiveMutation.error instanceof Error
-                ? archiveMutation.error.message
-                : "Failed to archive member."}
+              {archiveError}
             </p>
           )}
           <AlertDialogFooter>
             <AlertDialogCancel
               onClick={() => {
                 setArchiveReason("");
-                archiveMutation.reset();
+                setArchiveError(null);
               }}
             >
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction
+            <Button
               disabled={
                 !archiveReason.trim() || archiveMutation.isPending
               }
-              onClick={(e) => {
-                e.preventDefault();
-                archiveMutation.mutate(archiveReason);
-              }}
-              className="bg-red-600 hover:bg-red-700"
+              onClick={() => archiveMutation.mutate(archiveReason)}
+              variant="destructive"
             >
               {archiveMutation.isPending
                 ? "Archiving..."
                 : "Archive Member"}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
