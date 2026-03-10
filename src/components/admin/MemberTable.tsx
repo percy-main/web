@@ -3,6 +3,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/Select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -16,6 +23,12 @@ import { useEffect, useRef, useState } from "react";
 import { MemberDetailModal } from "./MemberDetailModal";
 import { StatusPill, getMemberCategoryDisplay, getMembershipStatus, getMembershipTypeDisplay } from "./StatusPill";
 
+type MemberFilter = "all" | "yes" | "no";
+type MembershipStatusFilter = "all" | "active" | "expired" | "none";
+type MembershipTypeFilter = "all" | "senior_player" | "senior_women_player" | "social" | "junior" | "concessionary";
+type MemberCategoryFilter = "all" | "senior" | "junior" | "student" | "bursary" | "guest";
+type RoleFilter = "all" | "user" | "admin" | "junior_manager";
+
 const PAGE_SIZE = 20;
 
 export function MemberTable() {
@@ -23,6 +36,11 @@ export function MemberTable() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [includeArchived, setIncludeArchived] = useState(false);
+  const [memberFilter, setMemberFilter] = useState<MemberFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<MembershipStatusFilter>("all");
+  const [typeFilter, setTypeFilter] = useState<MembershipTypeFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<MemberCategoryFilter>("all");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -42,13 +60,18 @@ export function MemberTable() {
   }, [search]);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["admin", "listUsers", page, PAGE_SIZE, debouncedSearch, includeArchived],
+    queryKey: ["admin", "listUsers", page, PAGE_SIZE, debouncedSearch, includeArchived, memberFilter, statusFilter, typeFilter, categoryFilter, roleFilter],
     queryFn: () =>
       actions.admin.listUsers({
         page,
         pageSize: PAGE_SIZE,
         search: debouncedSearch || undefined,
         includeArchived,
+        isMember: memberFilter,
+        membershipStatus: statusFilter,
+        membershipType: typeFilter,
+        memberCategory: categoryFilter,
+        role: roleFilter,
       }),
   });
 
@@ -58,26 +81,104 @@ export function MemberTable() {
   return (
     <div className="flex flex-col gap-4">
       {/* Search & filters */}
-      <div className="flex items-center gap-4">
-        <Input
-          type="text"
-          placeholder="Search by name or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-md"
-        />
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="include-archived"
-            checked={includeArchived}
-            onCheckedChange={(checked) => {
-              setIncludeArchived(checked === true);
-              setPage(1);
-            }}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-4">
+          <Input
+            type="text"
+            placeholder="Search by name or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-md"
           />
-          <Label htmlFor="include-archived" className="cursor-pointer text-sm text-gray-600">
-            Show archived
-          </Label>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="include-archived"
+              checked={includeArchived}
+              onCheckedChange={(checked) => {
+                setIncludeArchived(checked === true);
+                setPage(1);
+              }}
+            />
+            <Label htmlFor="include-archived" className="cursor-pointer text-sm text-gray-600">
+              Show archived
+            </Label>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={memberFilter} onValueChange={(v) => { setMemberFilter(v as MemberFilter); setPage(1); }}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Member" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Members</SelectItem>
+              <SelectItem value="yes">Member</SelectItem>
+              <SelectItem value="no">Not Member</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as MembershipStatusFilter); setPage(1); }}>
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+              <SelectItem value="none">None</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v as MembershipTypeFilter); setPage(1); }}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="senior_player">Senior Player</SelectItem>
+              <SelectItem value="senior_women_player">Women's Player</SelectItem>
+              <SelectItem value="social">Social</SelectItem>
+              <SelectItem value="junior">Junior</SelectItem>
+              <SelectItem value="concessionary">Student / Concessionary</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v as MemberCategoryFilter); setPage(1); }}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="senior">Senior</SelectItem>
+              <SelectItem value="junior">Junior</SelectItem>
+              <SelectItem value="student">Student</SelectItem>
+              <SelectItem value="bursary">Bursary</SelectItem>
+              <SelectItem value="guest">Guest</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v as RoleFilter); setPage(1); }}>
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="Role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="user">User</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="junior_manager">Junior Manager</SelectItem>
+            </SelectContent>
+          </Select>
+          {(memberFilter !== "all" || statusFilter !== "all" || typeFilter !== "all" || categoryFilter !== "all" || roleFilter !== "all") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setMemberFilter("all");
+                setStatusFilter("all");
+                setTypeFilter("all");
+                setCategoryFilter("all");
+                setRoleFilter("all");
+                setPage(1);
+              }}
+            >
+              Clear filters
+            </Button>
+          )}
         </div>
       </div>
 
