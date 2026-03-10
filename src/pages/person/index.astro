@@ -5,8 +5,6 @@ import _ from "lodash";
 import { Breadcrumbs } from "astro-breadcrumbs";
 import { IoChevronForward } from "react-icons/io5";
 import Container from "@/layouts/Container.astro";
-import { INLINES } from "@contentful/rich-text-types";
-import type { Node } from "@contentful/rich-text-types";
 
 const people = _.sortBy(
   (await getCollection("person")).filter((p) => !p.data.hasLeftClub),
@@ -14,30 +12,6 @@ const people = _.sortBy(
 );
 
 type PersonEntry = (typeof people)[number];
-
-// Walk richtext documents to find people who've appeared in team sheets
-const calendarItems = await getCollection("calendarItem");
-const playerIds = new Set<string>();
-
-function walkNodes(node: Node) {
-  if (
-    node.nodeType === INLINES.EMBEDDED_ENTRY &&
-    node.data.target?.sys?.contentType?.sys?.id === "trustee"
-  ) {
-    playerIds.add(node.data.target.sys.id);
-  }
-  if ("content" in node && Array.isArray(node.content)) {
-    for (const child of node.content) {
-      walkNodes(child as Node);
-    }
-  }
-}
-
-for (const item of calendarItems) {
-  if (item.data.type === "game" && item.data.description) {
-    walkNodes(item.data.description);
-  }
-}
 
 const roleGroups = [
   {
@@ -87,7 +61,11 @@ for (const person of people) {
     }
   }
 
-  if (playerIds.has(person.id)) {
+  const inAnyRoleGroup = roleGroups.some((group) => {
+    return allRoles.some((r) => group.match(r));
+  });
+
+  if (!inAnyRoleGroup) {
     grouped.get("Players")?.push({ person, roles: [] });
   }
 }
