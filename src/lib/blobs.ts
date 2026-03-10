@@ -2,9 +2,14 @@ import { getStore } from "@netlify/blobs";
 import { randomUUID } from "crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
+import { z } from "zod";
 
 const STORE_NAME = "receipts";
 const LOCAL_DIR = ".data/receipts";
+
+const metaSchema = z.object({
+  contentType: z.string().optional(),
+});
 
 function isNetlify(): boolean {
   return !!process.env.NETLIFY;
@@ -48,9 +53,10 @@ export async function getReceiptImage(
     const store = getStore(STORE_NAME);
     const blob = await store.getWithMetadata(key, { type: "arrayBuffer" });
     if (!blob) return null;
-    const contentType =
-      (blob.metadata as Record<string, string>).contentType ||
-      "image/jpeg";
+    const parsed = metaSchema.safeParse(blob.metadata);
+    const contentType = parsed.success
+      ? (parsed.data.contentType ?? "image/jpeg")
+      : "image/jpeg";
     return { data: Buffer.from(blob.data), contentType };
   }
 
@@ -62,10 +68,12 @@ export async function getReceiptImage(
   let contentType = "image/jpeg";
   const metaPath = join(LOCAL_DIR, `${key}.meta`);
   if (existsSync(metaPath)) {
-    const meta = JSON.parse(readFileSync(metaPath, "utf-8")) as {
-      contentType?: string;
-    };
-    contentType = meta.contentType ?? contentType;
+    const parsed = metaSchema.safeParse(
+      JSON.parse(readFileSync(metaPath, "utf-8")),
+    );
+    if (parsed.success) {
+      contentType = parsed.data.contentType ?? contentType;
+    }
   }
 
   return { data, contentType };

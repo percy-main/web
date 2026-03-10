@@ -696,7 +696,7 @@ function ExpenseDetailView({
                     type="button"
                     className="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
                     onClick={() =>
-                      setViewingReceipt(expense.receiptImageUrl)
+                      setViewingReceipt(expense.receiptImageUrl ?? null)
                     }
                   >
                     View
@@ -721,7 +721,7 @@ function ExpenseDetailView({
             onClick={(e) => e.stopPropagation()}
           >
             <img
-              src={`/api/receipt/${viewingReceipt}`}
+              src={viewingReceipt}
               alt="Receipt"
               className="max-h-[85vh] max-w-full rounded-lg object-contain"
             />

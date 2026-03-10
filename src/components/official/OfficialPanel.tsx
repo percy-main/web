@@ -1260,7 +1260,7 @@ function ExpensesSection({
               onClick={(e) => e.stopPropagation()}
             >
               <img
-                src={`/api/receipt/${viewingReceipt}`}
+                src={viewingReceipt}
                 alt="Receipt"
                 className="max-h-[85vh] max-w-full rounded-lg object-contain"
               />

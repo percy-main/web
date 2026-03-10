@@ -53,7 +53,12 @@ export function compressImage(
         resolve(dataUrl);
       };
       img.onerror = () => reject(new Error("Failed to load image"));
-      img.src = e.target?.result as string;
+      const result = e.target?.result;
+      if (typeof result !== "string") {
+        reject(new Error("Unexpected FileReader result type"));
+        return;
+      }
+      img.src = result;
     };
     reader.onerror = () => reject(new Error("Failed to read file"));
     reader.readAsDataURL(file);

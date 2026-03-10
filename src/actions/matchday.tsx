@@ -1076,7 +1076,7 @@ export const matchday = {
         }
 
         const key = await storeReceiptImage(imageBuffer, contentType);
-        receiptImageUrl = key;
+        receiptImageUrl = `/api/receipt/${key}`;
       }
 
       const id = randomUUID();
