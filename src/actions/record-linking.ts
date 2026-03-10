@@ -13,6 +13,7 @@ export const recordLinking = {
     handler: async () => {
       const members = await client
         .selectFrom("member")
+        .where("deleted_at", "is", null)
         .select(["id", "name", "play_cricket_id", "contentful_entry_id"])
         .orderBy("name", "asc")
         .execute();
@@ -20,6 +21,7 @@ export const recordLinking = {
       const dependents = await client
         .selectFrom("dependent")
         .innerJoin("member", "member.id", "dependent.member_id")
+        .where("member.deleted_at", "is", null)
         .select([
           "dependent.id",
           "dependent.name",

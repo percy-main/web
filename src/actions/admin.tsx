@@ -1318,14 +1318,17 @@ export const admin = {
         });
       }
 
-      // Check for active Stripe subscription
+      // Check for active or trialing Stripe subscriptions
       if (member.stripe_customer_id) {
         const subscriptions = await stripe.subscriptions.list({
           customer: member.stripe_customer_id,
-          status: "active",
         });
 
-        if (subscriptions.data.length > 0) {
+        const hasActiveSub = subscriptions.data.some(
+          (s) => s.status === "active" || s.status === "trialing",
+        );
+
+        if (hasActiveSub) {
           throw new ActionError({
             code: "BAD_REQUEST",
             message:
@@ -1422,6 +1425,7 @@ export const admin = {
           .set({
             banned: null,
             banReason: null,
+            banExpires: null,
           })
           .where("id", "=", user.id)
           .execute();

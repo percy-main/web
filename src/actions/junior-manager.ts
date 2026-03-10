@@ -98,6 +98,7 @@ export const juniorManager = {
       const rows = await client
         .selectFrom("dependent")
         .innerJoin("member", "member.id", "dependent.member_id")
+        .where("member.deleted_at", "is", null)
         .where("dependent.sex", "=", team.sex)
         .select([
           "dependent.id",
@@ -151,6 +152,7 @@ export const juniorManager = {
       const row = await client
         .selectFrom("dependent")
         .innerJoin("member", "member.id", "dependent.member_id")
+        .where("member.deleted_at", "is", null)
         .where("dependent.id", "=", dependentId)
         .select([
           "dependent.id",

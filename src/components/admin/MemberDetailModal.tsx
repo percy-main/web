@@ -1185,7 +1185,14 @@ function ArchiveSection({
 
       <AlertDialog
         open={showArchiveDialog}
-        onOpenChange={setShowArchiveDialog}
+        onOpenChange={(open) => {
+          if (archiveMutation.isPending) return;
+          if (!open) {
+            setArchiveReason("");
+            archiveMutation.reset();
+          }
+          setShowArchiveDialog(open);
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
