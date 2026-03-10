@@ -30,7 +30,7 @@ export const admin = {
       isMember: z.enum(["all", "yes", "no"]).default("all"),
       membershipStatus: z.enum(["all", "active", "expired", "none"]).default("all"),
       membershipType: z.enum(["all", "senior_player", "senior_women_player", "social", "junior", "concessionary"]).default("all"),
-      memberCategory: z.enum(["all", "senior", "junior", "student", "bursary", "guest"]).default("all"),
+      memberCategory: z.union([z.literal("all"), memberCategorySchema]).default("all"),
       role: z.enum(["all", "user", "admin", "junior_manager"]).default("all"),
     }),
     handler: async ({ page, pageSize, search, includeArchived, isMember, membershipStatus, membershipType, memberCategory, role }) => {
@@ -90,7 +90,15 @@ export const admin = {
           filtered = filtered.where("member.member_category", "=", memberCategory);
         }
 
-        if (role !== "all") {
+        if (role === "junior_manager") {
+          filtered = filtered.where((eb) =>
+            eb.exists(
+              eb.selectFrom("junior_team_manager")
+                .whereRef("junior_team_manager.user_id", "=", "user.id")
+                .select(sql.lit(1).as("one"))
+            )
+          );
+        } else if (role !== "all") {
           filtered = filtered.where("user.role", "=", role);
         }
 

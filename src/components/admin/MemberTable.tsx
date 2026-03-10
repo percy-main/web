@@ -115,7 +115,7 @@ export function MemberTable() {
               <SelectItem value="no">Not Member</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as MembershipStatusFilter); setPage(1); }}>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as MembershipStatusFilter); if (v === "none") setTypeFilter("all"); setPage(1); }}>
             <SelectTrigger className="w-[170px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -126,7 +126,7 @@ export function MemberTable() {
               <SelectItem value="none">None</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v as MembershipTypeFilter); setPage(1); }}>
+          <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v as MembershipTypeFilter); setPage(1); }} disabled={statusFilter === "none"}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
@@ -163,7 +163,7 @@ export function MemberTable() {
               <SelectItem value="junior_manager">Junior Manager</SelectItem>
             </SelectContent>
           </Select>
-          {(memberFilter !== "all" || statusFilter !== "all" || typeFilter !== "all" || categoryFilter !== "all" || roleFilter !== "all") && (
+          {(memberFilter !== "all" || statusFilter !== "all" || typeFilter !== "all" || categoryFilter !== "all" || roleFilter !== "all" || includeArchived) && (
             <Button
               variant="ghost"
               size="sm"
@@ -173,6 +173,7 @@ export function MemberTable() {
                 setTypeFilter("all");
                 setCategoryFilter("all");
                 setRoleFilter("all");
+                setIncludeArchived(false);
                 setPage(1);
               }}
             >
