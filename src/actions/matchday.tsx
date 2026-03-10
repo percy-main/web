@@ -7,6 +7,7 @@ import { ActionError } from "astro:actions";
 import { BASE_URL } from "astro:env/client";
 import { PLAY_CRICKET_SITE_ID } from "astro:env/server";
 import { z } from "astro:schema";
+import { storeReceiptImage } from "@/lib/blobs";
 import { randomUUID } from "crypto";
 import { parse, isBefore, startOfDay, subDays, formatDate } from "date-fns";
 import { ChargeNotification } from "~/emails/ChargeNotification";
@@ -1017,8 +1018,9 @@ export const matchday = {
       expenseType: expenseTypeSchema,
       description: z.string().optional(),
       amountPence: z.number().int().min(0),
+      receiptImage: z.string().optional(),
     }),
-    handler: async ({ matchdayId, expenseType, description, amountPence }, { user }) => {
+    handler: async ({ matchdayId, expenseType, description, amountPence, receiptImage }, { user }) => {
       const matchday = await client
         .selectFrom("matchday")
         .where("id", "=", matchdayId)
@@ -1049,6 +1051,34 @@ export const matchday = {
         });
       }
 
+      // Store receipt image in blob storage if provided
+      let receiptImageUrl: string | null = null;
+      if (receiptImage) {
+        // Validate data URL format
+        const match = /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/.exec(
+          receiptImage,
+        );
+        if (!match) {
+          throw new ActionError({
+            code: "BAD_REQUEST",
+            message: "Invalid receipt image format.",
+          });
+        }
+        const contentType = match[1];
+        const imageBuffer = Buffer.from(match[2], "base64");
+
+        // Reject images larger than 500KB after decode
+        if (imageBuffer.length > 500_000) {
+          throw new ActionError({
+            code: "BAD_REQUEST",
+            message: "Receipt image is too large. Maximum size is 500KB.",
+          });
+        }
+
+        const key = await storeReceiptImage(imageBuffer, contentType);
+        receiptImageUrl = key;
+      }
+
       const id = randomUUID();
       await client
         .insertInto("matchday_expense")
@@ -1059,6 +1089,7 @@ export const matchday = {
           description: description ?? null,
           amount_pence: amountPence,
           created_by: user.id,
+          receipt_image_url: receiptImageUrl,
         })
         .execute();
 

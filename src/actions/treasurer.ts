@@ -358,4 +358,53 @@ export const treasurer = {
       };
     },
   }),
+
+  /** Get detailed expense list for viewing receipts (treasurer). */
+  getExpensesWithReceipts: defineAuthAction({
+    roles: ["admin"],
+    input: dateRangeInput,
+    handler: async ({ dateFrom, dateTo }) => {
+      let query = client
+        .selectFrom("matchday_expense")
+        .innerJoin("matchday", "matchday.id", "matchday_expense.matchday_id")
+        .leftJoin(
+          "play_cricket_team",
+          "play_cricket_team.id",
+          "matchday.play_cricket_team_id",
+        );
+
+      if (dateFrom)
+        query = query.where("matchday.match_date", ">=", dateFrom);
+      if (dateTo)
+        query = query.where("matchday.match_date", "<=", dateTo);
+
+      const expenses = await query
+        .select([
+          "matchday_expense.id",
+          "matchday_expense.expense_type",
+          "matchday_expense.description",
+          "matchday_expense.amount_pence",
+          "matchday_expense.receipt_image_url",
+          "matchday_expense.created_at",
+          "matchday.match_date",
+          "matchday.opposition",
+          "play_cricket_team.name as team_name",
+        ])
+        .orderBy("matchday.match_date", "desc")
+        .orderBy("matchday_expense.created_at", "asc")
+        .execute();
+
+      return expenses.map((e) => ({
+        id: e.id,
+        expenseType: e.expense_type,
+        description: e.description,
+        amountPence: e.amount_pence,
+        receiptImageUrl: e.receipt_image_url,
+        createdAt: e.created_at,
+        matchDate: e.match_date,
+        opposition: e.opposition,
+        teamName: e.team_name,
+      }));
+    },
+  }),
 };

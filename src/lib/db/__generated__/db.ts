@@ -155,6 +155,7 @@ export interface MatchdayExpense {
   expense_type: string;
   id: string;
   matchday_id: string;
+  receipt_image_url: string | null;
 }
 
 export interface MatchdayPlayer {

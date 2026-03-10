@@ -37,6 +37,7 @@ e2e-test-*.db*
 .sample
 .emails
 .better-auth
+.data/
 screenshots/
 ISSUES.md
 
