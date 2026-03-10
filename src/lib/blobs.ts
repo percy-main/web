@@ -11,13 +11,20 @@ const metaSchema = z.object({
   contentType: z.string().optional(),
 });
 
-function isNetlify(): boolean {
-  return !!process.env.NETLIFY;
+/**
+ * Check if Netlify Blobs environment context is available.
+ * The `getStore()` call requires NETLIFY_BLOBS_CONTEXT to be set.
+ */
+function hasBlobContext(): boolean {
+  return !!(
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    globalThis.netlifyBlobsContext ??
+    process.env.NETLIFY_BLOBS_CONTEXT
+  );
 }
 
 /**
  * Convert a Uint8Array to a proper ArrayBuffer (not SharedArrayBuffer).
- * Needed because Node's Buffer.buffer can be a SharedArrayBuffer.
  */
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   const ab = new ArrayBuffer(bytes.byteLength);
@@ -26,21 +33,30 @@ function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
 }
 
 /**
- * Store an image in blob storage. Returns the key used to retrieve it.
+ * Store a receipt image. Returns the URL to access the image.
+ *
+ * - When Netlify Blobs context is available: stores in blob storage,
+ *   returns `/api/receipt/<key>`.
+ * - When running locally: stores on filesystem, returns `/api/receipt/<key>`.
+ * - Otherwise (e.g. deploy preview without blob context): returns null,
+ *   signalling the caller should store the data URL directly in the DB.
  */
 export async function storeReceiptImage(
   imageBytes: Uint8Array,
   contentType: string,
-): Promise<string> {
+): Promise<string | null> {
   const key = randomUUID();
 
-  if (isNetlify()) {
+  if (hasBlobContext()) {
     const store = getStore(STORE_NAME);
     await store.set(key, toArrayBuffer(imageBytes), {
       metadata: { contentType },
     });
-  } else {
-    // Local fallback: store on filesystem
+    return `/api/receipt/${key}`;
+  }
+
+  // Local dev: store on filesystem
+  if (!process.env.NETLIFY) {
     if (!existsSync(LOCAL_DIR)) {
       mkdirSync(LOCAL_DIR, { recursive: true });
     }
@@ -49,19 +65,21 @@ export async function storeReceiptImage(
       join(LOCAL_DIR, `${key}.meta`),
       JSON.stringify({ contentType }),
     );
+    return `/api/receipt/${key}`;
   }
 
-  return key;
+  // Netlify without blob context (e.g. deploy preview): signal fallback
+  return null;
 }
 
 /**
- * Retrieve a receipt image from blob storage.
+ * Retrieve a receipt image from blob storage or local filesystem.
  * Returns null if not found.
  */
 export async function getReceiptImage(
   key: string,
 ): Promise<{ data: ArrayBuffer; contentType: string } | null> {
-  if (isNetlify()) {
+  if (hasBlobContext()) {
     const store = getStore(STORE_NAME);
     const blob = await store.getWithMetadata(key, { type: "arrayBuffer" });
     if (!blob) return null;

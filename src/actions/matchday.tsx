@@ -1077,8 +1077,10 @@ export const matchday = {
           });
         }
 
-        const key = await storeReceiptImage(imageBytes, contentType);
-        receiptImageUrl = `/api/receipt/${key}`;
+        const blobUrl = await storeReceiptImage(imageBytes, contentType);
+        // If blob storage is available, use the blob URL; otherwise fall back
+        // to storing the data URL directly in the DB (e.g. deploy previews)
+        receiptImageUrl = blobUrl ?? receiptImage;
       }
 
       const id = randomUUID();
