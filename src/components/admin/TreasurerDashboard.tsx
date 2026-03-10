@@ -538,6 +538,8 @@ function MatchdayExpenses({
   dateFrom: string;
   dateTo: string;
 }) {
+  const [showDetail, setShowDetail] = useState(false);
+
   const query = useQuery({
     queryKey: ["treasurer", "matchdayExpenses", dateFrom, dateTo],
     queryFn: () =>
@@ -568,38 +570,185 @@ function MatchdayExpenses({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
-          Matchday Expenses{" "}
-          <span className="text-base font-normal text-gray-500">
-            ({formatPence(data.total)} total)
+        <CardTitle className="flex items-center justify-between">
+          <span>
+            Matchday Expenses{" "}
+            <span className="text-base font-normal text-gray-500">
+              ({formatPence(data.total)} total)
+            </span>
           </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDetail(!showDetail)}
+          >
+            {showDetail ? "Summary" : "Detail"}
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Expense Type</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead className="text-right">Count</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.byType.map((row) => (
-              <TableRow key={row.type}>
-                <TableCell className="capitalize">
-                  {row.type.replace(/_/g, " ")}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatPence(row.total)}
-                </TableCell>
-                <TableCell className="text-right">{row.count}</TableCell>
+        {showDetail ? (
+          <ExpenseDetailView dateFrom={dateFrom} dateTo={dateTo} />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Expense Type</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Count</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {data.byType.map((row) => (
+                <TableRow key={row.type}>
+                  <TableCell className="capitalize">
+                    {row.type.replace(/_/g, " ")}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatPence(row.total)}
+                  </TableCell>
+                  <TableCell className="text-right">{row.count}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+const EXPENSE_TYPE_LABELS: Record<string, string> = {
+  umpire_fee: "Umpire Fee",
+  scorer_fee: "Scorer Fee",
+  match_ball: "Match Ball",
+  teas: "Teas",
+  miscellaneous: "Miscellaneous",
+};
+
+function ExpenseDetailView({
+  dateFrom,
+  dateTo,
+}: {
+  dateFrom: string;
+  dateTo: string;
+}) {
+  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
+
+  const query = useQuery({
+    queryKey: ["treasurer", "expensesWithReceipts", dateFrom, dateTo],
+    queryFn: () =>
+      actions.treasurer.getExpensesWithReceipts({
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      }),
+  });
+
+  const expenses = query.data?.data;
+
+  if (query.isLoading)
+    return <p className="text-gray-500">Loading expense details...</p>;
+
+  if (!expenses || expenses.length === 0)
+    return <p className="text-gray-500">No expenses found.</p>;
+
+  return (
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Match</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
+            <TableHead>Receipt</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {expenses.map((expense) => (
+            <TableRow key={expense.id}>
+              <TableCell className="whitespace-nowrap text-sm">
+                {expense.matchDate}
+              </TableCell>
+              <TableCell className="text-sm">
+                {expense.teamName && (
+                  <span className="text-gray-400">
+                    {expense.teamName}
+                    {" vs "}
+                  </span>
+                )}
+                {expense.opposition}
+              </TableCell>
+              <TableCell className="text-sm">
+                {EXPENSE_TYPE_LABELS[expense.expenseType] ??
+                  expense.expenseType}
+              </TableCell>
+              <TableCell className="text-sm text-gray-500">
+                {expense.description ?? "-"}
+              </TableCell>
+              <TableCell className="text-right text-sm">
+                {formatPence(expense.amountPence)}
+              </TableCell>
+              <TableCell>
+                {expense.receiptImageUrl ? (
+                  <button
+                    type="button"
+                    className="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                    onClick={() =>
+                      setViewingReceipt(expense.receiptImageUrl ?? null)
+                    }
+                  >
+                    View
+                  </button>
+                ) : (
+                  <span className="text-xs text-gray-400">-</span>
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      {/* Receipt image lightbox */}
+      {viewingReceipt && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setViewingReceipt(null)}
+        >
+          <div
+            className="relative max-h-[90vh] max-w-[90vw]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={viewingReceipt}
+              alt="Receipt"
+              className="max-h-[85vh] max-w-full rounded-lg object-contain"
+            />
+            <button
+              type="button"
+              className="absolute -top-3 -right-3 rounded-full bg-white p-1.5 text-gray-800 shadow hover:bg-gray-100"
+              onClick={() => setViewingReceipt(null)}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

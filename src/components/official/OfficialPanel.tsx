@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/Select";
+import { compressImage } from "@/lib/image-utils";
 import { useSession } from "@/lib/auth/client";
 import {
   QueryClient,
@@ -19,7 +20,7 @@ import {
 import { actions } from "astro:actions";
 import { navigate } from "astro:transitions/client";
 import { parse, format } from "date-fns";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   cash: "Cash",
@@ -389,6 +390,7 @@ function MatchdayView({
       expenseType: "umpire_fee" | "scorer_fee" | "match_ball" | "teas" | "miscellaneous";
       description?: string;
       amountPence: number;
+      receiptImage?: string;
     }) => actions.matchday.addExpense(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({
@@ -882,6 +884,7 @@ function ExpensesSection({
     description: string | null;
     amount_pence: number;
     created_at: string;
+    receipt_image_url: string | null;
   }>;
   isFinished: boolean;
   addExpenseMutation: ReturnType<typeof useMutation<unknown, Error, {
@@ -889,6 +892,7 @@ function ExpensesSection({
     expenseType: ExpenseType;
     description?: string;
     amountPence: number;
+    receiptImage?: string;
   }>>;
   deleteExpenseMutation: ReturnType<typeof useMutation<unknown, Error, string>>;
 }) {
@@ -898,6 +902,11 @@ function ExpensesSection({
   const [amount, setAmount] = useState("");
   const [matchBallUsed, setMatchBallUsed] = useState(true);
   const [matchBallCost, setMatchBallCost] = useState("");
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [receiptDataUrl, setReceiptDataUrl] = useState<string | null>(null);
+  const [compressing, setCompressing] = useState(false);
+  const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount_pence, 0);
 
@@ -906,6 +915,28 @@ function ExpensesSection({
     setAmount("");
     setMatchBallCost("");
     setMatchBallUsed(true);
+    setReceiptPreview(null);
+    setReceiptDataUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleReceiptCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCompressing(true);
+    try {
+      const dataUrl = await compressImage(file, {
+        maxDimension: 1200,
+        maxBytes: 400_000,
+      });
+      setReceiptPreview(dataUrl);
+      setReceiptDataUrl(dataUrl);
+    } catch {
+      alert("Failed to process image. Please try a smaller image.");
+    } finally {
+      setCompressing(false);
+    }
   };
 
   const handleExpenseTypeChange = (newType: ExpenseType) => {
@@ -924,11 +955,11 @@ function ExpensesSection({
           expenseType: "match_ball",
           description: "New match ball",
           amountPence,
+          receiptImage: receiptDataUrl ?? undefined,
         },
         {
           onSuccess: () => {
-            setMatchBallCost("");
-            setMatchBallUsed(true);
+            resetForm();
             setShowAddForm(false);
           },
         },
@@ -945,11 +976,11 @@ function ExpensesSection({
         expenseType,
         description: description.trim() || undefined,
         amountPence,
+        receiptImage: receiptDataUrl ?? undefined,
       },
       {
         onSuccess: () => {
-          setDescription("");
-          setAmount("");
+          resetForm();
           setShowAddForm(false);
         },
       },
@@ -995,15 +1026,28 @@ function ExpensesSection({
                   key={expenseId}
                   className="flex items-center justify-between rounded border border-gray-200 px-3 py-2"
                 >
-                  <div>
-                    <p className="text-sm font-medium">
-                      {EXPENSE_TYPE_LABELS[expense.expense_type] ??
-                        expense.expense_type}
-                    </p>
-                    {expense.description && (
-                      <p className="text-xs text-gray-500">
-                        {expense.description}
+                  <div className="flex items-center gap-2">
+                    <div>
+                      <p className="text-sm font-medium">
+                        {EXPENSE_TYPE_LABELS[expense.expense_type] ??
+                          expense.expense_type}
                       </p>
+                      {expense.description && (
+                        <p className="text-xs text-gray-500">
+                          {expense.description}
+                        </p>
+                      )}
+                    </div>
+                    {expense.receipt_image_url && (
+                      <button
+                        type="button"
+                        className="rounded bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                        onClick={() =>
+                          setViewingReceipt(expense.receipt_image_url)
+                        }
+                      >
+                        Receipt
+                      </button>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
@@ -1126,11 +1170,52 @@ function ExpensesSection({
                 </>
               )}
 
+              {/* Receipt image capture */}
+              <div>
+                <label className="mb-1 block text-sm font-medium">
+                  Receipt Photo (optional)
+                </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleReceiptCapture}
+                  className="block w-full text-sm text-gray-500 file:mr-3 file:rounded file:border-0 file:bg-gray-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200"
+                />
+                {compressing && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Processing image...
+                  </p>
+                )}
+                {receiptPreview && (
+                  <div className="mt-2">
+                    <img
+                      src={receiptPreview}
+                      alt="Receipt preview"
+                      className="h-24 w-auto rounded border border-gray-200 object-cover"
+                    />
+                    <button
+                      type="button"
+                      className="mt-1 text-xs text-red-600 hover:underline"
+                      onClick={() => {
+                        setReceiptPreview(null);
+                        setReceiptDataUrl(null);
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   onClick={handleAddExpense}
                   disabled={
                     addExpenseMutation.isPending ||
+                    compressing ||
                     (expenseType === "match_ball"
                       ? !matchBallUsed
                       : !amount)
@@ -1162,6 +1247,45 @@ function ExpensesSection({
           <p className="mt-2 text-sm text-red-600">
             Failed to remove expense.
           </p>
+        )}
+
+        {/* Receipt image lightbox */}
+        {viewingReceipt && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+            onClick={() => setViewingReceipt(null)}
+          >
+            <div
+              className="relative max-h-[90vh] max-w-[90vw]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={viewingReceipt}
+                alt="Receipt"
+                className="max-h-[85vh] max-w-full rounded-lg object-contain"
+              />
+              <button
+                type="button"
+                className="absolute -top-3 -right-3 rounded-full bg-white p-1.5 text-gray-800 shadow hover:bg-gray-100"
+                onClick={() => setViewingReceipt(null)}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
