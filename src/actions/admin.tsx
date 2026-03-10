@@ -31,7 +31,7 @@ export const admin = {
       membershipStatus: z.enum(["all", "active", "expired", "none"]).default("all"),
       membershipType: z.enum(["all", "senior_player", "senior_women_player", "social", "junior", "concessionary"]).default("all"),
       memberCategory: z.union([z.literal("all"), memberCategorySchema]).default("all"),
-      role: z.enum(["all", "user", "admin", "junior_manager"]).default("all"),
+      role: z.enum(["all", "user", "admin", "official", "junior_manager"]).default("all"),
     }),
     handler: async ({ page, pageSize, search, includeArchived, isMember, membershipStatus, membershipType, memberCategory, role }) => {
       function applyFilters(

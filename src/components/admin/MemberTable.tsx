@@ -27,7 +27,7 @@ type MemberFilter = "all" | "yes" | "no";
 type MembershipStatusFilter = "all" | "active" | "expired" | "none";
 type MembershipTypeFilter = "all" | "senior_player" | "senior_women_player" | "social" | "junior" | "concessionary";
 type MemberCategoryFilter = "all" | "senior" | "junior" | "student" | "bursary" | "guest";
-type RoleFilter = "all" | "user" | "admin" | "junior_manager";
+type RoleFilter = "all" | "user" | "admin" | "official" | "junior_manager";
 
 const PAGE_SIZE = 20;
 
@@ -160,6 +160,7 @@ export function MemberTable() {
               <SelectItem value="all">All Roles</SelectItem>
               <SelectItem value="user">User</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="official">Official</SelectItem>
               <SelectItem value="junior_manager">Junior Manager</SelectItem>
             </SelectContent>
           </Select>
