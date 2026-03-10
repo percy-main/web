@@ -1320,19 +1320,29 @@ export const admin = {
 
       // Check for active or trialing Stripe subscriptions
       if (member.stripe_customer_id) {
-        const subscriptions = await stripe.subscriptions.list({
-          customer: member.stripe_customer_id,
-        });
+        try {
+          const subscriptions = await stripe.subscriptions.list({
+            customer: member.stripe_customer_id,
+          });
 
-        const hasActiveSub = subscriptions.data.some(
-          (s) => s.status === "active" || s.status === "trialing",
-        );
+          const hasActiveSub = subscriptions.data.some(
+            (s) => s.status === "active" || s.status === "trialing",
+          );
 
-        if (hasActiveSub) {
+          if (hasActiveSub) {
+            throw new ActionError({
+              code: "BAD_REQUEST",
+              message:
+                "Cannot archive a member with an active Stripe subscription. Cancel their subscription first.",
+            });
+          }
+        } catch (e) {
+          if (e instanceof ActionError) throw e;
+          console.error("Failed to check Stripe subscriptions:", e);
           throw new ActionError({
             code: "BAD_REQUEST",
             message:
-              "Cannot archive a member with an active Stripe subscription. Cancel their subscription first.",
+              "Unable to verify Stripe subscription status. Please check their subscriptions manually before archiving.",
           });
         }
       }
