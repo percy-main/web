@@ -1,5 +1,10 @@
+import { LibsqlDialect } from "@libsql/kysely-libsql";
 import { createClient } from "@libsql/client/http";
+import { Kysely } from "kysely";
 import { z } from "zod";
+import type { DB } from "../db/__generated__/db";
+import { calculateFantasyScores } from "../fantasy/calculate-scores";
+import { getCurrentSeason } from "../fantasy/gameweek";
 import {
   GetMatchDetailResponse,
   GetMatchSummaryResponse,
@@ -545,6 +550,29 @@ export async function runSync(config: SyncConfig): Promise<SyncResult> {
     );
     if (result.errors.length > 0) {
       console.error("Sync errors:", result.errors.join("; "));
+    }
+
+    // Calculate fantasy scores after sync
+    try {
+      console.log("Calculating fantasy scores...");
+      const kyselyDb = new Kysely<DB>({
+        dialect: new LibsqlDialect({
+          url: config.dbUrl,
+          authToken: config.dbToken,
+        }),
+      });
+      try {
+        const season = getCurrentSeason();
+        const scoreResult = await calculateFantasyScores(kyselyDb, season);
+        console.log(
+          `Fantasy scores calculated: ${scoreResult.playerScoresUpserted} player scores, ${scoreResult.teamScoresUpserted} team scores`,
+        );
+      } finally {
+        await kyselyDb.destroy();
+      }
+    } catch (err) {
+      // Non-fatal — log but don't fail the sync
+      console.error("Fantasy score calculation failed:", err);
     }
 
     return result;

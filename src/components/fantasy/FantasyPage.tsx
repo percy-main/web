@@ -3,10 +3,11 @@ import { useSession } from "@/lib/auth/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
 import { useState } from "react";
+import { Leaderboard } from "./Leaderboard";
 import { TeamSelector } from "./TeamSelector";
 import { TeamsOverview } from "./TeamsOverview";
 
-const TABS = ["my-team", "all-teams"] as const;
+const TABS = ["my-team", "all-teams", "leaderboards"] as const;
 type Tab = (typeof TABS)[number];
 
 function getInitialTab(): Tab {
@@ -31,13 +32,17 @@ export function FantasyPage() {
     window.history.replaceState({}, "", url);
   };
 
-  if (session.isPending) {
-    return <p className="text-gray-500">Loading...</p>;
-  }
+  const isLoggedIn = !!session.data;
+  const isLoading = session.isPending;
 
-  if (!session.data) {
+  // If viewing a tab that requires auth and not logged in, redirect
+  if (!isLoading && !isLoggedIn && tab !== "leaderboards") {
     void navigate("/auth/login");
     return null;
+  }
+
+  if (isLoading && tab !== "leaderboards") {
+    return <p className="text-gray-500">Loading...</p>;
   }
 
   return (
@@ -54,14 +59,24 @@ export function FantasyPage() {
         </div>
         <Tabs value={tab} onValueChange={onTabChange}>
           <TabsList>
-            <TabsTrigger value="my-team">My Team</TabsTrigger>
-            <TabsTrigger value="all-teams">All Teams</TabsTrigger>
+            {isLoggedIn && <TabsTrigger value="my-team">My Team</TabsTrigger>}
+            {isLoggedIn && (
+              <TabsTrigger value="all-teams">All Teams</TabsTrigger>
+            )}
+            <TabsTrigger value="leaderboards">Leaderboards</TabsTrigger>
           </TabsList>
-          <TabsContent value="my-team">
-            <TeamSelector />
-          </TabsContent>
-          <TabsContent value="all-teams">
-            <TeamsOverview />
+          {isLoggedIn && (
+            <TabsContent value="my-team">
+              <TeamSelector />
+            </TabsContent>
+          )}
+          {isLoggedIn && (
+            <TabsContent value="all-teams">
+              <TeamsOverview />
+            </TabsContent>
+          )}
+          <TabsContent value="leaderboards">
+            <Leaderboard />
           </TabsContent>
         </Tabs>
       </div>

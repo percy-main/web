@@ -97,6 +97,20 @@ export interface FantasyPlayer {
   player_name: string;
 }
 
+export interface FantasyPlayerScore {
+  batting_points: Generated<number>;
+  bowling_points: Generated<number>;
+  created_at: Generated<string>;
+  fielding_points: Generated<number>;
+  gameweek_id: number;
+  id: Generated<number | null>;
+  match_id: string;
+  play_cricket_id: string;
+  season: string;
+  team_points: Generated<number>;
+  total_points: Generated<number>;
+}
+
 export interface FantasyTeam {
   created_at: Generated<string>;
   id: Generated<number | null>;
@@ -111,6 +125,15 @@ export interface FantasyTeamPlayer {
   id: Generated<number | null>;
   is_captain: Generated<number>;
   play_cricket_id: string;
+}
+
+export interface FantasyTeamScore {
+  created_at: Generated<string>;
+  fantasy_team_id: number;
+  gameweek_id: number;
+  id: Generated<number | null>;
+  season: string;
+  total_points: Generated<number>;
 }
 
 export interface GameScore {
@@ -411,8 +434,10 @@ export interface DB {
   dependent: Dependent;
   event_subscriber: EventSubscriber;
   fantasy_player: FantasyPlayer;
+  fantasy_player_score: FantasyPlayerScore;
   fantasy_team: FantasyTeam;
   fantasy_team_player: FantasyTeamPlayer;
+  fantasy_team_score: FantasyTeamScore;
   game_score: GameScore;
   game_sponsorship: GameSponsorship;
   junior_team: JuniorTeam;
