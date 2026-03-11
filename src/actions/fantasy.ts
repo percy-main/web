@@ -126,7 +126,7 @@ const populatePlayers = defineAuthAction({
     const countResult = await sql`
       SELECT count(*) as total FROM fantasy_player
     `.execute(client);
-    const total = Number((countResult.rows[0] as { total: number }).total);
+    const total = (countResult.rows[0] as { total: number }).total;
 
     return { total, inserted: Number(result.numAffectedRows ?? 0) };
   },
