@@ -18,8 +18,12 @@ export async function up(db: Kysely<unknown>): Promise<void> {
   await db.schema
     .createTable("fantasy_team_player")
     .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
-    .addColumn("fantasy_team_id", "integer", (col) => col.notNull())
-    .addColumn("play_cricket_id", "text", (col) => col.notNull())
+    .addColumn("fantasy_team_id", "integer", (col) =>
+      col.notNull().references("fantasy_team.id"),
+    )
+    .addColumn("play_cricket_id", "text", (col) =>
+      col.notNull().references("fantasy_player.play_cricket_id"),
+    )
     .addColumn("is_captain", "integer", (col) => col.notNull().defaultTo(0))
     .addColumn("gameweek_added", "integer", (col) => col.notNull())
     .addColumn("gameweek_removed", "integer")

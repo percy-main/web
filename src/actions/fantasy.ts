@@ -385,37 +385,126 @@ const saveTeam = defineAuthAction({
 
     const gameweek = getCurrentGameweek(currentSeason);
 
-    // Get or create team
-    let team = await client
-      .selectFrom("fantasy_team")
-      .where("user_id", "=", session.user.id)
-      .where("season", "=", currentSeason)
-      .selectAll()
-      .executeTakeFirst();
-
-    if (!team) {
-      // Create new team — this is the initial squad, no transfer limits
-      const result = await client
-        .insertInto("fantasy_team")
-        .values({
-          user_id: session.user.id,
-          season: currentSeason,
-        })
-        .returning("id")
-        .executeTakeFirstOrThrow();
-
-      team = await client
+    // Use a transaction to prevent race conditions on transfer limits
+    return await client.transaction().execute(async (trx) => {
+      // Get or create team
+      let teamId: number;
+      const existingTeam = await trx
         .selectFrom("fantasy_team")
-        .where("id", "=", result.id!)
-        .selectAll()
-        .executeTakeFirstOrThrow();
+        .where("user_id", "=", session.user.id)
+        .where("season", "=", currentSeason)
+        .select("id")
+        .executeTakeFirst();
 
-      // Insert all 11 players
-      for (const player of players) {
-        await client
+      if (!existingTeam) {
+        // Create new team — this is the initial squad, no transfer limits
+        const result = await trx
+          .insertInto("fantasy_team")
+          .values({
+            user_id: session.user.id,
+            season: currentSeason,
+          })
+          .returning("id")
+          .executeTakeFirstOrThrow();
+
+        teamId = result.id as number;
+
+        // Insert all 11 players
+        for (const player of players) {
+          await trx
+            .insertInto("fantasy_team_player")
+            .values({
+              fantasy_team_id: teamId,
+              play_cricket_id: player.playCricketId,
+              is_captain: player.isCaptain ? 1 : 0,
+              gameweek_added: gameweek,
+            })
+            .execute();
+        }
+
+        return { success: true, teamId };
+      }
+
+      teamId = existingTeam.id as number;
+
+      // Existing team — handle transfers
+      const currentPlayers = await trx
+        .selectFrom("fantasy_team_player")
+        .where("fantasy_team_id", "=", teamId)
+        .where("gameweek_added", "<=", gameweek)
+        .where((eb) =>
+          eb.or([
+            eb("gameweek_removed", "is", null),
+            eb("gameweek_removed", ">", gameweek),
+          ]),
+        )
+        .selectAll()
+        .execute();
+
+      const currentPlayerIds = new Set(
+        currentPlayers.map((p) => p.play_cricket_id),
+      );
+      const newPlayerIds = new Set(players.map((p) => p.playCricketId));
+
+      // Find players being added and removed
+      const playersToAdd = players.filter(
+        (p) => !currentPlayerIds.has(p.playCricketId),
+      );
+      const playersToRemove = currentPlayers.filter(
+        (p) => !newPlayerIds.has(p.play_cricket_id),
+      );
+
+      // Check transfer limit — only applies when modifying an existing squad
+      if (currentPlayers.length > 0 && playersToAdd.length > 0) {
+        const hasSquadFromBefore = currentPlayers.some(
+          (p) => p.gameweek_added < gameweek,
+        );
+
+        if (hasSquadFromBefore) {
+          // Count transfers already committed this gameweek (excluding the
+          // initial squad which was all added in an earlier gameweek).
+          // Players that were added this gameweek and are now being un-done
+          // (removed in this same request) effectively free up a transfer slot.
+          const addedThisWeekBeingRemoved = playersToRemove.filter(
+            (p) => p.gameweek_added === gameweek,
+          ).length;
+
+          // Count transfers already persisted this gameweek
+          const persistedTransfers = await trx
+            .selectFrom("fantasy_team_player")
+            .where("fantasy_team_id", "=", teamId)
+            .where("gameweek_added", "=", gameweek)
+            .select(sql<number>`COUNT(*)`.as("count"))
+            .executeTakeFirst();
+
+          const previousTransfers = persistedTransfers?.count ?? 0;
+          const netTransfers =
+            previousTransfers + playersToAdd.length - addedThisWeekBeingRemoved;
+
+          if (netTransfers > MAX_TRANSFERS_PER_GAMEWEEK) {
+            throw new ActionError({
+              code: "BAD_REQUEST",
+              message: `You can only make ${MAX_TRANSFERS_PER_GAMEWEEK} transfers per gameweek. You have used ${previousTransfers} already.`,
+            });
+          }
+        }
+      }
+
+      // Apply removals — mark gameweek_removed
+      for (const player of playersToRemove) {
+        await trx
+          .updateTable("fantasy_team_player")
+          .set({ gameweek_removed: gameweek })
+          .where("id", "=", player.id!)
+          .execute();
+      }
+
+      // Apply additions
+      for (const player of playersToAdd) {
+        await trx
           .insertInto("fantasy_team_player")
           .values({
-            fantasy_team_id: team.id!,
+            fantasy_team_id: teamId,
             play_cricket_id: player.playCricketId,
             is_captain: player.isCaptain ? 1 : 0,
             gameweek_added: gameweek,
@@ -423,109 +512,24 @@ const saveTeam = defineAuthAction({
           .execute();
       }
 
-      return { success: true, teamId: team.id };
-    }
-
-    // Existing team — handle transfers
-    const currentPlayers = await client
-      .selectFrom("fantasy_team_player")
-      .where("fantasy_team_id", "=", team.id!)
-      .where("gameweek_added", "<=", gameweek)
-      .where((eb) =>
-        eb.or([
-          eb("gameweek_removed", "is", null),
-          eb("gameweek_removed", ">", gameweek),
-        ]),
-      )
-      .selectAll()
-      .execute();
-
-    const currentPlayerIds = new Set(
-      currentPlayers.map((p) => p.play_cricket_id),
-    );
-    const newPlayerIds = new Set(players.map((p) => p.playCricketId));
-
-    // Find players being added and removed
-    const playersToAdd = players.filter(
-      (p) => !currentPlayerIds.has(p.playCricketId),
-    );
-    const playersToRemove = currentPlayers.filter(
-      (p) => !newPlayerIds.has(p.play_cricket_id),
-    );
-
-    // Check transfer limit (only if this isn't an initial squad)
-    if (currentPlayers.length > 0 && playersToAdd.length > 0) {
-      // Count transfers already used this gameweek
-      const existingTransfers = await client
-        .selectFrom("fantasy_team_player")
-        .where("fantasy_team_id", "=", team.id!)
-        .where("gameweek_added", "=", gameweek)
-        .select(sql<number>`COUNT(*)`.as("count"))
-        .executeTakeFirst();
-
-      // Only count as transfers if there was already a squad
-      const hasSquadFromBefore = currentPlayers.some(
-        (p) => p.gameweek_added < gameweek,
-      );
-
-      if (hasSquadFromBefore) {
-        const previousTransfers = existingTransfers?.count ?? 0;
-        const totalTransfers = previousTransfers + playersToAdd.length;
-        // We need to subtract players that were added this gameweek and are now being removed
-        // (undoing a transfer doesn't count)
-        const addedThisWeekBeingRemoved = playersToRemove.filter(
-          (p) => p.gameweek_added === gameweek,
-        ).length;
-        const netTransfers = totalTransfers - addedThisWeekBeingRemoved;
-
-        if (netTransfers > MAX_TRANSFERS_PER_GAMEWEEK) {
-          throw new ActionError({
-            code: "BAD_REQUEST",
-            message: `You can only make ${MAX_TRANSFERS_PER_GAMEWEEK} transfers per gameweek. You have used ${previousTransfers} already.`,
-          });
+      // Update captain designation for existing players
+      for (const player of players) {
+        if (currentPlayerIds.has(player.playCricketId)) {
+          const existing = currentPlayers.find(
+            (p) => p.play_cricket_id === player.playCricketId,
+          );
+          if (existing && (existing.is_captain === 1) !== player.isCaptain) {
+            await trx
+              .updateTable("fantasy_team_player")
+              .set({ is_captain: player.isCaptain ? 1 : 0 })
+              .where("id", "=", existing.id!)
+              .execute();
+          }
         }
       }
-    }
 
-    // Apply removals — mark gameweek_removed
-    for (const player of playersToRemove) {
-      await client
-        .updateTable("fantasy_team_player")
-        .set({ gameweek_removed: gameweek })
-        .where("id", "=", player.id!)
-        .execute();
-    }
-
-    // Apply additions
-    for (const player of playersToAdd) {
-      await client
-        .insertInto("fantasy_team_player")
-        .values({
-          fantasy_team_id: team.id!,
-          play_cricket_id: player.playCricketId,
-          is_captain: player.isCaptain ? 1 : 0,
-          gameweek_added: gameweek,
-        })
-        .execute();
-    }
-
-    // Update captain designation for existing players
-    for (const player of players) {
-      if (currentPlayerIds.has(player.playCricketId)) {
-        const existing = currentPlayers.find(
-          (p) => p.play_cricket_id === player.playCricketId,
-        );
-        if (existing && (existing.is_captain === 1) !== player.isCaptain) {
-          await client
-            .updateTable("fantasy_team_player")
-            .set({ is_captain: player.isCaptain ? 1 : 0 })
-            .where("id", "=", existing.id!)
-            .execute();
-        }
-      }
-    }
-
-    return { success: true, teamId: team.id };
+      return { success: true, teamId };
+    });
   },
 });
 

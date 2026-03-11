@@ -11,31 +11,73 @@
 /** Max transfers allowed per gameweek */
 export const MAX_TRANSFERS_PER_GAMEWEEK = 3;
 
-/** The current cricket season year */
-export function getCurrentSeason(): string {
-  const now = new Date();
-  return now.getFullYear().toString();
+/** Month (1-based) when the cricket season starts */
+const SEASON_START_MONTH = 4; // April
+
+/**
+ * Get UK date components using Intl.DateTimeFormat for reliable timezone handling.
+ * Returns numeric components in Europe/London time regardless of server timezone.
+ */
+function getUKDateComponents(date: Date = new Date()) {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    hour12: false,
+  });
+
+  const parts = fmt.formatToParts(date);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((p) => p.type === type)?.value ?? 0);
+
+  return {
+    year: get("year"),
+    month: get("month"), // 1-based
+    day: get("day"),
+    hour: get("hour"),
+    minute: get("minute"),
+    second: get("second"),
+  };
 }
 
 /**
- * Get the current UK date/time.
+ * Get the UK day of week (0 = Sunday, 6 = Saturday).
+ * Uses Intl.DateTimeFormat to avoid timezone issues.
  */
-function getUKNow(): Date {
-  const nowStr = new Date().toLocaleString("en-GB", {
+function getUKDayOfWeek(date: Date = new Date()): number {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/London",
+    weekday: "short",
   });
-  // Parse "DD/MM/YYYY, HH:MM:SS" format
-  const [datePart = "", timePart = ""] = nowStr.split(", ");
-  const [day, month, year] = datePart.split("/");
-  const [hours, minutes, seconds] = timePart.split(":");
-  return new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hours),
-    Number(minutes),
-    Number(seconds),
-  );
+  const weekday = fmt.format(date);
+  const dayMap: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  return dayMap[weekday] ?? 0;
+}
+
+/**
+ * The current cricket season year.
+ *
+ * Returns the current year if we're in April or later.
+ * Returns the previous year if we're in Jan–March (still in last year's season).
+ */
+export function getCurrentSeason(): string {
+  const { year, month } = getUKDateComponents();
+  if (month < SEASON_START_MONTH) {
+    return (year - 1).toString();
+  }
+  return year.toString();
 }
 
 /**
@@ -45,28 +87,37 @@ function getUKNow(): Date {
  * Open = Monday 00:00 to Friday 23:59 UK time.
  */
 export function isGameweekLocked(): boolean {
-  const ukNow = getUKNow();
-  const dayOfWeek = ukNow.getDay(); // 0 = Sunday, 6 = Saturday
+  const dayOfWeek = getUKDayOfWeek();
   return dayOfWeek === 0 || dayOfWeek === 6;
 }
 
 /**
  * Get the current gameweek number (1-based).
  *
- * Gameweek 1 starts from the first Monday on or after April 1st of the current
+ * Gameweek 1 starts from the first Monday on or after April 1st of the
  * season year. Each subsequent Monday starts a new gameweek.
  */
 export function getCurrentGameweek(season?: string): number {
   const year = Number(season ?? getCurrentSeason());
-  const ukNow = getUKNow();
+  const now = new Date();
+  const uk = getUKDateComponents(now);
 
-  // Find the first Monday on or after April 1st
-  const seasonStart = new Date(year, 3, 1); // April 1st
-  const dayOfWeek = seasonStart.getDay();
-  const daysUntilMonday = dayOfWeek === 0 ? 1 : dayOfWeek === 1 ? 0 : 8 - dayOfWeek;
-  const firstMonday = new Date(year, 3, 1 + daysUntilMonday);
+  // Find the first Monday on or after April 1st in UTC
+  // We work with UTC dates for the comparison since we only need day-level precision
+  const april1 = new Date(Date.UTC(year, 3, 1)); // April 1st UTC
+  const april1Day = april1.getUTCDay();
+  const daysUntilMonday =
+    april1Day === 0 ? 1 : april1Day === 1 ? 0 : 8 - april1Day;
+  const firstMonday = new Date(
+    Date.UTC(year, 3, 1 + daysUntilMonday),
+  );
 
-  const diffMs = ukNow.getTime() - firstMonday.getTime();
+  // Build a UTC date from UK components for comparison
+  const ukNowUtc = new Date(
+    Date.UTC(uk.year, uk.month - 1, uk.day, uk.hour, uk.minute, uk.second),
+  );
+
+  const diffMs = ukNowUtc.getTime() - firstMonday.getTime();
   if (diffMs < 0) return 1; // Before season start
 
   const diffWeeks = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
@@ -79,41 +130,21 @@ export function getCurrentGameweek(season?: string): number {
 export function getTransferWindowInfo(season?: string) {
   const locked = isGameweekLocked();
   const gameweek = getCurrentGameweek(season);
+  const dayOfWeek = getUKDayOfWeek();
 
-  // Calculate when the lock starts (next Saturday 00:00 UK time) or
-  // when it ends (next Monday 00:00 UK time)
-  const ukNow = getUKNow();
-  const dayOfWeek = ukNow.getDay();
-
-  let lockDate: Date;
+  let daysUntilChange: number;
   if (locked) {
-    // Calculate next Monday
-    const daysUntilMonday = dayOfWeek === 0 ? 1 : 2;
-    lockDate = new Date(
-      ukNow.getFullYear(),
-      ukNow.getMonth(),
-      ukNow.getDate() + daysUntilMonday,
-      0,
-      0,
-      0,
-    );
+    // Next Monday
+    daysUntilChange = dayOfWeek === 0 ? 1 : 2;
   } else {
-    // Calculate next Saturday
-    const daysUntilSaturday = 6 - dayOfWeek;
-    lockDate = new Date(
-      ukNow.getFullYear(),
-      ukNow.getMonth(),
-      ukNow.getDate() + daysUntilSaturday,
-      0,
-      0,
-      0,
-    );
+    // Next Saturday
+    daysUntilChange = 6 - dayOfWeek;
   }
 
   return {
     locked,
     gameweek,
-    /** If locked: when editing reopens. If open: when editing locks. */
-    nextChangeAt: lockDate.toISOString(),
+    /** Days until the next state change */
+    daysUntilChange,
   };
 }

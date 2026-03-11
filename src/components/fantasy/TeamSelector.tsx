@@ -171,7 +171,7 @@ export function TeamSelector() {
               Editing reopens Monday 00:00 UK time
             </span>
           )}
-          {teamData?.transferWindowInfo?.nextChangeAt && !locked && (
+          {!locked && (
             <span className="text-sm text-gray-500">
               Locks Saturday 00:00 UK time
             </span>
