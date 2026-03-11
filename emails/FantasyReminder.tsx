@@ -47,9 +47,9 @@ const Component: FC<Props> = ({
           <strong>Friday 23:59 UK time</strong>.
         </Text>
         <Text style={styles.paragraph}>
-          You haven&apos;t made any changes to your squad this week. Now is a
-          good time to review your team, make transfers, or change your captain
-          before the deadline.
+          You haven&apos;t made any transfers this week. Now is a good time to
+          review your team, consider transfers, or update your captain before
+          the deadline.
         </Text>
         <Section style={styles.btnContainer}>
           <Button style={styles.button} href={fantasyUrl}>

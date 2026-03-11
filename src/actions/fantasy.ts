@@ -960,8 +960,7 @@ const getPlayerLeaderboard = defineAction({
  * Get detailed gameweek results for a specific team.
  * Shows team snapshot (who was on the team) and per-player points breakdown.
  */
-const getGameweekDetail = defineAuthAction({
-  requireVerifiedEmail: true,
+const getGameweekDetail = defineAction({
   input: z.object({
     season: z.string().optional(),
     gameweek: z.number(),
@@ -1099,8 +1098,7 @@ const getGameweekDetail = defineAuthAction({
  * Get week-by-week season timeline for a team.
  * Returns cumulative and per-week points for charting.
  */
-const getSeasonTimeline = defineAuthAction({
-  requireVerifiedEmail: true,
+const getSeasonTimeline = defineAction({
   input: z.object({
     season: z.string().optional(),
     teamId: z.number(),
@@ -1227,55 +1225,6 @@ const getTransferWindowPublic = defineAction({
   },
 });
 
-/**
- * Get participants who haven't made changes this gameweek.
- * Used by the reminder notification system.
- */
-const getInactiveParticipants = defineAuthAction({
-  roles: ["admin"],
-  input: z.object({
-    season: z.string().optional(),
-  }),
-  handler: async ({ season }) => {
-    const currentSeason = season ?? getCurrentSeason();
-    const gameweek = getCurrentGameweek(currentSeason);
-
-    if (gameweek === 0) {
-      return { participants: [], gameweek: 0 };
-    }
-
-    // Get all teams for this season with their owners
-    const teams = await client
-      .selectFrom("fantasy_team as ft")
-      .innerJoin("user as u", "u.id", "ft.user_id")
-      .where("ft.season", "=", currentSeason)
-      .select(["ft.id", "u.id as userId", "u.name", "u.email"])
-      .execute();
-
-    // For each team, check if any changes (transfers or captain change) were made this gameweek
-    const inactive = [];
-    for (const team of teams) {
-      const changesThisWeek = await client
-        .selectFrom("fantasy_team_player")
-        .where("fantasy_team_id", "=", requireId(team.id))
-        .where("gameweek_added", "=", gameweek)
-        .select(sql<number>`COUNT(*)`.as("count"))
-        .executeTakeFirst();
-
-      if ((changesThisWeek?.count ?? 0) === 0) {
-        inactive.push({
-          teamId: team.id,
-          userId: team.userId,
-          name: team.name,
-          email: team.email,
-        });
-      }
-    }
-
-    return { participants: inactive, gameweek };
-  },
-});
-
 // ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
@@ -1298,5 +1247,4 @@ export const fantasy = {
   getSeasonTimeline,
   getPlayerHistory,
   getTransferWindowPublic,
-  getInactiveParticipants,
 };

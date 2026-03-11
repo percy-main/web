@@ -13,17 +13,19 @@ export function MyHistory() {
     queryFn: () => actions.fantasy.getMyTeam({}),
   });
 
-  const weeklyQuery = useQuery({
-    queryKey: ["fantasy", "weeklyLeaderboard"],
+  const teamData = myTeamQuery.data?.data;
+  const team = teamData?.team;
+
+  const timelineQuery = useQuery({
+    queryKey: ["fantasy", "seasonTimeline", team?.id],
     queryFn: async () => {
-      const res = await actions.fantasy.getWeeklyLeaderboard({});
+      if (team?.id == null) return null;
+      const res = await actions.fantasy.getSeasonTimeline({ teamId: team.id });
       if (res.error) throw res.error;
       return res.data;
     },
+    enabled: team?.id != null,
   });
-
-  const teamData = myTeamQuery.data?.data;
-  const team = teamData?.team;
 
   if (myTeamQuery.isLoading) {
     return <p className="text-sm text-gray-500">Loading...</p>;
@@ -48,7 +50,10 @@ export function MyHistory() {
     );
   }
 
-  const availableGameweeks = weeklyQuery.data?.availableGameweeks ?? [];
+  // Derive available gameweeks from the timeline data
+  const availableGameweeks = (timelineQuery.data?.timeline ?? [])
+    .map((t) => t.gameweek)
+    .sort((a, b) => b - a); // newest first
 
   return (
     <div className="flex flex-col gap-6">

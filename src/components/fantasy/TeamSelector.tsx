@@ -49,8 +49,11 @@ export function TeamSelector() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (players: Array<{ playCricketId: string; isCaptain: boolean }>) =>
-      actions.fantasy.saveTeam({ players }),
+    mutationFn: async (players: Array<{ playCricketId: string; isCaptain: boolean }>) => {
+      const res = await actions.fantasy.saveTeam({ players });
+      if (res.error) throw res.error;
+      return res.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["fantasy", "myTeam"] });
     },
