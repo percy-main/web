@@ -62,18 +62,18 @@ export async function POST({ request }: APIContext): Promise<Response> {
   let sent = 0;
 
   for (const team of teams) {
-    if (activeTeamIds.has(team.id)) {
+    if (team.id != null && activeTeamIds.has(team.id)) {
       continue; // User has made transfers, skip
     }
 
     try {
       const html = await render(
-        FantasyReminder.component({
-          imageBaseUrl,
-          name: team.name ?? "there",
-          gameweek,
-          fantasyUrl: `${siteUrl}/members/fantasy`,
-        }),
+        <FantasyReminder.component
+          imageBaseUrl={imageBaseUrl}
+          name={team.name ?? "there"}
+          gameweek={gameweek}
+          fantasyUrl={`${siteUrl}/members/fantasy`}
+        />,
       );
 
       await send({
