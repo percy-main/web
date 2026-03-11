@@ -30,9 +30,11 @@ import { getGW1StartDate } from "./gameweek";
 function parseMatchDate(ddmmyyyy: string): Date {
   const [dd, mm, yyyy] = ddmmyyyy.split("/");
   return new Date(
-    parseInt(yyyy ?? "0"),
-    parseInt(mm ?? "1") - 1,
-    parseInt(dd ?? "1"),
+    Date.UTC(
+      parseInt(yyyy ?? "0"),
+      parseInt(mm ?? "1") - 1,
+      parseInt(dd ?? "1"),
+    ),
   );
 }
 
