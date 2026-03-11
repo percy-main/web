@@ -187,6 +187,8 @@ export function calculateBattingPoints(
   const runs = input.runs * s.perRun;
   const fours = input.fours * s.perFour;
   const sixes = input.sixes * s.perSix;
+  // Milestone bonuses are mutually exclusive: a century earns hundredBonus only,
+  // not both fiftyBonus and hundredBonus. This matches standard fantasy cricket conventions.
   const fiftyBonus = input.runs >= 50 && input.runs < 100 ? s.fiftyBonus : 0;
   const hundredBonus = input.runs >= 100 ? s.hundredBonus : 0;
   const duckPenalty =

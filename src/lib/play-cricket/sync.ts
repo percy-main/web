@@ -36,7 +36,7 @@ function randomId(): string {
   return crypto.randomUUID();
 }
 
-const NOT_OUT_CODES = new Set(["no", "dnb", "rtd", ""]);
+const NOT_OUT_CODES = new Set(["no", "dnb", "rtd", "ro", "ret out", ""]);
 
 function isNotOut(howOut: string | null | undefined): boolean {
   if (!howOut) return true;
@@ -428,7 +428,11 @@ async function syncMatches(
                 (id, match_id, player_id, player_name, team_id, competition_type, match_date, season, catches, run_outs, stumpings, is_wicketkeeper)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(match_id, player_id) DO UPDATE SET
-                  player_name = ?, catches = ?, run_outs = ?, stumpings = ?, is_wicketkeeper = ?`,
+                  player_name = ?,
+                  catches = match_performance_fielding.catches + excluded.catches,
+                  run_outs = match_performance_fielding.run_outs + excluded.run_outs,
+                  stumpings = match_performance_fielding.stumpings + excluded.stumpings,
+                  is_wicketkeeper = MAX(match_performance_fielding.is_wicketkeeper, excluded.is_wicketkeeper)`,
               args: [
                 randomId(),
                 matchId,
@@ -443,41 +447,42 @@ async function syncMatches(
                 agg.stumpings,
                 agg.isWicketkeeper ? 1 : 0,
                 agg.playerName,
-                agg.catches,
-                agg.runOuts,
-                agg.stumpings,
-                agg.isWicketkeeper ? 1 : 0,
               ],
             });
           }
         }
       }
 
-      // Store match result
-      await db.execute({
-        sql: `INSERT INTO match_result
-          (id, match_id, home_team_id, away_team_id, home_team_name, away_team_name, result, result_description, result_applied_to, competition_type, match_date, season)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ON CONFLICT(match_id) DO UPDATE SET
-            result = ?, result_description = ?, result_applied_to = ?`,
-        args: [
-          randomId(),
-          matchId,
-          detail.home_team_id,
-          detail.away_team_id,
-          detail.home_team_name,
-          detail.away_team_name,
-          detail.result ?? "",
-          detail.result_description ?? "",
-          detail.result_applied_to ?? "",
-          match.competition_type ?? "",
-          match.match_date,
-          season,
-          detail.result ?? "",
-          detail.result_description ?? "",
-          detail.result_applied_to ?? "",
-        ],
-      });
+      // Store match result — only when a result has been entered in Play Cricket.
+      // Matches without a result yet will be re-processed on the next sync since
+      // they won't appear in the processedMatchIds set (which queries match_result).
+      const matchResult = (detail.result ?? "").trim();
+      if (matchResult) {
+        await db.execute({
+          sql: `INSERT INTO match_result
+            (id, match_id, home_team_id, away_team_id, home_team_name, away_team_name, result, result_description, result_applied_to, competition_type, match_date, season)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(match_id) DO UPDATE SET
+              result = ?, result_description = ?, result_applied_to = ?`,
+          args: [
+            randomId(),
+            matchId,
+            detail.home_team_id,
+            detail.away_team_id,
+            detail.home_team_name,
+            detail.away_team_name,
+            matchResult,
+            detail.result_description ?? "",
+            detail.result_applied_to ?? "",
+            match.competition_type ?? "",
+            match.match_date,
+            season,
+            matchResult,
+            detail.result_description ?? "",
+            detail.result_applied_to ?? "",
+          ],
+        });
+      }
 
       matchesProcessed++;
       console.log(`Processed match ${matchId}`);
