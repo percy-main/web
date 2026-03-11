@@ -1,18 +1,31 @@
 /**
  * Gameweek logic for fantasy cricket.
  *
- * Editing window: Monday 00:00 to Friday 23:59 UK time.
- * Locked: Saturday 00:00 to Sunday 23:59 UK time.
+ * The fantasy season follows the cricket season calendar year.
+ * Each gameweek runs Saturday to Friday, aligned with weekend matches.
  *
- * Gameweek numbering starts from the season start date (first Monday of the
- * cricket season). Each gameweek runs Monday–Sunday.
+ * Lock deadline: Friday 23:59 UK time — teams are locked for the weekend.
+ * Editing reopens: Monday 00:00 UK time.
+ *
+ * Pre-season (gameweek 0): before GW1 starts, unlimited team changes allowed.
+ * In-season (gameweek 1+): max 3 transfers per gameweek, unless it's the
+ * player's first-ever squad selection (which is always unlimited).
  */
 
-/** Max transfers allowed per gameweek */
+/** Max transfers allowed per gameweek (after initial squad has been locked) */
 export const MAX_TRANSFERS_PER_GAMEWEEK = 3;
 
-/** Month (1-based) when the cricket season starts */
-const SEASON_START_MONTH = 4; // April
+/**
+ * Season start dates — the Saturday that Gameweek 1 begins.
+ * Add a new entry each year before the season starts.
+ */
+const SEASON_GW1_DATES: Record<string, string> = {
+  "2026": "2026-04-18",
+};
+
+// ---------------------------------------------------------------------------
+// UK timezone helpers
+// ---------------------------------------------------------------------------
 
 /**
  * Get UK date components using Intl.DateTimeFormat for reliable timezone handling.
@@ -46,7 +59,6 @@ function getUKDateComponents(date: Date = new Date()) {
 
 /**
  * Get the UK day of week (0 = Sunday, 6 = Saturday).
- * Uses Intl.DateTimeFormat to avoid timezone issues.
  */
 function getUKDayOfWeek(date: Date = new Date()): number {
   const fmt = new Intl.DateTimeFormat("en-GB", {
@@ -66,85 +78,120 @@ function getUKDayOfWeek(date: Date = new Date()): number {
   return dayMap[weekday] ?? 0;
 }
 
+/** Build a UTC Date from UK date components (for date comparisons). */
+function ukComponentsToUTC(uk: ReturnType<typeof getUKDateComponents>): Date {
+  return new Date(
+    Date.UTC(uk.year, uk.month - 1, uk.day, uk.hour, uk.minute, uk.second),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Season & gameweek calculations
+// ---------------------------------------------------------------------------
+
 /**
- * The current cricket season year.
+ * The GW1 start date for a season (as a UTC Date at 00:00).
+ * Falls back to April 18 of the season year if not explicitly configured.
+ */
+export function getGW1StartDate(season: string): Date {
+  const dateStr = SEASON_GW1_DATES[season];
+  if (dateStr) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    return new Date(Date.UTC(y!, m! - 1, d!));
+  }
+  return new Date(Date.UTC(Number(season), 3, 18));
+}
+
+/**
+ * The current fantasy cricket season year.
  *
- * Returns the current year if we're in April or later.
- * Returns the previous year if we're in Jan–March (still in last year's season).
+ * Always returns the current calendar year. Pre-season for the upcoming
+ * season begins in January; the season itself starts on the GW1 date.
  */
 export function getCurrentSeason(): string {
-  const { year, month } = getUKDateComponents();
-  if (month < SEASON_START_MONTH) {
-    return (year - 1).toString();
-  }
+  const { year } = getUKDateComponents();
   return year.toString();
 }
 
 /**
- * Check if the gameweek editing window is currently locked.
+ * Get the current gameweek number.
  *
- * Locked = Saturday 00:00 to Sunday 23:59 UK time.
- * Open = Monday 00:00 to Friday 23:59 UK time.
+ * Returns 0 for pre-season (before GW1 start date).
+ * Returns 1+ during the season (each week runs Saturday to Friday).
  */
-export function isGameweekLocked(): boolean {
-  const dayOfWeek = getUKDayOfWeek();
-  return dayOfWeek === 0 || dayOfWeek === 6;
+export function getCurrentGameweek(season?: string): number {
+  const s = season ?? getCurrentSeason();
+  const gw1 = getGW1StartDate(s);
+  const ukNow = ukComponentsToUTC(getUKDateComponents());
+
+  if (ukNow.getTime() < gw1.getTime()) return 0; // Pre-season
+
+  const diffMs = ukNow.getTime() - gw1.getTime();
+  const diffWeeks = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
+  return diffWeeks + 1;
 }
 
 /**
- * Get the current gameweek number (1-based).
- *
- * Gameweek 1 starts from the first Monday on or after April 1st of the
- * season year. Each subsequent Monday starts a new gameweek.
+ * Whether we're currently in the pre-season (before GW1).
  */
-export function getCurrentGameweek(season?: string): number {
-  const year = Number(season ?? getCurrentSeason());
-  const now = new Date();
-  const uk = getUKDateComponents(now);
+export function isPreSeason(season?: string): boolean {
+  return getCurrentGameweek(season) === 0;
+}
 
-  // Find the first Monday on or after April 1st in UTC
-  // We work with UTC dates for the comparison since we only need day-level precision
-  const april1 = new Date(Date.UTC(year, 3, 1)); // April 1st UTC
-  const april1Day = april1.getUTCDay();
-  const daysUntilMonday =
-    april1Day === 0 ? 1 : april1Day === 1 ? 0 : 8 - april1Day;
-  const firstMonday = new Date(
-    Date.UTC(year, 3, 1 + daysUntilMonday),
-  );
-
-  // Build a UTC date from UK components for comparison
-  const ukNowUtc = new Date(
-    Date.UTC(uk.year, uk.month - 1, uk.day, uk.hour, uk.minute, uk.second),
-  );
-
-  const diffMs = ukNowUtc.getTime() - firstMonday.getTime();
-  if (diffMs < 0) return 1; // Before season start
-
-  const diffWeeks = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
-  return diffWeeks + 1;
+/**
+ * Check if team editing is currently locked.
+ *
+ * Lock deadline: Friday 23:59 UK time.
+ * Locked: Saturday and Sunday.
+ * Reopens: Monday 00:00 UK time.
+ *
+ * Pre-season is never locked.
+ */
+export function isGameweekLocked(season?: string): boolean {
+  if (isPreSeason(season)) return false;
+  const dayOfWeek = getUKDayOfWeek();
+  return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
 }
 
 /**
  * Get information about the current transfer window.
  */
 export function getTransferWindowInfo(season?: string) {
-  const locked = isGameweekLocked();
-  const gameweek = getCurrentGameweek(season);
+  const s = season ?? getCurrentSeason();
+  const gameweek = getCurrentGameweek(s);
+  const preseason = gameweek === 0;
+
+  if (preseason) {
+    const gw1 = getGW1StartDate(s);
+    const ukNow = ukComponentsToUTC(getUKDateComponents());
+    const daysUntilGW1 = Math.ceil(
+      (gw1.getTime() - ukNow.getTime()) / (24 * 60 * 60 * 1000),
+    );
+    return {
+      locked: false,
+      gameweek: 0,
+      isPreSeason: true,
+      daysUntilLock: daysUntilGW1,
+    };
+  }
+
+  const locked = isGameweekLocked(s);
   const dayOfWeek = getUKDayOfWeek();
 
-  let daysUntilChange: number;
+  let daysUntilLock: number;
   if (locked) {
-    // Next Monday
-    daysUntilChange = dayOfWeek === 0 ? 1 : 2;
+    // Days until Monday (reopening)
+    daysUntilLock = dayOfWeek === 0 ? 1 : 2;
   } else {
-    // Next Saturday
-    daysUntilChange = 6 - dayOfWeek;
+    // Days until Friday 23:59 (next lock)
+    daysUntilLock = 5 - dayOfWeek;
+    if (daysUntilLock <= 0) daysUntilLock += 7;
   }
 
   return {
     locked,
     gameweek,
-    /** Days until the next state change */
-    daysUntilChange,
+    isPreSeason: false,
+    daysUntilLock,
   };
 }

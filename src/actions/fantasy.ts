@@ -5,6 +5,7 @@ import {
   getCurrentSeason,
   getTransferWindowInfo,
   isGameweekLocked,
+  isPreSeason,
   MAX_TRANSFERS_PER_GAMEWEEK,
 } from "@/lib/fantasy/gameweek";
 import {
@@ -267,6 +268,8 @@ const getMyTeam = defineAuthAction({
         players: [],
         transferWindowInfo: getTransferWindowInfo(currentSeason),
         gameweek,
+        transfersUsed: 0,
+        maxTransfers: null, // No team yet = unlimited initial selection
       };
     }
 
@@ -321,6 +324,9 @@ const getMyTeam = defineAuthAction({
     const isInitialSquad = (initialPlayers?.count ?? 0) === 0;
     const transfersUsed = isInitialSquad ? 0 : (transfersThisWeek?.count ?? 0);
 
+    // Transfers are unlimited in pre-season or if this is the user's first squad
+    const unlimitedTransfers = isPreSeason(currentSeason) || isInitialSquad;
+
     return {
       team: { id: team.id, season: team.season, createdAt: team.created_at },
       players: players.map((p) => ({
@@ -333,7 +339,7 @@ const getMyTeam = defineAuthAction({
       transferWindowInfo: getTransferWindowInfo(currentSeason),
       gameweek,
       transfersUsed,
-      maxTransfers: MAX_TRANSFERS_PER_GAMEWEEK,
+      maxTransfers: unlimitedTransfers ? null : MAX_TRANSFERS_PER_GAMEWEEK,
     };
   },
 });
@@ -354,8 +360,8 @@ const saveTeam = defineAuthAction({
   handler: async ({ season, players }, session) => {
     const currentSeason = season ?? getCurrentSeason();
 
-    // Enforce lock
-    if (isGameweekLocked()) {
+    // Enforce lock (pre-season is never locked)
+    if (isGameweekLocked(currentSeason)) {
       throw new ActionError({
         code: "BAD_REQUEST",
         message:
@@ -467,8 +473,9 @@ const saveTeam = defineAuthAction({
         (p) => !newPlayerIds.has(p.play_cricket_id),
       );
 
-      // Check transfer limit — only applies when modifying an existing squad
-      if (currentPlayers.length > 0 && playersToAdd.length > 0) {
+      // Check transfer limit — only applies in-season when modifying an existing squad
+      // Pre-season and initial squad selections are always unlimited
+      if (currentPlayers.length > 0 && playersToAdd.length > 0 && !isPreSeason(currentSeason)) {
         const hasSquadFromBefore = currentPlayers.some(
           (p) => p.gameweek_added < gameweek,
         );

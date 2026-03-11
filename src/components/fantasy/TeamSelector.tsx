@@ -72,10 +72,12 @@ export function TeamSelector() {
   }, [teamData, hasLoadedTeam]);
 
   const eligiblePlayers = eligibleQuery.data?.data?.players ?? [];
-  const locked = teamData?.transferWindowInfo?.locked ?? false;
-  const gameweek = teamData?.gameweek ?? 1;
+  const transferWindowInfo = teamData?.transferWindowInfo;
+  const locked = transferWindowInfo?.locked ?? false;
+  const gameweek = teamData?.gameweek ?? 0;
+  const preseason = transferWindowInfo?.isPreSeason ?? true;
   const transfersUsed = teamData?.transfersUsed ?? 0;
-  const maxTransfers = teamData?.maxTransfers ?? 3;
+  const maxTransfers = teamData?.maxTransfers ?? null; // null = unlimited
 
   const selectedIds = new Set(selectedPlayers.map((p) => p.playCricketId));
 
@@ -153,26 +155,42 @@ export function TeamSelector() {
       {/* Status bar */}
       <Card>
         <CardContent className="flex flex-wrap items-center gap-4 py-4">
-          <Badge variant={locked ? "destructive" : "default"}>
-            {locked ? "Locked" : "Open"}
-          </Badge>
-          <span className="text-sm text-gray-600">
-            Gameweek {gameweek}
-          </span>
-          {!locked && teamData?.team && (
-            <span className="text-sm text-gray-600">
-              Transfers: {transfersUsed}/{maxTransfers} used
-            </span>
-          )}
-          {locked && (
-            <span className="text-sm text-gray-500">
-              Editing reopens Monday 00:00 UK time
-            </span>
-          )}
-          {!locked && (
-            <span className="text-sm text-gray-500">
-              Locks Saturday 00:00 UK time
-            </span>
+          {preseason ? (
+            <>
+              <Badge variant="secondary">Pre-season</Badge>
+              <span className="text-sm text-gray-600">
+                Build your squad before the season starts
+              </span>
+              {transferWindowInfo?.daysUntilLock != null && transferWindowInfo.daysUntilLock > 0 && (
+                <span className="text-sm text-gray-500">
+                  Gameweek 1 starts in {transferWindowInfo.daysUntilLock} day{transferWindowInfo.daysUntilLock !== 1 ? "s" : ""}
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <Badge variant={locked ? "destructive" : "default"}>
+                {locked ? "Locked" : "Open"}
+              </Badge>
+              <span className="text-sm text-gray-600">
+                Gameweek {gameweek}
+              </span>
+              {!locked && teamData?.team && maxTransfers !== null && (
+                <span className="text-sm text-gray-600">
+                  Transfers: {transfersUsed}/{maxTransfers} used
+                </span>
+              )}
+              {locked && (
+                <span className="text-sm text-gray-500">
+                  Editing reopens Monday 00:00 UK time
+                </span>
+              )}
+              {!locked && (
+                <span className="text-sm text-gray-500">
+                  Locks Friday 23:59 UK time
+                </span>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -366,8 +384,9 @@ export function TeamSelector() {
           <CardContent>
             <p className="mb-3 text-sm text-gray-600">
               Remove a player from your squad above, then add a replacement here.
-              You have {maxTransfers - transfersUsed} transfer(s) remaining this
-              gameweek.
+              {maxTransfers !== null
+                ? ` You have ${maxTransfers - transfersUsed} transfer(s) remaining this gameweek.`
+                : " Unlimited changes allowed."}
             </p>
           </CardContent>
         </Card>
