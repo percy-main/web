@@ -4,6 +4,7 @@ import {
   GetMatchDetailResponse,
   GetMatchSummaryResponse,
   GetTeamsResponse,
+  MatchDetailBat,
 } from "./schemas";
 
 // --- Helpers ---
@@ -35,7 +36,7 @@ function randomId(): string {
   return crypto.randomUUID();
 }
 
-const NOT_OUT_CODES = new Set(["no", "dnb", "rtd", ""]);
+const NOT_OUT_CODES = new Set(["no", "dnb", "rtd", "ro", "ret out", ""]);
 
 function isNotOut(howOut: string | null | undefined): boolean {
   if (!howOut) return true;
@@ -46,6 +47,18 @@ function didBat(howOut: string | null | undefined): boolean {
   if (!howOut) return false;
   const code = howOut.toLowerCase().trim();
   return code !== "dnb" && code !== "";
+}
+
+/** Determine what type of fielding credit a dismissal gives, if any. */
+function parseDismissalType(
+  howOut: string | null | undefined,
+): "catch" | "stumping" | "run_out" | null {
+  if (!howOut) return null;
+  const code = howOut.toLowerCase().trim();
+  if (code === "ct" || code.startsWith("caught")) return "catch";
+  if (code === "st" || code.startsWith("stumped")) return "stumping";
+  if (code === "ro" || code.includes("run out")) return "run_out";
+  return null;
 }
 
 // --- Types ---
@@ -66,9 +79,84 @@ interface SyncResult {
   errors: string[];
 }
 
+interface FieldingAgg {
+  playerName: string;
+  catches: number;
+  runOuts: number;
+  stumpings: number;
+  isWicketkeeper: boolean;
+}
+
 // --- Main sync logic ---
 
 const DEADLINE_MS = 10 * 60 * 1000; // 10 minutes — stop starting new API calls after this
+
+/**
+ * Build a set of wicketkeeper player IDs from the match detail players array.
+ */
+function getWicketkeeperIds(
+  players: z.output<typeof GetMatchDetailResponse>["match_details"][number]["players"],
+  teamSide: "home" | "away",
+): Set<string> {
+  const keeperIds = new Set<string>();
+  for (const group of players) {
+    const squad =
+      teamSide === "home" ? group.home_team : group.away_team;
+    if (!squad) continue;
+    for (const player of squad) {
+      if (player.wicket_keeper && player.player_id != null) {
+        keeperIds.add(player.player_id.toString());
+      }
+    }
+  }
+  return keeperIds;
+}
+
+/**
+ * Extract fielding credits from a batting innings.
+ * The batting team's data tells us which fielders took catches/run outs/stumpings.
+ */
+function extractFieldingCredits(
+  batEntries: Array<z.output<typeof MatchDetailBat>>,
+  keeperIds: Set<string>,
+): Map<string, FieldingAgg> {
+  const fielders = new Map<string, FieldingAgg>();
+
+  for (const bat of batEntries) {
+    const dismissalType = parseDismissalType(bat.how_out);
+    if (!dismissalType) continue;
+
+    const fielderId = bat.fielder_id;
+    const fielderName = bat.fielder_name;
+    if (!fielderId || !fielderName) continue;
+
+    let agg = fielders.get(fielderId);
+    if (!agg) {
+      agg = {
+        playerName: fielderName,
+        catches: 0,
+        runOuts: 0,
+        stumpings: 0,
+        isWicketkeeper: keeperIds.has(fielderId),
+      };
+      fielders.set(fielderId, agg);
+    }
+
+    switch (dismissalType) {
+      case "catch":
+        agg.catches++;
+        break;
+      case "run_out":
+        agg.runOuts++;
+        break;
+      case "stumping":
+        agg.stumpings++;
+        break;
+    }
+  }
+
+  return fielders;
+}
 
 async function syncMatches(
   db: DbClient,
@@ -139,16 +227,16 @@ async function syncMatches(
     }
   }
 
-  // Step 3: Load already-processed match IDs in one query
-  const [processedBat, processedBowl] = await Promise.all([
-    db.execute({ sql: `SELECT DISTINCT match_id FROM match_performance_batting`, args: [] }),
-    db.execute({ sql: `SELECT DISTINCT match_id FROM match_performance_bowling`, args: [] }),
-  ]);
+  // Step 3: Load already-processed match IDs
+  // Use match_result table as the source of truth — a match is fully processed
+  // only when its result has been stored. This ensures that matches synced before
+  // fielding/result extraction was added will be re-processed to backfill.
+  const processedResult = await db.execute({
+    sql: `SELECT DISTINCT match_id FROM match_result`,
+    args: [],
+  });
   const processedMatchIds = new Set<string>();
-  for (const row of processedBat.rows) {
-    processedMatchIds.add(row.match_id as string);
-  }
-  for (const row of processedBowl.rows) {
+  for (const row of processedResult.rows) {
     processedMatchIds.add(row.match_id as string);
   }
   console.log(`Found ${processedMatchIds.size} already-processed matches — skipping those`);
@@ -230,6 +318,10 @@ async function syncMatches(
         ourTeamIds.add(match.away_team_id);
       }
 
+      // Build keeper lookup from players list
+      const homeKeeperIds = getWicketkeeperIds(detail.players, "home");
+      const awayKeeperIds = getWicketkeeperIds(detail.players, "away");
+
       for (const innings of detail.innings) {
         const battingTeamId = innings.team_batting_id;
         const isBattingTeamOurs = ourTeamIds.has(battingTeamId);
@@ -239,6 +331,13 @@ async function syncMatches(
             ? match.away_team_id
             : match.home_team_id;
         const isFieldingTeamOurs = ourTeamIds.has(fieldingTeamId);
+
+        // The fielding team's keepers: if the fielding team is the home team,
+        // use home keepers; otherwise use away keepers
+        const fieldingKeeperIds =
+          fieldingTeamId === match.home_team_id
+            ? homeKeeperIds
+            : awayKeeperIds;
 
         // Store batting performances (only for our players)
         if (isBattingTeamOurs) {
@@ -314,6 +413,75 @@ async function syncMatches(
             });
           }
         }
+
+        // Store fielding performances (only for our players)
+        // Fielding credits come from the opponent's batting dismissals
+        if (isFieldingTeamOurs) {
+          const fieldingCredits = extractFieldingCredits(
+            innings.bat,
+            fieldingKeeperIds,
+          );
+
+          for (const [fielderId, agg] of fieldingCredits) {
+            await db.execute({
+              sql: `INSERT INTO match_performance_fielding
+                (id, match_id, player_id, player_name, team_id, competition_type, match_date, season, catches, run_outs, stumpings, is_wicketkeeper)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(match_id, player_id) DO UPDATE SET
+                  player_name = ?,
+                  catches = match_performance_fielding.catches + excluded.catches,
+                  run_outs = match_performance_fielding.run_outs + excluded.run_outs,
+                  stumpings = match_performance_fielding.stumpings + excluded.stumpings,
+                  is_wicketkeeper = MAX(match_performance_fielding.is_wicketkeeper, excluded.is_wicketkeeper)`,
+              args: [
+                randomId(),
+                matchId,
+                fielderId,
+                agg.playerName,
+                fieldingTeamId,
+                match.competition_type ?? "",
+                match.match_date,
+                season,
+                agg.catches,
+                agg.runOuts,
+                agg.stumpings,
+                agg.isWicketkeeper ? 1 : 0,
+                agg.playerName,
+              ],
+            });
+          }
+        }
+      }
+
+      // Store match result — only when a result has been entered in Play Cricket.
+      // Matches without a result yet will be re-processed on the next sync since
+      // they won't appear in the processedMatchIds set (which queries match_result).
+      const matchResult = (detail.result ?? "").trim();
+      if (matchResult) {
+        await db.execute({
+          sql: `INSERT INTO match_result
+            (id, match_id, home_team_id, away_team_id, home_team_name, away_team_name, result, result_description, result_applied_to, competition_type, match_date, season)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(match_id) DO UPDATE SET
+              result = ?, result_description = ?, result_applied_to = ?`,
+          args: [
+            randomId(),
+            matchId,
+            detail.home_team_id,
+            detail.away_team_id,
+            detail.home_team_name,
+            detail.away_team_name,
+            matchResult,
+            detail.result_description ?? "",
+            detail.result_applied_to ?? "",
+            match.competition_type ?? "",
+            match.match_date,
+            season,
+            matchResult,
+            detail.result_description ?? "",
+            detail.result_applied_to ?? "",
+          ],
+        });
       }
 
       matchesProcessed++;
