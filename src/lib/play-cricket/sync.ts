@@ -242,6 +242,14 @@ async function syncMatches(
   console.log(`Found ${processedMatchIds.size} already-processed matches — skipping those`);
 
   // Step 4: Fetch and store match detail for each match
+  // Matches older than 2 weeks without a result are marked as processed anyway,
+  // to avoid re-fetching from the API every sync. Recent matches (within 2 weeks)
+  // only get a match_result row when a result is actually present, since results
+  // are often entered days after the match on Play Cricket.
+  const resultCutoff = new Date();
+  resultCutoff.setDate(resultCutoff.getDate() - 14);
+  resultCutoff.setHours(0, 0, 0, 0);
+
   for (const { match, season } of allMatches) {
     const matchId = match.id.toString();
 
@@ -453,11 +461,17 @@ async function syncMatches(
         }
       }
 
-      // Store match result — only when a result has been entered in Play Cricket.
-      // Matches without a result yet will be re-processed on the next sync since
-      // they won't appear in the processedMatchIds set (which queries match_result).
+      // Store match result. For recent matches (within 2 weeks), only write
+      // when a result exists — results are often entered days after the match.
+      // For older matches, always write (even with empty result) so they're
+      // marked as processed and not re-fetched from the API every sync.
       const matchResult = (detail.result ?? "").trim();
-      if (matchResult) {
+      const [dd, mm, yyyy] = match.match_date.split("/");
+      const matchDate = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd));
+      const isRecent = matchDate > resultCutoff;
+      const shouldWriteResult = matchResult || !isRecent;
+
+      if (shouldWriteResult) {
         await db.execute({
           sql: `INSERT INTO match_result
             (id, match_id, home_team_id, away_team_id, home_team_name, away_team_name, result, result_description, result_applied_to, competition_type, match_date, season)
@@ -529,6 +543,9 @@ export async function runSync(config: SyncConfig): Promise<SyncResult> {
     console.log(
       `Sync complete: ${result.matchesProcessed} matches processed, ${result.errors.length} errors`,
     );
+    if (result.errors.length > 0) {
+      console.error("Sync errors:", result.errors.join("; "));
+    }
 
     return result;
   } catch (err) {
