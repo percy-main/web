@@ -4,8 +4,8 @@
  * Static config for point values, plus a calculation function that takes
  * a player's match performance and returns a points breakdown.
  *
- * Initial values are calibrated to be broadly equitable between batters and
- * bowlers. Ship and iterate based on early gameweek feedback.
+ * Values tuned against 2025 season data to balance batters, bowlers, and
+ * all-rounders. See PR for analysis details.
  */
 
 // ---------------------------------------------------------------------------
@@ -24,24 +24,26 @@ export const SCORING = {
     fiftyBonus: 20,
     /** Bonus for reaching 100 runs */
     hundredBonus: 50,
-    /** Penalty for a duck (0 runs, not-out excluded) */
+    /** Penalty for a duck (0 runs, not-out excluded). Only applies to positions 1–7. */
     duckPenalty: -10,
+    /** Batting positions eligible for duck penalty (1-based). Positions 8+ are not penalised. */
+    duckPenaltyMaxPosition: 7,
   },
   bowling: {
     /** Points per wicket taken */
-    perWicket: 25,
+    perWicket: 10,
     /** Points per maiden over bowled */
     perMaiden: 10,
     /** Bonus for taking 3 wickets in an innings */
     threeWicketBonus: 15,
     /** Bonus for taking 5 wickets in an innings */
     fiveWicketBonus: 30,
-    /** Economy bonus: awarded if economy rate <= this threshold */
+    /** Economy bonus: awarded if economy rate < this threshold */
     economyBonusThreshold: 4.0,
     /** Points awarded for good economy */
     economyBonus: 10,
-    /** Economy penalty: applied if economy rate >= this threshold */
-    economyPenaltyThreshold: 8.0,
+    /** Economy penalty: applied if economy rate > this threshold */
+    economyPenaltyThreshold: 7.0,
     /** Points deducted for poor economy */
     economyPenalty: -10,
     /** Minimum overs bowled to qualify for economy bonus/penalty */
@@ -83,7 +85,6 @@ export const SCORING = {
  * Update this set when new competition types are encountered.
  */
 export const LEAGUE_COMPETITION_TYPES = new Set([
-  "Division",
   "League",
 ]);
 
@@ -95,7 +96,8 @@ export const LEAGUE_COMPETITION_TYPES = new Set([
  * Run: SELECT id, name FROM play_cricket_team WHERE is_junior = 0
  */
 export const ELIGIBLE_TEAM_IDS = new Set<string>([
-  // Populate with actual 1st XI and 2nd XI team IDs after inspecting data
+  "68498", // 1st XI
+  "71066", // 2nd XI
 ]);
 
 // ---------------------------------------------------------------------------
@@ -108,6 +110,8 @@ export interface BattingInput {
   fours: number;
   sixes: number;
   notOut: boolean;
+  /** 1-based batting position in the order. Used for duck penalty eligibility. */
+  battingPosition: number;
 }
 
 export interface BowlingInput {
@@ -192,7 +196,9 @@ export function calculateBattingPoints(
   const fiftyBonus = input.runs >= 50 && input.runs < 100 ? s.fiftyBonus : 0;
   const hundredBonus = input.runs >= 100 ? s.hundredBonus : 0;
   const duckPenalty =
-    input.runs === 0 && !input.notOut ? s.duckPenalty : 0;
+    input.runs === 0 && !input.notOut && input.battingPosition <= s.duckPenaltyMaxPosition
+      ? s.duckPenalty
+      : 0;
 
   const total = runs + fours + sixes + fiftyBonus + hundredBonus + duckPenalty;
 
@@ -213,9 +219,9 @@ export function calculateBowlingPoints(
   let economyBonus = 0;
   if (oversDecimal >= s.economyMinOvers) {
     const economyRate = input.runs / oversDecimal;
-    if (economyRate <= s.economyBonusThreshold) {
+    if (economyRate < s.economyBonusThreshold) {
       economyBonus = s.economyBonus;
-    } else if (economyRate >= s.economyPenaltyThreshold) {
+    } else if (economyRate > s.economyPenaltyThreshold) {
       economyBonus = s.economyPenalty;
     }
   }

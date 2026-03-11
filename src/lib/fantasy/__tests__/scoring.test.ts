@@ -14,6 +14,7 @@ describe("calculateBattingPoints", () => {
       fours: 0,
       sixes: 0,
       notOut: false,
+      battingPosition: 3,
     });
     expect(result.runs).toBe(35);
   });
@@ -25,6 +26,7 @@ describe("calculateBattingPoints", () => {
       fours: 4,
       sixes: 2,
       notOut: false,
+      battingPosition: 4,
     });
     expect(result.fours).toBe(4);
     expect(result.sixes).toBe(4);
@@ -37,6 +39,7 @@ describe("calculateBattingPoints", () => {
       fours: 5,
       sixes: 1,
       notOut: false,
+      battingPosition: 1,
     });
     expect(result.fiftyBonus).toBe(20);
     expect(result.hundredBonus).toBe(0);
@@ -49,21 +52,61 @@ describe("calculateBattingPoints", () => {
       fours: 10,
       sixes: 3,
       notOut: false,
+      battingPosition: 3,
     });
     expect(result.fiftyBonus).toBe(0);
     expect(result.hundredBonus).toBe(50);
   });
 
-  it("applies duck penalty for 0 runs when out", () => {
+  it("applies duck penalty for 0 runs when out at position 1-7", () => {
     const result = calculateBattingPoints({
       runs: 0,
       balls: 3,
       fours: 0,
       sixes: 0,
       notOut: false,
+      battingPosition: 5,
     });
     expect(result.duckPenalty).toBe(-10);
     expect(result.total).toBe(-10);
+  });
+
+  it("does not apply duck penalty for position 8+", () => {
+    const result = calculateBattingPoints({
+      runs: 0,
+      balls: 3,
+      fours: 0,
+      sixes: 0,
+      notOut: false,
+      battingPosition: 8,
+    });
+    expect(result.duckPenalty).toBe(0);
+    expect(result.total).toBe(0);
+  });
+
+  it("does not apply duck penalty for position 11", () => {
+    const result = calculateBattingPoints({
+      runs: 0,
+      balls: 1,
+      fours: 0,
+      sixes: 0,
+      notOut: false,
+      battingPosition: 11,
+    });
+    expect(result.duckPenalty).toBe(0);
+    expect(result.total).toBe(0);
+  });
+
+  it("applies duck penalty at position 7 boundary", () => {
+    const result = calculateBattingPoints({
+      runs: 0,
+      balls: 5,
+      fours: 0,
+      sixes: 0,
+      notOut: false,
+      battingPosition: 7,
+    });
+    expect(result.duckPenalty).toBe(-10);
   });
 
   it("does not apply duck penalty when not out on 0", () => {
@@ -73,6 +116,7 @@ describe("calculateBattingPoints", () => {
       fours: 0,
       sixes: 0,
       notOut: true,
+      battingPosition: 1,
     });
     expect(result.duckPenalty).toBe(0);
     expect(result.total).toBe(0);
@@ -86,20 +130,21 @@ describe("calculateBattingPoints", () => {
       fours: 6,
       sixes: 2,
       notOut: false,
+      battingPosition: 3,
     });
     expect(result.total).toBe(80);
   });
 });
 
 describe("calculateBowlingPoints", () => {
-  it("awards 25 points per wicket", () => {
+  it("awards 10 points per wicket", () => {
     const result = calculateBowlingPoints({
       overs: "10",
       maidens: 0,
       runs: 40,
       wickets: 2,
     });
-    expect(result.wickets).toBe(50);
+    expect(result.wickets).toBe(20);
   });
 
   it("awards 10 points per maiden", () => {
@@ -134,7 +179,7 @@ describe("calculateBowlingPoints", () => {
     expect(result.fiveWicketBonus).toBe(30);
   });
 
-  it("awards economy bonus for rate <= 4.0 with enough overs", () => {
+  it("awards economy bonus for rate < 4.0 with enough overs", () => {
     const result = calculateBowlingPoints({
       overs: "10",
       maidens: 2,
@@ -145,15 +190,37 @@ describe("calculateBowlingPoints", () => {
     expect(result.economyBonus).toBe(10);
   });
 
-  it("applies economy penalty for rate >= 8.0", () => {
+  it("does not award economy bonus for rate exactly 4.0", () => {
+    const result = calculateBowlingPoints({
+      overs: "10",
+      maidens: 0,
+      runs: 40,
+      wickets: 0,
+    });
+    // Economy = 40/10 = 4.0, not strictly less than threshold
+    expect(result.economyBonus).toBe(0);
+  });
+
+  it("applies economy penalty for rate > 7.0", () => {
     const result = calculateBowlingPoints({
       overs: "5",
       maidens: 0,
       runs: 50,
       wickets: 0,
     });
-    // Economy = 50/5 = 10.0, above 8.0 threshold
+    // Economy = 50/5 = 10.0, above 7.0 threshold
     expect(result.economyBonus).toBe(-10);
+  });
+
+  it("does not apply economy penalty for rate exactly 7.0", () => {
+    const result = calculateBowlingPoints({
+      overs: "5",
+      maidens: 0,
+      runs: 35,
+      wickets: 0,
+    });
+    // Economy = 35/5 = 7.0, not strictly greater than threshold
+    expect(result.economyBonus).toBe(0);
   });
 
   it("does not apply economy bonus/penalty with fewer than 3 overs", () => {
@@ -235,20 +302,20 @@ describe("calculateFieldingPoints", () => {
 describe("calculateMatchPoints", () => {
   it("combines all disciplines and win bonus", () => {
     const result = calculateMatchPoints(
-      { runs: 50, balls: 60, fours: 5, sixes: 1, notOut: false },
+      { runs: 50, balls: 60, fours: 5, sixes: 1, notOut: false, battingPosition: 3 },
       { overs: "8", maidens: 1, runs: 30, wickets: 2 },
       { catches: 1, runOuts: 0, stumpings: 0, isWicketkeeper: false },
       { teamWon: true },
     );
     // Batting: 50 + 5 + 2 + 20 = 77
-    // Bowling: 50 + 10 + 0 + 0 + 10 (econ 3.75) = 70
+    // Bowling: 20 + 10 + 0 + 0 + 10 (econ 3.75) = 40
     // Fielding: 10
     // Win bonus: 10
     expect(result.batting?.total).toBe(77);
-    expect(result.bowling?.total).toBe(70);
+    expect(result.bowling?.total).toBe(40);
     expect(result.fielding?.total).toBe(10);
     expect(result.winBonus).toBe(10);
-    expect(result.total).toBe(167);
+    expect(result.total).toBe(137);
   });
 
   it("handles null disciplines", () => {
@@ -267,7 +334,7 @@ describe("calculateMatchPoints", () => {
 
   it("awards no win bonus for a loss", () => {
     const result = calculateMatchPoints(
-      { runs: 10, balls: 15, fours: 1, sixes: 0, notOut: false },
+      { runs: 10, balls: 15, fours: 1, sixes: 0, notOut: false, battingPosition: 6 },
       null,
       null,
       { teamWon: false },
