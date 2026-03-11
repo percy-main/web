@@ -1078,22 +1078,27 @@ const JuniorRegistrationInner: FC = () => {
                 amount={paymentData.totalAmountPence}
                 title="Pay for Junior Membership"
                 onSuccess={async () => {
-                  await actions.charges.confirmPayment({
-                    paymentIntentId: paymentData.paymentIntentId,
-                  });
+                  try {
+                    await actions.charges.confirmPayment({
+                      paymentIntentId: paymentData.paymentIntentId,
+                    });
+                  } catch {
+                    // Payment succeeded at Stripe but confirmation failed — the
+                    // webhook will reconcile, so still show success.
+                  }
                   setStep("done");
                 }}
                 onCancel={() => {
-                  // "Pay later" — navigate to payments tab
                   window.location.href = "/members?tab=payments";
                 }}
               />
               <p className="text-center text-sm text-gray-500">
+                Or{" "}
                 <a
                   href="/members?tab=payments"
                   className="text-blue-700 underline hover:text-blue-900"
                 >
-                  Pay later
+                  pay later in the members area
                 </a>
               </p>
             </div>
