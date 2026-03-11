@@ -71,7 +71,10 @@ export function TeamSelector() {
     }
   }, [teamData, hasLoadedTeam]);
 
-  const eligiblePlayers = eligibleQuery.data?.data?.players ?? [];
+  const eligibleData = eligibleQuery.data?.data;
+  const eligiblePlayers = eligibleData?.players ?? [];
+  const currentSeasonYear = eligibleData?.season ?? new Date().getFullYear().toString();
+  const previousSeasonYear = eligibleData?.previousSeason ?? (Number(currentSeasonYear) - 1).toString();
   const transferWindowInfo = teamData?.transferWindowInfo;
   const locked = transferWindowInfo?.locked ?? false;
   const gameweek = teamData?.gameweek ?? 0;
@@ -310,16 +313,16 @@ export function TeamSelector() {
                   <TableRow>
                     <TableHead>Player</TableHead>
                     <TableHead className="text-right">
-                      Runs (curr)
+                      Pts ({currentSeasonYear})
                     </TableHead>
                     <TableHead className="text-right">
-                      Wkts (curr)
+                      Avg ({currentSeasonYear})
                     </TableHead>
                     <TableHead className="text-right">
-                      Runs (prev)
+                      Pts ({previousSeasonYear})
                     </TableHead>
                     <TableHead className="text-right">
-                      Wkts (prev)
+                      Avg ({previousSeasonYear})
                     </TableHead>
                     <TableHead />
                   </TableRow>
@@ -331,16 +334,16 @@ export function TeamSelector() {
                         {player.playerName}
                       </TableCell>
                       <TableCell className="text-right">
-                        {player.stats.current.totalRuns ?? "-"}
+                        {player.stats.current.matchesPlayed > 0 ? player.stats.current.totalPoints : "-"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {player.stats.current.totalWickets ?? "-"}
+                        {player.stats.current.avgPoints ?? "-"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {player.stats.previous.totalRuns ?? "-"}
+                        {player.stats.previous.matchesPlayed > 0 ? player.stats.previous.totalPoints : "-"}
                       </TableCell>
                       <TableCell className="text-right">
-                        {player.stats.previous.totalWickets ?? "-"}
+                        {player.stats.previous.avgPoints ?? "-"}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
