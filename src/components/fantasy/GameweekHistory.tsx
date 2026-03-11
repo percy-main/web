@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/Table";
 import { useQuery } from "@tanstack/react-query";
 import { actions } from "astro:actions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface Props {
   teamId: number;
@@ -31,6 +31,14 @@ export function GameweekHistory({ teamId, availableGameweeks, initialGameweek, o
   const [gameweek, setGameweek] = useState<number>(
     initialGameweek ?? availableGameweeks[0] ?? 1,
   );
+
+  // Sync selected gameweek when availableGameweeks loads asynchronously
+  const firstAvailable = availableGameweeks[0];
+  useEffect(() => {
+    if (firstAvailable != null && gameweek === 1 && !availableGameweeks.includes(gameweek)) {
+      setGameweek(firstAvailable);
+    }
+  }, [firstAvailable, gameweek, availableGameweeks]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["fantasy", "gameweekDetail", teamId, gameweek],
