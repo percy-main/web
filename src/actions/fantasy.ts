@@ -66,7 +66,7 @@ const listPlayers = defineAuthAction({
       .where(
         "play_cricket_id",
         "in",
-        sql`(
+        sql<string>`(
           SELECT DISTINCT player_id FROM match_performance_batting WHERE season >= ${cutoffSeason}
           UNION
           SELECT DISTINCT player_id FROM match_performance_bowling WHERE season >= ${cutoffSeason}
@@ -128,7 +128,7 @@ const populatePlayers = defineAuthAction({
     `.execute(client);
     const total = Number((countResult.rows[0] as { total: number }).total);
 
-    return { total, inserted: Number(result.numUpdatedOrDeletedRows ?? 0) };
+    return { total, inserted: Number(result.numAffectedRows ?? 0) };
   },
 });
 
