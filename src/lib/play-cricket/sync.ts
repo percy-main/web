@@ -121,7 +121,7 @@ async function syncMatches(
     currentYear,
   ];
   const allMatches: Array<{
-    match: z.TypeOf<typeof GetMatchSummaryResponse>["matches"][number];
+    match: z.output<typeof GetMatchSummaryResponse>["matches"][number];
     season: number;
   }> = [];
 

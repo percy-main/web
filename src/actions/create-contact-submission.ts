@@ -1,12 +1,12 @@
 import * as db from "@/lib/db/client";
 import { sendMessage } from "@/lib/slack/sendMessage";
 import { defineAction } from "astro:actions";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { randomUUID } from "crypto";
 
 const input = z.object({
   name: z.string().min(1).max(200),
-  email: z.string().email(),
+  email: z.email(),
   message: z.string().min(1).max(5000),
   page: z.string().min(1).max(500),
 });
@@ -16,7 +16,7 @@ export const handler = async ({
   email,
   message,
   page,
-}: z.TypeOf<typeof input>) => {
+}: z.output<typeof input>) => {
   const id = randomUUID();
 
   await db.client

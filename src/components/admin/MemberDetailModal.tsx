@@ -42,7 +42,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { formatDate } from "date-fns";
-import { type FormEvent, useEffect, useState } from "react";
+import { type SubmitEvent, useEffect, useState } from "react";
 import { StatusPill, getMemberCategoryDisplay, getMembershipStatus } from "./StatusPill";
 
 const currencyFormatter = new Intl.NumberFormat("en-GB", {
@@ -881,7 +881,7 @@ function ChargesSection({ memberId }: { memberId: string }) {
     },
   });
 
-  const handleAddCharge = (e: FormEvent<HTMLFormElement>) => {
+  const handleAddCharge = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const description = formData.get("description") as string;
@@ -990,7 +990,7 @@ function ChargesSection({ memberId }: { memberId: string }) {
         <p className="text-sm text-red-600">Failed to load payments.</p>
       )}
 
-      {charges && charges.length === 0 && (
+      {charges?.length === 0 && (
         <p className="text-sm text-gray-500">No payments found.</p>
       )}
 

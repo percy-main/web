@@ -10,7 +10,7 @@ import { nameSimilarity, normalizeName } from "@/lib/util/nameSimilarity";
 import { render } from "@react-email/render";
 import { ActionError } from "astro:actions";
 import { BASE_URL } from "astro:env/client";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { randomUUID } from "crypto";
 import { formatDate, subHours } from "date-fns";
 import { sql } from "kysely";
@@ -1049,16 +1049,16 @@ export const admin = {
         .executeTakeFirstOrThrow();
 
       return {
-        totalCharged: Number(result.totalCharged),
-        totalPaid: Number(result.totalPaid),
-        totalOutstanding: Number(result.totalOutstanding),
-        totalAbandoned: Number(result.totalAbandoned),
-        totalDeleted: Number(result.totalDeleted),
-        countPaid: Number(result.countPaid),
-        countUnpaid: Number(result.countUnpaid),
-        countPending: Number(result.countPending),
-        countAbandoned: Number(result.countAbandoned),
-        countDeleted: Number(result.countDeleted),
+        totalCharged: result.totalCharged,
+        totalPaid: result.totalPaid,
+        totalOutstanding: result.totalOutstanding,
+        totalAbandoned: result.totalAbandoned,
+        totalDeleted: result.totalDeleted,
+        countPaid: result.countPaid,
+        countUnpaid: result.countUnpaid,
+        countPending: result.countPending,
+        countAbandoned: result.countAbandoned,
+        countDeleted: result.countDeleted,
       };
     },
   }),
@@ -1165,13 +1165,13 @@ export const admin = {
           : [[], [], []];
 
       const mcMap = Object.fromEntries(
-        membershipCounts.map((r) => [r.member_id, Number(r.count)]),
+        membershipCounts.map((r) => [r.member_id, r.count]),
       );
       const dcMap = Object.fromEntries(
-        dependentCounts.map((r) => [r.member_id, Number(r.count)]),
+        dependentCounts.map((r) => [r.member_id, r.count]),
       );
       const ccMap = Object.fromEntries(
-        chargeCounts.map((r) => [r.member_id, Number(r.count)]),
+        chargeCounts.map((r) => [r.member_id, r.count]),
       );
 
       function toGroupMember(id: string) {

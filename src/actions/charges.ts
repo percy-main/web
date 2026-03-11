@@ -5,7 +5,7 @@ import { resolveStripeCustomer } from "@/lib/payments/resolveStripeCustomer";
 import { ActionError } from "astro:actions";
 import { CONTEXT } from "astro:env/client";
 import { DEPLOY_PRIME_URL } from "astro:env/server";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 
 export const charges = {
   getMyCharges: defineAuthAction({

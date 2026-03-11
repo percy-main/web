@@ -1,4 +1,4 @@
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { isMatching } from "ts-pattern";
 
 export const gameSponsoredSchema = z.object({
@@ -6,14 +6,14 @@ export const gameSponsoredSchema = z.object({
   gameId: z.string(),
   sponsorshipId: z.string().optional(),
 });
-export type GameSponsored = z.TypeOf<typeof gameSponsoredSchema>;
+export type GameSponsored = z.output<typeof gameSponsoredSchema>;
 
 export const playerSponsoredSchema = z.object({
   type: z.literal("sponsorPlayer"),
   contentfulEntryId: z.string(),
   sponsorshipId: z.string(),
 });
-export type PlayerSponsored = z.TypeOf<typeof playerSponsoredSchema>;
+export type PlayerSponsored = z.output<typeof playerSponsoredSchema>;
 
 export const membershipSchema = z.object({
   type: z.literal("membership"),
@@ -31,7 +31,7 @@ export const metadata = z.union([
   membershipSchema,
   z.undefined(),
 ]);
-export type Metadata = z.TypeOf<typeof metadata>;
+export type Metadata = z.output<typeof metadata>;
 
 export const is =
   <const Type extends Exclude<Metadata, undefined>["type"]>(type: Type) =>

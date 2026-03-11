@@ -38,7 +38,7 @@ export function DuplicateMembersTable() {
       {isLoading && <p className="text-gray-500">Loading...</p>}
       {error && <p className="text-red-600">Failed to load duplicate members.</p>}
 
-      {groups && groups.length === 0 && (
+      {groups?.length === 0 && (
         <div className="rounded border border-green-200 bg-green-50 p-4 text-sm text-green-800">
           No duplicate member records found.
         </div>

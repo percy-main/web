@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/Button";
 import { useSearchParam } from "@/hooks/useSearchParams";
 import { authClient } from "@/lib/auth/client";
 import { useMutation } from "@tanstack/react-query";
-import { z } from "astro:schema";
-import { useCallback, useState, type FC, type FormEvent } from "react";
+import { z } from "astro/zod";
+import { useCallback, useState, type FC, type SubmitEvent } from "react";
 import type { LoginPhase } from "./Login";
 
 type Props = {
@@ -42,7 +42,7 @@ export const ResetPassword: FC<Props> = ({ setPhase }) => {
   });
 
   const handleSubmit = useCallback(
-    (event: FormEvent) => {
+    (event: SubmitEvent) => {
       event.preventDefault();
       resetPassword.mutate();
     },

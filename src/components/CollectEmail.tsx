@@ -18,7 +18,7 @@ export const CollectEmail: FC<Props> = ({ title, description, meta }) => {
   });
 
   const handleSubmit = useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
+    (event: React.SubmitEvent<HTMLFormElement>) => {
       event.preventDefault();
       mutation.mutate({ meta, email });
     },

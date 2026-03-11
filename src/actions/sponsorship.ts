@@ -8,7 +8,7 @@ import { resolveStripeCustomer } from "@/lib/payments/resolveStripeCustomer";
 import { ActionError, defineAction } from "astro:actions";
 import { CONTEXT } from "astro:env/client";
 import { DEPLOY_PRIME_URL, PLAY_CRICKET_SITE_ID } from "astro:env/server";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { randomUUID } from "crypto";
 
 const MAX_LOGO_SIZE_BYTES = 150_000;
@@ -59,8 +59,8 @@ export const sponsorship = {
     input: z.object({
       gameId: z.string(),
       sponsorName: z.string().min(1).max(200),
-      sponsorEmail: z.string().email(),
-      sponsorWebsite: z.string().url().optional().or(z.literal("")),
+      sponsorEmail: z.email(),
+      sponsorWebsite: z.url().optional().or(z.literal("")),
       sponsorLogoDataUrl: z.string().optional(),
       sponsorMessage: z.string().max(100).optional().or(z.literal("")),
     }),
@@ -378,8 +378,8 @@ export const sponsorship = {
     input: z.object({
       gameId: z.string().min(1),
       sponsorName: z.string().min(1).max(200),
-      sponsorEmail: z.string().email(),
-      sponsorWebsite: z.string().url().optional().or(z.literal("")),
+      sponsorEmail: z.email(),
+      sponsorWebsite: z.url().optional().or(z.literal("")),
       sponsorLogoDataUrl: z.string().optional(),
       sponsorMessage: z.string().max(100).optional().or(z.literal("")),
       amountPence: z.number().int().min(0),

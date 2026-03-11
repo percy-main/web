@@ -26,7 +26,7 @@ export const schema = z.object({
   maxQty: z.number().optional(),
 });
 
-export type Price = z.TypeOf<typeof schema>;
+export type Price = z.output<typeof schema>;
 
 const loader = async () => {
   const prices = await client.prices.list({

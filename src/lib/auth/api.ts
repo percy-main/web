@@ -1,15 +1,14 @@
 import { auth } from "@/lib/auth/server";
 import type { APIRoute } from "astro";
-import type { MaybePromise } from "astro/actions/runtime/utils.js";
 import type { z } from "astro/zod";
 import {
   ActionError,
   defineAction,
-  type ActionAccept,
   type ActionAPIContext,
-  type ActionHandler,
 } from "astro:actions";
 import { type Session, type User } from "better-auth";
+
+type MaybePromise<T> = T | Promise<T>;
 
 export const authedApi =
   (route: (session: { user: User; session: Session }) => APIRoute): APIRoute =>
@@ -27,7 +26,7 @@ export const authedApi =
 
 type AuthActionHandler<TInputSchema, TOutput> = TInputSchema extends z.ZodType
   ? (
-      input: z.infer<TInputSchema>,
+      input: z.output<TInputSchema>,
       session: { user: User; session: Session },
       context: ActionAPIContext,
     ) => MaybePromise<TOutput>
@@ -39,7 +38,7 @@ type AuthActionHandler<TInputSchema, TOutput> = TInputSchema extends z.ZodType
 
 export function defineAuthAction<
   TOutput,
-  TAccept extends ActionAccept | undefined = undefined,
+  TAccept extends "form" | "json" | undefined = undefined,
   TInputSchema extends z.ZodType | undefined = TAccept extends "form"
     ? z.ZodType<FormData>
     : undefined,
@@ -56,27 +55,37 @@ export function defineAuthAction<
   requireVerifiedEmail?: boolean;
   roles?: string[];
 }) {
+  const wrappedHandler = async (
+    data: TInputSchema extends z.ZodType ? z.output<TInputSchema> : unknown,
+    context: ActionAPIContext,
+  ) => {
+    const isAuthed = await auth.api.getSession({
+      headers: context.request.headers,
+    });
+
+    if (!isAuthed) {
+      throw new ActionError({ code: "UNAUTHORIZED" });
+    }
+
+    if (requireVerifiedEmail && !isAuthed.user.emailVerified) {
+      throw new ActionError({ code: "UNAUTHORIZED" });
+    }
+
+    if (roles && !roles.includes(isAuthed.user.role ?? "user")) {
+      throw new ActionError({ code: "UNAUTHORIZED" });
+    }
+
+    return await handler(
+      data as Parameters<typeof handler>[0],
+      isAuthed,
+      context,
+    );
+  };
+
   return defineAction({
     accept,
     input,
-    handler: (async (data: TInputSchema, context: ActionAPIContext) => {
-      const isAuthed = await auth.api.getSession({
-        headers: context.request.headers,
-      });
-
-      if (!isAuthed) {
-        throw new ActionError({ code: "UNAUTHORIZED" });
-      }
-
-      if (requireVerifiedEmail && !isAuthed.user.emailVerified) {
-        throw new ActionError({ code: "UNAUTHORIZED" });
-      }
-
-      if (roles && !roles.includes(isAuthed.user.role ?? "user")) {
-        throw new ActionError({ code: "UNAUTHORIZED" });
-      }
-
-      return await handler(data, isAuthed, context);
-    }) as ActionHandler<TInputSchema, TOutput>,
+    // @ts-expect-error — our handler signature is compatible but uses z.ZodType vs Astro's internal z.$ZodType
+    handler: wrappedHandler,
   });
 }

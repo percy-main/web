@@ -111,7 +111,7 @@ function EditView({
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent) => {
     e.preventDefault();
     mutation.mutate(form);
   };

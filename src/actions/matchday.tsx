@@ -6,7 +6,7 @@ import { render } from "@react-email/render";
 import { ActionError } from "astro:actions";
 import { BASE_URL } from "astro:env/client";
 import { PLAY_CRICKET_SITE_ID } from "astro:env/server";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { storeReceiptImage } from "@/lib/blobs";
 import { randomUUID } from "crypto";
 import { parse, isBefore, startOfDay, subDays, formatDate } from "date-fns";

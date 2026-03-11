@@ -2,7 +2,13 @@ import * as db from "@/lib/db/client";
 import * as email from "@/lib/email/send";
 import { passkey } from "@better-auth/passkey";
 import { render } from "@react-email/render";
-import { DEPLOY_PRIME_URL } from "astro:env/server";
+import {
+  BETTER_AUTH_RP_ID,
+  BETTER_AUTH_RP_NAME,
+  DEPLOY_PRIME_URL,
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+} from "astro:env/server";
 import { betterAuth } from "better-auth";
 import { admin, twoFactor } from "better-auth/plugins";
 import { ResetPassword } from "~/emails/ResetPassword";
@@ -22,7 +28,7 @@ const { baseURL } = await (
 )();
 
 export const auth = betterAuth({
-  appName: import.meta.env.BETTER_AUTH_RP_NAME as string,
+  appName: BETTER_AUTH_RP_NAME ?? "",
   trustedOrigins: [DEPLOY_PRIME_URL].filter(Boolean),
   database: {
     type: "sqlite",
@@ -30,14 +36,14 @@ export const auth = betterAuth({
   },
   socialProviders: {
     google: {
-      clientId: import.meta.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: import.meta.env.GOOGLE_CLIENT_SECRET as string,
+      clientId: GOOGLE_CLIENT_ID ?? "",
+      clientSecret: GOOGLE_CLIENT_SECRET ?? "",
     },
   },
   plugins: [
     passkey({
-      rpID: import.meta.env.BETTER_AUTH_RP_ID as string,
-      rpName: import.meta.env.BETTER_AUTH_RP_NAME as string,
+      rpID: BETTER_AUTH_RP_ID ?? "",
+      rpName: BETTER_AUTH_RP_NAME ?? "",
     }),
     twoFactor(),
     admin(),

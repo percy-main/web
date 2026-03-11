@@ -7,7 +7,7 @@ import { stripeDate } from "@/lib/util/stripeDate";
 import { render } from "@react-email/render";
 import { BASE_URL } from "astro:env/client";
 import type Stripe from "stripe";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { MembershipCreated } from "~/emails/MembershipUpdated";
 import { stripe } from "../client";
 import { membershipSchema } from "../metadata";
@@ -29,7 +29,7 @@ import { membershipSchema } from "../metadata";
 const resolveSubscriptionMembershipMetadata = async (
   invoice: Stripe.Invoice,
   email: string | null,
-): Promise<z.infer<typeof membershipSchema> | undefined> => {
+): Promise<z.output<typeof membershipSchema> | undefined> => {
   if (!invoice.subscription) {
     return undefined;
   }

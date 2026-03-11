@@ -4,7 +4,7 @@ import { client } from "@/lib/db/client";
 import * as playCricketApi from "@/lib/play-cricket";
 import type { TypeTrusteeSkeleton } from "@/__generated__";
 import type { Asset, AssetDetails } from "contentful";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 
 export const recordLinking = {
   /** Fetch all members and dependents with their link statuses across sources. */

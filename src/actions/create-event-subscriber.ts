@@ -1,14 +1,14 @@
 import * as db from "@/lib/db/client";
 import { defineAction } from "astro:actions";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { randomUUID } from "crypto";
 
 const input = z.object({
-  meta: z.object({}).passthrough(),
+  meta: z.object({}).loose(),
   email: z.string(),
 });
 
-export const handler = async ({ meta, email }: z.TypeOf<typeof input>) => {
+export const handler = async ({ meta, email }: z.output<typeof input>) => {
   const id = randomUUID();
 
   await db.client

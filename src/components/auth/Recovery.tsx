@@ -2,7 +2,7 @@ import { SimpleInput } from "@/components/form/SimpleInput";
 import { Button } from "@/components/ui/Button";
 import { authClient } from "@/lib/auth/client";
 import { useMutation } from "@tanstack/react-query";
-import { useCallback, useState, type FC, type FormEvent } from "react";
+import { useCallback, useState, type FC, type SubmitEvent } from "react";
 import type { LoginPhase } from "./Login";
 
 type Props = {
@@ -27,7 +27,7 @@ export const Recovery: FC<Props> = ({ setPhase }) => {
   });
 
   const handleSubmit = useCallback(
-    (event: FormEvent) => {
+    (event: SubmitEvent) => {
       event.preventDefault();
       verifyBackupCode.mutate();
     },

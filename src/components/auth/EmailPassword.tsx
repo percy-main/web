@@ -7,7 +7,7 @@ import {
   useEffect,
   useState,
   type FC,
-  type FormEvent,
+  type SubmitEvent,
 } from "react";
 import type { LoginPhase } from "./Login";
 
@@ -85,7 +85,7 @@ export const EmailPassword: FC<Props> = ({ setPhase }) => {
   });
 
   const handleSubmit = useCallback(
-    (event: FormEvent) => {
+    (event: SubmitEvent) => {
       event.preventDefault();
       signin.mutate();
     },

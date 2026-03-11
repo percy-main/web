@@ -12,7 +12,7 @@ import {
 } from "@/ui/Card";
 import { QueryClient, QueryClientProvider, useMutation } from "@tanstack/react-query";
 import { actions } from "astro:actions";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { type FC, useState } from "react";
 import { PaymentForm } from "./PaymentForm";
 

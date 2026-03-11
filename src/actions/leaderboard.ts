@@ -1,6 +1,6 @@
 import { client } from "@/lib/db/client";
 import { defineAction } from "astro:actions";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 
 export const leaderboard = {
   get: defineAction({

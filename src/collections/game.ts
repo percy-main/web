@@ -1,6 +1,7 @@
 import * as location from "@/collections/location";
 import { contentClient } from "@/lib/contentful/client";
-import { defineCollection, z } from "astro:content";
+import { z } from "astro/zod";
+import { defineCollection } from "astro:content";
 import { PLAY_CRICKET_SITE_ID } from "astro:env/server";
 import type { Entry } from "contentful";
 import * as df from "date-fns";
@@ -44,7 +45,7 @@ const innings = z.object({
   allOut: z.boolean(),
 });
 
-export type Innings = z.TypeOf<typeof innings>;
+export type Innings = z.output<typeof innings>;
 
 const result = z.object({
   outcome: z.enum(["W", "L", "D", "T", "A", "C", "N"]).nullable(),
@@ -53,7 +54,7 @@ const result = z.object({
   innings: z.array(innings),
 });
 
-export type Result = z.TypeOf<typeof result>;
+export type Result = z.output<typeof result>;
 
 export const schema = z.object({
   type: z.literal("game"),
@@ -82,7 +83,7 @@ export const schema = z.object({
   result: result.optional(),
 });
 
-export type Game = z.TypeOf<typeof schema>;
+export type Game = z.output<typeof schema>;
 
 export function resolveOutcome(
   resultMatch: ResultSummaryMatch,

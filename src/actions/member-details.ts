@@ -1,6 +1,6 @@
 import { defineAuthAction } from "../lib/auth/api";
 import { client } from "../lib/db/client";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { randomUUID } from "crypto";
 
 export const getMemberDetails = defineAuthAction({

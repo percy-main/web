@@ -1,6 +1,6 @@
 import { client } from "@/lib/db/client";
 import { defineAuthAction } from "@/lib/auth/api";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 
 export const gameScore = {
   submitScore: defineAuthAction({

@@ -2,7 +2,7 @@ import { defineAuthAction } from "@/lib/auth/api";
 import { client } from "@/lib/db/client";
 import { stripe } from "@/lib/payments/client";
 import { paymentData } from "@/lib/payments/config";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { subHours } from "date-fns";
 import { sql } from "kysely";
 
@@ -93,7 +93,7 @@ export const treasurer = {
       for (const row of chargeRows) {
         const entry = getOrCreate(row.month);
         const chargeType = row.type ?? "other";
-        const total = Number(row.total);
+        const total = row.total;
 
         if (chargeType === "membership" || chargeType === "junior_membership") {
           entry.membership += total;
@@ -110,10 +110,10 @@ export const treasurer = {
 
       // Add sponsorship table revenue
       for (const row of gameSponRows) {
-        getOrCreate(row.month).sponsorship += Number(row.total);
+        getOrCreate(row.month).sponsorship += row.total;
       }
       for (const row of playerSponRows) {
-        getOrCreate(row.month).sponsorship += Number(row.total);
+        getOrCreate(row.month).sponsorship += row.total;
       }
 
       // Sort by month
@@ -141,8 +141,8 @@ export const treasurer = {
 
       return rows.map((r) => ({
         type: r.type ?? "unknown",
-        active: Number(r.active),
-        lapsed: Number(r.lapsed),
+        active: r.active,
+        lapsed: r.lapsed,
       }));
     },
   }),
@@ -259,7 +259,7 @@ export const treasurer = {
             ),
           ),
         })),
-        total: Number(countResult.total),
+        total: countResult.total,
       };
     },
   }),
@@ -302,16 +302,16 @@ export const treasurer = {
 
       return {
         game: {
-          totalRevenue: Number(gameResult.totalRevenue),
-          paidRevenue: Number(gameResult.paidRevenue),
-          paidCount: Number(gameResult.paidCount),
-          unpaidCount: Number(gameResult.unpaidCount),
+          totalRevenue: gameResult.totalRevenue,
+          paidRevenue: gameResult.paidRevenue,
+          paidCount: gameResult.paidCount,
+          unpaidCount: gameResult.unpaidCount,
         },
         player: {
-          totalRevenue: Number(playerResult.totalRevenue),
-          paidRevenue: Number(playerResult.paidRevenue),
-          paidCount: Number(playerResult.paidCount),
-          unpaidCount: Number(playerResult.unpaidCount),
+          totalRevenue: playerResult.totalRevenue,
+          paidRevenue: playerResult.paidRevenue,
+          paidCount: playerResult.paidCount,
+          unpaidCount: playerResult.unpaidCount,
         },
       };
     },
@@ -349,11 +349,11 @@ export const treasurer = {
       ]);
 
       return {
-        total: Number(totalResult.total),
+        total: totalResult.total,
         byType: byType.map((r) => ({
           type: r.expense_type,
-          total: Number(r.total),
-          count: Number(r.count),
+          total: r.total,
+          count: r.count,
         })),
       };
     },
