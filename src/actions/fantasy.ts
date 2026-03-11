@@ -1,5 +1,6 @@
 import { defineAuthAction } from "@/lib/auth/api";
 import { client } from "@/lib/db/client";
+import { calculateFantasyScores } from "@/lib/fantasy/calculate-scores";
 import {
   getCurrentGameweek,
   getCurrentSeason,
@@ -16,7 +17,7 @@ import {
   LEAGUE_COMPETITION_TYPES,
   SCORING,
 } from "@/lib/fantasy/scoring";
-import { ActionError } from "astro:actions";
+import { ActionError, defineAction } from "astro:actions";
 import { z } from "astro/zod";
 import { sql } from "kysely";
 
@@ -733,6 +734,171 @@ const getTransferWindow = defineAuthAction({
 });
 
 // ---------------------------------------------------------------------------
+// Admin: recalculate scores
+// ---------------------------------------------------------------------------
+
+const calculateScores = defineAuthAction({
+  roles: ["admin"],
+  input: z.object({
+    season: z.string().optional(),
+  }),
+  handler: async ({ season }) => {
+    const s = season ?? getCurrentSeason();
+    const result = await calculateFantasyScores(client, s);
+    return result;
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Public leaderboard actions
+// ---------------------------------------------------------------------------
+
+const getWeeklyLeaderboard = defineAction({
+  input: z.object({
+    season: z.string().optional(),
+    gameweek: z.number().optional(),
+  }),
+  handler: async ({ season, gameweek }) => {
+    const currentSeason = season ?? getCurrentSeason();
+
+    // Default to most recent completed gameweek with scores
+    let targetGameweek = gameweek;
+    if (targetGameweek === undefined) {
+      const latestGw = await client
+        .selectFrom("fantasy_team_score")
+        .where("season", "=", currentSeason)
+        .select(sql<number>`MAX(gameweek_id)`.as("max_gw"))
+        .executeTakeFirst();
+      targetGameweek = latestGw?.max_gw ?? 0;
+    }
+
+    if (targetGameweek === 0) {
+      return { entries: [], gameweek: 0, season: currentSeason, availableGameweeks: [] };
+    }
+
+    // Get available gameweeks for the selector
+    const gws = await client
+      .selectFrom("fantasy_team_score")
+      .where("season", "=", currentSeason)
+      .select("gameweek_id")
+      .distinct()
+      .orderBy("gameweek_id", "desc")
+      .execute();
+
+    const availableGameweeks = gws.map((r) => r.gameweek_id);
+
+    // Get leaderboard for the target gameweek
+    const entries = await client
+      .selectFrom("fantasy_team_score as fts")
+      .innerJoin("fantasy_team as ft", "ft.id", "fts.fantasy_team_id")
+      .innerJoin("user as u", "u.id", "ft.user_id")
+      .where("fts.gameweek_id", "=", targetGameweek)
+      .where("fts.season", "=", currentSeason)
+      .select([
+        "fts.fantasy_team_id",
+        "fts.total_points",
+        "u.name as ownerName",
+      ])
+      .orderBy("fts.total_points", "desc")
+      .execute();
+
+    return {
+      entries: entries.map((e, i) => ({
+        rank: i + 1,
+        teamId: e.fantasy_team_id,
+        ownerName: e.ownerName,
+        weeklyPoints: e.total_points,
+      })),
+      gameweek: targetGameweek,
+      season: currentSeason,
+      availableGameweeks,
+    };
+  },
+});
+
+const getSeasonLeaderboard = defineAction({
+  input: z.object({
+    season: z.string().optional(),
+  }),
+  handler: async ({ season }) => {
+    const currentSeason = season ?? getCurrentSeason();
+
+    const entries = await client
+      .selectFrom("fantasy_team_score as fts")
+      .innerJoin("fantasy_team as ft", "ft.id", "fts.fantasy_team_id")
+      .innerJoin("user as u", "u.id", "ft.user_id")
+      .where("fts.season", "=", currentSeason)
+      .select([
+        "fts.fantasy_team_id",
+        sql<number>`SUM(fts.total_points)`.as("total_points"),
+        sql<number>`COUNT(DISTINCT fts.gameweek_id)`.as("gameweeks_played"),
+        "u.name as ownerName",
+      ])
+      .groupBy("fts.fantasy_team_id")
+      .orderBy(sql`SUM(fts.total_points)`, "desc")
+      .execute();
+
+    return {
+      entries: entries.map((e, i) => ({
+        rank: i + 1,
+        teamId: e.fantasy_team_id,
+        ownerName: e.ownerName,
+        totalPoints: e.total_points,
+        gameweeksPlayed: e.gameweeks_played,
+      })),
+      season: currentSeason,
+    };
+  },
+});
+
+const getPlayerLeaderboard = defineAction({
+  input: z.object({
+    season: z.string().optional(),
+  }),
+  handler: async ({ season }) => {
+    const currentSeason = season ?? getCurrentSeason();
+
+    const entries = await client
+      .selectFrom("fantasy_player_score as fps")
+      .innerJoin(
+        "fantasy_player as fp",
+        "fp.play_cricket_id",
+        "fps.play_cricket_id",
+      )
+      .where("fps.season", "=", currentSeason)
+      .where("fp.eligible", "=", 1)
+      .select([
+        "fps.play_cricket_id",
+        "fp.player_name",
+        sql<number>`SUM(fps.batting_points)`.as("batting_points"),
+        sql<number>`SUM(fps.bowling_points)`.as("bowling_points"),
+        sql<number>`SUM(fps.fielding_points)`.as("fielding_points"),
+        sql<number>`SUM(fps.team_points)`.as("team_points"),
+        sql<number>`SUM(fps.total_points)`.as("total_points"),
+        sql<number>`COUNT(DISTINCT fps.match_id)`.as("matches_played"),
+      ])
+      .groupBy("fps.play_cricket_id")
+      .orderBy(sql`SUM(fps.total_points)`, "desc")
+      .execute();
+
+    return {
+      entries: entries.map((e, i) => ({
+        rank: i + 1,
+        playCricketId: e.play_cricket_id,
+        playerName: e.player_name,
+        battingPoints: e.batting_points,
+        bowlingPoints: e.bowling_points,
+        fieldingPoints: e.fielding_points,
+        teamPoints: e.team_points,
+        totalPoints: e.total_points,
+        matchesPlayed: e.matches_played,
+      })),
+      season: currentSeason,
+    };
+  },
+});
+
+// ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
@@ -740,10 +906,14 @@ export const fantasy = {
   listPlayers,
   toggleEligibility,
   populatePlayers,
+  calculateScores,
   getEligiblePlayers,
   getMyTeam,
   saveTeam,
   getTeam,
   listTeams,
   getTransferWindow,
+  getWeeklyLeaderboard,
+  getSeasonLeaderboard,
+  getPlayerLeaderboard,
 };
