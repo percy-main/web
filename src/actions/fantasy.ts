@@ -58,9 +58,22 @@ const listPlayers = defineAuthAction({
     search: z.string().optional(),
   }),
   handler: async ({ search }) => {
+    const cutoffSeason = new Date().getFullYear() - 3;
+
     let query = client
       .selectFrom("fantasy_player")
       .selectAll()
+      .where(
+        "play_cricket_id",
+        "in",
+        sql`(
+          SELECT DISTINCT player_id FROM match_performance_batting WHERE season >= ${cutoffSeason}
+          UNION
+          SELECT DISTINCT player_id FROM match_performance_bowling WHERE season >= ${cutoffSeason}
+          UNION
+          SELECT DISTINCT player_id FROM match_performance_fielding WHERE season >= ${cutoffSeason}
+        )`,
+      )
       .orderBy("player_name", "asc");
 
     if (search) {
