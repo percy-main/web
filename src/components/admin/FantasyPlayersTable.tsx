@@ -57,7 +57,10 @@ export function FantasyPlayersTable() {
     },
   });
 
-  const players = playersQuery.data?.data?.players ?? [];
+  const rawPlayers = playersQuery.data?.data?.players ?? [];
+  const players = rawPlayers.filter(
+    (p): p is typeof p & { play_cricket_id: string } => p.play_cricket_id !== null,
+  );
   const eligibleCount = players.filter((p) => p.eligible === 1).length;
 
   return (

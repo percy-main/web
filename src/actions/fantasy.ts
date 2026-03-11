@@ -15,6 +15,15 @@ import { ActionError } from "astro:actions";
 import { z } from "astro/zod";
 import { sql } from "kysely";
 
+/**
+ * kysely-codegen generates integer PKs as `number | null` for SQLite.
+ * This helper safely extracts a non-null id from a row.
+ */
+function requireId(id: number | null): number {
+  if (id === null) throw new Error("Expected non-null id");
+  return id;
+}
+
 // ---------------------------------------------------------------------------
 // Admin actions
 // ---------------------------------------------------------------------------
@@ -191,10 +200,12 @@ const getEligiblePlayers = defineAuthAction({
     const statsMap = new Map<string, { current: PlayerStats; previous: PlayerStats }>();
 
     const getOrCreate = (playerId: string) => {
-      if (!statsMap.has(playerId)) {
-        statsMap.set(playerId, { current: {}, previous: {} });
+      let entry = statsMap.get(playerId);
+      if (!entry) {
+        entry = { current: {}, previous: {} };
+        statsMap.set(playerId, entry);
       }
-      return statsMap.get(playerId)!;
+      return entry;
     };
 
     for (const row of battingStats) {
@@ -222,11 +233,13 @@ const getEligiblePlayers = defineAuthAction({
     }
 
     return {
-      players: players.map((p) => ({
-        playCricketId: p.play_cricket_id,
-        playerName: p.player_name,
-        stats: statsMap.get(p.play_cricket_id) ?? { current: {}, previous: {} },
-      })),
+      players: players
+        .filter((p): p is typeof p & { play_cricket_id: string } => p.play_cricket_id !== null)
+        .map((p) => ({
+          playCricketId: p.play_cricket_id,
+          playerName: p.player_name,
+          stats: statsMap.get(p.play_cricket_id) ?? { current: {}, previous: {} },
+        })),
       season: currentSeason,
     };
   },
@@ -265,7 +278,7 @@ const getMyTeam = defineAuthAction({
         "fp.play_cricket_id",
         "ftp.play_cricket_id",
       )
-      .where("ftp.fantasy_team_id", "=", team.id!)
+      .where("ftp.fantasy_team_id", "=", requireId(team.id))
       .where("ftp.gameweek_added", "<=", gameweek)
       .where((eb) =>
         eb.or([
@@ -285,7 +298,7 @@ const getMyTeam = defineAuthAction({
     // Count transfers made this gameweek
     const transfersThisWeek = await client
       .selectFrom("fantasy_team_player")
-      .where("fantasy_team_id", "=", team.id!)
+      .where("fantasy_team_id", "=", requireId(team.id))
       .where("gameweek_added", "=", gameweek)
       .select(sql<number>`COUNT(*)`.as("count"))
       .executeTakeFirst();
@@ -294,7 +307,7 @@ const getMyTeam = defineAuthAction({
     // For subsequent gameweeks, only count players added THIS gameweek as transfers
     const initialPlayers = await client
       .selectFrom("fantasy_team_player")
-      .where("fantasy_team_id", "=", team.id!)
+      .where("fantasy_team_id", "=", requireId(team.id))
       .where("gameweek_added", "<", gameweek)
       .where((eb) =>
         eb.or([
@@ -407,7 +420,7 @@ const saveTeam = defineAuthAction({
           .returning("id")
           .executeTakeFirstOrThrow();
 
-        teamId = result.id as number;
+        teamId = requireId(result.id);
 
         // Insert all 11 players
         for (const player of players) {
@@ -425,7 +438,7 @@ const saveTeam = defineAuthAction({
         return { success: true, teamId };
       }
 
-      teamId = existingTeam.id as number;
+      teamId = requireId(existingTeam.id);
 
       // Existing team — handle transfers
       const currentPlayers = await trx
@@ -495,7 +508,7 @@ const saveTeam = defineAuthAction({
         await trx
           .updateTable("fantasy_team_player")
           .set({ gameweek_removed: gameweek })
-          .where("id", "=", player.id!)
+          .where("id", "=", requireId(player.id))
           .execute();
       }
 
@@ -522,7 +535,7 @@ const saveTeam = defineAuthAction({
             await trx
               .updateTable("fantasy_team_player")
               .set({ is_captain: player.isCaptain ? 1 : 0 })
-              .where("id", "=", existing.id!)
+              .where("id", "=", requireId(existing.id))
               .execute();
           }
         }
@@ -565,7 +578,7 @@ const getTeam = defineAuthAction({
         "fp.play_cricket_id",
         "ftp.play_cricket_id",
       )
-      .where("ftp.fantasy_team_id", "=", team.id!)
+      .where("ftp.fantasy_team_id", "=", requireId(team.id))
       .where("ftp.gameweek_added", "<=", gameweek)
       .where((eb) =>
         eb.or([
@@ -636,7 +649,7 @@ const getTransferWindow = defineAuthAction({
   input: z.object({
     season: z.string().optional(),
   }),
-  handler: async ({ season }) => {
+  handler: ({ season }) => {
     const currentSeason = season ?? getCurrentSeason();
     return getTransferWindowInfo(currentSeason);
   },

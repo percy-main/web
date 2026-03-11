@@ -49,7 +49,7 @@ export function TeamSelector() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (players: { playCricketId: string; isCaptain: boolean }[]) =>
+    mutationFn: (players: Array<{ playCricketId: string; isCaptain: boolean }>) =>
       actions.fantasy.saveTeam({ players }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["fantasy", "myTeam"] });
@@ -81,7 +81,7 @@ export function TeamSelector() {
 
   // Filter available players
   const availablePlayers = eligiblePlayers.filter((p) => {
-    if (selectedIds.has(p.playCricketId)) return false;
+    if (p.playCricketId && selectedIds.has(p.playCricketId)) return false;
     if (debouncedSearch) {
       return p.playerName
         .toLowerCase()
@@ -106,11 +106,9 @@ export function TeamSelector() {
     setSelectedPlayers((prev) => {
       const updated = prev.filter((p) => p.playCricketId !== playCricketId);
       // If we removed the captain, make the first player captain
-      if (
-        updated.length > 0 &&
-        !updated.some((p) => p.isCaptain)
-      ) {
-        updated[0]!.isCaptain = true;
+      const first = updated[0];
+      if (first && !updated.some((p) => p.isCaptain)) {
+        first.isCaptain = true;
       }
       return [...updated];
     });
@@ -330,12 +328,14 @@ export function TeamSelector() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() =>
-                            handleAddPlayer(
-                              player.playCricketId,
-                              player.playerName,
-                            )
-                          }
+                          onClick={() => {
+                            if (player.playCricketId) {
+                              handleAddPlayer(
+                                player.playCricketId,
+                                player.playerName,
+                              );
+                            }
+                          }}
                         >
                           Add
                         </Button>
@@ -350,7 +350,7 @@ export function TeamSelector() {
       )}
 
       {/* Show available players for transfers when squad is full */}
-      {!locked && selectedPlayers.length === 11 && hasChanges === false && (
+      {!locked && selectedPlayers.length === 11 && !hasChanges && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">

@@ -73,7 +73,7 @@ export function TeamsOverview() {
                   <TableCell className="text-right">
                     <button
                       className="text-sm text-blue-600 hover:underline"
-                      onClick={() => setSelectedTeamId(team.id!)}
+                      onClick={() => team.id != null && setSelectedTeamId(team.id)}
                     >
                       View Team
                     </button>
