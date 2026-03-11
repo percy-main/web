@@ -1,0 +1,125 @@
+---
+/**
+ * PoC: League table rendered server-side via Astro v6 live collection.
+ *
+ * Compare with the current approach:
+ *   - Current: React island (LeagueTable.tsx) → useQuery → Astro action → Play Cricket API
+ *   - This PoC: Astro page → getLiveEntry("leagueTable") → live loader → Play Cricket API (with 1h cache)
+ *
+ * Benefits demonstrated:
+ *   - Zero client JS for rendering the table
+ *   - Server-side rendering with type-safe data via live collection
+ *   - Built-in caching in the loader (1 hour TTL)
+ *   - Same data transformation logic, simpler data flow
+ *
+ * Trade-offs:
+ *   - Full page request required to refresh data (no client-side refetch)
+ *   - League table in Contentful rich text currently uses a React component;
+ *     migrating would require pre-fetching in the Astro page and passing data down
+ */
+import Container from "@/layouts/Container.astro";
+import { getLiveEntry } from "astro:content";
+
+export const prerender = false;
+
+const { divisionId } = Astro.params;
+
+if (!divisionId) {
+  return Astro.redirect("/404");
+}
+
+const startTime = performance.now();
+const { entry } = await getLiveEntry("leagueTable", divisionId);
+const loadTimeMs = Math.round(performance.now() - startTime);
+const { columns, rows, name } = entry.data;
+---
+
+<Container title={`League Table: ${name}`}>
+  <div class="mb-4 rounded-md bg-blue-50 p-3 text-sm text-blue-800">
+    <strong>PoC: Live Collection</strong> — This page is server-rendered using an Astro v6 live collection.
+    No client JavaScript is used. Data loaded in {loadTimeMs}ms
+    (cached for 1 hour after first fetch).
+  </div>
+
+  <div class="container mx-auto rounded-md p-2 sm:p-4 dark:bg-gray-50 dark:text-gray-800">
+    <div class="mx-auto max-w-max rounded-lg bg-white p-4 shadow">
+      <h2 class="mb-3 text-2xl leading-tight font-semibold">{name}</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-xs">
+          <thead class="rounded-t-lg dark:bg-gray-300">
+            <tr class="text-right">
+              <th class="p-3 text-left">Position</th>
+              {columns.map((column) => (
+                <th class="p-3 text-left">{column}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody class="border border-red-50">
+            {rows.map((row) => (
+              <tr class="border-b border-b-gray-200 odd:bg-red-50">
+                <td class="px-3 py-2 text-left">
+                  <span>{row.position}</span>
+                </td>
+                {columns.map((cell) => (
+                  <td class="px-3 py-2 text-left">
+                    <span>{row[cell]}</span>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-6 rounded-md bg-gray-50 p-4 text-sm">
+    <h3 class="mb-2 font-semibold">Comparison: Live Collection vs React Query</h3>
+    <table class="w-full text-left text-sm">
+      <thead>
+        <tr class="border-b">
+          <th class="py-2 pr-4">Aspect</th>
+          <th class="py-2 pr-4">React Query (current)</th>
+          <th class="py-2">Live Collection (this PoC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b">
+          <td class="py-2 pr-4 font-medium">Client JS</td>
+          <td class="py-2 pr-4">React + React Query bundle (~40KB)</td>
+          <td class="py-2">Zero</td>
+        </tr>
+        <tr class="border-b">
+          <td class="py-2 pr-4 font-medium">Rendering</td>
+          <td class="py-2 pr-4">Client-side after hydration</td>
+          <td class="py-2">Server-side (HTML sent in response)</td>
+        </tr>
+        <tr class="border-b">
+          <td class="py-2 pr-4 font-medium">Caching</td>
+          <td class="py-2 pr-4">None (fetches on every component mount)</td>
+          <td class="py-2">1 hour in-memory cache in loader</td>
+        </tr>
+        <tr class="border-b">
+          <td class="py-2 pr-4 font-medium">Data freshness</td>
+          <td class="py-2 pr-4">Always fresh (but no caching)</td>
+          <td class="py-2">Up to 1 hour stale (acceptable for weekly data)</td>
+        </tr>
+        <tr class="border-b">
+          <td class="py-2 pr-4 font-medium">Loading state</td>
+          <td class="py-2 pr-4">Shows nothing until data loads</td>
+          <td class="py-2">Full table in initial HTML (no layout shift)</td>
+        </tr>
+        <tr class="border-b">
+          <td class="py-2 pr-4 font-medium">SEO</td>
+          <td class="py-2 pr-4">Not indexed (client-rendered)</td>
+          <td class="py-2">Fully indexable (server-rendered HTML)</td>
+        </tr>
+        <tr>
+          <td class="py-2 pr-4 font-medium">Type safety</td>
+          <td class="py-2 pr-4">Via Zod at API boundary</td>
+          <td class="py-2">Via live collection schema + Zod at API boundary</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</Container>
