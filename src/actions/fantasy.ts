@@ -298,11 +298,17 @@ const getMyTeam = defineAuthAction({
       ])
       .execute();
 
-    // Count transfers made this gameweek
+    // Count transfers made this gameweek (only still-active ones, not reverted)
     const transfersThisWeek = await client
       .selectFrom("fantasy_team_player")
       .where("fantasy_team_id", "=", requireId(team.id))
       .where("gameweek_added", "=", gameweek)
+      .where((eb) =>
+        eb.or([
+          eb("gameweek_removed", "is", null),
+          eb("gameweek_removed", ">", gameweek),
+        ]),
+      )
       .select(sql<number>`COUNT(*)`.as("count"))
       .executeTakeFirst();
 
@@ -489,11 +495,18 @@ const saveTeam = defineAuthAction({
             (p) => p.gameweek_added === gameweek,
           ).length;
 
-          // Count transfers already persisted this gameweek
+          // Count transfers already persisted this gameweek that are still active
+          // (exclude rows that were added and then reverted in a previous save)
           const persistedTransfers = await trx
             .selectFrom("fantasy_team_player")
             .where("fantasy_team_id", "=", teamId)
             .where("gameweek_added", "=", gameweek)
+            .where((eb) =>
+              eb.or([
+                eb("gameweek_removed", "is", null),
+                eb("gameweek_removed", ">", gameweek),
+              ]),
+            )
             .select(sql<number>`COUNT(*)`.as("count"))
             .executeTakeFirst();
 
