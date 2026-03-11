@@ -17,7 +17,7 @@ export const schema = z.object({
     })
     .optional(),
   slug: z.string(),
-  pageData: z.object({}).passthrough(),
+  pageData: z.object({}).loose(),
   isDBSChecked: z.boolean(),
   hasLeftClub: z.boolean().optional(),
 });
