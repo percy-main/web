@@ -30,6 +30,24 @@ function requireId(id: number | null): number {
   return id;
 }
 
+/**
+ * Assign standard competition ranking (1224) to sorted entries.
+ * Entries with the same score get the same rank.
+ */
+function assignRanks<T>(
+  entries: T[],
+  getScore: (entry: T) => number,
+): Array<T & { rank: number }> {
+  let currentRank = 1;
+  return entries.map((entry, i) => {
+    const prev = entries[i - 1];
+    if (i > 0 && prev !== undefined && getScore(entry) < getScore(prev)) {
+      currentRank = i + 1;
+    }
+    return { ...entry, rank: currentRank };
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Admin actions
 // ---------------------------------------------------------------------------
@@ -802,13 +820,17 @@ const getWeeklyLeaderboard = defineAction({
       .orderBy("fts.total_points", "desc")
       .execute();
 
-    return {
-      entries: entries.map((e, i) => ({
-        rank: i + 1,
+    const ranked = assignRanks(
+      entries.map((e) => ({
         teamId: e.fantasy_team_id,
         ownerName: e.ownerName,
         weeklyPoints: e.total_points,
       })),
+      (e) => e.weeklyPoints,
+    );
+
+    return {
+      entries: ranked,
       gameweek: targetGameweek,
       season: currentSeason,
       availableGameweeks,
@@ -838,14 +860,18 @@ const getSeasonLeaderboard = defineAction({
       .orderBy(sql`SUM(fts.total_points)`, "desc")
       .execute();
 
-    return {
-      entries: entries.map((e, i) => ({
-        rank: i + 1,
+    const ranked = assignRanks(
+      entries.map((e) => ({
         teamId: e.fantasy_team_id,
         ownerName: e.ownerName,
         totalPoints: e.total_points,
         gameweeksPlayed: e.gameweeks_played,
       })),
+      (e) => e.totalPoints,
+    );
+
+    return {
+      entries: ranked,
       season: currentSeason,
     };
   },
@@ -881,9 +907,8 @@ const getPlayerLeaderboard = defineAction({
       .orderBy(sql`SUM(fps.total_points)`, "desc")
       .execute();
 
-    return {
-      entries: entries.map((e, i) => ({
-        rank: i + 1,
+    const ranked = assignRanks(
+      entries.map((e) => ({
         playCricketId: e.play_cricket_id,
         playerName: e.player_name,
         battingPoints: e.batting_points,
@@ -893,6 +918,11 @@ const getPlayerLeaderboard = defineAction({
         totalPoints: e.total_points,
         matchesPlayed: e.matches_played,
       })),
+      (e) => e.totalPoints,
+    );
+
+    return {
+      entries: ranked,
       season: currentSeason,
     };
   },

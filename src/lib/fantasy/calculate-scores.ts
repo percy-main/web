@@ -25,7 +25,7 @@ import { getGW1StartDate } from "./gameweek";
 
 /**
  * Parse a DD/MM/YYYY date string (as stored in match_performance tables)
- * into a Date object.
+ * into a UTC Date object.
  */
 function parseMatchDate(ddmmyyyy: string): Date {
   const [dd, mm, yyyy] = ddmmyyyy.split("/");
@@ -40,13 +40,12 @@ function parseMatchDate(ddmmyyyy: string): Date {
 
 /**
  * Determine which gameweek a match date falls in for a given season.
- * Returns 0 for pre-season matches (before GW1).
- * Returns null if the match is outside the season entirely.
+ * Returns null for pre-season matches (before GW1 start date).
  */
 function getGameweekForDate(matchDate: Date, season: string): number | null {
   const gw1 = getGW1StartDate(season);
 
-  if (matchDate.getTime() < gw1.getTime()) return null; // Before season starts
+  if (matchDate.getTime() < gw1.getTime()) return null;
 
   const diffMs = matchDate.getTime() - gw1.getTime();
   const diffWeeks = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
@@ -225,13 +224,24 @@ export async function calculateFantasyScores(
     }
   }
 
-  // Calculate and upsert player scores
-  let playerScoresUpserted = 0;
+  // Calculate player scores in memory first, then upsert
+  type PlayerScore = {
+    gameweek: number;
+    playerId: string;
+    matchId: string;
+    battingPts: number;
+    bowlingPts: number;
+    fieldingPts: number;
+    teamPts: number;
+    totalPts: number;
+  };
+
+  const playerScores: PlayerScore[] = [];
 
   for (const [, app] of appearances) {
     const matchDate = parseMatchDate(app.matchDate);
     const gameweek = getGameweekForDate(matchDate, season);
-    if (gameweek === null || gameweek === 0) continue; // Skip pre-season matches
+    if (gameweek === null) continue; // Skip pre-season matches
 
     const bat = battingByMatch.get(mkKey(app.playerId, app.matchId));
     const bowl = bowlingByMatch.get(mkKey(app.playerId, app.matchId));
@@ -272,45 +282,89 @@ export async function calculateFantasyScores(
     const teamPts = teamWon ? SCORING.team.winBonus : 0;
     const totalPts = battingPts + bowlingPts + fieldingPts + teamPts;
 
+    playerScores.push({
+      gameweek,
+      playerId: app.playerId,
+      matchId: app.matchId,
+      battingPts,
+      bowlingPts,
+      fieldingPts,
+      teamPts,
+      totalPts,
+    });
+  }
+
+  // Upsert player scores
+  let playerScoresUpserted = 0;
+  for (const ps of playerScores) {
     await db
       .insertInto("fantasy_player_score")
       .values({
-        gameweek_id: gameweek,
-        play_cricket_id: app.playerId,
-        match_id: app.matchId,
-        batting_points: battingPts,
-        bowling_points: bowlingPts,
-        fielding_points: fieldingPts,
-        team_points: teamPts,
-        total_points: totalPts,
+        gameweek_id: ps.gameweek,
+        play_cricket_id: ps.playerId,
+        match_id: ps.matchId,
+        batting_points: ps.battingPts,
+        bowling_points: ps.bowlingPts,
+        fielding_points: ps.fieldingPts,
+        team_points: ps.teamPts,
+        total_points: ps.totalPts,
         season,
       })
       .onConflict((oc) =>
         oc
-          .columns(["gameweek_id", "play_cricket_id", "match_id"])
+          .columns(["season", "gameweek_id", "play_cricket_id", "match_id"])
           .doUpdateSet({
-            batting_points: battingPts,
-            bowling_points: bowlingPts,
-            fielding_points: fieldingPts,
-            team_points: teamPts,
-            total_points: totalPts,
+            batting_points: ps.battingPts,
+            bowling_points: ps.bowlingPts,
+            fielding_points: ps.fieldingPts,
+            team_points: ps.teamPts,
+            total_points: ps.totalPts,
           }),
       )
       .execute();
-
     playerScoresUpserted++;
   }
 
-  // Now calculate team scores
-  // For each fantasy team, for each gameweek, sum up the scores of
-  // active squad members, applying 2x for captain
+  // --- Team score calculation ---
+  // Fetch all data upfront to avoid N+1 queries
+
   const teams = await db
     .selectFrom("fantasy_team")
     .where("season", "=", season)
     .select(["id", "season"])
     .execute();
 
-  let teamScoresUpserted = 0;
+  if (teams.length === 0) {
+    return { playerScoresUpserted, teamScoresUpserted: 0 };
+  }
+
+  const teamIds = teams
+    .map((t) => t.id)
+    .filter((id): id is number => id !== null);
+
+  // Fetch all team player assignments in one query
+  const allTeamPlayers = await db
+    .selectFrom("fantasy_team_player")
+    .where("fantasy_team_id", "in", teamIds)
+    .select([
+      "fantasy_team_id",
+      "play_cricket_id",
+      "is_captain",
+      "gameweek_added",
+      "gameweek_removed",
+    ])
+    .execute();
+
+  // Group by team
+  const teamPlayersMap = new Map<number, typeof allTeamPlayers>();
+  for (const tp of allTeamPlayers) {
+    let arr = teamPlayersMap.get(tp.fantasy_team_id);
+    if (!arr) {
+      arr = [];
+      teamPlayersMap.set(tp.fantasy_team_id, arr);
+    }
+    arr.push(tp);
+  }
 
   // Find all gameweeks that have player scores
   const gameweeksResult = await db
@@ -322,16 +376,32 @@ export async function calculateFantasyScores(
 
   const gameweeks = gameweeksResult.map((r) => r.gameweek_id);
 
-  for (const team of teams) {
-    const teamId = team.id;
-    if (teamId === null) continue;
+  // Fetch all player scores for the season in one query
+  const allPlayerScores = await db
+    .selectFrom("fantasy_player_score")
+    .where("season", "=", season)
+    .select(["play_cricket_id", "gameweek_id", "total_points"])
+    .execute();
 
-    // Get all team player assignments (for determining active squad per gameweek)
-    const teamPlayers = await db
-      .selectFrom("fantasy_team_player")
-      .where("fantasy_team_id", "=", teamId)
-      .select(["play_cricket_id", "is_captain", "gameweek_added", "gameweek_removed"])
-      .execute();
+  // Index: gameweek -> playerId -> total points (summed across matches)
+  const scoresByGwAndPlayer = new Map<number, Map<string, number>>();
+  for (const ps of allPlayerScores) {
+    let gwMap = scoresByGwAndPlayer.get(ps.gameweek_id);
+    if (!gwMap) {
+      gwMap = new Map();
+      scoresByGwAndPlayer.set(ps.gameweek_id, gwMap);
+    }
+    gwMap.set(
+      ps.play_cricket_id,
+      (gwMap.get(ps.play_cricket_id) ?? 0) + ps.total_points,
+    );
+  }
+
+  // Calculate and upsert team scores
+  let teamScoresUpserted = 0;
+
+  for (const teamId of teamIds) {
+    const teamPlayers = teamPlayersMap.get(teamId) ?? [];
 
     for (const gw of gameweeks) {
       // Determine active squad for this gameweek
@@ -343,29 +413,12 @@ export async function calculateFantasyScores(
 
       if (activePlayers.length === 0) continue;
 
-      // Get player scores for this gameweek
-      const playerIds = activePlayers.map((p) => p.play_cricket_id);
-      const playerScores = await db
-        .selectFrom("fantasy_player_score")
-        .where("gameweek_id", "=", gw)
-        .where("season", "=", season)
-        .where("play_cricket_id", "in", playerIds)
-        .select(["play_cricket_id", "total_points"])
-        .execute();
-
-      // Sum scores per player (a player could have multiple matches in a gameweek)
-      const scoreByPlayer = new Map<string, number>();
-      for (const ps of playerScores) {
-        scoreByPlayer.set(
-          ps.play_cricket_id,
-          (scoreByPlayer.get(ps.play_cricket_id) ?? 0) + ps.total_points,
-        );
-      }
+      const gwScores = scoresByGwAndPlayer.get(gw) ?? new Map();
 
       // Calculate team total with captain 2x multiplier
       let totalPoints = 0;
       for (const player of activePlayers) {
-        const playerPoints = scoreByPlayer.get(player.play_cricket_id) ?? 0;
+        const playerPoints = gwScores.get(player.play_cricket_id) ?? 0;
         const multiplier = player.is_captain === 1 ? 2 : 1;
         totalPoints += playerPoints * multiplier;
       }
@@ -379,9 +432,11 @@ export async function calculateFantasyScores(
           season,
         })
         .onConflict((oc) =>
-          oc.columns(["gameweek_id", "fantasy_team_id"]).doUpdateSet({
-            total_points: totalPoints,
-          }),
+          oc
+            .columns(["season", "gameweek_id", "fantasy_team_id"])
+            .doUpdateSet({
+              total_points: totalPoints,
+            }),
         )
         .execute();
 

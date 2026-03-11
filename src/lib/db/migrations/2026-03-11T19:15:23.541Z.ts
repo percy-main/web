@@ -24,14 +24,8 @@ export async function up(db: Kysely<never>): Promise<void> {
   await db.schema
     .createIndex("idx_fps_gameweek_player_match")
     .on("fantasy_player_score")
-    .columns(["gameweek_id", "play_cricket_id", "match_id"])
+    .columns(["season", "gameweek_id", "play_cricket_id", "match_id"])
     .unique()
-    .execute();
-
-  await db.schema
-    .createIndex("idx_fps_season")
-    .on("fantasy_player_score")
-    .column("season")
     .execute();
 
   await db.schema
@@ -58,14 +52,8 @@ export async function up(db: Kysely<never>): Promise<void> {
   await db.schema
     .createIndex("idx_fts_gameweek_team")
     .on("fantasy_team_score")
-    .columns(["gameweek_id", "fantasy_team_id"])
+    .columns(["season", "gameweek_id", "fantasy_team_id"])
     .unique()
-    .execute();
-
-  await db.schema
-    .createIndex("idx_fts_season")
-    .on("fantasy_team_score")
-    .column("season")
     .execute();
 }
 

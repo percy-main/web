@@ -130,7 +130,7 @@ async function setupSchema(db: Kysely<DB>) {
   await db.schema
     .createIndex("idx_fps_gameweek_player_match")
     .on("fantasy_player_score")
-    .columns(["gameweek_id", "play_cricket_id", "match_id"])
+    .columns(["season", "gameweek_id", "play_cricket_id", "match_id"])
     .unique()
     .execute();
 
@@ -147,7 +147,7 @@ async function setupSchema(db: Kysely<DB>) {
   await db.schema
     .createIndex("idx_fts_gameweek_team")
     .on("fantasy_team_score")
-    .columns(["gameweek_id", "fantasy_team_id"])
+    .columns(["season", "gameweek_id", "fantasy_team_id"])
     .unique()
     .execute();
 }
