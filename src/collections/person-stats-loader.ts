@@ -1,6 +1,11 @@
-import { client } from "@/lib/db/client";
 import type { LiveLoader } from "astro/loaders";
-import { sql } from "kysely";
+
+/** Lazy-load the DB client so the module can be imported at sync time without a DB connection */
+async function getDb() {
+  const { client } = await import("@/lib/db/client");
+  const { sql } = await import("kysely");
+  return { client, sql };
+}
 
 /** Convert cricket overs string (e.g. "12.3") to total balls */
 function oversToBalls(overs: string): number {
@@ -58,6 +63,8 @@ interface EntryFilter {
 }
 
 async function getCareerStats(playerId: string) {
+  const { client, sql } = await getDb();
+
   const [
     battingSeasons,
     bowlingSeasons,
@@ -142,6 +149,8 @@ async function getCareerStats(playerId: string) {
 }
 
 async function getSeasonStats(playerId: string, season: number) {
+  const { client, sql } = await getDb();
+
   const battingRows = await client
     .selectFrom("match_performance_batting as b")
     .select([
@@ -286,6 +295,7 @@ export function personStatsLoader(): LiveLoader<
       return Promise.resolve({ entries: [] });
     },
     loadEntry: async ({ filter }) => {
+      const { client } = await getDb();
       const contentfulEntryId = filter.id;
 
       const member = await client
