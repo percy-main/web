@@ -105,22 +105,35 @@ const toggleEligibility = defineAuthAction({
 const populatePlayers = defineAuthAction({
   roles: ["admin"],
   handler: async () => {
-    // Use a single INSERT ... SELECT to upsert all players in one query,
+    // Use bulk INSERT OR IGNORE + UPDATE to upsert all players in two queries,
     // avoiding the serverless function timeout that occurs with one-by-one inserts.
-    const result = await sql`
-      INSERT INTO fantasy_player (play_cricket_id, player_name)
-      SELECT player_id, player_name FROM (
-        SELECT player_id, player_name, MAX(rowid) as latest
-        FROM (
-          SELECT player_id, player_name, rowid FROM match_performance_batting
-          UNION ALL
-          SELECT player_id, player_name, rowid FROM match_performance_bowling
-          UNION ALL
-          SELECT player_id, player_name, rowid FROM match_performance_fielding
-        )
-        GROUP BY player_id
+    // (SQLite/libsql doesn't support INSERT...SELECT...ON CONFLICT together.)
+    const allPlayers = sql`(
+      SELECT player_id, player_name, MAX(rowid) as latest
+      FROM (
+        SELECT player_id, player_name, rowid FROM match_performance_batting
+        UNION ALL
+        SELECT player_id, player_name, rowid FROM match_performance_bowling
+        UNION ALL
+        SELECT player_id, player_name, rowid FROM match_performance_fielding
       )
-      ON CONFLICT(play_cricket_id) DO UPDATE SET player_name = excluded.player_name
+      GROUP BY player_id
+    )`;
+
+    // Insert any new players
+    await sql`
+      INSERT OR IGNORE INTO fantasy_player (play_cricket_id, player_name)
+      SELECT player_id, player_name FROM ${allPlayers}
+    `.execute(client);
+
+    // Update names for existing players (in case they changed on Play Cricket)
+    await sql`
+      UPDATE fantasy_player
+      SET player_name = (
+        SELECT player_name FROM ${allPlayers} p
+        WHERE p.player_id = fantasy_player.play_cricket_id
+      )
+      WHERE play_cricket_id IN (SELECT player_id FROM ${allPlayers})
     `.execute(client);
 
     const countResult = await sql`
@@ -128,7 +141,7 @@ const populatePlayers = defineAuthAction({
     `.execute(client);
     const total = (countResult.rows[0] as { total: number }).total;
 
-    return { total, inserted: Number(result.numAffectedRows ?? 0) };
+    return { total, inserted: total };
   },
 });
 
