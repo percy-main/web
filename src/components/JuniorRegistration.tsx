@@ -1,5 +1,7 @@
 import { SimpleInput } from "@/components/form/SimpleInput";
 import { RadioButtons } from "@/components/form/RadioButtons";
+import { PaymentForm } from "@/components/PaymentForm";
+import { Alert, AlertDescription } from "@/ui/Alert";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import {
   Select,
@@ -104,9 +106,9 @@ const calculateTotal = (existingCount: number, newCount: number) => {
   return total;
 };
 
-type Step = "children" | "cricket" | "contact" | "medical" | "consents" | "review" | "done";
+type Step = "children" | "cricket" | "contact" | "medical" | "consents" | "review" | "payment" | "done";
 
-const STEPS: Step[] = ["children", "cricket", "contact", "medical", "consents", "review"];
+const STEPS: Step[] = ["children", "cricket", "contact", "medical", "consents", "review", "payment"];
 
 const STEP_LABELS: Record<Step, string> = {
   children: "Children",
@@ -115,6 +117,7 @@ const STEP_LABELS: Record<Step, string> = {
   medical: "Medical",
   consents: "Consents",
   review: "Review",
+  payment: "Payment",
   done: "Done",
 };
 
@@ -278,6 +281,13 @@ const JuniorRegistrationInner: FC = () => {
   });
   const existingCount = existingDepsQuery.data?.data?.currentYearCount ?? 0;
 
+  const [paymentData, setPaymentData] = useState<{
+    clientSecret: string;
+    totalAmountPence: number;
+    paymentIntentId: string;
+  } | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
   const addDependentsMutation = useMutation({
     mutationFn: async (deps: Dependent[]) => {
       const result = await actions.addDependents({
@@ -300,6 +310,24 @@ const JuniorRegistrationInner: FC = () => {
       });
       if (result.error) throw new Error(result.error.message);
       return result.data;
+    },
+  });
+
+  const payMutation = useMutation({
+    mutationFn: () => actions.charges.payOutstandingBalance({}),
+    onSuccess: (result) => {
+      if (result.data) {
+        const piId = result.data.clientSecret.split("_secret_")[0];
+        setPaymentData({
+          clientSecret: result.data.clientSecret,
+          totalAmountPence: result.data.totalAmountPence,
+          paymentIntentId: piId,
+        });
+        setPaymentError(null);
+      }
+    },
+    onError: () => {
+      setPaymentError("Failed to create payment. Please try again.");
     },
   });
 
@@ -352,22 +380,24 @@ const JuniorRegistrationInner: FC = () => {
 
   const handleSubmit = async () => {
     await addDependentsMutation.mutateAsync(dependents);
-    setStep("done");
+    setStep("payment");
+    payMutation.mutate();
   };
 
   if (step === "done") {
     return (
       <div className="mx-auto max-w-2xl">
         <div className="rounded-lg border border-green-200 bg-green-50 p-6 text-center">
-          <h4 className="mb-2">Registration Complete</h4>
+          <h4 className="mb-2">Registration & Payment Complete</h4>
           <p className="mb-4 text-sm text-gray-600">
-            Your junior members have been registered and a charge has been
-            created. Head to the payments tab in the members area to pay.
+            Your junior members have been registered and payment has been
+            received. You can view your payment history in the members area.
           </p>
           <a href="/members?tab=payments" className={buttonVariants()}>
-            Go to Payments
+            Go to Members Area
           </a>
         </div>
+        <SocialMembershipUpsell />
       </div>
     );
   }
@@ -1000,11 +1030,80 @@ const JuniorRegistrationInner: FC = () => {
               onClick={handleSubmit}
             >
               {addDependentsMutation.isPending
-                ? "Processing..."
-                : "Confirm & Pay"}
+                ? "Registering..."
+                : "Confirm & Continue to Payment"}
             </Button>
           </div>
         </>
+      )}
+
+      {/* Step 7: Payment */}
+      {step === "payment" && (
+        <div>
+          {payMutation.isPending && !paymentData && (
+            <div className="rounded-lg border border-gray-200 bg-white p-6 text-center">
+              <p className="text-sm text-gray-600">Setting up payment...</p>
+            </div>
+          )}
+
+          {paymentError && (
+            <div className="flex flex-col gap-4">
+              <Alert variant="destructive">
+                <AlertDescription>{paymentError}</AlertDescription>
+              </Alert>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setPaymentError(null);
+                    payMutation.mutate();
+                  }}
+                >
+                  Try Again
+                </Button>
+                <a
+                  href="/members?tab=payments"
+                  className={buttonVariants({ variant: "outline" })}
+                >
+                  Pay Later
+                </a>
+              </div>
+            </div>
+          )}
+
+          {paymentData && (
+            <div className="flex flex-col gap-4">
+              <PaymentForm
+                clientSecret={paymentData.clientSecret}
+                amount={paymentData.totalAmountPence}
+                title="Pay for Junior Membership"
+                onSuccess={async () => {
+                  try {
+                    await actions.charges.confirmPayment({
+                      paymentIntentId: paymentData.paymentIntentId,
+                    });
+                  } catch {
+                    // Payment succeeded at Stripe but confirmation failed — the
+                    // webhook will reconcile, so still show success.
+                  }
+                  setStep("done");
+                }}
+                onCancel={() => {
+                  window.location.href = "/members?tab=payments";
+                }}
+              />
+              <p className="text-center text-sm text-gray-500">
+                Or{" "}
+                <a
+                  href="/members?tab=payments"
+                  className="text-blue-700 underline hover:text-blue-900"
+                >
+                  pay later in the members area
+                </a>
+              </p>
+            </div>
+          )}
+        </div>
       )}
 
       <SocialMembershipUpsell />
