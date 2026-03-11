@@ -284,12 +284,8 @@ async function getSeasonStats(playerId: string, season: number) {
   return { batting, bowling };
 }
 
-export function personStatsLoader(): LiveLoader<
-  PersonStats,
-  EntryFilter
-> {
-  return {
-    name: "person-stats-loader",
+export const loader: LiveLoader<PersonStats, EntryFilter> = {
+    name: "person-stats",
     loadCollection: () => {
       // Not used — stats are always loaded per-entry via getLiveEntry
       return Promise.resolve({ entries: [] });
@@ -346,5 +342,5 @@ export function personStatsLoader(): LiveLoader<
         },
       };
     },
-  };
-}
+};
+
