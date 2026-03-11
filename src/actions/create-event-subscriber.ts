@@ -4,7 +4,7 @@ import { z } from "astro/zod";
 import { randomUUID } from "crypto";
 
 const input = z.object({
-  meta: z.object({}).loose(),
+  meta: z.object({}).passthrough(),
   email: z.string(),
 });
 
