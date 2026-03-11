@@ -57,7 +57,7 @@ function parseDismissalType(
   const code = howOut.toLowerCase().trim();
   if (code === "ct" || code.startsWith("caught")) return "catch";
   if (code === "st" || code.startsWith("stumped")) return "stumping";
-  if (code.includes("run out")) return "run_out";
+  if (code === "ro" || code.includes("run out")) return "run_out";
   return null;
 }
 
