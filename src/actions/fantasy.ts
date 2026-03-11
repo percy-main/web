@@ -58,9 +58,22 @@ const listPlayers = defineAuthAction({
     search: z.string().optional(),
   }),
   handler: async ({ search }) => {
+    const cutoffSeason = new Date().getFullYear() - 3;
+
     let query = client
       .selectFrom("fantasy_player")
       .selectAll()
+      .where(
+        "play_cricket_id",
+        "in",
+        sql<string>`(
+          SELECT DISTINCT player_id FROM match_performance_batting WHERE season >= ${cutoffSeason}
+          UNION
+          SELECT DISTINCT player_id FROM match_performance_bowling WHERE season >= ${cutoffSeason}
+          UNION
+          SELECT DISTINCT player_id FROM match_performance_fielding WHERE season >= ${cutoffSeason}
+        )`,
+      )
       .orderBy("player_name", "asc");
 
     if (search) {
@@ -92,50 +105,43 @@ const toggleEligibility = defineAuthAction({
 const populatePlayers = defineAuthAction({
   roles: ["admin"],
   handler: async () => {
-    // Get distinct players from batting, bowling, and fielding performance tables
-    const battingPlayers = await client
-      .selectFrom("match_performance_batting")
-      .select(["player_id", "player_name"])
-      .distinct()
-      .execute();
+    // Use bulk INSERT OR IGNORE + UPDATE to upsert all players in two queries,
+    // avoiding the serverless function timeout that occurs with one-by-one inserts.
+    // (SQLite/libsql doesn't support INSERT...SELECT...ON CONFLICT together.)
+    const allPlayers = sql`(
+      SELECT player_id, player_name, MAX(rowid) as latest
+      FROM (
+        SELECT player_id, player_name, rowid FROM match_performance_batting
+        UNION ALL
+        SELECT player_id, player_name, rowid FROM match_performance_bowling
+        UNION ALL
+        SELECT player_id, player_name, rowid FROM match_performance_fielding
+      )
+      GROUP BY player_id
+    )`;
 
-    const bowlingPlayers = await client
-      .selectFrom("match_performance_bowling")
-      .select(["player_id", "player_name"])
-      .distinct()
-      .execute();
+    // Insert any new players
+    await sql`
+      INSERT OR IGNORE INTO fantasy_player (play_cricket_id, player_name)
+      SELECT player_id, player_name FROM ${allPlayers}
+    `.execute(client);
 
-    const fieldingPlayers = await client
-      .selectFrom("match_performance_fielding")
-      .select(["player_id", "player_name"])
-      .distinct()
-      .execute();
+    // Update names for existing players (in case they changed on Play Cricket)
+    await sql`
+      UPDATE fantasy_player
+      SET player_name = (
+        SELECT player_name FROM ${allPlayers} p
+        WHERE p.player_id = fantasy_player.play_cricket_id
+      )
+      WHERE play_cricket_id IN (SELECT player_id FROM ${allPlayers})
+    `.execute(client);
 
-    // Merge all players, preferring the most recent name
-    const playerMap = new Map<string, string>();
-    for (const p of [...battingPlayers, ...bowlingPlayers, ...fieldingPlayers]) {
-      playerMap.set(p.player_id, p.player_name);
-    }
+    const countResult = await sql`
+      SELECT count(*) as total FROM fantasy_player
+    `.execute(client);
+    const total = (countResult.rows[0] as { total: number }).total;
 
-    let inserted = 0;
-    for (const [playerId, playerName] of playerMap) {
-      const result = await client
-        .insertInto("fantasy_player")
-        .values({
-          play_cricket_id: playerId,
-          player_name: playerName,
-        })
-        .onConflict((oc) =>
-          oc.column("play_cricket_id").doUpdateSet({ player_name: playerName }),
-        )
-        .execute();
-
-      if (result[0]?.numInsertedOrUpdatedRows) {
-        inserted++;
-      }
-    }
-
-    return { total: playerMap.size, inserted };
+    return { total, inserted: total };
   },
 });
 
