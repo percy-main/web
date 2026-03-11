@@ -92,50 +92,30 @@ const toggleEligibility = defineAuthAction({
 const populatePlayers = defineAuthAction({
   roles: ["admin"],
   handler: async () => {
-    // Get distinct players from batting, bowling, and fielding performance tables
-    const battingPlayers = await client
-      .selectFrom("match_performance_batting")
-      .select(["player_id", "player_name"])
-      .distinct()
-      .execute();
-
-    const bowlingPlayers = await client
-      .selectFrom("match_performance_bowling")
-      .select(["player_id", "player_name"])
-      .distinct()
-      .execute();
-
-    const fieldingPlayers = await client
-      .selectFrom("match_performance_fielding")
-      .select(["player_id", "player_name"])
-      .distinct()
-      .execute();
-
-    // Merge all players, preferring the most recent name
-    const playerMap = new Map<string, string>();
-    for (const p of [...battingPlayers, ...bowlingPlayers, ...fieldingPlayers]) {
-      playerMap.set(p.player_id, p.player_name);
-    }
-
-    let inserted = 0;
-    for (const [playerId, playerName] of playerMap) {
-      const result = await client
-        .insertInto("fantasy_player")
-        .values({
-          play_cricket_id: playerId,
-          player_name: playerName,
-        })
-        .onConflict((oc) =>
-          oc.column("play_cricket_id").doUpdateSet({ player_name: playerName }),
+    // Use a single INSERT ... SELECT to upsert all players in one query,
+    // avoiding the serverless function timeout that occurs with one-by-one inserts.
+    const result = await sql`
+      INSERT INTO fantasy_player (play_cricket_id, player_name)
+      SELECT player_id, player_name FROM (
+        SELECT player_id, player_name, MAX(rowid) as latest
+        FROM (
+          SELECT player_id, player_name, rowid FROM match_performance_batting
+          UNION ALL
+          SELECT player_id, player_name, rowid FROM match_performance_bowling
+          UNION ALL
+          SELECT player_id, player_name, rowid FROM match_performance_fielding
         )
-        .execute();
+        GROUP BY player_id
+      )
+      ON CONFLICT(play_cricket_id) DO UPDATE SET player_name = excluded.player_name
+    `.execute(client);
 
-      if (result[0]?.numInsertedOrUpdatedRows) {
-        inserted++;
-      }
-    }
+    const countResult = await sql`
+      SELECT count(*) as total FROM fantasy_player
+    `.execute(client);
+    const total = Number((countResult.rows[0] as { total: number }).total);
 
-    return { total: playerMap.size, inserted };
+    return { total, inserted: Number(result.numUpdatedOrDeletedRows ?? 0) };
   },
 });
 
