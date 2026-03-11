@@ -28,8 +28,13 @@ if (!divisionId) {
   return Astro.redirect("/404");
 }
 
+let entry;
 const startTime = performance.now();
-const { entry } = await getLiveEntry("leagueTable", divisionId);
+try {
+  ({ entry } = await getLiveEntry("leagueTable", divisionId));
+} catch {
+  return Astro.redirect("/404");
+}
 const loadTimeMs = Math.round(performance.now() - startTime);
 const { columns, rows, name } = entry.data;
 ---

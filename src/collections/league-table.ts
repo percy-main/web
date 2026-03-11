@@ -1,6 +1,5 @@
 import * as playCricketApi from "@/lib/play-cricket";
 import type { LiveLoader } from "astro/loaders";
-import _ from "lodash";
 
 export interface LeagueTableData {
   [key: string]: unknown;
@@ -14,7 +13,8 @@ interface EntryFilter {
   id: string;
 }
 
-/** Simple in-memory cache with TTL */
+// In-memory cache: survives warm invocations on Netlify Functions but is lost
+// on cold starts. For persistent caching, use DB-backed cache (see play_cricket_match_cache).
 const cache = new Map<string, { data: LeagueTableData; fetchedAt: number }>();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -28,20 +28,28 @@ async function fetchLeagueTable(
     return cached.data;
   }
 
-  const {
-    league_table: [league_table],
-  } = await playCricketApi.getLeagueTable({ divisionId });
+  const { league_table: leagueTables } =
+    await playCricketApi.getLeagueTable({ divisionId });
+  const league_table = leagueTables[0];
+
+  if (!league_table) {
+    throw new Error(`No league table found for division ${divisionId}`);
+  }
 
   const columns = Object.values(league_table.headings);
 
-  const rows = league_table.values.map(
-    ({ position, team_id, ...team }) =>
-      ({
-        position,
-        team_id,
-        ...Object.fromEntries(_.zip(columns, Object.values(team))),
-      }) as { position: string; team_id: string } & Record<string, string>,
-  );
+  const rows = league_table.values.map(({ position, team_id, ...team }) => {
+    const columnValues = Object.values(team);
+    const mapped = Object.fromEntries(
+      columns.flatMap((col, i) =>
+        columnValues[i] !== undefined ? [[col, columnValues[i]]] : [],
+      ),
+    );
+    return { position, team_id, ...mapped } as {
+      position: string;
+      team_id: string;
+    } & Record<string, string>;
+  });
 
   const data: LeagueTableData = {
     id: league_table.id,
