@@ -96,8 +96,8 @@ function ukComponentsToUTC(uk: ReturnType<typeof getUKDateComponents>): Date {
 export function getGW1StartDate(season: string): Date {
   const dateStr = SEASON_GW1_DATES[season];
   if (dateStr) {
-    const [y, m, d] = dateStr.split("-").map(Number);
-    return new Date(Date.UTC(y!, m! - 1, d!));
+    const parts = dateStr.split("-").map(Number);
+    return new Date(Date.UTC(parts[0] ?? 0, (parts[1] ?? 1) - 1, parts[2] ?? 1));
   }
   return new Date(Date.UTC(Number(season), 3, 18));
 }
