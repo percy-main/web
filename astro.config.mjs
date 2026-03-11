@@ -112,6 +112,26 @@ export default defineConfig({
         context: "server",
         access: "secret",
       }),
+      GOOGLE_CLIENT_ID: envField.string({
+        context: "server",
+        access: "secret",
+        optional: true,
+      }),
+      GOOGLE_CLIENT_SECRET: envField.string({
+        context: "server",
+        access: "secret",
+        optional: true,
+      }),
+      BETTER_AUTH_RP_ID: envField.string({
+        context: "server",
+        access: "secret",
+        optional: true,
+      }),
+      BETTER_AUTH_RP_NAME: envField.string({
+        context: "server",
+        access: "secret",
+        optional: true,
+      }),
       CONTEXT: envField.string({
         context: "client",
         access: "public",
