@@ -214,6 +214,38 @@ export interface MatchPerformanceBowling {
   wides: Generated<number>;
 }
 
+export interface MatchPerformanceFielding {
+  catches: Generated<number>;
+  competition_type: Generated<string>;
+  created_at: Generated<string>;
+  id: string | null;
+  is_wicketkeeper: Generated<number>;
+  match_date: string;
+  match_id: string;
+  player_id: string;
+  player_name: string;
+  run_outs: Generated<number>;
+  season: number;
+  stumpings: Generated<number>;
+  team_id: string;
+}
+
+export interface MatchResult {
+  away_team_id: string;
+  away_team_name: string;
+  competition_type: Generated<string>;
+  created_at: Generated<string>;
+  home_team_id: string;
+  home_team_name: string;
+  id: string | null;
+  match_date: string;
+  match_id: string;
+  result: Generated<string>;
+  result_applied_to: Generated<string>;
+  result_description: Generated<string>;
+  season: number;
+}
+
 export interface Member {
   address: string;
   contentful_entry_id: string | null;
@@ -362,6 +394,8 @@ export interface DB {
   match_fee_rate: MatchFeeRate;
   match_performance_batting: MatchPerformanceBatting;
   match_performance_bowling: MatchPerformanceBowling;
+  match_performance_fielding: MatchPerformanceFielding;
+  match_result: MatchResult;
   matchday: Matchday;
   matchday_expense: MatchdayExpense;
   matchday_player: MatchdayPlayer;
