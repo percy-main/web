@@ -49,8 +49,11 @@ export function TeamSelector() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (players: Array<{ playCricketId: string; isCaptain: boolean }>) =>
-      actions.fantasy.saveTeam({ players }),
+    mutationFn: async (players: Array<{ playCricketId: string; isCaptain: boolean }>) => {
+      const res = await actions.fantasy.saveTeam({ players });
+      if (res.error) throw res.error;
+      return res.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["fantasy", "myTeam"] });
     },
@@ -157,7 +160,7 @@ export function TeamSelector() {
     <div className="flex flex-col gap-4">
       {/* Status bar */}
       <Card>
-        <CardContent className="flex flex-wrap items-center gap-4 py-4">
+        <CardContent className="flex flex-wrap items-center gap-3 py-4 text-sm sm:gap-4">
           {preseason ? (
             <>
               <Badge variant="secondary">Pre-season</Badge>
@@ -209,8 +212,10 @@ export function TeamSelector() {
           {selectedPlayers.length === 0 ? (
             <p className="text-sm text-gray-500">
               Select 11 players from the list below to build your squad.
+              Choose one captain whose points will be doubled.
             </p>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -260,6 +265,7 @@ export function TeamSelector() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
 
           {selectedPlayers.length === 11 && (
@@ -290,10 +296,10 @@ export function TeamSelector() {
       {!locked && selectedPlayers.length < 11 && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>Available Players</CardTitle>
               <Input
-                className="w-64"
+                className="w-full sm:w-64"
                 placeholder="Search players..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -308,6 +314,7 @@ export function TeamSelector() {
                   : "No eligible players available."}
               </p>
             ) : (
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -365,6 +372,7 @@ export function TeamSelector() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -374,10 +382,10 @@ export function TeamSelector() {
       {!locked && selectedPlayers.length === 11 && !hasChanges && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>Make Transfers</CardTitle>
               <Input
-                className="w-64"
+                className="w-full sm:w-64"
                 placeholder="Search players..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -390,6 +398,12 @@ export function TeamSelector() {
               {maxTransfers !== null
                 ? ` You have ${maxTransfers - transfersUsed} transfer(s) remaining this gameweek.`
                 : " Unlimited changes allowed."}
+            </p>
+            <p className="text-xs text-gray-400">
+              Tip: Choose your captain wisely — their points are doubled.{" "}
+              <a href="/fantasy/rules" className="text-blue-500 hover:underline">
+                View scoring rules
+              </a>
             </p>
           </CardContent>
         </Card>

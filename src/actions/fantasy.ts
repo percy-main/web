@@ -953,6 +953,279 @@ const getPlayerLeaderboard = defineAction({
 });
 
 // ---------------------------------------------------------------------------
+// Historical view actions
+// ---------------------------------------------------------------------------
+
+/**
+ * Get detailed gameweek results for a specific team.
+ * Shows team snapshot (who was on the team) and per-player points breakdown.
+ */
+const getGameweekDetail = defineAction({
+  input: z.object({
+    season: z.string().optional(),
+    gameweek: z.number(),
+    teamId: z.number(),
+  }),
+  handler: async ({ season, gameweek, teamId }) => {
+    const currentSeason = season ?? getCurrentSeason();
+
+    // Get team info
+    const team = await client
+      .selectFrom("fantasy_team as ft")
+      .innerJoin("user as u", "u.id", "ft.user_id")
+      .where("ft.id", "=", teamId)
+      .select(["ft.id", "ft.season", "u.name as ownerName"])
+      .executeTakeFirst();
+
+    if (!team) {
+      throw new ActionError({ code: "NOT_FOUND", message: "Team not found." });
+    }
+
+    // Get team score for this gameweek
+    const teamScore = await client
+      .selectFrom("fantasy_team_score")
+      .where("fantasy_team_id", "=", teamId)
+      .where("gameweek_id", "=", gameweek)
+      .where("season", "=", currentSeason)
+      .select("total_points")
+      .executeTakeFirst();
+
+    // Get players who were on the team during this gameweek
+    const players = await client
+      .selectFrom("fantasy_team_player as ftp")
+      .innerJoin(
+        "fantasy_player as fp",
+        "fp.play_cricket_id",
+        "ftp.play_cricket_id",
+      )
+      .where("ftp.fantasy_team_id", "=", teamId)
+      .where("ftp.gameweek_added", "<=", gameweek)
+      .where((eb) =>
+        eb.or([
+          eb("ftp.gameweek_removed", "is", null),
+          eb("ftp.gameweek_removed", ">", gameweek),
+        ]),
+      )
+      .select([
+        "ftp.play_cricket_id",
+        "fp.player_name",
+        "ftp.is_captain",
+      ])
+      .execute();
+
+    // Get per-player scores for this gameweek
+    const playerScores = await client
+      .selectFrom("fantasy_player_score")
+      .where("season", "=", currentSeason)
+      .where("gameweek_id", "=", gameweek)
+      .where(
+        "play_cricket_id",
+        "in",
+        players.map((p) => p.play_cricket_id),
+      )
+      .select([
+        "play_cricket_id",
+        "batting_points",
+        "bowling_points",
+        "fielding_points",
+        "team_points",
+        "total_points",
+        "match_id",
+      ])
+      .execute();
+
+    // Group scores by player (a player might have multiple matches in a gameweek)
+    const scoresByPlayer = new Map<
+      string,
+      {
+        battingPoints: number;
+        bowlingPoints: number;
+        fieldingPoints: number;
+        teamPoints: number;
+        totalPoints: number;
+        matchCount: number;
+      }
+    >();
+
+    for (const score of playerScores) {
+      const existing = scoresByPlayer.get(score.play_cricket_id) ?? {
+        battingPoints: 0,
+        bowlingPoints: 0,
+        fieldingPoints: 0,
+        teamPoints: 0,
+        totalPoints: 0,
+        matchCount: 0,
+      };
+      existing.battingPoints += score.batting_points;
+      existing.bowlingPoints += score.bowling_points;
+      existing.fieldingPoints += score.fielding_points;
+      existing.teamPoints += score.team_points;
+      existing.totalPoints += score.total_points;
+      existing.matchCount += 1;
+      scoresByPlayer.set(score.play_cricket_id, existing);
+    }
+
+    return {
+      team: {
+        id: team.id,
+        ownerName: team.ownerName,
+        totalPoints: teamScore?.total_points ?? 0,
+      },
+      gameweek,
+      season: currentSeason,
+      players: players.map((p) => {
+        const scores = scoresByPlayer.get(p.play_cricket_id);
+        const basePoints = scores?.totalPoints ?? 0;
+        const isCaptain = p.is_captain === 1;
+        return {
+          playCricketId: p.play_cricket_id,
+          playerName: p.player_name,
+          isCaptain,
+          battingPoints: scores?.battingPoints ?? 0,
+          bowlingPoints: scores?.bowlingPoints ?? 0,
+          fieldingPoints: scores?.fieldingPoints ?? 0,
+          teamPoints: scores?.teamPoints ?? 0,
+          basePoints,
+          effectivePoints: isCaptain ? basePoints * 2 : basePoints,
+          matchCount: scores?.matchCount ?? 0,
+        };
+      }),
+    };
+  },
+});
+
+/**
+ * Get week-by-week season timeline for a team.
+ * Returns cumulative and per-week points for charting.
+ */
+const getSeasonTimeline = defineAction({
+  input: z.object({
+    season: z.string().optional(),
+    teamId: z.number(),
+  }),
+  handler: async ({ season, teamId }) => {
+    const currentSeason = season ?? getCurrentSeason();
+
+    const scores = await client
+      .selectFrom("fantasy_team_score")
+      .where("fantasy_team_id", "=", teamId)
+      .where("season", "=", currentSeason)
+      .select(["gameweek_id", "total_points"])
+      .orderBy("gameweek_id", "asc")
+      .execute();
+
+    let cumulative = 0;
+    const timeline = scores.map((s) => {
+      cumulative += s.total_points;
+      return {
+        gameweek: s.gameweek_id,
+        weeklyPoints: s.total_points,
+        cumulativePoints: cumulative,
+      };
+    });
+
+    return { timeline, season: currentSeason, teamId };
+  },
+});
+
+/**
+ * Get a player's score history across gameweeks for a season.
+ */
+const getPlayerHistory = defineAction({
+  input: z.object({
+    season: z.string().optional(),
+    playCricketId: z.string(),
+  }),
+  handler: async ({ season, playCricketId }) => {
+    const currentSeason = season ?? getCurrentSeason();
+
+    const player = await client
+      .selectFrom("fantasy_player")
+      .where("play_cricket_id", "=", playCricketId)
+      .select("player_name")
+      .executeTakeFirst();
+
+    if (!player) {
+      throw new ActionError({ code: "NOT_FOUND", message: "Player not found." });
+    }
+
+    const scores = await client
+      .selectFrom("fantasy_player_score")
+      .where("play_cricket_id", "=", playCricketId)
+      .where("season", "=", currentSeason)
+      .select([
+        "gameweek_id",
+        "match_id",
+        "batting_points",
+        "bowling_points",
+        "fielding_points",
+        "team_points",
+        "total_points",
+      ])
+      .orderBy("gameweek_id", "asc")
+      .execute();
+
+    // Group by gameweek (a player may have multiple matches per gameweek)
+    const byGameweek = new Map<
+      number,
+      {
+        battingPoints: number;
+        bowlingPoints: number;
+        fieldingPoints: number;
+        teamPoints: number;
+        totalPoints: number;
+        matchCount: number;
+      }
+    >();
+
+    for (const s of scores) {
+      const existing = byGameweek.get(s.gameweek_id) ?? {
+        battingPoints: 0,
+        bowlingPoints: 0,
+        fieldingPoints: 0,
+        teamPoints: 0,
+        totalPoints: 0,
+        matchCount: 0,
+      };
+      existing.battingPoints += s.batting_points;
+      existing.bowlingPoints += s.bowling_points;
+      existing.fieldingPoints += s.fielding_points;
+      existing.teamPoints += s.team_points;
+      existing.totalPoints += s.total_points;
+      existing.matchCount += 1;
+      byGameweek.set(s.gameweek_id, existing);
+    }
+
+    const gameweeks = Array.from(byGameweek.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([gw, data]) => ({
+        gameweek: gw,
+        ...data,
+      }));
+
+    return {
+      playerName: player.player_name,
+      playCricketId,
+      season: currentSeason,
+      gameweeks,
+    };
+  },
+});
+
+/**
+ * Public transfer window info for the fantasy home page.
+ */
+const getTransferWindowPublic = defineAction({
+  input: z.object({
+    season: z.string().optional(),
+  }),
+  handler: ({ season }) => {
+    const currentSeason = season ?? getCurrentSeason();
+    return getTransferWindowInfo(currentSeason);
+  },
+});
+
+// ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
@@ -970,4 +1243,8 @@ export const fantasy = {
   getWeeklyLeaderboard,
   getSeasonLeaderboard,
   getPlayerLeaderboard,
+  getGameweekDetail,
+  getSeasonTimeline,
+  getPlayerHistory,
+  getTransferWindowPublic,
 };

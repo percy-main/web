@@ -1,0 +1,226 @@
+import { Badge } from "@/components/ui/Badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/Table";
+import { useSession } from "@/lib/auth/client";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { actions } from "astro:actions";
+
+const queryClient = new QueryClient();
+
+function Countdown({ daysUntilLock, isPreSeason, locked }: {
+  daysUntilLock: number;
+  isPreSeason: boolean;
+  locked: boolean;
+}) {
+  if (isPreSeason) {
+    return (
+      <Card>
+        <CardContent className="py-6 text-center">
+          <p className="text-lg font-medium text-gray-700">Season starts in</p>
+          <p className="text-4xl font-bold text-blue-600">{daysUntilLock}</p>
+          <p className="text-sm text-gray-500">
+            {daysUntilLock === 1 ? "day" : "days"}
+          </p>
+          <p className="mt-2 text-sm text-gray-600">
+            Build your squad now — unlimited changes until Gameweek 1.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (locked) {
+    return (
+      <Card>
+        <CardContent className="py-6 text-center">
+          <Badge variant="destructive" className="mb-2">Teams Locked</Badge>
+          <p className="text-sm text-gray-600">
+            Teams are locked for match weekend. Editing reopens in {daysUntilLock} {daysUntilLock === 1 ? "day" : "days"}.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardContent className="py-6 text-center">
+        <p className="text-lg font-medium text-gray-700">Team lock in</p>
+        <p className="text-4xl font-bold text-amber-600">{daysUntilLock}</p>
+        <p className="text-sm text-gray-500">
+          {daysUntilLock === 1 ? "day" : "days"} until Friday 23:59 UK time
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TopTeams() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["fantasy", "seasonLeaderboard"],
+    queryFn: async () => {
+      const res = await actions.fantasy.getSeasonLeaderboard({});
+      if (res.error) throw res.error;
+      return res.data;
+    },
+  });
+
+  if (isLoading) return <p className="text-sm text-gray-500">Loading leaderboard...</p>;
+
+  const top5 = data?.entries.slice(0, 5) ?? [];
+
+  if (top5.length === 0) {
+    return (
+      <p className="text-sm text-gray-500">
+        No scores yet — the leaderboard will appear once matches have been played.
+      </p>
+    );
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-10">#</TableHead>
+          <TableHead>Manager</TableHead>
+          <TableHead className="w-24 text-right">Points</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {top5.map((entry) => (
+          <TableRow key={entry.teamId}>
+            <TableCell className="font-medium">{entry.rank}</TableCell>
+            <TableCell>
+              <a
+                href={`/members/fantasy?tab=leaderboards`}
+                className="text-blue-600 hover:underline"
+              >
+                {entry.ownerName}
+              </a>
+            </TableCell>
+            <TableCell className="text-right font-semibold">{entry.totalPoints}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+function FantasyHomeContent() {
+  const session = useSession();
+  const isLoggedIn = !!session.data;
+
+  const windowQuery = useQuery({
+    queryKey: ["fantasy", "transferWindowPublic"],
+    queryFn: async () => {
+      const res = await actions.fantasy.getTransferWindowPublic({});
+      if (res.error) throw res.error;
+      return res.data;
+    },
+  });
+
+  const windowInfo = windowQuery.data;
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <h1>Fantasy Cricket</h1>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Welcome section */}
+        <Card className="md:col-span-2">
+          <CardContent className="py-6">
+            <h2 className="mb-3 text-xl font-semibold">Welcome to Percy Main Fantasy Cricket</h2>
+            <p className="mb-4 text-gray-600">
+              Pick your squad of 11 players from Percy Main&apos;s 1st and 2nd XI, choose a captain for double points,
+              and compete against other members throughout the season. Points are scored from real match
+              performances in league games.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {isLoggedIn ? (
+                <a
+                  className="inline-flex items-center rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  href="/members/fantasy"
+                >
+                  Go to My Team
+                </a>
+              ) : (
+                <a
+                  className="inline-flex items-center rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  href="/auth/login"
+                >
+                  Log In to Play
+                </a>
+              )}
+              <a
+                className="text-dark inline-flex items-center rounded border border-gray-800 px-4 py-2 text-sm font-medium hover:bg-gray-200"
+                href="/fantasy/rules"
+              >
+                View Scoring Rules
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Countdown */}
+        {windowInfo && (
+          <Countdown
+            daysUntilLock={windowInfo.daysUntilLock}
+            isPreSeason={windowInfo.isPreSeason}
+            locked={windowInfo.locked}
+          />
+        )}
+
+        {/* Quick facts */}
+        <Card>
+          <CardHeader>
+            <CardTitle>How It Works</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm text-gray-600">
+              <li>Pick 11 players and designate a captain (2x points)</li>
+              <li>Points from batting, bowling, fielding, and team wins</li>
+              <li>Up to 3 transfers per gameweek during the season</li>
+              <li>Teams lock Friday night, reopen Monday</li>
+              <li>Only 1st XI and 2nd XI league matches count</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Top 5 leaderboard */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Season Leaderboard</CardTitle>
+            <a
+              className="text-sm text-blue-600 hover:underline"
+              href="/members/fantasy?tab=leaderboards"
+            >
+              View full leaderboard
+            </a>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <TopTeams />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export function FantasyHome() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <FantasyHomeContent />
+    </QueryClientProvider>
+  );
+}
