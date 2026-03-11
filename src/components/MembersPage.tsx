@@ -74,6 +74,12 @@ export const MembersPage = () => {
 
             <a
               className="text-dark justify-self-start rounded border-1 border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
+              href="/members/fantasy"
+            >
+              Fantasy Cricket
+            </a>
+            <a
+              className="text-dark justify-self-start rounded border-1 border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
               href="/auth/logout"
             >
               Sign Out

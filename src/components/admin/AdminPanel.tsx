@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
 import { ChargesTable } from "./ChargesTable";
 import { ContactSubmissionsTable } from "./ContactSubmissionsTable";
+import { FantasyPlayersTable } from "./FantasyPlayersTable";
 import { DuplicateMembersTable } from "./DuplicateMembersTable";
 import { JuniorsTable } from "./JuniorsTable";
 import { MemberTable } from "./MemberTable";
@@ -56,6 +57,7 @@ export function AdminPanel() {
             <TabsTrigger value="record-linking">Record Linking</TabsTrigger>
             <TabsTrigger value="game-reports">Game Reports</TabsTrigger>
             <TabsTrigger value="treasurer">Treasurer</TabsTrigger>
+            <TabsTrigger value="fantasy">Fantasy</TabsTrigger>
           </TabsList>
           <TabsContent value="members">
             <MemberTable />
@@ -86,6 +88,9 @@ export function AdminPanel() {
           </TabsContent>
           <TabsContent value="treasurer">
             <TreasurerDashboard />
+          </TabsContent>
+          <TabsContent value="fantasy">
+            <FantasyPlayersTable />
           </TabsContent>
         </Tabs>
       </div>
