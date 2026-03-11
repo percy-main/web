@@ -6,9 +6,7 @@ export async function up(db: Kysely<never>): Promise<void> {
     .createTable("fantasy_player_score")
     .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
     .addColumn("gameweek_id", "integer", (col) => col.notNull())
-    .addColumn("play_cricket_id", "text", (col) =>
-      col.notNull().references("fantasy_player.play_cricket_id"),
-    )
+    .addColumn("play_cricket_id", "text", (col) => col.notNull())
     .addColumn("match_id", "text", (col) => col.notNull())
     .addColumn("batting_points", "integer", (col) => col.notNull().defaultTo(0))
     .addColumn("bowling_points", "integer", (col) => col.notNull().defaultTo(0))

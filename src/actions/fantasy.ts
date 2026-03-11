@@ -779,15 +779,39 @@ const getWeeklyLeaderboard = defineAction({
   handler: async ({ season, gameweek }) => {
     const currentSeason = season ?? getCurrentSeason();
 
-    // Default to most recent completed gameweek with scores
+    // Default to the most recent completed gameweek (current - 1).
+    // This avoids showing a partially-played current gameweek.
+    // If no scores exist for that gameweek, fall back to the latest
+    // gameweek that has any scores.
     let targetGameweek = gameweek;
     if (targetGameweek === undefined) {
-      const latestGw = await client
-        .selectFrom("fantasy_team_score")
-        .where("season", "=", currentSeason)
-        .select(sql<number>`MAX(gameweek_id)`.as("max_gw"))
-        .executeTakeFirst();
-      targetGameweek = latestGw?.max_gw ?? 0;
+      const currentGw = getCurrentGameweek(currentSeason);
+      const completedGw = Math.max(0, currentGw - 1);
+
+      // Check if the completed gameweek has scores; if not, use the
+      // latest gameweek that does (handles early season with no data)
+      if (completedGw > 0) {
+        const hasScores = await client
+          .selectFrom("fantasy_team_score")
+          .where("season", "=", currentSeason)
+          .where("gameweek_id", "=", completedGw)
+          .select("gameweek_id")
+          .limit(1)
+          .executeTakeFirst();
+
+        if (hasScores) {
+          targetGameweek = completedGw;
+        }
+      }
+
+      if (targetGameweek === undefined) {
+        const latestGw = await client
+          .selectFrom("fantasy_team_score")
+          .where("season", "=", currentSeason)
+          .select(sql<number>`MAX(gameweek_id)`.as("max_gw"))
+          .executeTakeFirst();
+        targetGameweek = latestGw?.max_gw ?? 0;
+      }
     }
 
     if (targetGameweek === 0) {
