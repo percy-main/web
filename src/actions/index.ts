@@ -1,5 +1,6 @@
 import { admin } from "./admin";
 import { charges } from "./charges";
+import { fantasy } from "./fantasy";
 import { createContactSubmission } from "./create-contact-submission";
 import { createEventSubscriber } from "./create-event-subscriber";
 import { gameScore } from "./game-score";
@@ -22,6 +23,7 @@ import { treasurer } from "./treasurer";
 export const server = {
   admin,
   charges,
+  fantasy,
   createContactSubmission,
   getMemberDetails,
   join,

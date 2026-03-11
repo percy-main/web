@@ -90,6 +90,29 @@ export interface EventSubscriber {
   meta: string;
 }
 
+export interface FantasyPlayer {
+  created_at: Generated<string>;
+  eligible: Generated<number>;
+  play_cricket_id: string | null;
+  player_name: string;
+}
+
+export interface FantasyTeam {
+  created_at: Generated<string>;
+  id: Generated<number | null>;
+  season: string;
+  user_id: string;
+}
+
+export interface FantasyTeamPlayer {
+  fantasy_team_id: number;
+  gameweek_added: number;
+  gameweek_removed: number | null;
+  id: Generated<number | null>;
+  is_captain: Generated<number>;
+  play_cricket_id: string;
+}
+
 export interface GameScore {
   best_streak: number;
   catches: number;
@@ -387,6 +410,9 @@ export interface DB {
   contact_submission: ContactSubmission;
   dependent: Dependent;
   event_subscriber: EventSubscriber;
+  fantasy_player: FantasyPlayer;
+  fantasy_team: FantasyTeam;
+  fantasy_team_player: FantasyTeamPlayer;
   game_score: GameScore;
   game_sponsorship: GameSponsorship;
   junior_team: JuniorTeam;
