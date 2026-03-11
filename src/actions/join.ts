@@ -1,6 +1,6 @@
 import * as db from "@/lib/db/client";
 import { defineAction } from "astro:actions";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { randomUUID } from "crypto";
 
 const input = z.object({
@@ -15,7 +15,7 @@ const input = z.object({
   emerg_phone: z.string(),
 });
 
-export const handler = async (data: z.TypeOf<typeof input>) => {
+export const handler = async (data: z.output<typeof input>) => {
   const existing = await db.client
     .selectFrom("member")
     .where("email", "=", data.email)

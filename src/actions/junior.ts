@@ -1,7 +1,7 @@
 import { defineAuthAction } from "../lib/auth/api";
 import { client } from "../lib/db/client";
 import { ActionError } from "astro:actions";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { randomUUID } from "crypto";
 import { differenceInYears } from "date-fns";
 

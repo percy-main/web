@@ -1,6 +1,7 @@
 import { type TypePageSkeleton } from "@/__generated__";
 import { contentClient } from "@/lib/contentful/client";
-import { defineCollection, z } from "astro:content";
+import { z } from "astro/zod";
+import { defineCollection } from "astro:content";
 import type { Entry } from "contentful";
 
 const pageSchema = z.object({
@@ -18,7 +19,7 @@ const pageSchema = z.object({
   ldjson: z.any().optional(),
 });
 
-export type Page = z.TypeOf<typeof pageSchema>;
+export type Page = z.output<typeof pageSchema>;
 
 export const page = defineCollection({
   loader: async () => {

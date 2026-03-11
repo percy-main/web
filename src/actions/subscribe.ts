@@ -4,7 +4,7 @@ import { resolveStripeCustomer } from "@/lib/payments/resolveStripeCustomer";
 import { ActionError, defineAction } from "astro:actions";
 import { CONTEXT } from "astro:env/client";
 import { DEPLOY_PRIME_URL } from "astro:env/server";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { add } from "date-fns";
 import type Stripe from "stripe";
 
@@ -12,7 +12,7 @@ export const subscribe = defineAction({
   input: z.object({
     priceId: z.string(),
     membership: membershipSchema.shape.membership,
-    email: z.string().email(),
+    email: z.email(),
   }),
   handler: async ({ priceId, membership, email }) => {
     try {

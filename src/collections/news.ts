@@ -1,7 +1,8 @@
 import { type TypeNewsSkeleton } from "@/__generated__";
 import { contentClient } from "@/lib/contentful/client";
 import { slugup, type Sluggable } from "@/lib/util/slug";
-import { defineCollection, z } from "astro:content";
+import { z } from "astro/zod";
+import { defineCollection } from "astro:content";
 
 const newsSchema = z.object({
   title: z.string(),
@@ -27,7 +28,7 @@ const newsSchema = z.object({
   slug: z.string(),
 });
 
-export type News = z.TypeOf<typeof newsSchema>;
+export type News = z.output<typeof newsSchema>;
 
 export const news = defineCollection({
   loader: async () => {

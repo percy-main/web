@@ -1,15 +1,18 @@
 import { auth } from "@/lib/auth/server";
 import type { APIRoute } from "astro";
-import type { MaybePromise } from "astro/actions/runtime/utils.js";
 import type { z } from "astro/zod";
 import {
   ActionError,
   defineAction,
-  type ActionAccept,
   type ActionAPIContext,
-  type ActionHandler,
 } from "astro:actions";
 import { type Session, type User } from "better-auth";
+
+type MaybePromise<T> = T | Promise<T>;
+type ActionAccept = "form" | "json";
+type ActionHandler<TInputSchema, TOutput> = TInputSchema extends z.ZodType
+  ? (input: z.output<TInputSchema>, context: ActionAPIContext) => MaybePromise<TOutput>
+  : (input: unknown, context: ActionAPIContext) => MaybePromise<TOutput>;
 
 export const authedApi =
   (route: (session: { user: User; session: Session }) => APIRoute): APIRoute =>
@@ -27,7 +30,7 @@ export const authedApi =
 
 type AuthActionHandler<TInputSchema, TOutput> = TInputSchema extends z.ZodType
   ? (
-      input: z.infer<TInputSchema>,
+      input: z.output<TInputSchema>,
       session: { user: User; session: Session },
       context: ActionAPIContext,
     ) => MaybePromise<TOutput>

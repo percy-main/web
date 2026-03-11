@@ -5,7 +5,7 @@ export const coordinates = z.object({
   lon: z.number(),
 });
 
-export type Coordinates = z.TypeOf<typeof coordinates>;
+export type Coordinates = z.output<typeof coordinates>;
 
 export const schema = z.object({
   name: z.string(),

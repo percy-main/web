@@ -42,7 +42,7 @@ export const ChangePassword = () => {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.SubmitEvent) => {
     e.preventDefault();
     setSuccess(false);
     setValidationError("");

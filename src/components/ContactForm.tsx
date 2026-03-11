@@ -21,7 +21,7 @@ export const ContactForm: FC<Props> = ({ title, description, page }) => {
   });
 
   const handleSubmit = useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
+    (event: React.SubmitEvent<HTMLFormElement>) => {
       event.preventDefault();
       mutation.mutate({ name, email, message, page });
     },

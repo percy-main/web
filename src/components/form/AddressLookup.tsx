@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { APIProvider, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { MAPS_API_KEY } from "astro:env/client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 
 const addressComponentsSchema = z.object({
   houseNumber: z.string().default(""),
@@ -13,7 +13,7 @@ const addressComponentsSchema = z.object({
   postcode: z.string().default(""),
 });
 
-type AddressFields = z.infer<typeof addressComponentsSchema>;
+type AddressFields = z.output<typeof addressComponentsSchema>;
 
 export type AddressValue = {
   address: string;

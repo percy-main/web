@@ -1,4 +1,5 @@
-import { defineCollection, z } from "astro:content";
+import { z } from "astro/zod";
+import { defineCollection } from "astro:content";
 import * as event from "./event";
 import * as game from "./game";
 
@@ -7,7 +8,7 @@ const schema = z.union([
   event.schema.extend({ type: z.literal("event") }),
 ]);
 
-export type CalendarItem = z.TypeOf<typeof schema>;
+export type CalendarItem = z.output<typeof schema>;
 
 const loader = async () => {
   const [games, events] = await Promise.all([game.loader(), event.loader()]);

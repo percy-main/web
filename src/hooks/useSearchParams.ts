@@ -1,4 +1,4 @@
-import type { z } from "astro:schema";
+import type { z } from "astro/zod";
 
 export const useSearchParam = <T>({
   param,
@@ -9,7 +9,7 @@ export const useSearchParam = <T>({
   param: string;
   decode?: boolean;
   parse?: (params: string) => unknown;
-  schema: z.ZodSchema<T>;
+  schema: z.ZodType<T>;
 }) => {
   const params = new URLSearchParams(window.location.search);
 

@@ -15,7 +15,7 @@ export const getLeagueTable = async ({
   divisionId,
 }: {
   divisionId: string;
-}): Promise<z.TypeOf<typeof GetLeagueTableResponse>> => {
+}): Promise<z.output<typeof GetLeagueTableResponse>> => {
   const res = await fetch(
     `https://play-cricket.com/api/v2/league_table.json?division_id=${divisionId}&api_token=${PLAY_CRICKET_API_KEY}`,
   );
@@ -36,7 +36,7 @@ export const getMatchesSummary = async ({
   season,
 }: {
   season: number;
-}): Promise<z.TypeOf<typeof GetMatchSummaryResponse>> => {
+}): Promise<z.output<typeof GetMatchSummaryResponse>> => {
   const res = await fetch(
     `https://play-cricket.com/api/v2/matches.json?site_id=${PLAY_CRICKET_SITE_ID}&season=${season}&api_token=${PLAY_CRICKET_API_KEY}`,
   );
@@ -52,7 +52,7 @@ export const getResultSummary = async ({
 }: {
   season: number;
   teamId?: string;
-}): Promise<z.TypeOf<typeof GetResultSummaryResponse>> => {
+}): Promise<z.output<typeof GetResultSummaryResponse>> => {
   const params = new URLSearchParams({
     site_id: PLAY_CRICKET_SITE_ID,
     season: season.toString(),
@@ -79,7 +79,7 @@ export const getMatchDetail = async ({
   matchId,
 }: {
   matchId: string;
-}): Promise<z.TypeOf<typeof GetMatchDetailResponse>> => {
+}): Promise<z.output<typeof GetMatchDetailResponse>> => {
   const params = new URLSearchParams({
     match_id: matchId,
     api_token: PLAY_CRICKET_API_KEY,
@@ -101,7 +101,7 @@ export const getMatchDetail = async ({
 };
 
 export const getPlayers = async (): Promise<
-  z.TypeOf<typeof GetPlayersResponse>
+  z.output<typeof GetPlayersResponse>
 > => {
   const res = await fetch(
     `https://play-cricket.com/api/v2/sites/${PLAY_CRICKET_SITE_ID}/players?api_token=${PLAY_CRICKET_API_KEY}&include_everyone=yes`,
@@ -120,7 +120,7 @@ export const getPlayers = async (): Promise<
 };
 
 export const getTeams = async (): Promise<
-  z.TypeOf<typeof GetTeamsResponse>
+  z.output<typeof GetTeamsResponse>
 > => {
   const res = await fetch(
     `https://play-cricket.com/api/v2/sites/${PLAY_CRICKET_SITE_ID}/teams.json?api_token=${PLAY_CRICKET_API_KEY}`,

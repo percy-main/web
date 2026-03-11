@@ -133,7 +133,7 @@ export const ResultSummaryMatch = z.object({
   innings: z.array(ResultSummaryInnings),
 });
 
-export type ResultSummaryMatch = z.TypeOf<typeof ResultSummaryMatch>;
+export type ResultSummaryMatch = z.output<typeof ResultSummaryMatch>;
 
 export const GetResultSummaryResponse = z.object({
   result_summary: z.array(ResultSummaryMatch),

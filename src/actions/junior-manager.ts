@@ -2,7 +2,7 @@ import { defineAuthAction } from "@/lib/auth/api";
 import { client } from "@/lib/db/client";
 import { getAgeGroup } from "@/lib/util/ageGroup";
 import { ActionError } from "astro:actions";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 
 /**
  * Returns the user's role from the DB (the session User type from Better Auth

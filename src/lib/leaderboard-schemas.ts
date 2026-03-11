@@ -21,8 +21,8 @@ export const BattingResponseSchema = z.object({
   entries: z.array(BattingEntrySchema),
 });
 
-export type BattingEntry = z.infer<typeof BattingEntrySchema>;
-export type BattingResponse = z.infer<typeof BattingResponseSchema>;
+export type BattingEntry = z.output<typeof BattingEntrySchema>;
+export type BattingResponse = z.output<typeof BattingResponseSchema>;
 
 // Bowling schemas
 export const BowlingEntrySchema = z.object({
@@ -44,5 +44,5 @@ export const BowlingResponseSchema = z.object({
   entries: z.array(BowlingEntrySchema),
 });
 
-export type BowlingEntry = z.infer<typeof BowlingEntrySchema>;
-export type BowlingResponse = z.infer<typeof BowlingResponseSchema>;
+export type BowlingEntry = z.output<typeof BowlingEntrySchema>;
+export type BowlingResponse = z.output<typeof BowlingResponseSchema>;

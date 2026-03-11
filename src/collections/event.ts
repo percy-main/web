@@ -2,7 +2,8 @@ import { type TypeEventSkeleton } from "@/__generated__";
 import * as location from "@/collections/location";
 import { contentClient } from "@/lib/contentful/client";
 import { fromFields } from "@/lib/contentful/from-fields";
-import { defineCollection, z } from "astro:content";
+import { z } from "astro/zod";
+import { defineCollection } from "astro:content";
 import * as df from "date-fns";
 
 export const schema = z.object({
@@ -14,7 +15,7 @@ export const schema = z.object({
   createdAt: z.date(),
 });
 
-export type Event = z.TypeOf<typeof schema>;
+export type Event = z.output<typeof schema>;
 
 export const loader = async () => {
   const response = await contentClient.getEntries<TypeEventSkeleton>({

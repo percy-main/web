@@ -3,7 +3,7 @@ import { client } from "@/lib/db/client";
 import * as playCricketApi from "@/lib/play-cricket";
 import { GetMatchDetailResponse } from "@/lib/play-cricket/schemas";
 import { defineAction } from "astro:actions";
-import { z } from "astro:schema";
+import { z } from "astro/zod";
 import { format } from "date-fns";
 import { sql } from "kysely";
 import _ from "lodash";

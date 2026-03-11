@@ -17,12 +17,12 @@ export const schema = z.object({
     })
     .optional(),
   slug: z.string(),
-  pageData: z.object({}).passthrough(),
+  pageData: z.object({}).loose(),
   isDBSChecked: z.boolean(),
   hasLeftClub: z.boolean().optional(),
 });
 
-export type Person = z.TypeOf<typeof schema>;
+export type Person = z.output<typeof schema>;
 
 export const loader = async () => {
   const response = await contentClient.getEntries<TypeTrusteeSkeleton>({
