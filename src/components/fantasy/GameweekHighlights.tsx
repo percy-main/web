@@ -54,7 +54,7 @@ export function GameweekHighlights() {
   }
 
   const { highlights, gameweek } = data;
-  const { topScorer, bestSpell, fantasyShock, topTeam, biggestMover } = highlights;
+  const { topScorer, bestSpell, fantasyShock, topTeam, biggestMover, mostCaptained, differentialPick } = highlights;
 
   // Don't render if there's nothing to show
   if (!topScorer && !bestSpell && !topTeam) {
@@ -121,6 +121,24 @@ export function GameweekHighlights() {
               title={biggestMover.ownerName}
               detail={`Up ${biggestMover.rankChange} ${biggestMover.rankChange === 1 ? "place" : "places"} to ${biggestMover.currentRank}${getOrdinalSuffix(biggestMover.currentRank)}`}
               accent="border-purple-600"
+            />
+          )}
+
+          {mostCaptained && (
+            <HighlightItem
+              label="Most Captained"
+              title={mostCaptained.playerName}
+              detail={`Captained by ${mostCaptained.captainPct}% of teams`}
+              accent="border-orange-500"
+            />
+          )}
+
+          {differentialPick && (
+            <HighlightItem
+              label="Differential Pick"
+              title={differentialPick.playerName}
+              detail={`${differentialPick.totalPoints} pts — owned by only ${differentialPick.ownershipPct}% of teams`}
+              accent="border-teal-500"
             />
           )}
         </div>

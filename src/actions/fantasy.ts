@@ -56,6 +56,251 @@ function assignRanks<T>(
 }
 
 // ---------------------------------------------------------------------------
+// Ownership helpers
+// ---------------------------------------------------------------------------
+
+type OwnershipEntry = {
+  ownerCount: number;
+  captainCount: number;
+  ownershipPct: number;
+  captainPct: number;
+};
+
+async function getOwnershipData(
+  season: string,
+  gameweek: number,
+): Promise<{ ownershipMap: Map<string, OwnershipEntry>; teamCount: number }> {
+  const playerOwnership = await client
+    .selectFrom("fantasy_team_player as ftp")
+    .innerJoin("fantasy_team as ft", "ft.id", "ftp.fantasy_team_id")
+    .where("ft.season", "=", season)
+    .where("ftp.gameweek_added", "<=", gameweek)
+    .where((eb) =>
+      eb.or([
+        eb("ftp.gameweek_removed", "is", null),
+        eb("ftp.gameweek_removed", ">", gameweek),
+      ]),
+    )
+    .select([
+      "ftp.play_cricket_id",
+      sql<number>`COUNT(DISTINCT ftp.fantasy_team_id)`.as("owner_count"),
+      sql<number>`COUNT(DISTINCT CASE WHEN ftp.is_captain = 1 THEN ftp.fantasy_team_id END)`.as(
+        "captain_count",
+      ),
+    ])
+    .groupBy("ftp.play_cricket_id")
+    .execute();
+
+  const totalTeams = await client
+    .selectFrom("fantasy_team")
+    .where("season", "=", season)
+    .select(sql<number>`COUNT(*)`.as("count"))
+    .executeTakeFirst();
+
+  const teamCount = totalTeams?.count ?? 0;
+
+  const ownershipMap = new Map<string, OwnershipEntry>();
+  for (const row of playerOwnership) {
+    ownershipMap.set(row.play_cricket_id, {
+      ownerCount: row.owner_count,
+      captainCount: row.captain_count,
+      ownershipPct: teamCount > 0 ? Math.round((row.owner_count / teamCount) * 100) : 0,
+      captainPct: teamCount > 0 ? Math.round((row.captain_count / teamCount) * 100) : 0,
+    });
+  }
+
+  return { ownershipMap, teamCount };
+}
+
+function getDifferentialThreshold(teamCount: number): number {
+  return Math.max(10, Math.min(20, 30 - teamCount));
+}
+
+/**
+ * Find the best differential picks: low-ownership players with high points.
+ * Uses a "differential value" score = points * (1 - ownershipPct/100)
+ * so a 50pt player at 10% ownership beats a 40pt player at 10%.
+ */
+function rankDifferentials(
+  ownershipMap: Map<string, OwnershipEntry>,
+  teamCount: number,
+  pointsMap: Map<string, { playerName: string; points: number }>,
+  limit: number,
+  costMap?: Map<string, number>,
+): Array<{ playCricketId: string; playerName: string; points: number; ownershipPct: number; sandwichCost: number }> {
+  const threshold = getDifferentialThreshold(teamCount);
+
+  const candidates: Array<{
+    playCricketId: string;
+    playerName: string;
+    points: number;
+    ownershipPct: number;
+    sandwichCost: number;
+    diffValue: number;
+  }> = [];
+
+  for (const [id, entry] of ownershipMap) {
+    if (entry.ownershipPct <= 0 || entry.ownershipPct > threshold) continue;
+    const pts = pointsMap.get(id);
+    if (!pts || pts.points <= 0) continue;
+    candidates.push({
+      playCricketId: id,
+      playerName: pts.playerName,
+      points: pts.points,
+      ownershipPct: entry.ownershipPct,
+      sandwichCost: costMap?.get(id) ?? 0,
+      diffValue: pts.points * (1 - entry.ownershipPct / 100),
+    });
+  }
+
+  return candidates
+    .sort((a, b) => b.diffValue - a.diffValue || a.ownershipPct - b.ownershipPct)
+    .slice(0, limit)
+    .map(({ playCricketId, playerName, points, ownershipPct, sandwichCost }) => ({
+      playCricketId,
+      playerName,
+      points,
+      ownershipPct,
+      sandwichCost,
+    }));
+}
+
+// ---------------------------------------------------------------------------
+// Points calculation from raw match data
+// ---------------------------------------------------------------------------
+
+type SeasonPoints = { totalPoints: number; matchesPlayed: number };
+
+/**
+ * Calculate fantasy points per player for one or more seasons using raw
+ * match performance data and the scoring engine.
+ * Returns a map of playerId -> { [season]: SeasonPoints }.
+ */
+async function calculateSeasonPoints(
+  seasons: number[],
+): Promise<Map<string, Map<number, SeasonPoints>>> {
+  const eligibleTeamIds = Array.from(ELIGIBLE_TEAM_IDS);
+  const leagueTypes = Array.from(LEAGUE_COMPETITION_TYPES);
+
+  const [battingPerfs, bowlingPerfs, fieldingPerfs, matchResults] = await Promise.all([
+    client
+      .selectFrom("match_performance_batting")
+      .where("season", "in", seasons)
+      .where("team_id", "in", eligibleTeamIds)
+      .where("competition_type", "in", leagueTypes)
+      .select(["player_id", "match_id", "season", "team_id", "runs", "balls", "fours", "sixes", "not_out"])
+      .execute(),
+    client
+      .selectFrom("match_performance_bowling")
+      .where("season", "in", seasons)
+      .where("team_id", "in", eligibleTeamIds)
+      .where("competition_type", "in", leagueTypes)
+      .select(["player_id", "match_id", "season", "team_id", "overs", "maidens", "runs", "wickets"])
+      .execute(),
+    client
+      .selectFrom("match_performance_fielding")
+      .where("season", "in", seasons)
+      .where("team_id", "in", eligibleTeamIds)
+      .where("competition_type", "in", leagueTypes)
+      .select(["player_id", "match_id", "season", "team_id", "catches", "run_outs", "stumpings", "is_wicketkeeper"])
+      .execute(),
+    client
+      .selectFrom("match_result")
+      .where("season", "in", seasons)
+      .where("competition_type", "in", leagueTypes)
+      .select(["match_id", "result_applied_to"])
+      .execute(),
+  ]);
+
+  const winnerByMatch = new Map<string, string>();
+  for (const r of matchResults) {
+    if (r.result_applied_to) winnerByMatch.set(r.match_id, r.result_applied_to);
+  }
+
+  const mkKey = (playerId: string, matchId: string) => `${playerId}:${matchId}`;
+
+  const battingByMatch = new Map<string, (typeof battingPerfs)[0]>();
+  for (const b of battingPerfs) battingByMatch.set(mkKey(b.player_id, b.match_id), b);
+
+  const bowlingByMatch = new Map<string, (typeof bowlingPerfs)[0]>();
+  for (const b of bowlingPerfs) bowlingByMatch.set(mkKey(b.player_id, b.match_id), b);
+
+  const fieldingByMatch = new Map<string, (typeof fieldingPerfs)[0]>();
+  for (const f of fieldingPerfs) fieldingByMatch.set(mkKey(f.player_id, f.match_id), f);
+
+  type Appearance = { playerId: string; matchId: string; season: number; teamId: string };
+  const appearances = new Map<string, Appearance>();
+  for (const b of battingPerfs) {
+    const k = mkKey(b.player_id, b.match_id);
+    if (!appearances.has(k)) appearances.set(k, { playerId: b.player_id, matchId: b.match_id, season: b.season, teamId: b.team_id });
+  }
+  for (const b of bowlingPerfs) {
+    const k = mkKey(b.player_id, b.match_id);
+    if (!appearances.has(k)) appearances.set(k, { playerId: b.player_id, matchId: b.match_id, season: b.season, teamId: b.team_id });
+  }
+  for (const f of fieldingPerfs) {
+    const k = mkKey(f.player_id, f.match_id);
+    if (!appearances.has(k)) appearances.set(k, { playerId: f.player_id, matchId: f.match_id, season: f.season, teamId: f.team_id });
+  }
+
+  const result = new Map<string, Map<number, SeasonPoints>>();
+
+  for (const [mk, app] of appearances) {
+    const bat = battingByMatch.get(mk);
+    const bowl = bowlingByMatch.get(mk);
+    const field = fieldingByMatch.get(mk);
+
+    let matchPoints = 0;
+
+    if (bat) {
+      matchPoints += calculateBattingPoints({
+        runs: bat.runs,
+        balls: bat.balls,
+        fours: bat.fours,
+        sixes: bat.sixes,
+        notOut: bat.not_out === 1,
+      }).total;
+    }
+
+    if (bowl) {
+      matchPoints += calculateBowlingPoints({
+        overs: bowl.overs,
+        maidens: bowl.maidens,
+        runs: bowl.runs,
+        wickets: bowl.wickets,
+      }).total;
+    }
+
+    if (field) {
+      matchPoints += calculateFieldingPoints({
+        catches: field.catches,
+        runOuts: field.run_outs,
+        stumpings: field.stumpings,
+        isWicketkeeper: field.is_wicketkeeper === 1,
+      }).total;
+    }
+
+    const winner = winnerByMatch.get(app.matchId);
+    if (winner === app.teamId) {
+      matchPoints += SCORING.team.winBonus;
+    }
+
+    let playerMap = result.get(app.playerId);
+    if (!playerMap) {
+      playerMap = new Map();
+      result.set(app.playerId, playerMap);
+    }
+
+    const existing = playerMap.get(app.season) ?? { totalPoints: 0, matchesPlayed: 0 };
+    existing.totalPoints += matchPoints;
+    existing.matchesPlayed += 1;
+    playerMap.set(app.season, existing);
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // Admin actions
 // ---------------------------------------------------------------------------
 
@@ -373,145 +618,29 @@ const getEligiblePlayers = defineAuthAction({
       .orderBy("player_name", "asc")
       .execute();
 
-    const eligibleTeamIds = Array.from(ELIGIBLE_TEAM_IDS);
-    const leagueTypes = Array.from(LEAGUE_COMPETITION_TYPES);
+    const allSeasonPoints = await calculateSeasonPoints(seasons);
 
-    // Fetch per-match performance data to calculate fantasy points via scoring engine
-    const [battingPerfs, bowlingPerfs, fieldingPerfs, matchResults] = await Promise.all([
-      client
-        .selectFrom("match_performance_batting")
-        .where("season", "in", seasons)
-        .where("team_id", "in", eligibleTeamIds)
-        .where("competition_type", "in", leagueTypes)
-        .select(["player_id", "match_id", "season", "team_id", "runs", "balls", "fours", "sixes", "not_out"])
-        .execute(),
-      client
-        .selectFrom("match_performance_bowling")
-        .where("season", "in", seasons)
-        .where("team_id", "in", eligibleTeamIds)
-        .where("competition_type", "in", leagueTypes)
-        .select(["player_id", "match_id", "season", "team_id", "overs", "maidens", "runs", "wickets"])
-        .execute(),
-      client
-        .selectFrom("match_performance_fielding")
-        .where("season", "in", seasons)
-        .where("team_id", "in", eligibleTeamIds)
-        .where("competition_type", "in", leagueTypes)
-        .select(["player_id", "match_id", "season", "team_id", "catches", "run_outs", "stumpings", "is_wicketkeeper"])
-        .execute(),
-      client
-        .selectFrom("match_result")
-        .where("season", "in", seasons)
-        .where("competition_type", "in", leagueTypes)
-        .select(["match_id", "result_applied_to"])
-        .execute(),
-    ]);
+    const emptySeasonPoints: SeasonPoints = { totalPoints: 0, matchesPlayed: 0 };
 
-    // Build match result lookup: match_id -> winning team_id
-    const winnerByMatch = new Map<string, string>();
-    for (const r of matchResults) {
-      if (r.result_applied_to) winnerByMatch.set(r.match_id, r.result_applied_to);
-    }
-
-    // Index per-match performances by "playerId:matchId"
-    const mkKey = (playerId: string, matchId: string) => `${playerId}:${matchId}`;
-
-    const battingByMatch = new Map<string, (typeof battingPerfs)[0]>();
-    for (const b of battingPerfs) battingByMatch.set(mkKey(b.player_id, b.match_id), b);
-
-    const bowlingByMatch = new Map<string, (typeof bowlingPerfs)[0]>();
-    for (const b of bowlingPerfs) bowlingByMatch.set(mkKey(b.player_id, b.match_id), b);
-
-    const fieldingByMatch = new Map<string, (typeof fieldingPerfs)[0]>();
-    for (const f of fieldingPerfs) fieldingByMatch.set(mkKey(f.player_id, f.match_id), f);
-
-    // Collect all unique match appearances per player
-    type Appearance = { playerId: string; matchId: string; season: number; teamId: string };
-    const appearances = new Map<string, Appearance>();
-    for (const b of battingPerfs) {
-      const k = mkKey(b.player_id, b.match_id);
-      if (!appearances.has(k)) appearances.set(k, { playerId: b.player_id, matchId: b.match_id, season: b.season, teamId: b.team_id });
-    }
-    for (const b of bowlingPerfs) {
-      const k = mkKey(b.player_id, b.match_id);
-      if (!appearances.has(k)) appearances.set(k, { playerId: b.player_id, matchId: b.match_id, season: b.season, teamId: b.team_id });
-    }
-    for (const f of fieldingPerfs) {
-      const k = mkKey(f.player_id, f.match_id);
-      if (!appearances.has(k)) appearances.set(k, { playerId: f.player_id, matchId: f.match_id, season: f.season, teamId: f.team_id });
-    }
-
-    // Calculate fantasy points per player per season using the scoring engine
-    type SeasonPoints = { totalPoints: number; matchesPlayed: number };
-    const pointsMap = new Map<string, { current: SeasonPoints; previous: SeasonPoints }>();
-
-    for (const [mk, app] of appearances) {
-      const bat = battingByMatch.get(mk);
-      const bowl = bowlingByMatch.get(mk);
-      const field = fieldingByMatch.get(mk);
-
-      let matchPoints = 0;
-
-      if (bat) {
-        matchPoints += calculateBattingPoints({
-          runs: bat.runs,
-          balls: bat.balls,
-          fours: bat.fours,
-          sixes: bat.sixes,
-          notOut: bat.not_out === 1,
-          // Duck penalty eligibility is determined by slot type (batting/allrounder), not batting position
-        }).total;
-      }
-
-      if (bowl) {
-        matchPoints += calculateBowlingPoints({
-          overs: bowl.overs,
-          maidens: bowl.maidens,
-          runs: bowl.runs,
-          wickets: bowl.wickets,
-        }).total;
-      }
-
-      if (field) {
-        matchPoints += calculateFieldingPoints({
-          catches: field.catches,
-          runOuts: field.run_outs,
-          stumpings: field.stumpings,
-          isWicketkeeper: field.is_wicketkeeper === 1,
-        }).total;
-      }
-
-      // Win bonus
-      const winner = winnerByMatch.get(app.matchId);
-      if (winner === app.teamId) {
-        matchPoints += SCORING.team.winBonus;
-      }
-
-      let entry = pointsMap.get(app.playerId);
-      if (!entry) {
-        entry = {
-          current: { totalPoints: 0, matchesPlayed: 0 },
-          previous: { totalPoints: 0, matchesPlayed: 0 },
-        };
-        pointsMap.set(app.playerId, entry);
-      }
-
-      const target = app.season === Number(currentSeason) ? entry.current : entry.previous;
-      target.totalPoints += matchPoints;
-      target.matchesPlayed += 1;
-    }
-
-    const emptySeasonPoints = { totalPoints: 0, matchesPlayed: 0 };
+    // Fetch ownership stats for current gameweek (works in pre-season too, gameweek=0)
+    const currentGameweek = getCurrentGameweek(currentSeason);
+    const { ownershipMap } = await getOwnershipData(currentSeason, currentGameweek);
 
     return {
       players: players
         .filter((p): p is typeof p & { play_cricket_id: string } => p.play_cricket_id !== null)
         .map((p) => {
-          const pts = pointsMap.get(p.play_cricket_id) ?? { current: { ...emptySeasonPoints }, previous: { ...emptySeasonPoints } };
+          const playerSeasons = allSeasonPoints.get(p.play_cricket_id);
+          const pts = {
+            current: playerSeasons?.get(Number(currentSeason)) ?? { ...emptySeasonPoints },
+            previous: playerSeasons?.get(Number(previousSeason)) ?? { ...emptySeasonPoints },
+          };
+          const ownership = ownershipMap.get(p.play_cricket_id);
           return {
             playCricketId: p.play_cricket_id,
             playerName: p.player_name,
             sandwichCost: p.sandwich_cost,
+            ownershipPct: ownership?.ownershipPct ?? 0,
             stats: {
               current: {
                 totalPoints: pts.current.totalPoints,
@@ -977,6 +1106,8 @@ const getTeam = defineAuthAction({
       ])
       .execute();
 
+    const { ownershipMap } = await getOwnershipData(team.season, gameweek);
+
     return {
       team: {
         id: team.id,
@@ -984,13 +1115,17 @@ const getTeam = defineAuthAction({
         ownerName: team.ownerName,
         ownerId: team.ownerId,
       },
-      players: players.map((p) => ({
-        playCricketId: p.play_cricket_id,
-        playerName: p.player_name,
-        isCaptain: p.is_captain === 1,
-        slotType: p.slot_type as SlotType,
-        isWicketkeeper: p.is_wicketkeeper === 1,
-      })),
+      players: players.map((p) => {
+        const ownership = ownershipMap.get(p.play_cricket_id);
+        return {
+          playCricketId: p.play_cricket_id,
+          playerName: p.player_name,
+          isCaptain: p.is_captain === 1,
+          slotType: p.slot_type as SlotType,
+          isWicketkeeper: p.is_wicketkeeper === 1,
+          ownershipPct: ownership?.ownershipPct ?? 0,
+        };
+      }),
     };
   },
 });
@@ -1678,40 +1813,10 @@ const getGameweekHighlights = defineAction({
       }
     }
 
-    // --- Fantasy shock: highest scoring player with fewest owners ---
-    // Count how many teams own each player for this gameweek
-    const playerOwnership = await client
-      .selectFrom("fantasy_team_player as ftp")
-      .innerJoin("fantasy_team as ft", "ft.id", "ftp.fantasy_team_id")
-      .where("ft.season", "=", currentSeason)
-      .where("ftp.gameweek_added", "<=", targetGameweek)
-      .where((eb) =>
-        eb.or([
-          eb("ftp.gameweek_removed", "is", null),
-          eb("ftp.gameweek_removed", ">", targetGameweek),
-        ]),
-      )
-      .select([
-        "ftp.play_cricket_id",
-        sql<number>`COUNT(DISTINCT ftp.fantasy_team_id)`.as("owner_count"),
-      ])
-      .groupBy("ftp.play_cricket_id")
-      .execute();
+    // --- Ownership data (used for shock, most captained, differential) ---
+    const { ownershipMap, teamCount } = await getOwnershipData(currentSeason, targetGameweek);
 
-    const totalTeams = await client
-      .selectFrom("fantasy_team")
-      .where("season", "=", currentSeason)
-      .select(sql<number>`COUNT(*)`.as("count"))
-      .executeTakeFirst();
-
-    const teamCount = totalTeams?.count ?? 0;
-
-    const ownershipMap = new Map<string, number>();
-    for (const row of playerOwnership) {
-      ownershipMap.set(row.play_cricket_id, row.owner_count);
-    }
-
-    // Get all player scores for the gameweek to find the shock
+    // Get all player scores for the gameweek
     const allPlayerScores = await client
       .selectFrom("fantasy_player_score as fps")
       .innerJoin("fantasy_player as fp", "fp.play_cricket_id", "fps.play_cricket_id")
@@ -1726,8 +1831,7 @@ const getGameweekHighlights = defineAction({
       .orderBy(sql`SUM(fps.total_points)`, "desc")
       .execute();
 
-    // Find highest-scoring player with fewest owners
-    // Sort by total_points desc, then owner_count asc
+    // --- Fantasy shock: highest scoring player with fewest owners ---
     type ShockEntry = {
       playerName: string;
       playCricketId: string;
@@ -1738,13 +1842,13 @@ const getGameweekHighlights = defineAction({
     let fantasyShock: ShockEntry | null = null;
 
     if (allPlayerScores.length > 0 && teamCount > 0) {
-      // Among high scorers (top half by points), find the one with lowest ownership
       const topPoints = allPlayerScores[0]?.total_points ?? 0;
       const threshold = topPoints * 0.5;
       let bestShock: ShockEntry | null = null;
       for (const ps of allPlayerScores) {
-        if (ps.total_points < threshold) break; // sorted desc, stop early
-        const owners = ownershipMap.get(ps.play_cricket_id) ?? 0;
+        if (ps.total_points < threshold) break;
+        const ownership = ownershipMap.get(ps.play_cricket_id);
+        const owners = ownership?.ownerCount ?? 0;
         if (
           !bestShock ||
           owners < bestShock.ownerCount ||
@@ -1755,13 +1859,57 @@ const getGameweekHighlights = defineAction({
             playCricketId: ps.play_cricket_id,
             totalPoints: ps.total_points,
             ownerCount: owners,
-            ownershipPct: Math.round((owners / teamCount) * 100),
+            ownershipPct: ownership?.ownershipPct ?? 0,
           };
         }
       }
-      // Only show shock if it's different from the top scorer
       if (bestShock && topScorerRows[0] && bestShock.playCricketId !== topScorerRows[0].play_cricket_id) {
         fantasyShock = bestShock;
+      }
+    }
+
+    // --- Most captained player ---
+    let mostCaptained: { playerName: string; playCricketId: string; captainPct: number } | null = null;
+    if (teamCount > 0) {
+      // Find the player with the highest captain count across all owned players
+      let bestCaptainId: string | null = null;
+      let bestCaptainCount = 0;
+      let bestCaptainPct = 0;
+      for (const [id, entry] of ownershipMap) {
+        if (entry.captainCount > bestCaptainCount) {
+          bestCaptainId = id;
+          bestCaptainCount = entry.captainCount;
+          bestCaptainPct = entry.captainPct;
+        }
+      }
+      // Resolve player name independently from scores (captain may have 0 points)
+      if (bestCaptainId && bestCaptainCount > 0) {
+        const captainPlayer = await client
+          .selectFrom("fantasy_player")
+          .where("play_cricket_id", "=", bestCaptainId)
+          .select("player_name")
+          .executeTakeFirst();
+        if (captainPlayer) {
+          mostCaptained = { playerName: captainPlayer.player_name, playCricketId: bestCaptainId, captainPct: bestCaptainPct };
+        }
+      }
+    }
+
+    // --- Differential pick: best value low-ownership player this gameweek ---
+    let differentialPick: { playerName: string; playCricketId: string; totalPoints: number; ownershipPct: number } | null = null;
+    if (allPlayerScores.length > 0 && teamCount > 0) {
+      const gwPointsMap = new Map<string, { playerName: string; points: number }>();
+      for (const ps of allPlayerScores) {
+        gwPointsMap.set(ps.play_cricket_id, { playerName: ps.player_name, points: ps.total_points });
+      }
+      const topDiff = rankDifferentials(ownershipMap, teamCount, gwPointsMap, 1);
+      if (topDiff[0]) {
+        differentialPick = {
+          playerName: topDiff[0].playerName,
+          playCricketId: topDiff[0].playCricketId,
+          totalPoints: topDiff[0].points,
+          ownershipPct: topDiff[0].ownershipPct,
+        };
       }
     }
 
@@ -1891,6 +2039,8 @@ const getGameweekHighlights = defineAction({
             }
           : null,
         biggestMover,
+        mostCaptained,
+        differentialPick,
         teamCount,
       },
       gameweek: targetGameweek,
@@ -1909,6 +2059,110 @@ const getTransferWindowPublic = defineAction({
   handler: ({ season }) => {
     const currentSeason = season ?? getCurrentSeason();
     return getTransferWindowInfo(currentSeason);
+  },
+});
+
+/**
+ * Public ownership overview for the fantasy home page.
+ * Returns top 5 most owned, top 5 most captained, and differentials.
+ */
+const getOwnershipOverview = defineAction({
+  input: z.object({
+    season: z.string().optional(),
+  }),
+  handler: async ({ season }) => {
+    const currentSeason = season ?? getCurrentSeason();
+    const gameweek = getCurrentGameweek(currentSeason);
+
+    const { ownershipMap, teamCount } = await getOwnershipData(currentSeason, gameweek);
+
+    if (teamCount === 0) {
+      return { mostOwned: [], mostCaptained: [], differentials: [], teamCount: 0, gameweek };
+    }
+
+    // Get player names and sandwich costs for all players in the ownership map
+    const playerIds = Array.from(ownershipMap.keys());
+    const playerInfo = playerIds.length > 0
+      ? await client
+          .selectFrom("fantasy_player")
+          .where("play_cricket_id", "in", playerIds)
+          .select(["play_cricket_id", "player_name", "sandwich_cost"])
+          .execute()
+      : [];
+
+    const nameMap = new Map<string, string>();
+    const costMap = new Map<string, number>();
+    for (const p of playerInfo) {
+      if (p.play_cricket_id) {
+        nameMap.set(p.play_cricket_id, p.player_name);
+        costMap.set(p.play_cricket_id, p.sandwich_cost);
+      }
+    }
+
+    // Build sorted arrays
+    const entries = Array.from(ownershipMap.entries())
+      .map(([id, data]) => ({
+        playCricketId: id,
+        playerName: nameMap.get(id) ?? "Unknown",
+        ...data,
+      }));
+
+    const mostOwned = [...entries]
+      .sort((a, b) => b.ownerCount - a.ownerCount || a.playerName.localeCompare(b.playerName))
+      .slice(0, 5)
+      .map(({ playCricketId, playerName, ownershipPct }) => ({ playCricketId, playerName, ownershipPct }));
+
+    const mostCaptained = [...entries]
+      .filter((e) => e.captainCount > 0)
+      .sort((a, b) => b.captainCount - a.captainCount || a.playerName.localeCompare(b.playerName))
+      .slice(0, 5)
+      .map(({ playCricketId, playerName, captainPct }) => ({ playCricketId, playerName, captainPct }));
+
+    // Build a points map for differentials ranking.
+    // Use last completed gameweek's fantasy scores if available,
+    // otherwise fall back to previous season match performance data.
+    const diffPointsMap = new Map<string, { playerName: string; points: number }>();
+
+    const lastCompletedGw = Math.max(0, gameweek - 1);
+    if (lastCompletedGw > 0) {
+      const gwScores = await client
+        .selectFrom("fantasy_player_score as fps")
+        .innerJoin("fantasy_player as fp", "fp.play_cricket_id", "fps.play_cricket_id")
+        .where("fps.season", "=", currentSeason)
+        .where("fps.gameweek_id", "=", lastCompletedGw)
+        .select([
+          "fps.play_cricket_id",
+          "fp.player_name",
+          sql<number>`SUM(fps.total_points)`.as("total_points"),
+        ])
+        .groupBy("fps.play_cricket_id")
+        .execute();
+
+      for (const row of gwScores) {
+        diffPointsMap.set(row.play_cricket_id, { playerName: row.player_name, points: row.total_points });
+      }
+    }
+
+    // Fall back to previous season totals from raw match data
+    if (diffPointsMap.size === 0 || lastCompletedGw === 0) {
+      const previousSeason = Number(currentSeason) - 1;
+      const prevSeasonPoints = await calculateSeasonPoints([previousSeason]);
+
+      for (const [playerId, seasonMap] of prevSeasonPoints) {
+        if (diffPointsMap.has(playerId)) continue;
+        const pts = seasonMap.get(previousSeason);
+        if (pts && pts.totalPoints > 0) {
+          diffPointsMap.set(playerId, {
+            playerName: nameMap.get(playerId) ?? "Unknown",
+            points: pts.totalPoints,
+          });
+        }
+      }
+    }
+
+    const differentials = rankDifferentials(ownershipMap, teamCount, diffPointsMap, 5, costMap);
+
+    return { mostOwned, mostCaptained, differentials, teamCount, gameweek };
   },
 });
 
@@ -2138,4 +2392,5 @@ export const fantasy = {
   deactivateChip,
   getChipStatus,
   getGameweekHighlights,
+  getOwnershipOverview,
 };
