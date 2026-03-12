@@ -68,7 +68,7 @@ export const SCORING = {
 // ---------------------------------------------------------------------------
 
 /** Maximum total sandwich cost across all 11 players */
-export const SANDWICH_BUDGET = 20;
+export const SANDWICH_BUDGET = 25;
 
 /** Required slot counts for team composition */
 export const SLOT_COUNTS = { batting: 6, bowling: 4, allrounder: 1 } as const;
