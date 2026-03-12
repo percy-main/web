@@ -197,6 +197,7 @@ function OwnershipWidgets() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Player</TableHead>
+                  <TableHead className="w-16 text-center">Cost</TableHead>
                   <TableHead className="w-20 text-right">Points</TableHead>
                   <TableHead className="w-20 text-right">Owned</TableHead>
                 </TableRow>
@@ -205,6 +206,11 @@ function OwnershipWidgets() {
                 {data.differentials.map((player) => (
                   <TableRow key={player.playCricketId}>
                     <TableCell className="font-medium">{player.playerName}</TableCell>
+                    <TableCell className="text-center">
+                      <span className="inline-flex items-center gap-0.5 whitespace-nowrap text-sm">
+                        {"🥪".repeat(player.sandwichCost)}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right">{player.points}</TableCell>
                     <TableCell className="text-right">{player.ownershipPct}%</TableCell>
                   </TableRow>

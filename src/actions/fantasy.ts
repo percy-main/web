@@ -126,7 +126,8 @@ function rankDifferentials(
   teamCount: number,
   pointsMap: Map<string, { playerName: string; points: number }>,
   limit: number,
-): Array<{ playCricketId: string; playerName: string; points: number; ownershipPct: number }> {
+  costMap?: Map<string, number>,
+): Array<{ playCricketId: string; playerName: string; points: number; ownershipPct: number; sandwichCost: number }> {
   const threshold = getDifferentialThreshold(teamCount);
 
   const candidates: Array<{
@@ -134,6 +135,7 @@ function rankDifferentials(
     playerName: string;
     points: number;
     ownershipPct: number;
+    sandwichCost: number;
     diffValue: number;
   }> = [];
 
@@ -146,6 +148,7 @@ function rankDifferentials(
       playerName: pts.playerName,
       points: pts.points,
       ownershipPct: entry.ownershipPct,
+      sandwichCost: costMap?.get(id) ?? 0,
       diffValue: pts.points * (1 - entry.ownershipPct / 100),
     });
   }
@@ -153,11 +156,12 @@ function rankDifferentials(
   return candidates
     .sort((a, b) => b.diffValue - a.diffValue || a.ownershipPct - b.ownershipPct)
     .slice(0, limit)
-    .map(({ playCricketId, playerName, points, ownershipPct }) => ({
+    .map(({ playCricketId, playerName, points, ownershipPct, sandwichCost }) => ({
       playCricketId,
       playerName,
       points,
       ownershipPct,
+      sandwichCost,
     }));
 }
 
@@ -2076,19 +2080,23 @@ const getOwnershipOverview = defineAction({
       return { mostOwned: [], mostCaptained: [], differentials: [], teamCount: 0, gameweek };
     }
 
-    // Get player names for all players in the ownership map
+    // Get player names and sandwich costs for all players in the ownership map
     const playerIds = Array.from(ownershipMap.keys());
-    const playerNames = playerIds.length > 0
+    const playerInfo = playerIds.length > 0
       ? await client
           .selectFrom("fantasy_player")
           .where("play_cricket_id", "in", playerIds)
-          .select(["play_cricket_id", "player_name"])
+          .select(["play_cricket_id", "player_name", "sandwich_cost"])
           .execute()
       : [];
 
     const nameMap = new Map<string, string>();
-    for (const p of playerNames) {
-      if (p.play_cricket_id) nameMap.set(p.play_cricket_id, p.player_name);
+    const costMap = new Map<string, number>();
+    for (const p of playerInfo) {
+      if (p.play_cricket_id) {
+        nameMap.set(p.play_cricket_id, p.player_name);
+        costMap.set(p.play_cricket_id, p.sandwich_cost);
+      }
     }
 
     // Build sorted arrays
@@ -2152,7 +2160,7 @@ const getOwnershipOverview = defineAction({
       }
     }
 
-    const differentials = rankDifferentials(ownershipMap, teamCount, diffPointsMap, 5);
+    const differentials = rankDifferentials(ownershipMap, teamCount, diffPointsMap, 5, costMap);
 
     return { mostOwned, mostCaptained, differentials, teamCount, gameweek };
   },
