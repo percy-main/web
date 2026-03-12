@@ -211,10 +211,10 @@ export function ChaosWeeksTable() {
   });
 
   const sendEmailMutation = useMutation({
-    mutationFn: async (id: number): Promise<{ sent: number; total: number }> => {
+    mutationFn: async (id: number) => {
       const result = await actions.fantasy.sendChaosWeekEmail({ id });
       if (result.error) throw result.error;
-      return result.data as { sent: number; total: number };
+      return result.data;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "chaosWeeks"] });

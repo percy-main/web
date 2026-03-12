@@ -819,7 +819,9 @@ const saveTeam = defineAuthAction({
     const chaosWeek = await getActiveChaosWeek(currentSeason, gameweek);
 
     if (chaosWeek?.rule_type === "no_transfers") {
-      // Check if user already has a team — if so, block all transfers
+      // Only block transfers for users who already have a team.
+      // Initial squad creation is always allowed — a new player shouldn't be
+      // locked out of participating during a chaos week.
       const existingTeam = await client
         .selectFrom("fantasy_team")
         .where("user_id", "=", session.user.id)
