@@ -169,12 +169,11 @@ function drawPlayerCard(
     ctx.fillText(player.playerName, centerX, nameY, cardW - 12);
   }
 
-  // Sandwich cost
+  // Sandwich cost — use text with single emoji for cross-platform reliability
   nameY += 20;
   ctx.font = "15px -apple-system, BlinkMacSystemFont, sans-serif";
   ctx.fillStyle = GOLD_ACCENT;
-  const sandwiches = "🥪".repeat(player.sandwichCost);
-  ctx.fillText(sandwiches, centerX, nameY, cardW - 8);
+  ctx.fillText(`${player.sandwichCost} x 🥪`, centerX, nameY, cardW - 8);
 
   // Captain / WK badge
   const badgeY = nameY + 18;
@@ -257,10 +256,16 @@ export async function generateTeamImage(
   ctx.stroke();
 
   // --- Player cards ---
+  if (data.players.length < 11) {
+    throw new Error(
+      `Cannot generate share image: team has ${data.players.length} players (need 11)`,
+    );
+  }
+
   // Layout: 3 rows arranged like a cricket formation
   // Row 1 (top): 4 batting slots
-  // Row 2 (middle): 4 players (2 batting + 1 allrounder + 1 bowling)
-  // Row 3 (bottom): 3 bowling slots
+  // Row 2 (middle): 3 players (remaining batters + allrounder)
+  // Row 3 (bottom): 4 bowling slots
 
   const batters = data.players.filter((p) => p.slotType === "batting");
   const allrounders = data.players.filter((p) => p.slotType === "allrounder");

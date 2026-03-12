@@ -1287,14 +1287,21 @@ const getTeamShareData = defineAuthAction({
       const entries = await contentClient.getEntries({
         content_type: "trustee",
         "sys.id[in]": contentfulIds,
-        select: ["sys.id", "fields.photo"],
         limit: contentfulIds.length,
       });
+      const photoFieldSchema = z
+        .object({
+          fields: z
+            .object({
+              file: z.object({ url: z.string() }).optional(),
+            })
+            .optional(),
+        })
+        .optional();
+
       for (const entry of entries.items) {
-        const photo = entry.fields.photo as
-          | { fields?: { file?: { url?: string } } }
-          | undefined;
-        const url = photo?.fields?.file?.url;
+        const parsed = photoFieldSchema.safeParse(entry.fields.photo);
+        const url = parsed.success ? parsed.data?.fields?.file?.url : undefined;
         if (url) {
           photoMap.set(entry.sys.id, url.startsWith("//") ? `https:${url}` : url);
         }

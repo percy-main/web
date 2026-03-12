@@ -12,7 +12,7 @@ import {
 import { generateTeamImage } from "@/lib/fantasy/generate-team-image";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { actions } from "astro:actions";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 export function TeamView({ teamId }: { teamId: number }) {
   const teamQuery = useQuery({
@@ -99,7 +99,7 @@ function ShareButton({ teamId }: { teamId: number }) {
       const blob = await generateTeamImage(result.data);
       return blob;
     },
-    onSuccess: useCallback(async (blob: Blob) => {
+    onSuccess: async (blob: Blob) => {
       const file = new File([blob], "my-fantasy-team.png", {
         type: "image/png",
       });
@@ -130,7 +130,7 @@ function ShareButton({ teamId }: { teamId: number }) {
       URL.revokeObjectURL(url);
       setShared(true);
       setTimeout(() => setShared(false), 2000);
-    }, []),
+    },
   });
 
   return (
