@@ -116,6 +116,51 @@ function getDifferentialThreshold(teamCount: number): number {
   return Math.max(10, Math.min(20, 30 - teamCount));
 }
 
+/**
+ * Find the best differential picks: low-ownership players with high points.
+ * Uses a "differential value" score = points * (1 - ownershipPct/100)
+ * so a 50pt player at 10% ownership beats a 40pt player at 10%.
+ */
+function rankDifferentials(
+  ownershipMap: Map<string, OwnershipEntry>,
+  teamCount: number,
+  pointsMap: Map<string, { playerName: string; points: number }>,
+  limit: number,
+): Array<{ playCricketId: string; playerName: string; points: number; ownershipPct: number }> {
+  const threshold = getDifferentialThreshold(teamCount);
+
+  const candidates: Array<{
+    playCricketId: string;
+    playerName: string;
+    points: number;
+    ownershipPct: number;
+    diffValue: number;
+  }> = [];
+
+  for (const [id, entry] of ownershipMap) {
+    if (entry.ownershipPct <= 0 || entry.ownershipPct > threshold) continue;
+    const pts = pointsMap.get(id);
+    if (!pts || pts.points <= 0) continue;
+    candidates.push({
+      playCricketId: id,
+      playerName: pts.playerName,
+      points: pts.points,
+      ownershipPct: entry.ownershipPct,
+      diffValue: pts.points * (1 - entry.ownershipPct / 100),
+    });
+  }
+
+  return candidates
+    .sort((a, b) => b.diffValue - a.diffValue || a.ownershipPct - b.ownershipPct)
+    .slice(0, limit)
+    .map(({ playCricketId, playerName, points, ownershipPct }) => ({
+      playCricketId,
+      playerName,
+      points,
+      ownershipPct,
+    }));
+}
+
 // ---------------------------------------------------------------------------
 // Admin actions
 // ---------------------------------------------------------------------------
@@ -1833,22 +1878,21 @@ const getGameweekHighlights = defineAction({
       }
     }
 
-    // --- Differential pick: highest scoring player below differential threshold ---
+    // --- Differential pick: best value low-ownership player this gameweek ---
     let differentialPick: { playerName: string; playCricketId: string; totalPoints: number; ownershipPct: number } | null = null;
     if (allPlayerScores.length > 0 && teamCount > 0) {
-      const diffThreshold = getDifferentialThreshold(teamCount);
+      const gwPointsMap = new Map<string, { playerName: string; points: number }>();
       for (const ps of allPlayerScores) {
-        const ownership = ownershipMap.get(ps.play_cricket_id);
-        const pct = ownership?.ownershipPct ?? 0;
-        if (pct <= diffThreshold && ps.total_points > 0) {
-          differentialPick = {
-            playerName: ps.player_name,
-            playCricketId: ps.play_cricket_id,
-            totalPoints: ps.total_points,
-            ownershipPct: pct,
-          };
-          break; // allPlayerScores is sorted desc by points
-        }
+        gwPointsMap.set(ps.play_cricket_id, { playerName: ps.player_name, points: ps.total_points });
+      }
+      const topDiff = rankDifferentials(ownershipMap, teamCount, gwPointsMap, 1);
+      if (topDiff[0]) {
+        differentialPick = {
+          playerName: topDiff[0].playerName,
+          playCricketId: topDiff[0].playCricketId,
+          totalPoints: topDiff[0].points,
+          ownershipPct: topDiff[0].ownershipPct,
+        };
       }
     }
 
@@ -2053,12 +2097,62 @@ const getOwnershipOverview = defineAction({
       .slice(0, 5)
       .map(({ playCricketId, playerName, captainPct }) => ({ playCricketId, playerName, captainPct }));
 
-    const diffThreshold = getDifferentialThreshold(teamCount);
-    const differentials = entries
-      .filter((e) => e.ownershipPct <= diffThreshold && e.ownershipPct > 0)
-      .sort((a, b) => a.ownershipPct - b.ownershipPct || a.playerName.localeCompare(b.playerName))
-      .slice(0, 5)
-      .map(({ playCricketId, playerName, ownershipPct }) => ({ playCricketId, playerName, ownershipPct }));
+    // Build a points map for differentials ranking.
+    // Use last completed gameweek scores if available, otherwise previous season totals.
+    const pointsMap = new Map<string, { playerName: string; points: number }>();
+
+    const lastCompletedGw = Math.max(0, gameweek - 1);
+    if (lastCompletedGw > 0) {
+      // Use last gameweek's fantasy points
+      const gwScores = await client
+        .selectFrom("fantasy_player_score as fps")
+        .innerJoin("fantasy_player as fp", "fp.play_cricket_id", "fps.play_cricket_id")
+        .where("fps.season", "=", currentSeason)
+        .where("fps.gameweek_id", "=", lastCompletedGw)
+        .select([
+          "fps.play_cricket_id",
+          "fp.player_name",
+          sql<number>`SUM(fps.total_points)`.as("total_points"),
+        ])
+        .groupBy("fps.play_cricket_id")
+        .execute();
+
+      for (const row of gwScores) {
+        pointsMap.set(row.play_cricket_id, { playerName: row.player_name, points: row.total_points });
+      }
+    }
+
+    // Fall back to previous season totals for players without gameweek scores
+    if (pointsMap.size === 0 || lastCompletedGw === 0) {
+      const previousSeason = (Number(currentSeason) - 1).toString();
+      const prevScores = await client
+        .selectFrom("fantasy_player_score as fps")
+        .innerJoin("fantasy_player as fp", "fp.play_cricket_id", "fps.play_cricket_id")
+        .where("fps.season", "=", previousSeason)
+        .select([
+          "fps.play_cricket_id",
+          "fp.player_name",
+          sql<number>`SUM(fps.total_points)`.as("total_points"),
+        ])
+        .groupBy("fps.play_cricket_id")
+        .execute();
+
+      for (const row of prevScores) {
+        // Only set if not already populated from gameweek scores
+        if (!pointsMap.has(row.play_cricket_id)) {
+          pointsMap.set(row.play_cricket_id, { playerName: row.player_name, points: row.total_points });
+        }
+      }
+    }
+
+    // Also populate names for players who have no scores at all
+    for (const [id] of ownershipMap) {
+      if (!pointsMap.has(id)) {
+        pointsMap.set(id, { playerName: nameMap.get(id) ?? "Unknown", points: 0 });
+      }
+    }
+
+    const differentials = rankDifferentials(ownershipMap, teamCount, pointsMap, 5);
 
     return { mostOwned, mostCaptained, differentials, teamCount, gameweek };
   },
