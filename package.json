@@ -2,6 +2,7 @@
   "name": "website",
   "type": "module",
   "version": "0.0.1",
+  "packageManager": "pnpm@10.0.0",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
@@ -19,7 +20,6 @@
     "db:types": "DATABASE_URL=./local.db kysely-codegen --out-file ./src/lib/db/__generated__/db.ts",
     "db:migration": "zx ./scripts/create-migration.mjs",
     "db:up": "CLI=true set -a && source .env && set +a && tsx ./scripts/migrate-up",
-    "postinstall": "patch-package",
     "test": "vitest run",
     "test:e2e": "playwright test"
   },
@@ -114,7 +114,6 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "json-patch": "^0.7.0",
     "kysely-codegen": "^0.20.0",
-    "patch-package": "^8.0.0",
     "prettier": "^3.4.2",
     "prettier-plugin-astro": "^0.14.1",
     "prettier-plugin-organize-imports": "^4.1.0",
@@ -127,16 +126,19 @@
     "vitest": "^3.0.5",
     "zx": "^8.3.0"
   },
-  "overrides": {
-    "kysely-codegen": {
-      "@libsql/kysely-libsql": "^0.4.1"
-    },
-    "@better-auth/core": "1.5.4"
-  },
   "doxla": {
     "components": {
       "dir": "docs/components"
     },
     "dependencies": {}
+  },
+  "pnpm": {
+    "overrides": {
+      "kysely-codegen>@libsql/kysely-libsql": "^0.4.1",
+      "@better-auth/core": "1.5.4"
+    },
+    "patchedDependencies": {
+      "add-to-calendar-button@2.13.8": "patches/add-to-calendar-button@2.13.8.patch"
+    }
   }
 }

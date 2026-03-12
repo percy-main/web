@@ -1,6 +1,7 @@
 [build.environment]
 NODE_VERSION = "22"
 NETLIFY_SKIP_EXPOSED_SECRETS_SCAN = "true"
+PNPM_VERSION = "10"
 
 [[edge_functions]]
 path = "/api/stripe_proxy"

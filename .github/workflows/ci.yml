@@ -18,16 +18,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Generate Astro types
-        run: npx astro sync
+        run: pnpm astro sync
         env:
           CDN_TOKEN: ${{ secrets.CDN_TOKEN }}
           CDN_CMA_TOKEN: ${{ secrets.CDN_CMA_TOKEN }}
@@ -51,7 +53,7 @@ jobs:
           SLACK_TRUSTEES_HOOK: ${{ secrets.SLACK_TRUSTEES_HOOK }}
 
       - name: Lint
-        run: npm run lint
+        run: pnpm run lint
 
   typecheck:
     runs-on: ubuntu-latest
@@ -60,16 +62,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: npx astro check
+        run: pnpm astro check
         env:
           CDN_TOKEN: ${{ secrets.CDN_TOKEN }}
           CDN_CMA_TOKEN: ${{ secrets.CDN_CMA_TOKEN }}
@@ -99,17 +103,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       # --- Contentful types ---
       - name: Regenerate Contentful types
-        run: npx cf-content-types-generator -s "$CDN_SPACE_ID" -e "$CDN_ENVIRONMENT" -t "$CDN_CMA_TOKEN" -o src/__generated__ -Xrg
+        run: pnpm cf-content-types-generator -s "$CDN_SPACE_ID" -e "$CDN_ENVIRONMENT" -t "$CDN_CMA_TOKEN" -o src/__generated__ -Xrg
         env:
           CDN_SPACE_ID: ${{ secrets.CDN_SPACE_ID }}
           CDN_ENVIRONMENT: ${{ vars.CDN_ENVIRONMENT || 'master' }}
@@ -120,13 +126,13 @@ jobs:
       # schema applied. We first run all Kysely migrations against a local
       # SQLite file, then point kysely-codegen at it.
       - name: Run database migrations
-        run: npx tsx scripts/migrate-up.ts
+        run: pnpm tsx scripts/migrate-up.ts
         env:
           CLI: "true"
           DB_SYNC_URL: file:local.db
 
       - name: Regenerate DB types
-        run: npx kysely-codegen --out-file ./src/lib/db/__generated__/db.ts
+        run: pnpm kysely-codegen --out-file ./src/lib/db/__generated__/db.ts
         env:
           DATABASE_URL: ./local.db
 
@@ -142,8 +148,8 @@ jobs:
             echo "The committed generated types do not match what the generators produce."
             echo "Please run the following commands locally and commit the results:"
             echo ""
-            echo "  npm run contentful:types"
-            echo "  npm run db:types"
+            echo "  pnpm run contentful:types"
+            echo "  pnpm run db:types"
             echo ""
             exit 1
           fi
@@ -157,19 +163,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run database migrations
-        run: npx tsx scripts/migrate-up.ts
+        run: pnpm tsx scripts/migrate-up.ts
         env:
           CLI: "true"
           DB_SYNC_URL: file:local.db
 
       - name: Run unit tests
-        run: npm test
+        run: pnpm test

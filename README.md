@@ -27,15 +27,15 @@ All commands are run from the root of the project, from a terminal:
 
 | Command                           | Action                                           |
 | :-------------------------------- | :----------------------------------------------- |
-| `npm install`                     | Installs dependencies                            |
-| `npm run dev`                     | Starts local dev server at `localhost:4321`      |
-| `npm run build`                   | Build your production site to `./dist/`          |
-| `npm run preview`                 | Preview your build locally, before deploying     |
-| `npm run astro ...`               | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help`         | Get help using the Astro CLI                     |
-| `npm run contentful:types`        | Generate Contentful types                        |
-| `npm run contentful:create-merge` | Create a content merge from dev -> master        |
-| `npm run contentful:apply-merge`  | Apply a created merge                            |
+| `pnpm install`                     | Installs dependencies                            |
+| `pnpm run dev`                     | Starts local dev server at `localhost:4321`      |
+| `pnpm run build`                   | Build your production site to `./dist/`          |
+| `pnpm run preview`                 | Preview your build locally, before deploying     |
+| `pnpm run astro ...`               | Run CLI commands like `astro add`, `astro check` |
+| `pnpm run astro -- --help`         | Get help using the Astro CLI                     |
+| `pnpm run contentful:types`        | Generate Contentful types                        |
+| `pnpm run contentful:create-merge` | Create a content merge from dev -> master        |
+| `pnpm run contentful:apply-merge`  | Apply a created merge                            |
 
 ## Services
 
@@ -82,7 +82,7 @@ Distributed SQLite database storing authentication data
 
 #### Mailgun
 
-Email sending. Emails are written with `react-email`, and stored in the `emails` folder. A preview UI can be seen by running `npm run email`
+Email sending. Emails are written with `react-email`, and stored in the `emails` folder. A preview UI can be seen by running `pnpm run email`
 
 ## Environment
 
