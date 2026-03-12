@@ -156,6 +156,23 @@ async function setupSchema(db: Kysely<DB>) {
     .columns(["season", "gameweek_id", "fantasy_team_id"])
     .unique()
     .execute();
+
+  await db.schema
+    .createTable("fantasy_chip_usage")
+    .addColumn("id", "integer", (col) => col.primaryKey().autoIncrement())
+    .addColumn("fantasy_team_id", "integer", (col) => col.notNull())
+    .addColumn("chip_type", "text", (col) => col.notNull())
+    .addColumn("gameweek_id", "integer", (col) => col.notNull())
+    .addColumn("season", "text", (col) => col.notNull())
+    .addColumn("created_at", "text", (col) => col.notNull().defaultTo("now"))
+    .execute();
+
+  await db.schema
+    .createIndex("idx_fcu_team_chip_gameweek")
+    .on("fantasy_chip_usage")
+    .columns(["fantasy_team_id", "chip_type", "gameweek_id"])
+    .unique()
+    .execute();
 }
 
 // Match date in GW1 (18/04/2026 is a Saturday, GW1 start)
@@ -573,6 +590,128 @@ describe("calculateFantasyScores", () => {
 
     const result = await calculateFantasyScores(db, "2026");
     expect(result.playerScoresUpserted).toBe(0);
+  });
+
+  it("applies triple captain 3x multiplier when chip is active", async () => {
+    await seedPlayer(db, "p1", "Captain");
+    await seedPlayer(db, "p2", "Regular");
+    await seedBatting(db, {
+      matchId: "m1",
+      playerId: "p1",
+      matchDate: GW1_MATCH_DATE,
+      runs: 30,
+    });
+    await seedBatting(db, {
+      matchId: "m1",
+      playerId: "p2",
+      matchDate: GW1_MATCH_DATE,
+      runs: 20,
+    });
+    await seedMatchResult(db, "m1", GW1_MATCH_DATE);
+
+    // Create a fantasy team with p1 as captain
+    await db
+      .insertInto("fantasy_team")
+      .values({ user_id: "user1", season: "2026" })
+      .execute();
+    await db
+      .insertInto("fantasy_team_player")
+      .values([
+        {
+          fantasy_team_id: 1,
+          play_cricket_id: "p1",
+          is_captain: 1,
+          gameweek_added: 0,
+        },
+        {
+          fantasy_team_id: 1,
+          play_cricket_id: "p2",
+          is_captain: 0,
+          gameweek_added: 0,
+        },
+      ])
+      .execute();
+
+    // Activate triple captain chip for GW1
+    await db
+      .insertInto("fantasy_chip_usage")
+      .values({
+        fantasy_team_id: 1,
+        chip_type: "triple_captain",
+        gameweek_id: 1,
+        season: "2026",
+      })
+      .execute();
+
+    await calculateFantasyScores(db, "2026");
+
+    const teamScores = await db
+      .selectFrom("fantasy_team_score")
+      .selectAll()
+      .execute();
+    expect(teamScores).toHaveLength(1);
+
+    // p1 (captain, triple captain active): 30 runs + 10 win = 40 points, x3 = 120
+    // p2 (regular): 20 runs + 10 win = 30 points, x1 = 30
+    // Total = 150
+    expect(teamScores[0]!.total_points).toBe(150);
+  });
+
+  it("does not apply triple captain to non-activated gameweeks", async () => {
+    await seedPlayer(db, "p1", "Captain");
+    await seedBatting(db, {
+      matchId: "m1",
+      playerId: "p1",
+      matchDate: GW1_MATCH_DATE,
+      runs: 30,
+    });
+    await seedBatting(db, {
+      matchId: "m2",
+      playerId: "p1",
+      matchDate: GW2_MATCH_DATE,
+      runs: 30,
+    });
+    await seedMatchResult(db, "m1", GW1_MATCH_DATE);
+    await seedMatchResult(db, "m2", GW2_MATCH_DATE);
+
+    await db
+      .insertInto("fantasy_team")
+      .values({ user_id: "user1", season: "2026" })
+      .execute();
+    await db
+      .insertInto("fantasy_team_player")
+      .values({
+        fantasy_team_id: 1,
+        play_cricket_id: "p1",
+        is_captain: 1,
+        gameweek_added: 0,
+      })
+      .execute();
+
+    // Activate triple captain chip only for GW1, not GW2
+    await db
+      .insertInto("fantasy_chip_usage")
+      .values({
+        fantasy_team_id: 1,
+        chip_type: "triple_captain",
+        gameweek_id: 1,
+        season: "2026",
+      })
+      .execute();
+
+    await calculateFantasyScores(db, "2026");
+
+    const teamScores = await db
+      .selectFrom("fantasy_team_score")
+      .selectAll()
+      .orderBy("gameweek_id", "asc")
+      .execute();
+    expect(teamScores).toHaveLength(2);
+
+    // GW1 with triple captain: (30 + 10) * 3 = 120
+    expect(teamScores[0]!.total_points).toBe(120);
+    // GW2 without triple captain: (30 + 10) * 2 = 80
+    expect(teamScores[1]!.total_points).toBe(80);
   });
 
   it("respects gameweek_removed for team score calculation", async () => {

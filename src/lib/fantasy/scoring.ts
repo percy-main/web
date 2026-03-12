@@ -83,6 +83,23 @@ export const VALID_SLOT_TYPES: readonly SlotType[] = [
 ] as const;
 
 // ---------------------------------------------------------------------------
+// Chips config
+// ---------------------------------------------------------------------------
+
+export const CHIPS = {
+  triple_captain: {
+    /** How many times this chip can be used per season */
+    usesPerSeason: 2,
+    /** Captain multiplier when this chip is active */
+    captainMultiplier: 3,
+  },
+} as const;
+
+export type ChipType = keyof typeof CHIPS;
+
+export const CHIP_TYPES = Object.keys(CHIPS) as ChipType[];
+
+// ---------------------------------------------------------------------------
 // League match filter
 // ---------------------------------------------------------------------------
 

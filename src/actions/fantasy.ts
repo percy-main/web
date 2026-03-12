@@ -14,6 +14,9 @@ import {
   calculateBattingPoints,
   calculateBowlingPoints,
   calculateFieldingPoints,
+  CHIPS,
+  CHIP_TYPES,
+  type ChipType,
   ELIGIBLE_TEAM_IDS,
   LEAGUE_COMPETITION_TYPES,
   SANDWICH_BUDGET,
@@ -1362,6 +1365,21 @@ const getGameweekDetail = defineAction({
       scoresByPlayer.set(score.play_cricket_id, existing);
     }
 
+    // Check for active chips this gameweek
+    const activeChips = await client
+      .selectFrom("fantasy_chip_usage")
+      .where("fantasy_team_id", "=", teamId)
+      .where("gameweek_id", "=", gameweek)
+      .where("season", "=", currentSeason)
+      .select("chip_type")
+      .execute();
+
+    const activeChipTypes = activeChips.map((c) => c.chip_type);
+    const hasTripleCaptain = activeChipTypes.includes("triple_captain");
+    const captainMultiplier = hasTripleCaptain
+      ? CHIPS.triple_captain.captainMultiplier
+      : 2;
+
     return {
       team: {
         id: team.id,
@@ -1370,6 +1388,7 @@ const getGameweekDetail = defineAction({
       },
       gameweek,
       season: currentSeason,
+      activeChips: activeChipTypes,
       players: players.map((p) => {
         const scores = scoresByPlayer.get(p.play_cricket_id);
         const isCaptain = p.is_captain === 1;
@@ -1387,6 +1406,7 @@ const getGameweekDetail = defineAction({
               catches: scores.catches,
               isActualKeeper: scores.isActualKeeper,
               isCaptain,
+              captainMultiplier,
             })
           : 0;
 
@@ -1402,6 +1422,7 @@ const getGameweekDetail = defineAction({
           teamPoints: scores?.teamPoints ?? 0,
           basePoints: scores?.totalPoints ?? 0,
           effectivePoints,
+          captainMultiplier: isCaptain ? captainMultiplier : 1,
           matchCount: scores?.matchCount ?? 0,
         };
       }),
@@ -1541,6 +1562,196 @@ const getTransferWindowPublic = defineAction({
 });
 
 // ---------------------------------------------------------------------------
+// Chip actions
+// ---------------------------------------------------------------------------
+
+const activateChip = defineAuthAction({
+  requireVerifiedEmail: true,
+  input: z.object({
+    chipType: z.enum(CHIP_TYPES as [ChipType, ...ChipType[]]),
+    season: z.string().optional(),
+  }),
+  handler: async ({ chipType, season }, session) => {
+    const currentSeason = season ?? getCurrentSeason();
+
+    if (isGameweekLocked(currentSeason)) {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: "Cannot activate chips during locked weekends.",
+      });
+    }
+
+    const gameweek = getCurrentGameweek(currentSeason);
+    if (gameweek === 0) {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: "Cannot activate chips during pre-season.",
+      });
+    }
+
+    const team = await client
+      .selectFrom("fantasy_team")
+      .where("user_id", "=", session.user.id)
+      .where("season", "=", currentSeason)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!team) {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: "You need a team before activating a chip.",
+      });
+    }
+
+    const teamId = requireId(team.id);
+    const chipConfig = CHIPS[chipType];
+
+    // Check season usage limit
+    const usedThisSeason = await client
+      .selectFrom("fantasy_chip_usage")
+      .where("fantasy_team_id", "=", teamId)
+      .where("chip_type", "=", chipType)
+      .where("season", "=", currentSeason)
+      .select(sql<number>`COUNT(*)`.as("count"))
+      .executeTakeFirst();
+
+    if ((usedThisSeason?.count ?? 0) >= chipConfig.usesPerSeason) {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: `You have already used all ${chipConfig.usesPerSeason} ${chipType.replace("_", " ")} chips this season.`,
+      });
+    }
+
+    // Insert (unique constraint will prevent double-activation for same gameweek)
+    try {
+      await client
+        .insertInto("fantasy_chip_usage")
+        .values({
+          fantasy_team_id: teamId,
+          chip_type: chipType,
+          gameweek_id: gameweek,
+          season: currentSeason,
+        })
+        .execute();
+    } catch {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: `${chipType.replace("_", " ")} chip is already active for this gameweek.`,
+      });
+    }
+
+    return { success: true };
+  },
+});
+
+const deactivateChip = defineAuthAction({
+  requireVerifiedEmail: true,
+  input: z.object({
+    chipType: z.enum(CHIP_TYPES as [ChipType, ...ChipType[]]),
+    season: z.string().optional(),
+  }),
+  handler: async ({ chipType, season }, session) => {
+    const currentSeason = season ?? getCurrentSeason();
+
+    if (isGameweekLocked(currentSeason)) {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: "Cannot deactivate chips during locked weekends.",
+      });
+    }
+
+    const gameweek = getCurrentGameweek(currentSeason);
+
+    const team = await client
+      .selectFrom("fantasy_team")
+      .where("user_id", "=", session.user.id)
+      .where("season", "=", currentSeason)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!team) {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: "Team not found.",
+      });
+    }
+
+    const teamId = requireId(team.id);
+
+    const deleted = await client
+      .deleteFrom("fantasy_chip_usage")
+      .where("fantasy_team_id", "=", teamId)
+      .where("chip_type", "=", chipType)
+      .where("gameweek_id", "=", gameweek)
+      .where("season", "=", currentSeason)
+      .execute();
+
+    if (deleted[0] && Number(deleted[0].numDeletedRows) === 0) {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: "No active chip found for this gameweek.",
+      });
+    }
+
+    return { success: true };
+  },
+});
+
+const getChipStatus = defineAuthAction({
+  requireVerifiedEmail: true,
+  input: z.object({
+    season: z.string().optional(),
+  }),
+  handler: async ({ season }, session) => {
+    const currentSeason = season ?? getCurrentSeason();
+    const gameweek = getCurrentGameweek(currentSeason);
+
+    const team = await client
+      .selectFrom("fantasy_team")
+      .where("user_id", "=", session.user.id)
+      .where("season", "=", currentSeason)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!team) {
+      return {
+        chips: CHIP_TYPES.map((type) => ({
+          chipType: type,
+          usedThisSeason: 0,
+          maxPerSeason: CHIPS[type].usesPerSeason,
+          activeThisGameweek: false,
+        })),
+        gameweek,
+      };
+    }
+
+    const teamId = requireId(team.id);
+
+    const usages = await client
+      .selectFrom("fantasy_chip_usage")
+      .where("fantasy_team_id", "=", teamId)
+      .where("season", "=", currentSeason)
+      .select(["chip_type", "gameweek_id"])
+      .execute();
+
+    const chipStatus = CHIP_TYPES.map((type) => {
+      const usedCount = usages.filter((u) => u.chip_type === type).length;
+      const activeThisGw = usages.some(
+        (u) => u.chip_type === type && u.gameweek_id === gameweek,
+      );
+      return {
+        chipType: type,
+        usedThisSeason: usedCount,
+        maxPerSeason: CHIPS[type].usesPerSeason,
+        activeThisGameweek: activeThisGw,
+      };
+    });
+
+    return { chips: chipStatus, gameweek };
+  },
+});
+
+// ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
@@ -1563,4 +1774,7 @@ export const fantasy = {
   getSeasonTimeline,
   getPlayerHistory,
   getTransferWindowPublic,
+  activateChip,
+  deactivateChip,
+  getChipStatus,
 };

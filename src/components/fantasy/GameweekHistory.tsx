@@ -89,9 +89,14 @@ export function GameweekHistory({ teamId, availableGameweeks, initialGameweek, o
           <p className="text-sm text-gray-500">No data for this gameweek.</p>
         ) : (
           <>
-            <div className="mb-4 flex items-center gap-3">
+            <div className="mb-4 flex flex-wrap items-center gap-3">
               <span className="text-sm text-gray-600">Total team points:</span>
               <span className="text-lg font-bold">{data.team.totalPoints}</span>
+              {data.activeChips?.includes("triple_captain") && (
+                <Badge className="bg-purple-100 text-purple-800">
+                  TC x3
+                </Badge>
+              )}
             </div>
             <div className="overflow-x-auto">
               <Table>
@@ -159,7 +164,7 @@ export function GameweekHistory({ teamId, availableGameweeks, initialGameweek, o
                               {player.effectivePoints}
                               {player.isCaptain && player.basePoints > 0 && (
                                 <span className="ml-1 text-xs text-amber-600">
-                                  ({player.basePoints}x2)
+                                  ({player.basePoints}x{player.captainMultiplier ?? 2})
                                 </span>
                               )}
                             </span>

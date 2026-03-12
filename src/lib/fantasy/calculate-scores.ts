@@ -17,6 +17,7 @@ import {
   calculateBattingPoints,
   calculateBowlingPoints,
   calculateFieldingPoints,
+  CHIPS,
   ELIGIBLE_TEAM_IDS,
   LEAGUE_COMPETITION_TYPES,
   SCORING,
@@ -79,8 +80,9 @@ export function calculateSlotEffectivePoints(opts: {
   catches: number;
   isActualKeeper: boolean;
   isCaptain: boolean;
+  captainMultiplier?: number;
 }): number {
-  const { slotType, isFantasyWk, battingPts, bowlingPts, teamPts, catches, isActualKeeper, isCaptain } = opts;
+  const { slotType, isFantasyWk, battingPts, bowlingPts, teamPts, catches, isActualKeeper, isCaptain, captainMultiplier = 2 } = opts;
   let { fieldingPts } = opts;
 
   // WK adjustment: recalculate fielding based on fantasy WK tag vs actual
@@ -109,7 +111,7 @@ export function calculateSlotEffectivePoints(opts: {
   }
 
   // Captain multiplier (allrounder can't be captain, validated at save)
-  return effective * (isCaptain ? 2 : 1);
+  return effective * (isCaptain ? captainMultiplier : 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -502,6 +504,30 @@ export async function calculateFantasyScores(
     }
   }
 
+  // Fetch all chip usages for the season in one query
+  const allChipUsages = await db
+    .selectFrom("fantasy_chip_usage")
+    .where("season", "=", season)
+    .where("fantasy_team_id", "in", teamIds)
+    .select(["fantasy_team_id", "chip_type", "gameweek_id"])
+    .execute();
+
+  // Index: teamId -> gameweek -> Set<chipType>
+  const chipsByTeamAndGw = new Map<number, Map<number, Set<string>>>();
+  for (const chip of allChipUsages) {
+    let teamMap = chipsByTeamAndGw.get(chip.fantasy_team_id);
+    if (!teamMap) {
+      teamMap = new Map();
+      chipsByTeamAndGw.set(chip.fantasy_team_id, teamMap);
+    }
+    let gwSet = teamMap.get(chip.gameweek_id);
+    if (!gwSet) {
+      gwSet = new Set();
+      teamMap.set(chip.gameweek_id, gwSet);
+    }
+    gwSet.add(chip.chip_type);
+  }
+
   // Calculate and upsert team scores
   let teamScoresUpserted = 0;
 
@@ -520,6 +546,13 @@ export async function calculateFantasyScores(
 
       const gwScores = scoresByGwAndPlayer.get(gw) ?? new Map();
 
+      // Determine captain multiplier — 3x if triple captain chip is active, else 2x
+      const activeChips = chipsByTeamAndGw.get(teamId)?.get(gw);
+      const hasTripleCaptain = activeChips?.has("triple_captain") ?? false;
+      const captainMultiplier = hasTripleCaptain
+        ? CHIPS.triple_captain.captainMultiplier
+        : 2;
+
       // Calculate team total using slot-based scoring with WK adjustment
       let totalPoints = 0;
       for (const player of activePlayers) {
@@ -536,6 +569,7 @@ export async function calculateFantasyScores(
           catches: scores.catches,
           isActualKeeper: scores.isActualKeeper,
           isCaptain: player.is_captain === 1,
+          captainMultiplier,
         });
       }
 

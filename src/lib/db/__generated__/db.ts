@@ -90,6 +90,15 @@ export interface EventSubscriber {
   meta: string;
 }
 
+export interface FantasyChipUsage {
+  chip_type: string;
+  created_at: Generated<string>;
+  fantasy_team_id: number;
+  gameweek_id: number;
+  id: Generated<number | null>;
+  season: string;
+}
+
 export interface FantasyPlayer {
   created_at: Generated<string>;
   eligible: Generated<number>;
@@ -438,6 +447,7 @@ export interface DB {
   contact_submission: ContactSubmission;
   dependent: Dependent;
   event_subscriber: EventSubscriber;
+  fantasy_chip_usage: FantasyChipUsage;
   fantasy_player: FantasyPlayer;
   fantasy_player_score: FantasyPlayerScore;
   fantasy_team: FantasyTeam;

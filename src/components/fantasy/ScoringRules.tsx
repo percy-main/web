@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
-import { SANDWICH_BUDGET, SCORING, SLOT_COUNTS } from "@/lib/fantasy/scoring";
+import { CHIPS, SANDWICH_BUDGET, SCORING, SLOT_COUNTS } from "@/lib/fantasy/scoring";
 
 function formatPoints(value: number): string {
   return value > 0 ? `+${value}` : String(value);
@@ -318,6 +318,34 @@ function GeneralRules() {
   );
 }
 
+function ChipRules() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Chips</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3 text-sm">
+          <div>
+            <h4 className="font-medium">Triple Captain</h4>
+            <p className="text-gray-600">
+              When activated, your captain&apos;s points are tripled ({CHIPS.triple_captain.captainMultiplier}x) instead of
+              doubled (2x) for that gameweek. You get {CHIPS.triple_captain.usesPerSeason} uses per season.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-medium">How to use</h4>
+            <p className="text-gray-600">
+              Activate a chip from the &quot;Chips&quot; section on the My Team page before the gameweek locks
+              (Friday 23:59 UK time). You can deactivate it before the lock deadline if you change your mind.
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function TransferRules() {
   return (
     <Card>
@@ -374,6 +402,7 @@ export function ScoringRules() {
       <BowlingRules />
       <FieldingRules />
       <GeneralRules />
+      <ChipRules />
       <TransferRules />
     </div>
   );
