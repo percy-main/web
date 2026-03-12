@@ -41,6 +41,9 @@ importers:
       '@contentful/rich-text-react-renderer':
         specifier: ^16.0.1
         version: 16.1.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@contentful/rich-text-types':
+        specifier: ^17.2.5
+        version: 17.2.5
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -137,6 +140,9 @@ importers:
       date-fns-tz:
         specifier: ^3.2.0
         version: 3.2.0(date-fns@4.1.0)
+      form-data:
+        specifier: ^4.0.5
+        version: 4.0.5
       html-to-text:
         specifier: ^9.0.5
         version: 9.0.5
