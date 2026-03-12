@@ -18,9 +18,12 @@ import {
   calculateBowlingPoints,
   calculateFieldingPoints,
   CHIPS,
+  type ChaosRuleType,
   ELIGIBLE_TEAM_IDS,
   LEAGUE_COMPETITION_TYPES,
   SCORING,
+  type ScoringModifierConfig,
+  type ScoringThresholdConfig,
   type SlotType,
 } from "./scoring";
 import { getGW1StartDate } from "./gameweek";
@@ -528,6 +531,32 @@ export async function calculateFantasyScores(
     gwSet.add(chip.chip_type);
   }
 
+  // Fetch chaos weeks for the season (for scoring modifiers)
+  const chaosWeeks = await db
+    .selectFrom("fantasy_chaos_week")
+    .where("season", "=", season)
+    .selectAll()
+    .execute();
+
+  const chaosWeekByGw = new Map(
+    chaosWeeks.map((cw) => [cw.gameweek_id, cw]),
+  );
+
+  // Fetch player sandwich costs (needed for scoring_modifier chaos rule)
+  const allFantasyPlayers = await db
+    .selectFrom("fantasy_player")
+    .select(["play_cricket_id", "sandwich_cost"])
+    .execute();
+
+  const sandwichCostMap = new Map(
+    allFantasyPlayers
+      .filter(
+        (p): p is typeof p & { play_cricket_id: string } =>
+          p.play_cricket_id !== null,
+      )
+      .map((p) => [p.play_cricket_id, p.sandwich_cost]),
+  );
+
   // Calculate and upsert team scores
   let teamScoresUpserted = 0;
 
@@ -546,12 +575,25 @@ export async function calculateFantasyScores(
 
       const gwScores = scoresByGwAndPlayer.get(gw) ?? new Map();
 
+      // Check for chaos week rules
+      const chaosWeek = chaosWeekByGw.get(gw);
+      const chaosRuleType = chaosWeek?.rule_type as ChaosRuleType | undefined;
+      const chaosConfig = chaosWeek
+        ? (JSON.parse(chaosWeek.rule_config) as Record<string, unknown>)
+        : null;
+
       // Determine captain multiplier — 3x if triple captain chip is active, else 2x
+      // Chaos: no_captain_multiplier overrides to 1x (no bonus)
       const activeChips = chipsByTeamAndGw.get(teamId)?.get(gw);
       const hasTripleCaptain = activeChips?.has("triple_captain") ?? false;
-      const captainMultiplier = hasTripleCaptain
-        ? CHIPS.triple_captain.captainMultiplier
-        : 2;
+      let captainMultiplier: number;
+      if (chaosRuleType === "no_captain_multiplier") {
+        captainMultiplier = 1;
+      } else if (hasTripleCaptain) {
+        captainMultiplier = CHIPS.triple_captain.captainMultiplier;
+      } else {
+        captainMultiplier = 2;
+      }
 
       // Calculate team total using slot-based scoring with WK adjustment
       let totalPoints = 0;
@@ -559,7 +601,7 @@ export async function calculateFantasyScores(
         const scores = gwScores.get(player.play_cricket_id);
         if (!scores) continue;
 
-        totalPoints += calculateSlotEffectivePoints({
+        let playerPoints = calculateSlotEffectivePoints({
           slotType: (player.slot_type ?? "batting") as SlotType,
           isFantasyWk: player.is_wicketkeeper === 1,
           battingPts: scores.battingPts,
@@ -571,6 +613,47 @@ export async function calculateFantasyScores(
           isCaptain: player.is_captain === 1,
           captainMultiplier,
         });
+
+        // Apply chaos week scoring modifiers
+        if (chaosRuleType === "scoring_modifier" && chaosConfig) {
+          const config = chaosConfig as unknown as ScoringModifierConfig;
+          const cost =
+            sandwichCostMap.get(player.play_cricket_id) ?? 1;
+          if (
+            cost >= config.sandwich_cost_min &&
+            cost <= config.sandwich_cost_max
+          ) {
+            playerPoints = Math.round(playerPoints * config.multiplier);
+          }
+        }
+
+        if (chaosRuleType === "scoring_threshold" && chaosConfig) {
+          const config = chaosConfig as unknown as ScoringThresholdConfig;
+          // Only score if batting runs > min_runs OR bowling wickets > min_wickets
+          // Check raw performance data
+          const hasQualifyingBatting = scores.battingPts > 0 &&
+            playerScores.some(
+              (ps) =>
+                ps.playerId === player.play_cricket_id &&
+                ps.gameweek === gw &&
+                battingByMatch.get(mkKey(ps.playerId, ps.matchId))?.runs !== undefined &&
+                (battingByMatch.get(mkKey(ps.playerId, ps.matchId))?.runs ?? 0) >= config.min_runs,
+            );
+          const hasQualifyingBowling = scores.bowlingPts > 0 &&
+            playerScores.some(
+              (ps) =>
+                ps.playerId === player.play_cricket_id &&
+                ps.gameweek === gw &&
+                bowlingByMatch.get(mkKey(ps.playerId, ps.matchId))?.wickets !== undefined &&
+                (bowlingByMatch.get(mkKey(ps.playerId, ps.matchId))?.wickets ?? 0) >= config.min_wickets,
+            );
+
+          if (!hasQualifyingBatting && !hasQualifyingBowling) {
+            playerPoints = 0;
+          }
+        }
+
+        totalPoints += playerPoints;
       }
 
       await db
