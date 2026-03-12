@@ -9,23 +9,37 @@ import { STRIPE_WEBHOOK_SECRET } from "astro:env/server";
 import { mkdirSync, writeFileSync } from "fs";
 import _ from "lodash/fp";
 import path from "path";
+import Stripe from "stripe";
 import { match, P } from "ts-pattern";
 
 export async function POST({ request }: APIContext): Promise<Response> {
+  const payload = await request.text();
+  const sig = request.headers.get("stripe-signature");
+
+  if (!sig) {
+    console.error("Stripe webhook received without signature header");
+    return Response.json(
+      { error: "Missing stripe-signature header" },
+      { status: 400 },
+    );
+  }
+
+  let event: Stripe.Event;
   try {
-    const payload = await request.text();
-    const sig = request.headers.get("stripe-signature");
-
-    if (!sig) {
-      throw new Error("No webhook signature provided");
-    }
-
-    const event = stripe.webhooks.constructEvent(
+    event = stripe.webhooks.constructEvent(
       payload,
       sig,
       STRIPE_WEBHOOK_SECRET,
     );
+  } catch (error: unknown) {
+    console.error("Stripe webhook signature verification failed", error);
+    return Response.json(
+      { error: "Invalid webhook signature" },
+      { status: 400 },
+    );
+  }
 
+  try {
     if (import.meta.env.DEV) {
       const sampleDir = path.join(".sample");
       mkdirSync(sampleDir, { recursive: true });
@@ -54,8 +68,10 @@ export async function POST({ request }: APIContext): Promise<Response> {
 
     return Response.json({}, { status: 200 });
   } catch (error: unknown) {
-    console.error("Failed to create checkout session", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return Response.json({ message }, { status: 500 });
+    console.error("Stripe webhook handler failed", error);
+    return Response.json(
+      { error: "Webhook processing failed" },
+      { status: 500 },
+    );
   }
 }
