@@ -12,6 +12,7 @@ import { z } from "astro/zod";
 import { randomUUID } from "crypto";
 
 const MAX_LOGO_SIZE_BYTES = 150_000;
+const PENDING_PAYMENT_TTL_MINUTES = 60;
 
 export const playerSponsorship = {
   getPrice: defineAction({
@@ -72,6 +73,18 @@ export const playerSponsorship = {
               "This player already has a sponsor for this season.",
           });
         }
+
+        // Clean up stale unpaid sponsorship attempts so retries aren't blocked
+        const cutoff = new Date(
+          Date.now() - PENDING_PAYMENT_TTL_MINUTES * 60 * 1000,
+        ).toISOString();
+        await client
+          .deleteFrom("player_sponsorship")
+          .where("contentful_entry_id", "=", contentfulEntryId)
+          .where("season", "=", season)
+          .where("paid_at", "is", null)
+          .where("created_at", "<", cutoff)
+          .execute();
 
         const { amount, currency, productName } = await getStripePrice(
           paymentData.prices.playerSponsorship,
@@ -195,6 +208,9 @@ export const playerSponsorship = {
     }),
     handler: async ({ contentfulEntryId }) => {
       const season = currentCricketSeason();
+      const cutoff = new Date(
+        Date.now() - PENDING_PAYMENT_TTL_MINUTES * 60 * 1000,
+      ).toISOString();
 
       const pending = await client
         .selectFrom("player_sponsorship")
@@ -202,7 +218,12 @@ export const playerSponsorship = {
         .where("season", "=", season)
         .where((eb) =>
           eb.or([
-            eb("paid_at", "is", null),
+            // Unpaid attempts are only "pending" if recent (within TTL)
+            eb.and([
+              eb("paid_at", "is", null),
+              eb("created_at", ">=", cutoff),
+            ]),
+            // Paid but unapproved stays pending indefinitely
             eb.and([eb("paid_at", "is not", null), eb("approved", "=", 0)]),
           ]),
         )
