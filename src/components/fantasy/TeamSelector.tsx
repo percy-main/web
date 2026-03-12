@@ -86,20 +86,28 @@ function BudgetTracker({ used, total }: { used: number; total: number }) {
   );
 }
 
+/** Prefix used for droppable empty-slot IDs: `slot:{slotType}:{index}` */
+const EMPTY_SLOT_PREFIX = "slot:";
+
+function parseEmptySlotId(id: string): SlotType | null {
+  if (!id.startsWith(EMPTY_SLOT_PREFIX)) return null;
+  return id.slice(EMPTY_SLOT_PREFIX.length, id.lastIndexOf(":")) as SlotType;
+}
+
 function EmptySlotRow({ slotType, index }: { slotType: SlotType; index: number }) {
   const { setNodeRef, isOver } = useDroppable({
-    id: `empty-${slotType}-${index}`,
+    id: `${EMPTY_SLOT_PREFIX}${slotType}:${index}`,
   });
 
   return (
-    <TableRow
+    <tr
       ref={setNodeRef}
-      className={`border-dashed ${isOver ? "bg-blue-50" : ""}`}
+      className={`border-b border-dashed ${isOver ? "bg-blue-50" : ""}`}
     >
-      <TableCell colSpan={3} className="py-2 text-center text-xs text-gray-400">
+      <td colSpan={3} className="py-2 text-center text-xs text-gray-400">
         Empty slot
-      </TableCell>
-    </TableRow>
+      </td>
+    </tr>
   );
 }
 
@@ -230,9 +238,9 @@ function SlotSection({
               : "All pts"}
         </span>
       </div>
-      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <Table>
-          <TableBody>
+      <Table>
+        <TableBody>
+          <SortableContext items={ids} strategy={verticalListSortingStrategy}>
             {players.map((player, index) => (
               <SortablePlayerRow
                 key={player.playCricketId}
@@ -244,12 +252,12 @@ function SlotSection({
                 onToggleWk={onToggleWk}
               />
             ))}
-            {Array.from({ length: emptyCount }, (_, i) => (
-              <EmptySlotRow key={`empty-${slotType}-${i}`} slotType={slotType} index={i} />
-            ))}
-          </TableBody>
-        </Table>
-      </SortableContext>
+          </SortableContext>
+          {Array.from({ length: emptyCount }, (_, i) => (
+            <EmptySlotRow key={`${EMPTY_SLOT_PREFIX}${slotType}:${i}`} slotType={slotType} index={i} />
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -469,8 +477,9 @@ export function TeamSelector() {
     const overId = over.id as string;
 
     // Dropping onto an empty slot — change the dragged player's slot type
-    if (overId.startsWith("empty-")) {
-      const targetSlotType = overId.split("-")[1] as SlotType;
+    const emptySlotType = parseEmptySlotId(overId);
+    if (emptySlotType) {
+      const targetSlotType = emptySlotType;
       setSelectedPlayers((prev) => {
         const result = prev.map((p) => {
           if (p.playCricketId !== active.id) return p;
