@@ -58,7 +58,7 @@ const SLOT_ICONS: Record<SlotType, string> = {
 
 function SandwichCost({ cost }: { cost: number }) {
   return (
-    <span className="inline-flex items-center gap-0.5 text-sm" title={`Sandwich cost: ${cost}`}>
+    <span className="inline-flex items-center gap-0.5 whitespace-nowrap text-sm" title={`Sandwich cost: ${cost}`}>
       {"🥪".repeat(cost)}
     </span>
   );
