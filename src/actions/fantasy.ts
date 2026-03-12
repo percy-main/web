@@ -564,11 +564,9 @@ const getEligiblePlayers = defineAuthAction({
 
     const emptySeasonPoints = { totalPoints: 0, matchesPlayed: 0 };
 
-    // Fetch ownership stats for current gameweek
+    // Fetch ownership stats for current gameweek (works in pre-season too, gameweek=0)
     const currentGameweek = getCurrentGameweek(currentSeason);
-    const { ownershipMap } = currentGameweek > 0
-      ? await getOwnershipData(currentSeason, currentGameweek)
-      : { ownershipMap: new Map<string, OwnershipEntry>() };
+    const { ownershipMap } = await getOwnershipData(currentSeason, currentGameweek);
 
     return {
       players: players
@@ -1046,9 +1044,7 @@ const getTeam = defineAuthAction({
       ])
       .execute();
 
-    const { ownershipMap } = gameweek > 0
-      ? await getOwnershipData(team.season, gameweek)
-      : { ownershipMap: new Map<string, OwnershipEntry>() };
+    const { ownershipMap } = await getOwnershipData(team.season, gameweek);
 
     return {
       team: {
@@ -2016,10 +2012,6 @@ const getOwnershipOverview = defineAction({
   handler: async ({ season }) => {
     const currentSeason = season ?? getCurrentSeason();
     const gameweek = getCurrentGameweek(currentSeason);
-
-    if (gameweek === 0) {
-      return { mostOwned: [], mostCaptained: [], differentials: [], teamCount: 0, gameweek: 0 };
-    }
 
     const { ownershipMap, teamCount } = await getOwnershipData(currentSeason, gameweek);
 
