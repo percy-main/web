@@ -253,30 +253,38 @@ function WicketkeeperRules() {
         <div className="space-y-3 text-sm">
           <p className="text-gray-600">
             Designate exactly one player in your squad as wicketkeeper (WK).
-            This affects how their catches are scored:
+            Scoring is based on the actual match role, not just the fantasy tag:
           </p>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Scenario</TableHead>
-                <TableHead className="w-24 text-right">Per Catch</TableHead>
+                <TableHead className="text-right">Catches</TableHead>
+                <TableHead className="text-right">Stumpings</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow>
-                <TableCell>Player tagged as WK (always)</TableCell>
-                <TableCell className="text-right font-medium">{formatPoints(SCORING.fielding.perCatchKeeper)}</TableCell>
+                <TableCell>Any player in WK slot</TableCell>
+                <TableCell className="text-right font-medium">{formatPoints(SCORING.fielding.perCatchKeeper)}/catch</TableCell>
+                <TableCell className="text-right font-medium">{formatPoints(SCORING.fielding.perStumping)}/stumping</TableCell>
               </TableRow>
               <TableRow>
-                <TableCell>Non-WK player (always)</TableCell>
-                <TableCell className="text-right font-medium">{formatPoints(SCORING.fielding.perCatch)}</TableCell>
+                <TableCell>Non-keeper in non-WK slot</TableCell>
+                <TableCell className="text-right font-medium">{formatPoints(SCORING.fielding.perCatch)}/catch</TableCell>
+                <TableCell className="text-right text-gray-400">N/A</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="text-red-600">Actual keeper NOT in WK slot</TableCell>
+                <TableCell className="text-right font-medium text-red-600">0</TableCell>
+                <TableCell className="text-right font-medium text-red-600">0</TableCell>
               </TableRow>
             </TableBody>
           </Table>
           <p className="text-gray-500">
-            Players tagged as WK always earn the keeper catch rate ({SCORING.fielding.perCatchKeeper}pt/catch)
-            regardless of whether they actually kept wicket in the match.
-            All other players earn the fielder rate ({SCORING.fielding.perCatch}pt/catch).
+            The WK slot uses a reduced catch rate ({SCORING.fielding.perCatchKeeper}pt vs {SCORING.fielding.perCatch}pt).
+            If the actual match wicketkeeper is placed in a non-WK slot, they forfeit all catch and stumping points.
+            You must place the real keeper in the WK slot to earn their dismissal points.
           </p>
         </div>
       </CardContent>

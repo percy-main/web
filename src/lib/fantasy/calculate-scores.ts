@@ -8,7 +8,8 @@
  *
  * Team scoring is slot-based: batting slots only earn batting+fielding+team,
  * bowling slots only earn bowling+fielding+team, and the all-rounder slot
- * earns all categories. The wicketkeeper designation adjusts catch rates.
+ * earns all categories. WK scoring is event-based: the WK slot uses reduced
+ * catch rates, and actual keepers not in the WK slot forfeit catch/stumping points.
  */
 
 import { type Kysely } from "kysely";
@@ -69,8 +70,10 @@ function getGameweekForDate(matchDate: Date, season: string): number | null {
  *   bowling   → bowling + fielding + team
  *   allrounder → batting + bowling + fielding + team
  *
- * WK adjustment: if fantasy WK tag differs from actual keeper status,
- * adjust fielding points for the catch rate difference.
+ * WK rules (event-based, not slot-based):
+ *   - WK slot: catches always scored at keeper rate (5pt), regardless of actual role
+ *   - Non-WK slot + actual keeper: catches AND stumpings zeroed (must use WK slot)
+ *   - Non-WK slot + not actual keeper: catches at fielder rate (10pt), no adjustment
  */
 export function calculateSlotEffectivePoints(opts: {
   slotType: SlotType;
@@ -80,22 +83,22 @@ export function calculateSlotEffectivePoints(opts: {
   fieldingPts: number;
   teamPts: number;
   catches: number;
+  stumpings: number;
   isActualKeeper: boolean;
   isCaptain: boolean;
   captainMultiplier?: number;
 }): number {
-  const { slotType, isFantasyWk, battingPts, bowlingPts, teamPts, catches, isActualKeeper, isCaptain, captainMultiplier = 2 } = opts;
+  const { slotType, isFantasyWk, battingPts, bowlingPts, teamPts, catches, stumpings, isActualKeeper, isCaptain, captainMultiplier = 2 } = opts;
   let { fieldingPts } = opts;
 
-  // WK adjustment: recalculate fielding based on fantasy WK tag vs actual
-  if (isFantasyWk !== isActualKeeper && catches > 0) {
-    if (isFantasyWk && !isActualKeeper) {
-      // Fantasy WK but not actual keeper: catches were scored at 10pt, should be 5pt
-      fieldingPts += catches * (SCORING.fielding.perCatchKeeper - SCORING.fielding.perCatch);
-    } else if (!isFantasyWk && isActualKeeper) {
-      // Not fantasy WK but is actual keeper: catches were scored at 5pt, should be 10pt
-      fieldingPts += catches * (SCORING.fielding.perCatch - SCORING.fielding.perCatchKeeper);
-    }
+  if (isFantasyWk && !isActualKeeper && catches > 0) {
+    // WK slot, not actual keeper: catches were scored at 10pt (fielder), adjust to 5pt (keeper)
+    fieldingPts += catches * (SCORING.fielding.perCatchKeeper - SCORING.fielding.perCatch);
+  } else if (!isFantasyWk && isActualKeeper) {
+    // Not in WK slot but is actual keeper: zero out catches and stumpings (forfeit)
+    const catchPts = catches * SCORING.fielding.perCatchKeeper;
+    const stumpingPts = stumpings * SCORING.fielding.perStumping;
+    fieldingPts -= catchPts + stumpingPts;
   }
 
   // Slot filtering
@@ -299,6 +302,7 @@ export async function calculateFantasyScores(
     teamPts: number;
     totalPts: number;
     catches: number;
+    stumpings: number;
     isActualKeeper: boolean;
   };
 
@@ -357,6 +361,7 @@ export async function calculateFantasyScores(
       teamPts,
       totalPts,
       catches: field?.catches ?? 0,
+      stumpings: field?.stumpings ?? 0,
       isActualKeeper: field?.is_wicketkeeper === 1,
     });
   }
@@ -376,6 +381,7 @@ export async function calculateFantasyScores(
         team_points: ps.teamPts,
         total_points: ps.totalPts,
         catches: ps.catches,
+        stumpings: ps.stumpings,
         is_actual_keeper: ps.isActualKeeper ? 1 : 0,
         season,
       })
@@ -389,6 +395,7 @@ export async function calculateFantasyScores(
             team_points: ps.teamPts,
             total_points: ps.totalPts,
             catches: ps.catches,
+            stumpings: ps.stumpings,
             is_actual_keeper: ps.isActualKeeper ? 1 : 0,
           }),
       )
@@ -462,6 +469,7 @@ export async function calculateFantasyScores(
       "team_points",
       "total_points",
       "catches",
+      "stumpings",
       "is_actual_keeper",
     ])
     .execute();
@@ -474,6 +482,7 @@ export async function calculateFantasyScores(
     teamPts: number;
     totalPts: number;
     catches: number;
+    stumpings: number;
     isActualKeeper: boolean;
   };
   const scoresByGwAndPlayer = new Map<number, Map<string, PlayerGwScores>>();
@@ -491,6 +500,7 @@ export async function calculateFantasyScores(
       existing.teamPts += ps.team_points;
       existing.totalPts += ps.total_points;
       existing.catches += ps.catches;
+      existing.stumpings += ps.stumpings;
       // If any match they were keeper, treat as actual keeper for the GW
       if (ps.is_actual_keeper === 1) existing.isActualKeeper = true;
     } else {
@@ -501,6 +511,7 @@ export async function calculateFantasyScores(
         teamPts: ps.team_points,
         totalPts: ps.total_points,
         catches: ps.catches,
+        stumpings: ps.stumpings,
         isActualKeeper: ps.is_actual_keeper === 1,
       });
     }
@@ -627,6 +638,7 @@ export async function calculateFantasyScores(
           fieldingPts: scores.fieldingPts,
           teamPts: scores.teamPts,
           catches: scores.catches,
+          stumpings: scores.stumpings,
           isActualKeeper: scores.isActualKeeper,
           isCaptain: false,
           captainMultiplier: 1,
