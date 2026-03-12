@@ -50,15 +50,18 @@ export function ContactSubmissionsTable() {
       PAGE_SIZE,
       debouncedSearch,
     ],
-    queryFn: () =>
-      actions.admin.listContactSubmissions({
+    queryFn: async () => {
+      const result = await actions.admin.listContactSubmissions({
         page,
         pageSize: PAGE_SIZE,
         search: debouncedSearch || undefined,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const result = data?.data;
+  const result = data;
   const totalPages = result
     ? Math.max(1, Math.ceil(result.total / PAGE_SIZE))
     : 1;

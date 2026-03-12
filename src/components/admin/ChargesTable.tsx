@@ -86,8 +86,8 @@ export function ChargesTable() {
       dateTo,
       debouncedSearch,
     ],
-    queryFn: () =>
-      actions.admin.listAllCharges({
+    queryFn: async () => {
+      const result = await actions.admin.listAllCharges({
         page,
         pageSize: PAGE_SIZE,
         status,
@@ -95,21 +95,30 @@ export function ChargesTable() {
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
         search: debouncedSearch || undefined,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const aggregatesQuery = useQuery({
     queryKey: ["admin", "chargeAggregates", dateFrom, dateTo],
-    queryFn: () =>
-      actions.admin.getChargeAggregates({
+    queryFn: async () => {
+      const result = await actions.admin.getChargeAggregates({
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const chaseMutation = useMutation({
-    mutationFn: (chargeId: string) =>
-      actions.admin.chasePayment({ chargeId }),
+    mutationFn: async (chargeId: string) => {
+      const result = await actions.admin.chasePayment({ chargeId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       setChasingChargeId(null);
     },
@@ -132,35 +141,27 @@ export function ChargesTable() {
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
 
   const syncMutation = useMutation({
-    mutationFn: () => actions.admin.syncStripeHistory(),
-    onSuccess: (res) => {
+    mutationFn: async () => {
+      const result = await actions.admin.syncStripeHistory();
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    onSuccess: (data) => {
       setShowSyncConfirm(false);
 
-      // Astro actions return { data, error } — ActionErrors resolve (not reject)
-      if (res.error) {
-        setSyncResult({
-          type: "error",
-          message: res.error.message ?? "Failed to sync Stripe history",
-        });
-        return;
-      }
+      setSyncResult({
+        type: "success",
+        message: `Sync complete: ${data.created} new charges imported, ${data.skippedDuplicate} duplicates skipped, ${data.skippedSelfService} self-service excluded, ${data.membershipsSynced} memberships updated, ${data.totalProcessed} total processed.`,
+        details: data,
+      });
 
-      if (res.data) {
-        const d = res.data;
-        setSyncResult({
-          type: "success",
-          message: `Sync complete: ${d.created} new charges imported, ${d.skippedDuplicate} duplicates skipped, ${d.skippedSelfService} self-service excluded, ${d.membershipsSynced} memberships updated, ${d.totalProcessed} total processed.`,
-          details: d,
-        });
-
-        // Refresh charges list and aggregates
-        void queryClient.invalidateQueries({
-          queryKey: ["admin", "listAllCharges"],
-        });
-        void queryClient.invalidateQueries({
-          queryKey: ["admin", "chargeAggregates"],
-        });
-      }
+      // Refresh charges list and aggregates
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "listAllCharges"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "chargeAggregates"],
+      });
     },
     onError: (err) => {
       setShowSyncConfirm(false);
@@ -171,8 +172,8 @@ export function ChargesTable() {
     },
   });
 
-  const result = chargesQuery.data?.data;
-  const aggregates = aggregatesQuery.data?.data;
+  const result = chargesQuery.data;
+  const aggregates = aggregatesQuery.data;
   const totalPages = result
     ? Math.max(1, Math.ceil(result.total / PAGE_SIZE))
     : 1;

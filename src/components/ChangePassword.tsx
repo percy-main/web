@@ -15,30 +15,33 @@ export const ChangePassword = () => {
 
   const accounts = useQuery({
     queryKey: ["accounts"],
-    queryFn: () => authClient.listAccounts(),
+    queryFn: async () => {
+      const result = await authClient.listAccounts();
+      if (result.error) throw new Error(result.error.message ?? "Request failed");
+      return result.data;
+    },
   });
 
-  const hasPassword = accounts.data?.data?.some(
+  const hasPassword = accounts.data?.some(
     (a) => a.providerId === "credential",
   );
 
   const changePassword = useMutation({
-    mutationFn: (params: { currentPassword: string; newPassword: string }) =>
-      authClient.changePassword({
+    mutationFn: async (params: { currentPassword: string; newPassword: string }) => {
+      const result = await authClient.changePassword({
         currentPassword: params.currentPassword,
         newPassword: params.newPassword,
         revokeOtherSessions: true,
-      }),
-    onSuccess: (result) => {
-      if (!result.error) {
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        setValidationError("");
-        setSuccess(true);
-      } else {
-        setSuccess(false);
-      }
+      });
+      if (result.error) throw new Error(result.error.message ?? "Request failed");
+      return result.data;
+    },
+    onSuccess: () => {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setValidationError("");
+      setSuccess(true);
     },
   });
 
@@ -129,9 +132,9 @@ export const ChangePassword = () => {
         {validationError && (
           <p className="mb-4 text-sm text-red-600">{validationError}</p>
         )}
-        {changePassword.data?.error && (
+        {changePassword.isError && (
           <p className="mb-4 text-sm text-red-600">
-            {changePassword.data.error.message}
+            {changePassword.error?.message ?? "Failed to change password."}
           </p>
         )}
         <Button

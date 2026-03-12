@@ -88,13 +88,16 @@ function MatchResultInner({
 
   const query = useQuery({
     queryKey: ["getResultSummary", matchId],
-    queryFn: () =>
-      actions.playCricket.getResultSummary({ matchId, season, ourTeamId }),
+    queryFn: async () => {
+      const res = await actions.playCricket.getResultSummary({ matchId, season, ourTeamId });
+      if (res.error) throw res.error;
+      return res.data;
+    },
     enabled: shouldFetch,
     staleTime: 5 * 60 * 1000,
   });
 
-  const result = ssrResult ?? query.data?.data ?? undefined;
+  const result = ssrResult ?? query.data ?? undefined;
 
   if (!result) return null;
 

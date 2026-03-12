@@ -14,10 +14,14 @@ import { actions } from "astro:actions";
 export function TeamView({ teamId }: { teamId: number }) {
   const teamQuery = useQuery({
     queryKey: ["fantasy", "team", teamId],
-    queryFn: () => actions.fantasy.getTeam({ teamId }),
+    queryFn: async () => {
+      const result = await actions.fantasy.getTeam({ teamId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const data = teamQuery.data?.data;
+  const data = teamQuery.data;
 
   if (teamQuery.isLoading) {
     return <p className="text-gray-500">Loading...</p>;

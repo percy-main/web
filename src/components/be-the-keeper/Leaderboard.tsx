@@ -6,10 +6,14 @@ const medals = ["🥇", "🥈", "🥉"];
 export default function Leaderboard() {
   const query = useQuery({
     queryKey: ["leaderboard", "be-the-keeper"],
-    queryFn: () => actions.leaderboard.get({ game: "be-the-keeper", limit: 25 }),
+    queryFn: async () => {
+      const result = await actions.leaderboard.get({ game: "be-the-keeper", limit: 25 });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const entries = query.data?.data?.entries;
+  const entries = query.data?.entries;
 
   if (query.isLoading) {
     return <p className="py-12 text-center text-gray-400">Loading scores...</p>;

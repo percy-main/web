@@ -61,8 +61,8 @@ export function MemberTable() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "listUsers", page, PAGE_SIZE, debouncedSearch, includeArchived, memberFilter, statusFilter, typeFilter, categoryFilter, roleFilter],
-    queryFn: () =>
-      actions.admin.listUsers({
+    queryFn: async () => {
+      const result = await actions.admin.listUsers({
         page,
         pageSize: PAGE_SIZE,
         search: debouncedSearch || undefined,
@@ -72,10 +72,13 @@ export function MemberTable() {
         membershipType: typeFilter,
         memberCategory: categoryFilter,
         role: roleFilter,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const result = data?.data;
+  const result = data;
   const totalPages = result ? Math.max(1, Math.ceil(result.total / PAGE_SIZE)) : 1;
 
   return (

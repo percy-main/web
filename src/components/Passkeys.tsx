@@ -12,18 +12,30 @@ export const Passkeys = () => {
 
   const query = useQuery({
     queryKey: ["passkeys"],
-    queryFn: () => authClient.passkey.listUserPasskeys(),
+    queryFn: async () => {
+      const result = await authClient.passkey.listUserPasskeys();
+      if (result.error) throw new Error(result.error.message ?? "Request failed");
+      return result.data;
+    },
   });
 
   const deletePasskey = useMutation({
-    mutationFn: (id: string) => authClient.passkey.deletePasskey({ id }),
+    mutationFn: async (id: string) => {
+      const result = await authClient.passkey.deletePasskey({ id });
+      if (result.error) throw new Error(result.error.message ?? "Request failed");
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["passkeys"] });
     },
   });
 
   const addPasskey = useMutation({
-    mutationFn: (name?: string) => authClient.passkey.addPasskey({ name }),
+    mutationFn: async (name?: string) => {
+      const result = await authClient.passkey.addPasskey({ name });
+      if (result.error) throw new Error(result.error.message ?? "Request failed");
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["passkeys"] });
       setNewPasskeyName("");
@@ -34,7 +46,7 @@ export const Passkeys = () => {
     <section>
       <h2 className="text-h4">Your Passkeys</h2>
       <div className="flex flex-col gap-4">
-        {query.data?.data?.map((passkey) => (
+        {query.data?.map((passkey) => (
           <div
             key={passkey.id}
             className="flex max-w-max flex-row items-center justify-start rounded-2xl border border-gray-500 bg-blue-100 p-4"

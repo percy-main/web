@@ -91,19 +91,22 @@ export function JuniorsTable() {
       ageGroupFilter,
       membershipFilter,
     ],
-    queryFn: () =>
-      actions.admin.listJuniors({
+    queryFn: async () => {
+      const result = await actions.admin.listJuniors({
         page,
         pageSize: PAGE_SIZE,
         search: debouncedSearch || undefined,
         sex: sexFilter,
         ageGroup: ageGroupFilter,
         membershipStatus: membershipFilter,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const juniors = useMemo<Junior[]>(() => data?.data?.juniors ?? [], [data]);
-  const total = data?.data?.total ?? 0;
+  const juniors = useMemo<Junior[]>(() => data?.juniors ?? [], [data]);
+  const total = data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const grouped = useMemo(() => {

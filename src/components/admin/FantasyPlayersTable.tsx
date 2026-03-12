@@ -32,14 +32,21 @@ export function FantasyPlayersTable() {
 
   const playersQuery = useQuery({
     queryKey: ["admin", "fantasyPlayers", debouncedSearch],
-    queryFn: () =>
-      actions.fantasy.listPlayers({
+    queryFn: async () => {
+      const result = await actions.fantasy.listPlayers({
         search: debouncedSearch || undefined,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const populateMutation = useMutation({
-    mutationFn: () => actions.fantasy.populatePlayers({}),
+    mutationFn: async () => {
+      const result = await actions.fantasy.populatePlayers({});
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["admin", "fantasyPlayers"],
@@ -48,8 +55,11 @@ export function FantasyPlayersTable() {
   });
 
   const toggleMutation = useMutation({
-    mutationFn: (input: { playCricketId: string; eligible: boolean }) =>
-      actions.fantasy.toggleEligibility(input),
+    mutationFn: async (input: { playCricketId: string; eligible: boolean }) => {
+      const result = await actions.fantasy.toggleEligibility(input);
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["admin", "fantasyPlayers"],
@@ -58,7 +68,11 @@ export function FantasyPlayersTable() {
   });
 
   const sandwichCostsMutation = useMutation({
-    mutationFn: () => actions.fantasy.calculateSandwichCosts({}),
+    mutationFn: async () => {
+      const result = await actions.fantasy.calculateSandwichCosts({});
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["admin", "fantasyPlayers"],
@@ -66,7 +80,7 @@ export function FantasyPlayersTable() {
     },
   });
 
-  const rawPlayers = playersQuery.data?.data?.players ?? [];
+  const rawPlayers = playersQuery.data?.players ?? [];
   const players = rawPlayers.filter(
     (p): p is typeof p & { play_cricket_id: string } => p.play_cricket_id !== null,
   );
@@ -97,10 +111,10 @@ export function FantasyPlayersTable() {
                 ? "Calculating..."
                 : "Calculate Sandwich Costs"}
             </Button>
-            {populateMutation.data?.data && (
+            {populateMutation.data && (
               <p className="text-sm text-gray-600">
-                Found {populateMutation.data.data.total} players,{" "}
-                {populateMutation.data.data.inserted} updated.
+                Found {populateMutation.data.total} players,{" "}
+                {populateMutation.data.inserted} updated.
               </p>
             )}
             {populateMutation.isError && (
@@ -109,15 +123,15 @@ export function FantasyPlayersTable() {
               </p>
             )}
           </div>
-          {sandwichCostsMutation.data?.data && (
+          {sandwichCostsMutation.data && (
             <div className="rounded border border-gray-200 bg-gray-50 p-3 text-sm">
-              <p className="font-medium">Sandwich costs calculated from {sandwichCostsMutation.data.data.season} season data</p>
+              <p className="font-medium">Sandwich costs calculated from {sandwichCostsMutation.data.season} season data</p>
               <p className="text-gray-600">
-                {sandwichCostsMutation.data.data.totalPlayers} players ({sandwichCostsMutation.data.data.scoredPlayers} scored, {sandwichCostsMutation.data.data.unscoredPlayers} unscored).
-                Budget: {sandwichCostsMutation.data.data.budget} sandwiches.
+                {sandwichCostsMutation.data.totalPlayers} players ({sandwichCostsMutation.data.scoredPlayers} scored, {sandwichCostsMutation.data.unscoredPlayers} unscored).
+                Budget: {sandwichCostsMutation.data.budget} sandwiches.
               </p>
               <p className="text-gray-500">
-                Distribution: {Object.entries(sandwichCostsMutation.data.data.distribution).map(([cost, count]) => `${cost}🥪: ${count}`).join(", ")}
+                Distribution: {Object.entries(sandwichCostsMutation.data.distribution).map(([cost, count]) => `${cost}🥪: ${count}`).join(", ")}
               </p>
             </div>
           )}

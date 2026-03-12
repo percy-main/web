@@ -401,7 +401,11 @@ function ScorecardInner({ matchId, when }: ScorecardInnerProps) {
 
   const { data, isLoading } = useQuery({
     queryKey: ["getMatchDetail", matchId],
-    queryFn: () => actions.playCricket.getMatchDetail({ matchId }),
+    queryFn: async () => {
+      const result = await actions.playCricket.getMatchDetail({ matchId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     enabled: gameInPast,
     staleTime: 30 * 60 * 1000,
   });
@@ -409,7 +413,7 @@ function ScorecardInner({ matchId, when }: ScorecardInnerProps) {
   if (!gameInPast) return null;
   if (isLoading) return <ScorecardSkeleton />;
 
-  const matchDetail = data?.data;
+  const matchDetail = data;
   if (!matchDetail || matchDetail.innings.length === 0) return null;
 
   return <ScorecardDisplay data={matchDetail} />;

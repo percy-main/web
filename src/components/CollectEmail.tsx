@@ -14,7 +14,11 @@ export const CollectEmail: FC<Props> = ({ title, description, meta }) => {
   const [email, setEmail] = useState("");
 
   const mutation = useMutation({
-    mutationFn: actions.createEventSubscriber,
+    mutationFn: async (input: { meta: Record<string, string>; email: string }) => {
+      const result = await actions.createEventSubscriber(input);
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const handleSubmit = useCallback(

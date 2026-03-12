@@ -43,21 +43,33 @@ export function MatchFeeRatesTable() {
 
   const ratesQuery = useQuery({
     queryKey: ["admin", "matchFeeRates"],
-    queryFn: () => actions.matchday.listMatchFeeRates(),
+    queryFn: async () => {
+      const result = await actions.matchday.listMatchFeeRates();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const teamsQuery = useQuery({
     queryKey: ["admin", "playCricketTeams"],
-    queryFn: () => actions.playCricket.getTeams(),
+    queryFn: async () => {
+      const result = await actions.playCricket.getTeams();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const addRateMutation = useMutation({
-    mutationFn: (input: {
+    mutationFn: async (input: {
       playCricketTeamId?: string;
       competitionType?: string;
       memberCategory: string;
       amountPence: number;
-    }) => actions.matchday.addMatchFeeRate(input),
+    }) => {
+      const result = await actions.matchday.addMatchFeeRate(input);
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       setNewCategory("");
       setNewAmount("");
@@ -70,8 +82,11 @@ export function MatchFeeRatesTable() {
   });
 
   const deleteRateMutation = useMutation({
-    mutationFn: (rateId: string) =>
-      actions.matchday.deleteMatchFeeRate({ rateId }),
+    mutationFn: async (rateId: string) => {
+      const result = await actions.matchday.deleteMatchFeeRate({ rateId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["admin", "matchFeeRates"],
@@ -79,10 +94,10 @@ export function MatchFeeRatesTable() {
     },
   });
 
-  const rates = (ratesQuery.data?.data ?? []).filter(
+  const rates = (ratesQuery.data ?? []).filter(
     (r): r is typeof r & { id: string } => r.id !== null,
   );
-  const teams = teamsQuery.data?.data?.teams ?? [];
+  const teams = teamsQuery.data?.teams ?? [];
 
   const handleAdd = () => {
     if (!newCategory || !newAmount) return;

@@ -153,14 +153,17 @@ const GameSelector: FC<{
 
   const { data, isFetching } = useQuery({
     queryKey: ["admin", "listGames", debouncedSearch],
-    queryFn: () =>
-      actions.sponsorship.listGames({
+    queryFn: async () => {
+      const result = await actions.sponsorship.listGames({
         search: debouncedSearch || undefined,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     enabled: isOpen,
   });
 
-  const games = data?.data?.games ?? [];
+  const games = data?.games ?? [];
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -285,14 +288,14 @@ const CreateSponsorshipModal: FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 
   const createMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!selectedGame) {
         return Promise.reject(new Error("No game selected"));
       }
       const parsedAmount = parseFloat(amountGBP);
       const amountPence = Math.round(parsedAmount * 100);
 
-      return actions.sponsorship.createManual({
+      const result = await actions.sponsorship.createManual({
         gameId: selectedGame.id,
         sponsorName,
         sponsorEmail,
@@ -303,6 +306,8 @@ const CreateSponsorshipModal: FC<{ onClose: () => void }> = ({ onClose }) => {
         displayName: displayName || undefined,
         notes: notes || undefined,
       });
+      if (result.error) throw result.error;
+      return result.data;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
@@ -503,35 +508,37 @@ const SponsorshipRow: FC<{ sponsorship: Sponsorship }> = ({ sponsorship }) => {
   const sponsorshipId = sponsorship.id ?? "";
 
   const approveMutation = useMutation({
-    mutationFn: () =>
-      actions.sponsorship.approve({
-        sponsorshipId,
-      }),
+    mutationFn: async () => {
+      const result = await actions.sponsorship.approve({ sponsorshipId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "sponsorships"] });
     },
   });
 
   const rejectMutation = useMutation({
-    mutationFn: () =>
-      actions.sponsorship.reject({
-        sponsorshipId,
-      }),
+    mutationFn: async () => {
+      const result = await actions.sponsorship.reject({ sponsorshipId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin", "sponsorships"] });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: {
+    mutationFn: async (data: {
       displayName?: string;
       notes?: string;
       sponsorLogoDataUrl?: string | null;
-    }) =>
-      actions.sponsorship.update({
-        sponsorshipId,
-        ...data,
-      }),
+    }) => {
+      const result = await actions.sponsorship.update({ sponsorshipId, ...data });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       setEditingNotes(false);
       setEditingDisplayName(false);
@@ -843,8 +850,11 @@ const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
   const sponsorshipId = sponsorship.id ?? "";
 
   const approveMutation = useMutation({
-    mutationFn: () =>
-      actions.playerSponsorship.approve({ sponsorshipId }),
+    mutationFn: async () => {
+      const result = await actions.playerSponsorship.approve({ sponsorshipId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["admin", "playerSponsorships"],
@@ -853,8 +863,11 @@ const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
   });
 
   const rejectMutation = useMutation({
-    mutationFn: () =>
-      actions.playerSponsorship.reject({ sponsorshipId }),
+    mutationFn: async () => {
+      const result = await actions.playerSponsorship.reject({ sponsorshipId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["admin", "playerSponsorships"],
@@ -863,12 +876,15 @@ const PlayerSponsorshipRow: FC<{ sponsorship: PlayerSponsorship }> = ({
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: {
+    mutationFn: async (data: {
       displayName?: string;
       notes?: string;
       sponsorLogoDataUrl?: string | null;
-    }) =>
-      actions.playerSponsorship.update({ sponsorshipId, ...data }),
+    }) => {
+      const result = await actions.playerSponsorship.update({ sponsorshipId, ...data });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       setEditingNotes(false);
       setEditingDisplayName(false);
@@ -1151,27 +1167,33 @@ export function SponsorshipsTable() {
 
   const gameQuery = useQuery({
     queryKey: ["admin", "sponsorships", page, PAGE_SIZE, filter],
-    queryFn: () =>
-      actions.sponsorship.list({
+    queryFn: async () => {
+      const result = await actions.sponsorship.list({
         page,
         pageSize: PAGE_SIZE,
         filter: filter === "all" ? undefined : filter,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     enabled: tab === "game",
   });
 
   const playerQuery = useQuery({
     queryKey: ["admin", "playerSponsorships", page, PAGE_SIZE, filter],
-    queryFn: () =>
-      actions.playerSponsorship.list({
+    queryFn: async () => {
+      const result = await actions.playerSponsorship.list({
         page,
         pageSize: PAGE_SIZE,
         filter: filter === "all" ? undefined : filter,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     enabled: tab === "player",
   });
 
-  const result = tab === "game" ? gameQuery.data?.data : playerQuery.data?.data;
+  const result = tab === "game" ? gameQuery.data : playerQuery.data;
   const isLoading = tab === "game" ? gameQuery.isLoading : playerQuery.isLoading;
   const error = tab === "game" ? gameQuery.error : playerQuery.error;
 

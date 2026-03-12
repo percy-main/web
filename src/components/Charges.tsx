@@ -27,17 +27,25 @@ export const Charges = () => {
 
   const query = useQuery({
     queryKey: ["myCharges"],
-    queryFn: () => actions.charges.getMyCharges({}),
+    queryFn: async () => {
+      const result = await actions.charges.getMyCharges({});
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const payMutation = useMutation({
-    mutationFn: () => actions.charges.payOutstandingBalance({}),
-    onSuccess: (result) => {
-      if (result.data) {
-        const piId = result.data.clientSecret.split("_secret_")[0];
+    mutationFn: async () => {
+      const result = await actions.charges.payOutstandingBalance({});
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    onSuccess: (data) => {
+      if (data) {
+        const piId = data.clientSecret.split("_secret_")[0];
         setPaymentData({
-          clientSecret: result.data.clientSecret,
-          totalAmountPence: result.data.totalAmountPence,
+          clientSecret: data.clientSecret,
+          totalAmountPence: data.totalAmountPence,
           paymentIntentId: piId,
         });
       }
@@ -47,7 +55,7 @@ export const Charges = () => {
     },
   });
 
-  const charges = query.data?.data?.charges;
+  const charges = query.data?.charges;
 
   if (query.isLoading) {
     return null;
@@ -74,9 +82,14 @@ export const Charges = () => {
         clientSecret={paymentData.clientSecret}
         amount={paymentData.totalAmountPence}
         onSuccess={async () => {
-          await actions.charges.confirmPayment({
-            paymentIntentId: paymentData.paymentIntentId,
-          });
+          try {
+            const result = await actions.charges.confirmPayment({
+              paymentIntentId: paymentData.paymentIntentId,
+            });
+            if (result.error) throw result.error;
+          } catch {
+            // Payment succeeded at Stripe; webhook will reconcile if confirm fails.
+          }
           setPaymentData(null);
           void queryClient.invalidateQueries({ queryKey: ["myCharges"] });
         }}

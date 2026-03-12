@@ -277,9 +277,13 @@ const JuniorRegistrationInner: FC = () => {
 
   const existingDepsQuery = useQuery({
     queryKey: ["dependents"],
-    queryFn: actions.dependents,
+    queryFn: async () => {
+      const result = await actions.dependents();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
-  const existingCount = existingDepsQuery.data?.data?.currentYearCount ?? 0;
+  const existingCount = existingDepsQuery.data?.currentYearCount ?? 0;
 
   const [paymentData, setPaymentData] = useState<{
     clientSecret: string;
@@ -314,17 +318,19 @@ const JuniorRegistrationInner: FC = () => {
   });
 
   const payMutation = useMutation({
-    mutationFn: () => actions.charges.payOutstandingBalance({}),
-    onSuccess: (result) => {
-      if (result.data) {
-        const piId = result.data.clientSecret.split("_secret_")[0];
-        setPaymentData({
-          clientSecret: result.data.clientSecret,
-          totalAmountPence: result.data.totalAmountPence,
-          paymentIntentId: piId,
-        });
-        setPaymentError(null);
-      }
+    mutationFn: async () => {
+      const result = await actions.charges.payOutstandingBalance({});
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    onSuccess: (data) => {
+      const piId = data.clientSecret.split("_secret_")[0];
+      setPaymentData({
+        clientSecret: data.clientSecret,
+        totalAmountPence: data.totalAmountPence,
+        paymentIntentId: piId,
+      });
+      setPaymentError(null);
     },
     onError: () => {
       setPaymentError("Failed to create payment. Please try again.");
@@ -1129,10 +1135,14 @@ const StepNav: FC<{
 const SocialMembershipUpsell: FC = () => {
   const membershipQuery = useQuery({
     queryKey: ["membership"],
-    queryFn: actions.membership,
+    queryFn: async () => {
+      const result = await actions.membership();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const membership = membershipQuery.data?.data?.membership;
+  const membership = membershipQuery.data?.membership;
 
   if (membership) return null;
 

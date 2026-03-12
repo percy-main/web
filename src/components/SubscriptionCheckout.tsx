@@ -42,21 +42,21 @@ const SubscriptionCheckoutInner: FC<Props> = ({ price }) => {
   });
 
   const subscribeMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!email) throw new Error("Email is required");
-      return actions.subscribe({
+      const result = await actions.subscribe({
         priceId: price.id,
         membership: metadata.membership,
         email,
       });
+      if (result.error) throw result.error;
+      return result.data;
     },
-    onSuccess: (result) => {
-      if (result.data) {
-        setState({
-          step: "paying",
-          clientSecret: result.data.clientSecret,
-        });
-      }
+    onSuccess: (data) => {
+      setState({
+        step: "paying",
+        clientSecret: data.clientSecret,
+      });
     },
   });
 

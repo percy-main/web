@@ -28,10 +28,14 @@ export function DuplicateMembersTable() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "duplicateMembers"],
-    queryFn: () => actions.admin.findDuplicateMembers(),
+    queryFn: async () => {
+      const result = await actions.admin.findDuplicateMembers();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const groups = data?.data;
+  const groups = data;
 
   return (
     <div className="flex flex-col gap-4">
@@ -203,17 +207,23 @@ function MergePreviewModal({
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "mergePreview", keepMemberId, removeMemberId],
-    queryFn: () =>
-      actions.admin.getMergePreview({ keepMemberId, removeMemberId }),
+    queryFn: async () => {
+      const result = await actions.admin.getMergePreview({ keepMemberId, removeMemberId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const mergeMutation = useMutation({
-    mutationFn: () =>
-      actions.admin.mergeMembers({ keepMemberId, removeMemberId }),
+    mutationFn: async () => {
+      const result = await actions.admin.mergeMembers({ keepMemberId, removeMemberId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => onMerged(),
   });
 
-  const preview = data?.data;
+  const preview = data;
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>

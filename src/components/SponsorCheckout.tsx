@@ -131,24 +131,25 @@ const SponsorCheckoutInner: FC<Props> = ({ gameId, gameTitle }) => {
   );
 
   const createPaymentMutation = useMutation({
-    mutationFn: () =>
-      actions.sponsorship.createPayment({
+    mutationFn: async () => {
+      const result = await actions.sponsorship.createPayment({
         gameId,
         sponsorName,
         sponsorEmail,
         sponsorWebsite: sponsorWebsite || undefined,
         sponsorLogoDataUrl: logoDataUrl,
         sponsorMessage: sponsorMessage || undefined,
-      }),
-    onSuccess: (result) => {
-      if (result.data) {
-        setState({
-          step: "paying",
-          clientSecret: result.data.clientSecret,
-          amount: result.data.amount,
-          productName: result.data.productName,
-        });
-      }
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    onSuccess: (data) => {
+      setState({
+        step: "paying",
+        clientSecret: data.clientSecret,
+        amount: data.amount,
+        productName: data.productName,
+      });
     },
   });
 

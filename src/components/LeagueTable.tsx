@@ -10,14 +10,18 @@ type Props = {
 export const LeagueTable: FC<Props> = ({ name, divisionId }) => {
   const query = useQuery({
     queryKey: ["getLeagueTable", "divisionId"],
-    queryFn: () => actions.playCricket.getLeagueTable({ divisionId }),
+    queryFn: async () => {
+      const result = await actions.playCricket.getLeagueTable({ divisionId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  if (!query.data?.data) {
+  if (!query.data) {
     return null;
   }
 
-  const { columns, rows } = query.data.data;
+  const { columns, rows } = query.data;
 
   return (
     <div className="container mx-auto rounded-md p-2 sm:p-4 dark:bg-gray-50 dark:text-gray-800">

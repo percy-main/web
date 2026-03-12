@@ -11,20 +11,28 @@ type Props = {
 export const Membership: FC<Props> = ({ email }) => {
   const query = useQuery({
     queryKey: ["membership"],
-    queryFn: actions.membership,
+    queryFn: async () => {
+      const result = await actions.membership();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const dependentsQuery = useQuery({
     queryKey: ["dependents"],
-    queryFn: actions.dependents,
+    queryFn: async () => {
+      const result = await actions.dependents();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  if (!query.data?.data) {
+  if (!query.data) {
     return null;
   }
 
-  const { membership } = query.data.data;
-  const deps = dependentsQuery.data?.data?.dependents ?? [];
+  const { membership } = query.data;
+  const deps = dependentsQuery.data?.dependents ?? [];
 
   return (
     <section>
