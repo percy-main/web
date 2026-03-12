@@ -16,7 +16,7 @@ import * as styles from "./styles";
 
 interface Props {
   imageBaseUrl: string;
-  name: string;
+  name: string | null;
 
   type: string | undefined;
 
@@ -44,7 +44,7 @@ const Component: FC<Props> = ({
           alt="Percy Main Club Logo"
           style={styles.logo}
         />
-        <Text style={styles.paragraph}>Hi {name},</Text>
+        <Text style={styles.paragraph}>Hi {name ?? "there"},</Text>
         <Text style={styles.paragraph}>
           Thanks for {isNew ? "starting" : "extending"} your membership to Percy
           Main Cricket and Sports Club.

@@ -1,8 +1,17 @@
 import { useSession } from "@/lib/auth/client";
+import { Button } from "@/ui/Button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/ui/Tabs";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChangePassword } from "./ChangePassword";
 import { Charges } from "./Charges";
 import { MemberDetails, useMemberDetails } from "./MemberDetails";
@@ -49,6 +58,7 @@ export const MembersPage = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <OnboardingModal onGoToDetails={() => onTabChange("details")} />
       <div className="flex flex-col items-start justify-stretch gap-4">
         <div className="flex w-full flex-row items-start justify-between">
           <h1>Members Area</h1>
@@ -100,7 +110,7 @@ export const MembersPage = () => {
                 <h2>{user.name}</h2>
                 <p>{user.email}</p>
               </div>
-              <Membership email={user.email} />
+              <Membership />
             </div>
           </TabsContent>
           <TabsContent value="details">
@@ -124,6 +134,56 @@ export const MembersPage = () => {
     </QueryClientProvider>
   );
 };
+
+const ONBOARDING_DISMISSED_KEY = "pmcsc_onboarding_dismissed";
+
+function OnboardingModal({ onGoToDetails }: { onGoToDetails: () => void }) {
+  const query = useMemberDetails();
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (
+      !query.isLoading &&
+      !query.data?.member &&
+      !localStorage.getItem(ONBOARDING_DISMISSED_KEY)
+    ) {
+      setOpen(true);
+    }
+  }, [query.isLoading, query.data]);
+
+  const dismiss = () => {
+    localStorage.setItem(ONBOARDING_DISMISSED_KEY, "1");
+    setOpen(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && dismiss()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Welcome to Percy Main!</DialogTitle>
+          <DialogDescription>
+            Thanks for creating an account. To get the most out of your
+            membership, we recommend completing your details — but you can do
+            this at any time.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" onClick={dismiss}>
+            Maybe Later
+          </Button>
+          <Button
+            onClick={() => {
+              dismiss();
+              onGoToDetails();
+            }}
+          >
+            Complete Your Details
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function IncompleteDetailsBanner() {
   const query = useMemberDetails();
