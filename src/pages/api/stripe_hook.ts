@@ -32,11 +32,14 @@ export async function POST({ request }: APIContext): Promise<Response> {
       STRIPE_WEBHOOK_SECRET,
     );
   } catch (error: unknown) {
-    console.error("Stripe webhook signature verification failed", error);
-    return Response.json(
-      { error: "Invalid webhook signature" },
-      { status: 400 },
-    );
+    if (error instanceof Stripe.errors.StripeSignatureVerificationError) {
+      console.error("Stripe webhook signature verification failed", error);
+      return Response.json(
+        { error: "Invalid webhook signature" },
+        { status: 400 },
+      );
+    }
+    throw error;
   }
 
   try {
