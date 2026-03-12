@@ -380,18 +380,10 @@ function TransferRules() {
   );
 }
 
-export function ScoringRules() {
+/** Scoring rules content without page wrapper — used in the fantasy home tab */
+export function ScoringRulesContent() {
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1>Scoring Rules</h1>
-        <a
-          className="text-dark rounded border border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
-          href="/fantasy"
-        >
-          Back to Fantasy
-        </a>
-      </div>
       <p className="text-gray-600">
         Points are awarded based on real match performances in Percy Main 1st XI and 2nd XI league matches.
       </p>
@@ -404,6 +396,24 @@ export function ScoringRules() {
       <GeneralRules />
       <ChipRules />
       <TransferRules />
+    </div>
+  );
+}
+
+/** Full scoring rules page with heading and back link */
+export function ScoringRules() {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h1>Scoring Rules</h1>
+        <a
+          className="text-dark rounded border border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
+          href="/fantasy"
+        >
+          Back to Fantasy
+        </a>
+      </div>
+      <ScoringRulesContent />
     </div>
   );
 }

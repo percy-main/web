@@ -11,10 +11,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { useSession } from "@/lib/auth/client";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { actions } from "astro:actions";
+import { Leaderboard } from "./Leaderboard";
+import { MyHistory } from "./MyHistory";
+import { ScoringRulesContent } from "./ScoringRules";
+import { TeamsOverview } from "./TeamsOverview";
+
+const TABS = ["home", "all-teams", "leaderboards", "history", "rules"] as const;
+type Tab = (typeof TABS)[number];
+
+function getInitialTab(): Tab {
+  const param = new URLSearchParams(window.location.search).get("tab");
+  return TABS.includes(param as Tab) ? (param as Tab) : "home";
+}
 
 const queryClient = new QueryClient();
 
@@ -127,7 +140,7 @@ function Countdown({
   );
 }
 
-function TopTeams() {
+function TopTeams({ onViewFull }: { onViewFull: () => void }) {
   const { data, isLoading } = useQuery({
     queryKey: ["fantasy", "seasonLeaderboard"],
     queryFn: async () => {
@@ -163,12 +176,13 @@ function TopTeams() {
           <TableRow key={entry.teamId}>
             <TableCell className="font-medium">{entry.rank}</TableCell>
             <TableCell>
-              <a
-                href={`/members/fantasy?tab=leaderboards`}
+              <button
+                type="button"
+                onClick={onViewFull}
                 className="text-blue-600 hover:underline"
               >
                 {entry.ownerName}
-              </a>
+              </button>
             </TableCell>
             <TableCell className="text-right font-semibold">{entry.totalPoints}</TableCell>
           </TableRow>
@@ -301,7 +315,13 @@ function DifferentialPicks() {
   );
 }
 
-function FantasyHomeContent() {
+function HomePage({
+  onNavigateToLeaderboards,
+  onNavigateToRules,
+}: {
+  onNavigateToLeaderboards: () => void;
+  onNavigateToRules: () => void;
+}) {
   const session = useSession();
   const isLoggedIn = !!session.data;
 
@@ -328,10 +348,6 @@ function FantasyHomeContent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1>Fantasy Cricket</h1>
-      </div>
-
       {/* Chaos week banner */}
       <ChaosWeekBanner />
 
@@ -361,12 +377,13 @@ function FantasyHomeContent() {
                   Log In to Play
                 </a>
               )}
-              <a
+              <button
+                type="button"
                 className="text-dark inline-flex items-center rounded border border-gray-800 px-4 py-2 text-sm font-medium hover:bg-gray-200"
-                href="/fantasy/rules"
+                onClick={onNavigateToRules}
               >
                 View Scoring Rules
-              </a>
+              </button>
             </div>
           </CardContent>
         </Card>
@@ -424,18 +441,89 @@ function FantasyHomeContent() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Season Leaderboard</CardTitle>
-            <a
+            <button
+              type="button"
               className="text-sm text-blue-600 hover:underline"
-              href="/members/fantasy?tab=leaderboards"
+              onClick={onNavigateToLeaderboards}
             >
               View full leaderboard
-            </a>
+            </button>
           </div>
         </CardHeader>
         <CardContent>
-          <TopTeams />
+          <TopTeams onViewFull={onNavigateToLeaderboards} />
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+const AUTH_ONLY_TABS: Tab[] = ["all-teams", "history"];
+
+function FantasyHomeContent() {
+  const session = useSession();
+  const isLoggedIn = !!session.data;
+  const [tab, setTab] = useState<Tab>(getInitialTab);
+
+  const onTabChange = useCallback((value: string) => {
+    setTab(value as Tab);
+    const url = new URL(window.location.href);
+    if (value === "home") {
+      url.searchParams.delete("tab");
+    } else {
+      url.searchParams.set("tab", value);
+    }
+    window.history.replaceState({}, "", url);
+  }, []);
+
+  // Redirect to home tab if logged-out user lands on an auth-required tab via URL
+  useEffect(() => {
+    if (!session.isPending && !isLoggedIn && AUTH_ONLY_TABS.includes(tab)) {
+      onTabChange("home");
+    }
+  }, [session.isPending, isLoggedIn, tab, onTabChange]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <h1>Fantasy Cricket</h1>
+
+      <Tabs value={tab} onValueChange={onTabChange}>
+        <div className="overflow-x-auto">
+          <TabsList>
+            <TabsTrigger value="home">Home</TabsTrigger>
+            {isLoggedIn && (
+              <TabsTrigger value="all-teams">All Teams</TabsTrigger>
+            )}
+            <TabsTrigger value="leaderboards">Leaderboards</TabsTrigger>
+            {isLoggedIn && (
+              <TabsTrigger value="history">History</TabsTrigger>
+            )}
+            <TabsTrigger value="rules">Rules</TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="home">
+          <HomePage
+            onNavigateToLeaderboards={() => onTabChange("leaderboards")}
+            onNavigateToRules={() => onTabChange("rules")}
+          />
+        </TabsContent>
+        {isLoggedIn && (
+          <TabsContent value="all-teams">
+            <TeamsOverview />
+          </TabsContent>
+        )}
+        <TabsContent value="leaderboards">
+          <Leaderboard />
+        </TabsContent>
+        {isLoggedIn && (
+          <TabsContent value="history">
+            <MyHistory />
+          </TabsContent>
+        )}
+        <TabsContent value="rules">
+          <ScoringRulesContent />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
