@@ -1366,9 +1366,8 @@ export default function BeTheKeeper() {
     // Fetch leaderboard (always)
     try {
       const result = await actions.leaderboard.get({ game: "be-the-keeper", limit: 5 });
-      if (result.data) {
-        s.leaderboard = result.data.entries;
-      }
+      if (result.error) throw result.error;
+      s.leaderboard = result.data.entries;
     } catch { /* leaderboard fetch failed silently */ }
 
     // Submit score if logged in
@@ -1381,13 +1380,13 @@ export default function BeTheKeeper() {
           catches: s.catches,
           bestStreak: s.bestStreak,
         });
-        if (result.data?.saved) {
+        if (result.error) throw result.error;
+        if (result.data.saved) {
           s.scoreSaved = true;
           // Re-fetch leaderboard to reflect new score
           const lb = await actions.leaderboard.get({ game: "be-the-keeper", limit: 5 });
-          if (lb.data) {
-            s.leaderboard = lb.data.entries;
-          }
+          if (lb.error) throw lb.error;
+          s.leaderboard = lb.data.entries;
         }
       } catch { /* score submit failed silently */ }
     }

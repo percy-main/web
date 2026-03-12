@@ -82,9 +82,14 @@ export const Charges = () => {
         clientSecret={paymentData.clientSecret}
         amount={paymentData.totalAmountPence}
         onSuccess={async () => {
-          await actions.charges.confirmPayment({
-            paymentIntentId: paymentData.paymentIntentId,
-          });
+          try {
+            const result = await actions.charges.confirmPayment({
+              paymentIntentId: paymentData.paymentIntentId,
+            });
+            if (result.error) throw result.error;
+          } catch {
+            // Payment succeeded at Stripe; webhook will reconcile if confirm fails.
+          }
           setPaymentData(null);
           void queryClient.invalidateQueries({ queryKey: ["myCharges"] });
         }}

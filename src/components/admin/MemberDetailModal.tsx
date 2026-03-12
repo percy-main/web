@@ -1159,13 +1159,12 @@ function ArchiveSection({
   const [restoreError, setRestoreError] = useState<string | null>(null);
 
   const archiveMutation = useMutation({
-    mutationFn: (reason: string) =>
-      actions.admin.archiveMember({ memberId, reason }),
-    onSuccess: (result) => {
-      if (result.error) {
-        setArchiveError(result.error.message || "Failed to archive member.");
-        return;
-      }
+    mutationFn: async (reason: string) => {
+      const result = await actions.admin.archiveMember({ memberId, reason });
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    onSuccess: () => {
       setShowArchiveDialog(false);
       setArchiveReason("");
       setArchiveError(null);
@@ -1173,6 +1172,9 @@ function ArchiveSection({
         queryKey: ["admin", "userDetail", userId],
       });
       void queryClient.invalidateQueries({ queryKey: ["admin", "listUsers"] });
+    },
+    onError: (error) => {
+      setArchiveError(error.message || "Failed to archive member.");
     },
   });
 
