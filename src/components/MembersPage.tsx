@@ -137,6 +137,13 @@ export const MembersPage = () => {
 
 const ONBOARDING_DISMISSED_KEY = "pmcsc_onboarding_dismissed";
 
+/** A member record with at least name filled in is considered "complete enough" */
+function hasMemberDetails(
+  member: { name: string | null } | null | undefined,
+): boolean {
+  return !!member?.name;
+}
+
 function OnboardingModal({ onGoToDetails }: { onGoToDetails: () => void }) {
   const query = useMemberDetails();
   const [open, setOpen] = useState(false);
@@ -144,7 +151,7 @@ function OnboardingModal({ onGoToDetails }: { onGoToDetails: () => void }) {
   useEffect(() => {
     if (
       !query.isLoading &&
-      !query.data?.member &&
+      !hasMemberDetails(query.data?.member) &&
       !localStorage.getItem(ONBOARDING_DISMISSED_KEY)
     ) {
       setOpen(true);
@@ -188,7 +195,7 @@ function OnboardingModal({ onGoToDetails }: { onGoToDetails: () => void }) {
 function IncompleteDetailsBanner() {
   const query = useMemberDetails();
 
-  if (query.isLoading || query.data?.member) return null;
+  if (query.isLoading || hasMemberDetails(query.data?.member)) return null;
 
   return (
     <div className="w-full rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">

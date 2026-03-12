@@ -2,6 +2,7 @@
 export const prerender = false;
 
 import Container from "@/layouts/Container.astro";
+import { JoinWizard } from "@/components/JoinWizard";
 import { auth } from "@/lib/auth/server";
 
 const session = await auth.api.getSession({ headers: Astro.request.headers });
@@ -12,17 +13,6 @@ if (!session) {
 
 <Container title="Join The Club">
   <div class="mx-auto max-w-2xl">
-    <div id="join-wizard"></div>
+    <JoinWizard client:only="react" />
   </div>
 </Container>
-
-<script>
-  import { createElement } from "react";
-  import { createRoot } from "react-dom/client";
-  import { JoinWizard } from "@/components/JoinWizard";
-
-  const el = document.getElementById("join-wizard");
-  if (el) {
-    createRoot(el).render(createElement(JoinWizard));
-  }
-</script>

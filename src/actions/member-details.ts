@@ -9,6 +9,7 @@ export const getMemberDetails = defineAuthAction({
     const member = await client
       .selectFrom("member")
       .where("email", "=", user.email)
+      .where("deleted_at", "is", null)
       .select([
         "title",
         "name",
@@ -62,6 +63,7 @@ export const updateMemberDetails = defineAuthAction({
     const existing = await client
       .selectFrom("member")
       .where("email", "=", user.email)
+      .where("deleted_at", "is", null)
       .select("id")
       .executeTakeFirst();
 
