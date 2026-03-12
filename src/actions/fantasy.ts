@@ -1731,17 +1731,18 @@ const getGameweekHighlights = defineAction({
 
     // Find highest-scoring player with fewest owners
     // Sort by total_points desc, then owner_count asc
-    let fantasyShock: {
+    type ShockEntry = {
       playerName: string;
       playCricketId: string;
       totalPoints: number;
       ownerCount: number;
       ownershipPct: number;
-    } | null = null;
+    };
+    let fantasyShock: ShockEntry | null = null;
 
     if (allPlayerScores.length > 0 && teamCount > 0) {
       // Among high scorers, find the one with lowest ownership
-      let bestShock: typeof fantasyShock = null;
+      let bestShock: ShockEntry | null = null;
       for (const ps of allPlayerScores) {
         const owners = ownershipMap.get(ps.play_cricket_id) ?? 0;
         if (
