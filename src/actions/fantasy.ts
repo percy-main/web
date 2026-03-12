@@ -156,41 +156,129 @@ const calculateSandwichCosts = defineAuthAction({
   }),
   handler: async ({ season }) => {
     const previousSeason = (Number(season ?? getCurrentSeason()) - 1).toString();
+    const seasonNum = Number(previousSeason);
 
-    // Get all eligible players' total fantasy points from previous season
-    const playerPoints = await client
-      .selectFrom("fantasy_player_score as fps")
-      .innerJoin(
-        "fantasy_player as fp",
-        "fp.play_cricket_id",
-        "fps.play_cricket_id",
-      )
-      .where("fps.season", "=", previousSeason)
-      .where("fp.eligible", "=", 1)
-      .select([
-        "fps.play_cricket_id",
-        "fp.player_name",
-        sql<number>`SUM(fps.total_points)`.as("total_points"),
-      ])
-      .groupBy("fps.play_cricket_id")
-      .orderBy(sql`SUM(fps.total_points)`, "desc")
-      .execute();
+    const eligibleTeamIds = Array.from(ELIGIBLE_TEAM_IDS);
+    const leagueTypes = Array.from(LEAGUE_COMPETITION_TYPES);
 
-    // Also include eligible players with no previous season data (cost = 1)
+    // Get all eligible players
     const allEligible = await client
       .selectFrom("fantasy_player")
       .where("eligible", "=", 1)
       .select(["play_cricket_id", "player_name"])
       .execute();
 
-    const scoredPlayerIds = new Set(playerPoints.map((p) => p.play_cricket_id));
+    // Fetch raw match performance data from previous season
+    const [battingPerfs, bowlingPerfs, fieldingPerfs, matchResults] = await Promise.all([
+      client
+        .selectFrom("match_performance_batting")
+        .where("season", "=", seasonNum)
+        .where("team_id", "in", eligibleTeamIds)
+        .where("competition_type", "in", leagueTypes)
+        .select(["player_id", "match_id", "team_id", "runs", "balls", "fours", "sixes", "not_out"])
+        .execute(),
+      client
+        .selectFrom("match_performance_bowling")
+        .where("season", "=", seasonNum)
+        .where("team_id", "in", eligibleTeamIds)
+        .where("competition_type", "in", leagueTypes)
+        .select(["player_id", "match_id", "team_id", "overs", "maidens", "runs", "wickets"])
+        .execute(),
+      client
+        .selectFrom("match_performance_fielding")
+        .where("season", "=", seasonNum)
+        .where("team_id", "in", eligibleTeamIds)
+        .where("competition_type", "in", leagueTypes)
+        .select(["player_id", "match_id", "team_id", "catches", "run_outs", "stumpings", "is_wicketkeeper"])
+        .execute(),
+      client
+        .selectFrom("match_result")
+        .where("season", "=", seasonNum)
+        .where("competition_type", "in", leagueTypes)
+        .select(["match_id", "result_applied_to"])
+        .execute(),
+    ]);
+
+    // Build match result lookup
+    const winnerByMatch = new Map<string, string>();
+    for (const r of matchResults) {
+      if (r.result_applied_to) winnerByMatch.set(r.match_id, r.result_applied_to);
+    }
+
+    // Index performances by "playerId:matchId"
+    const mkKey = (playerId: string, matchId: string) => `${playerId}:${matchId}`;
+    const battingByMatch = new Map<string, (typeof battingPerfs)[0]>();
+    for (const b of battingPerfs) battingByMatch.set(mkKey(b.player_id, b.match_id), b);
+    const bowlingByMatch = new Map<string, (typeof bowlingPerfs)[0]>();
+    for (const b of bowlingPerfs) bowlingByMatch.set(mkKey(b.player_id, b.match_id), b);
+    const fieldingByMatch = new Map<string, (typeof fieldingPerfs)[0]>();
+    for (const f of fieldingPerfs) fieldingByMatch.set(mkKey(f.player_id, f.match_id), f);
+
+    // Collect all unique match appearances per player
+    type Appearance = { playerId: string; matchId: string; teamId: string };
+    const appearances = new Map<string, Appearance>();
+    for (const b of battingPerfs) {
+      const k = mkKey(b.player_id, b.match_id);
+      if (!appearances.has(k)) appearances.set(k, { playerId: b.player_id, matchId: b.match_id, teamId: b.team_id });
+    }
+    for (const b of bowlingPerfs) {
+      const k = mkKey(b.player_id, b.match_id);
+      if (!appearances.has(k)) appearances.set(k, { playerId: b.player_id, matchId: b.match_id, teamId: b.team_id });
+    }
+    for (const f of fieldingPerfs) {
+      const k = mkKey(f.player_id, f.match_id);
+      if (!appearances.has(k)) appearances.set(k, { playerId: f.player_id, matchId: f.match_id, teamId: f.team_id });
+    }
+
+    // Calculate fantasy points per player from raw match data
+    const playerTotals = new Map<string, number>();
+    for (const [mk, app] of appearances) {
+      const bat = battingByMatch.get(mk);
+      const bowl = bowlingByMatch.get(mk);
+      const field = fieldingByMatch.get(mk);
+
+      let matchPoints = 0;
+      if (bat) {
+        matchPoints += calculateBattingPoints({
+          runs: bat.runs, balls: bat.balls, fours: bat.fours, sixes: bat.sixes, notOut: bat.not_out === 1,
+        }).total;
+      }
+      if (bowl) {
+        matchPoints += calculateBowlingPoints({
+          overs: bowl.overs, maidens: bowl.maidens, runs: bowl.runs, wickets: bowl.wickets,
+        }).total;
+      }
+      if (field) {
+        matchPoints += calculateFieldingPoints({
+          catches: field.catches, runOuts: field.run_outs, stumpings: field.stumpings,
+          isWicketkeeper: field.is_wicketkeeper === 1,
+        }).total;
+      }
+      const winner = winnerByMatch.get(app.matchId);
+      if (winner === app.teamId) matchPoints += SCORING.team.winBonus;
+
+      playerTotals.set(app.playerId, (playerTotals.get(app.playerId) ?? 0) + matchPoints);
+    }
+
+    // Sort eligible players by total points descending
+    const eligibleIds = new Set(
+      allEligible.filter((p) => p.play_cricket_id).map((p) => p.play_cricket_id),
+    );
+    const playerNameMap = new Map(
+      allEligible.filter((p) => p.play_cricket_id).map((p) => [p.play_cricket_id, p.player_name]),
+    );
+
+    const scoredPlayers = [...playerTotals.entries()]
+      .filter(([id]) => eligibleIds.has(id))
+      .sort((a, b) => b[1] - a[1]);
+
+    const scoredPlayerIds = new Set(scoredPlayers.map(([id]) => id));
     const unscoredPlayers = allEligible.filter(
       (p) => p.play_cricket_id && !scoredPlayerIds.has(p.play_cricket_id),
     );
 
-    // Assign costs using weighted buckets:
-    // bottom 30% = 1, next 20% = 2, next 20% = 3, next 20% = 4, top 10% = 5
-    const total = playerPoints.length;
+    // Assign costs using weighted percentile buckets
+    const total = scoredPlayers.length;
     const costAssignments: Array<{
       playCricketId: string;
       playerName: string;
@@ -198,10 +286,10 @@ const calculateSandwichCosts = defineAuthAction({
       cost: number;
     }> = [];
 
-    for (let i = 0; i < playerPoints.length; i++) {
-      const p = playerPoints[i];
-      if (!p) continue;
-      // playerPoints is sorted desc, so index 0 = highest scorer
+    for (let i = 0; i < scoredPlayers.length; i++) {
+      const entry = scoredPlayers[i];
+      if (!entry) continue;
+      const [playerId, totalPoints] = entry;
       const percentileFromTop = (i / total) * 100;
       let cost: number;
       if (percentileFromTop < 10) cost = 5;
@@ -211,9 +299,9 @@ const calculateSandwichCosts = defineAuthAction({
       else cost = 1;
 
       costAssignments.push({
-        playCricketId: p.play_cricket_id,
-        playerName: p.player_name,
-        totalPoints: p.total_points,
+        playCricketId: playerId,
+        playerName: playerNameMap.get(playerId) ?? playerId,
+        totalPoints,
         cost,
       });
     }
@@ -252,6 +340,11 @@ const calculateSandwichCosts = defineAuthAction({
       distribution,
       budget: SANDWICH_BUDGET,
       season: previousSeason,
+      topPlayers: costAssignments.slice(0, 10).map((a) => ({
+        name: a.playerName,
+        points: a.totalPoints,
+        cost: a.cost,
+      })),
     };
   },
 });
