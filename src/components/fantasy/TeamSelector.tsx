@@ -283,12 +283,20 @@ export function TeamSelector() {
 
   const myTeamQuery = useQuery({
     queryKey: ["fantasy", "myTeam"],
-    queryFn: () => actions.fantasy.getMyTeam({}),
+    queryFn: async () => {
+      const result = await actions.fantasy.getMyTeam({});
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const eligibleQuery = useQuery({
     queryKey: ["fantasy", "eligiblePlayers"],
-    queryFn: () => actions.fantasy.getEligiblePlayers({}),
+    queryFn: async () => {
+      const result = await actions.fantasy.getEligiblePlayers({});
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const saveMutation = useMutation({
@@ -310,7 +318,7 @@ export function TeamSelector() {
   });
 
   // Load existing team into selection state
-  const teamData = myTeamQuery.data?.data;
+  const teamData = myTeamQuery.data;
   useEffect(() => {
     if (teamData?.players && teamData.players.length > 0 && !hasLoadedTeam) {
       setSelectedPlayers(
@@ -327,7 +335,7 @@ export function TeamSelector() {
     }
   }, [teamData, hasLoadedTeam]);
 
-  const eligibleData = eligibleQuery.data?.data;
+  const eligibleData = eligibleQuery.data;
   const eligiblePlayers = eligibleData?.players ?? [];
   const currentSeasonYear =
     eligibleData?.season ?? new Date().getFullYear().toString();

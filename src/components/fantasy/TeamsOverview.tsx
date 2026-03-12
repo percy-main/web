@@ -17,10 +17,14 @@ export function TeamsOverview() {
 
   const teamsQuery = useQuery({
     queryKey: ["fantasy", "allTeams"],
-    queryFn: () => actions.fantasy.listTeams({}),
+    queryFn: async () => {
+      const result = await actions.fantasy.listTeams({});
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const teams = teamsQuery.data?.data?.teams ?? [];
+  const teams = teamsQuery.data?.teams ?? [];
 
   if (teamsQuery.isLoading) {
     return <p className="text-gray-500">Loading...</p>;

@@ -64,23 +64,24 @@ const PurchaseCheckoutInner: FC<Props> = ({ price }) => {
     : undefined;
 
   const purchaseMutation = useMutation({
-    mutationFn: () =>
-      actions.purchase({
+    mutationFn: async () => {
+      const result = await actions.purchase({
         priceId: price.id,
         quantity,
         customAmountPence,
         metadata,
         email,
-      }),
-    onSuccess: (result) => {
-      if (result.data) {
-        setState({
-          step: "paying",
-          clientSecret: result.data.clientSecret,
-          amount: result.data.amount,
-          productName: result.data.productName,
-        });
-      }
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    onSuccess: (data) => {
+      setState({
+        step: "paying",
+        clientSecret: data.clientSecret,
+        amount: data.amount,
+        productName: data.productName,
+      });
     },
   });
 

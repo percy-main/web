@@ -17,7 +17,11 @@ export const ContactForm: FC<Props> = ({ title, description, page }) => {
   const [message, setMessage] = useState("");
 
   const mutation = useMutation({
-    mutationFn: actions.createContactSubmission,
+    mutationFn: async (input: { name: string; email: string; message: string; page: string }) => {
+      const result = await actions.createContactSubmission(input);
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const handleSubmit = useCallback(

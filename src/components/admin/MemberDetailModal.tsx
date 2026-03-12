@@ -64,12 +64,19 @@ export function MemberDetailModal({
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "userDetail", userId],
-    queryFn: () => actions.admin.getUserDetail({ userId }),
+    queryFn: async () => {
+      const result = await actions.admin.getUserDetail({ userId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const roleMutation = useMutation({
-    mutationFn: (role: "user" | "admin") =>
-      actions.admin.setUserRole({ userId, role }),
+    mutationFn: async (role: "user" | "admin") => {
+      const result = await actions.admin.setUserRole({ userId, role });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       setConfirmRole(null);
       void queryClient.invalidateQueries({
@@ -79,7 +86,7 @@ export function MemberDetailModal({
     },
   });
 
-  const detail = data?.data;
+  const detail = data;
 
   return (
     <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -441,8 +448,11 @@ function MemberCategorySection({
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: (memberCategory: MemberCategory | null) =>
-      actions.admin.updateMemberCategory({ memberId, memberCategory }),
+    mutationFn: async (memberCategory: MemberCategory | null) => {
+      const result = await actions.admin.updateMemberCategory({ memberId, memberCategory });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["admin", "userDetail", userId],
@@ -504,25 +514,36 @@ function JuniorManagerSection({
 
   const teamsQuery = useQuery({
     queryKey: ["admin", "listJuniorTeams"],
-    queryFn: () => actions.admin.listJuniorTeams(),
+    queryFn: async () => {
+      const result = await actions.admin.listJuniorTeams();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const assignedQuery = useQuery({
     queryKey: ["admin", "juniorManagerTeams", userId],
-    queryFn: () => actions.admin.getJuniorManagerTeams({ userId }),
+    queryFn: async () => {
+      const result = await actions.admin.getJuniorManagerTeams({ userId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   // Initialise selection from current assignments
   useEffect(() => {
-    if (assignedQuery.data?.data && !hasInitialised) {
-      setSelectedTeams(new Set(assignedQuery.data.data));
+    if (assignedQuery.data && !hasInitialised) {
+      setSelectedTeams(new Set(assignedQuery.data));
       setHasInitialised(true);
     }
   }, [assignedQuery.data, hasInitialised]);
 
   const mutation = useMutation({
-    mutationFn: (teamIds: string[]) =>
-      actions.admin.setJuniorManager({ userId, teamIds }),
+    mutationFn: async (teamIds: string[]) => {
+      const result = await actions.admin.setJuniorManager({ userId, teamIds });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["admin", "userDetail", userId],
@@ -549,8 +570,8 @@ function JuniorManagerSection({
     );
   }
 
-  const allTeams = teamsQuery.data?.data ?? [];
-  const assignedTeamIds = assignedQuery.data?.data ?? [];
+  const allTeams = teamsQuery.data ?? [];
+  const assignedTeamIds = assignedQuery.data ?? [];
 
   const toggleTeam = (teamId: string) => {
     setSelectedTeams((prev) => {
@@ -678,24 +699,35 @@ function OfficialSection({
 
   const teamsQuery = useQuery({
     queryKey: ["admin", "listPlayCricketTeams"],
-    queryFn: () => actions.admin.listPlayCricketTeams(),
+    queryFn: async () => {
+      const result = await actions.admin.listPlayCricketTeams();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const assignedQuery = useQuery({
     queryKey: ["admin", "officialTeams", userId],
-    queryFn: () => actions.admin.getOfficialTeams({ userId }),
+    queryFn: async () => {
+      const result = await actions.admin.getOfficialTeams({ userId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   useEffect(() => {
-    if (assignedQuery.data?.data && !hasInitialised) {
-      setSelectedTeams(new Set(assignedQuery.data.data));
+    if (assignedQuery.data && !hasInitialised) {
+      setSelectedTeams(new Set(assignedQuery.data));
       setHasInitialised(true);
     }
   }, [assignedQuery.data, hasInitialised]);
 
   const mutation = useMutation({
-    mutationFn: (teamIds: string[]) =>
-      actions.admin.setOfficial({ userId, teamIds }),
+    mutationFn: async (teamIds: string[]) => {
+      const result = await actions.admin.setOfficial({ userId, teamIds });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["admin", "userDetail", userId],
@@ -721,8 +753,8 @@ function OfficialSection({
     );
   }
 
-  const allTeams = teamsQuery.data?.data ?? [];
-  const assignedTeamIds = assignedQuery.data?.data ?? [];
+  const allTeams = teamsQuery.data ?? [];
+  const assignedTeamIds = assignedQuery.data ?? [];
 
   const toggleTeam = (teamId: string) => {
     setSelectedTeams((prev) => {
@@ -851,16 +883,24 @@ function ChargesSection({ memberId }: { memberId: string }) {
 
   const chargesQuery = useQuery({
     queryKey: ["admin", "charges", memberId],
-    queryFn: () => actions.admin.getCharges({ memberId }),
+    queryFn: async () => {
+      const result = await actions.admin.getCharges({ memberId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const addChargeMutation = useMutation({
-    mutationFn: (data: {
+    mutationFn: async (data: {
       memberId: string;
       description: string;
       amountPence: number;
       chargeDate: string;
-    }) => actions.admin.addCharge(data),
+    }) => {
+      const result = await actions.admin.addCharge(data);
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       setShowAddForm(false);
       void queryClient.invalidateQueries({
@@ -870,8 +910,11 @@ function ChargesSection({ memberId }: { memberId: string }) {
   });
 
   const deleteChargeMutation = useMutation({
-    mutationFn: (data: { chargeId: string; reason: string }) =>
-      actions.admin.deleteCharge(data),
+    mutationFn: async (data: { chargeId: string; reason: string }) => {
+      const result = await actions.admin.deleteCharge(data);
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       setDeleteTarget(null);
       setDeleteReason("");
@@ -902,7 +945,7 @@ function ChargesSection({ memberId }: { memberId: string }) {
     });
   };
 
-  const charges = chargesQuery.data?.data;
+  const charges = chargesQuery.data;
 
   return (
     <section>
@@ -1134,17 +1177,20 @@ function ArchiveSection({
   });
 
   const restoreMutation = useMutation({
-    mutationFn: () => actions.admin.restoreMember({ memberId }),
-    onSuccess: (result) => {
-      if (result.error) {
-        setRestoreError(result.error.message || "Failed to restore member.");
-        return;
-      }
+    mutationFn: async () => {
+      const result = await actions.admin.restoreMember({ memberId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    onSuccess: () => {
       setRestoreError(null);
       void queryClient.invalidateQueries({
         queryKey: ["admin", "userDetail", userId],
       });
       void queryClient.invalidateQueries({ queryKey: ["admin", "listUsers"] });
+    },
+    onError: (error) => {
+      setRestoreError(error.message || "Failed to restore member.");
     },
   });
 

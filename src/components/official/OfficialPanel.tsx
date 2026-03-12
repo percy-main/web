@@ -97,7 +97,11 @@ function TeamsDashboard() {
 
   const teamsQuery = useQuery({
     queryKey: ["official", "myTeams"],
-    queryFn: () => actions.matchday.listMyTeams(),
+    queryFn: async () => {
+      const result = await actions.matchday.listMyTeams();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   if (teamsQuery.isLoading) {
@@ -108,7 +112,7 @@ function TeamsDashboard() {
     return <p className="text-red-600">Failed to load teams.</p>;
   }
 
-  const teams = teamsQuery.data?.data ?? [];
+  const teams = teamsQuery.data ?? [];
 
   if (teams.length === 0) {
     return (
@@ -175,28 +179,36 @@ function TeamMatchesView({
 
   const matchesQuery = useQuery({
     queryKey: ["official", "upcomingMatches", teamId],
-    queryFn: () => actions.matchday.getUpcomingMatches({ teamId }),
+    queryFn: async () => {
+      const result = await actions.matchday.getUpcomingMatches({ teamId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const createMatchdayMutation = useMutation({
-    mutationFn: (input: {
+    mutationFn: async (input: {
       teamId: string;
       matchDate: string;
       opposition: string;
       competitionType?: string;
       playCricketMatchId?: string;
-    }) => actions.matchday.createMatchday(input),
-    onSuccess: (result) => {
+    }) => {
+      const result = await actions.matchday.createMatchday(input);
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    onSuccess: (data) => {
       void queryClient.invalidateQueries({
         queryKey: ["official", "upcomingMatches", teamId],
       });
-      if (result.data?.id) {
-        onSelectMatchday(result.data.id);
+      if (data?.id) {
+        onSelectMatchday(data.id);
       }
     },
   });
 
-  const matches = matchesQuery.data?.data ?? [];
+  const matches = matchesQuery.data ?? [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -311,21 +323,33 @@ function MatchdayView({
 
   const matchdayQuery = useQuery({
     queryKey: ["official", "matchday", matchdayId],
-    queryFn: () => actions.matchday.getMatchday({ matchdayId }),
+    queryFn: async () => {
+      const result = await actions.matchday.getMatchday({ matchdayId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const searchMembersQuery = useQuery({
     queryKey: ["official", "searchMembers", searchQuery],
-    queryFn: () => actions.matchday.searchMembers({ query: searchQuery }),
+    queryFn: async () => {
+      const result = await actions.matchday.searchMembers({ query: searchQuery });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     enabled: searchQuery.length >= 2,
   });
 
   const addPlayerMutation = useMutation({
-    mutationFn: (input: {
+    mutationFn: async (input: {
       matchdayId: string;
       memberId?: string;
       playerName: string;
-    }) => actions.matchday.addPlayer(input),
+    }) => {
+      const result = await actions.matchday.addPlayer(input);
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       setSearchQuery("");
       setAdHocName("");
@@ -336,8 +360,11 @@ function MatchdayView({
   });
 
   const removePlayerMutation = useMutation({
-    mutationFn: (matchdayPlayerId: string) =>
-      actions.matchday.removePlayer({ matchdayPlayerId }),
+    mutationFn: async (matchdayPlayerId: string) => {
+      const result = await actions.matchday.removePlayer({ matchdayPlayerId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["official", "matchday", matchdayId],
@@ -346,13 +373,17 @@ function MatchdayView({
   });
 
   const confirmTeamMutation = useMutation({
-    mutationFn: (input: {
+    mutationFn: async (input: {
       matchdayId: string;
       playerStatuses: Array<{
         matchdayPlayerId: string;
         status: "playing" | "dropped_out" | "no_show";
       }>;
-    }) => actions.matchday.confirmTeam(input),
+    }) => {
+      const result = await actions.matchday.confirmTeam(input);
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       setConfirmingTeam(false);
       setPlayerStatuses({});
@@ -363,10 +394,14 @@ function MatchdayView({
   });
 
   const markPaidMutation = useMutation({
-    mutationFn: (input: {
+    mutationFn: async (input: {
       matchdayPlayerId: string;
       paymentMethod: "cash" | "bank_transfer" | "card";
-    }) => actions.matchday.markMatchFeePaid(input),
+    }) => {
+      const result = await actions.matchday.markMatchFeePaid(input);
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       setPayingPlayerId(null);
       void queryClient.invalidateQueries({
@@ -376,7 +411,11 @@ function MatchdayView({
   });
 
   const finishMatchMutation = useMutation({
-    mutationFn: () => actions.matchday.finishMatch({ matchdayId }),
+    mutationFn: async () => {
+      const result = await actions.matchday.finishMatch({ matchdayId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["official", "matchday", matchdayId],
@@ -385,13 +424,17 @@ function MatchdayView({
   });
 
   const addExpenseMutation = useMutation({
-    mutationFn: (input: {
+    mutationFn: async (input: {
       matchdayId: string;
       expenseType: "umpire_fee" | "scorer_fee" | "match_ball" | "teas" | "miscellaneous";
       description?: string;
       amountPence: number;
       receiptImage?: string;
-    }) => actions.matchday.addExpense(input),
+    }) => {
+      const result = await actions.matchday.addExpense(input);
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["official", "matchday", matchdayId],
@@ -400,8 +443,11 @@ function MatchdayView({
   });
 
   const deleteExpenseMutation = useMutation({
-    mutationFn: (expenseId: string) =>
-      actions.matchday.deleteExpense({ expenseId }),
+    mutationFn: async (expenseId: string) => {
+      const result = await actions.matchday.deleteExpense({ expenseId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ["official", "matchday", matchdayId],
@@ -409,11 +455,11 @@ function MatchdayView({
     },
   });
 
-  const data = matchdayQuery.data?.data;
+  const data = matchdayQuery.data;
   const players = (data?.players ?? []).filter(
     (p): p is typeof p & { id: string } => p.id !== null,
   );
-  const searchResults = searchMembersQuery.data?.data ?? [];
+  const searchResults = searchMembersQuery.data ?? [];
   const existingMemberIds = new Set(
     players.filter((p) => p.member_id).map((p) => p.member_id),
   );

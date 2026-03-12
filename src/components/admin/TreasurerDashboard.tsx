@@ -135,34 +135,43 @@ function SummaryCards({
   // Use the same income-by-month data as the chart so cards and chart are consistent
   const incomeQuery = useQuery({
     queryKey: ["treasurer", "incomeByMonth", dateFrom, dateTo],
-    queryFn: () =>
-      actions.treasurer.getIncomeByMonth({
+    queryFn: async () => {
+      const result = await actions.treasurer.getIncomeByMonth({
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const aggregatesQuery = useQuery({
     queryKey: ["treasurer", "chargeAggregates", dateFrom, dateTo],
-    queryFn: () =>
-      actions.admin.getChargeAggregates({
+    queryFn: async () => {
+      const result = await actions.admin.getChargeAggregates({
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const expensesQuery = useQuery({
     queryKey: ["treasurer", "matchdayExpenses", dateFrom, dateTo],
-    queryFn: () =>
-      actions.treasurer.getMatchdayExpensesSummary({
+    queryFn: async () => {
+      const result = await actions.treasurer.getMatchdayExpensesSummary({
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const income = incomeQuery.data?.data;
-  const aggregates = aggregatesQuery.data?.data;
-  const expenses = expensesQuery.data?.data;
+  const income = incomeQuery.data;
+  const aggregates = aggregatesQuery.data;
+  const expenses = expensesQuery.data;
 
   if (incomeQuery.isError || aggregatesQuery.isError) {
     return <p className="text-red-600">Failed to load financial summary.</p>;
@@ -256,14 +265,17 @@ function IncomeChart({
 }) {
   const query = useQuery({
     queryKey: ["treasurer", "incomeByMonth", dateFrom, dateTo],
-    queryFn: () =>
-      actions.treasurer.getIncomeByMonth({
+    queryFn: async () => {
+      const result = await actions.treasurer.getIncomeByMonth({
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const data = query.data?.data;
+  const data = query.data;
 
   if (query.isLoading) return <p className="text-gray-500">Loading chart...</p>;
   if (!data || data.length === 0) {
@@ -345,16 +357,24 @@ function IncomeChart({
 function MembershipSummary() {
   const summaryQuery = useQuery({
     queryKey: ["treasurer", "membershipSummary"],
-    queryFn: () => actions.treasurer.getMembershipSummary(),
+    queryFn: async () => {
+      const result = await actions.treasurer.getMembershipSummary();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const pricesQuery = useQuery({
     queryKey: ["treasurer", "membershipPrices"],
-    queryFn: () => actions.treasurer.getMembershipPrices(),
+    queryFn: async () => {
+      const result = await actions.treasurer.getMembershipPrices();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const summary = summaryQuery.data?.data;
-  const prices = pricesQuery.data?.data;
+  const summary = summaryQuery.data;
+  const prices = pricesQuery.data;
 
   if (summaryQuery.isLoading)
     return <p className="text-gray-500">Loading membership data...</p>;
@@ -446,14 +466,17 @@ function SponsorshipSummary({
 }) {
   const query = useQuery({
     queryKey: ["treasurer", "sponsorship", dateFrom, dateTo],
-    queryFn: () =>
-      actions.treasurer.getSponsorshipSummary({
+    queryFn: async () => {
+      const result = await actions.treasurer.getSponsorshipSummary({
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const data = query.data?.data;
+  const data = query.data;
 
   if (query.isLoading)
     return <p className="text-gray-500">Loading sponsorship data...</p>;
@@ -542,14 +565,17 @@ function MatchdayExpenses({
 
   const query = useQuery({
     queryKey: ["treasurer", "matchdayExpenses", dateFrom, dateTo],
-    queryFn: () =>
-      actions.treasurer.getMatchdayExpensesSummary({
+    queryFn: async () => {
+      const result = await actions.treasurer.getMatchdayExpensesSummary({
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const data = query.data?.data;
+  const data = query.data;
 
   if (query.isLoading)
     return <p className="text-gray-500">Loading expenses...</p>;
@@ -637,14 +663,17 @@ function ExpenseDetailView({
 
   const query = useQuery({
     queryKey: ["treasurer", "expensesWithReceipts", dateFrom, dateTo],
-    queryFn: () =>
-      actions.treasurer.getExpensesWithReceipts({
+    queryFn: async () => {
+      const result = await actions.treasurer.getExpensesWithReceipts({
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const expenses = query.data?.data;
+  const expenses = query.data;
 
   if (query.isLoading)
     return <p className="text-gray-500">Loading expense details...</p>;
@@ -759,16 +788,22 @@ function OutstandingPayments() {
 
   const query = useQuery({
     queryKey: ["treasurer", "outstandingPayments", page, PAGE_SIZE],
-    queryFn: () =>
-      actions.treasurer.getOutstandingPayments({
+    queryFn: async () => {
+      const result = await actions.treasurer.getOutstandingPayments({
         page,
         pageSize: PAGE_SIZE,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const chaseMutation = useMutation({
-    mutationFn: (chargeId: string) =>
-      actions.admin.chasePayment({ chargeId }),
+    mutationFn: async (chargeId: string) => {
+      const result = await actions.admin.chasePayment({ chargeId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     onSuccess: () => {
       setChasingChargeId(null);
       void queryClient.invalidateQueries({
@@ -777,7 +812,7 @@ function OutstandingPayments() {
     },
   });
 
-  const data = query.data?.data;
+  const data = query.data;
   const totalPages = data
     ? Math.max(1, Math.ceil(data.total / PAGE_SIZE))
     : 1;

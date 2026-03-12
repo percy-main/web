@@ -23,10 +23,14 @@ const queryClient = new QueryClient();
 function TransferReminderBanner() {
   const myTeamQuery = useQuery({
     queryKey: ["fantasy", "myTeam"],
-    queryFn: () => actions.fantasy.getMyTeam({}),
+    queryFn: async () => {
+      const result = await actions.fantasy.getMyTeam({});
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const teamData = myTeamQuery.data?.data;
+  const teamData = myTeamQuery.data;
 
   // Show reminder if: user has a team, it's not pre-season, not locked, and
   // the transfer window is open with 2 or fewer days until lock
@@ -97,11 +101,15 @@ function FantasyPageContent() {
   // Check if user has a team (for onboarding banner) — must be before conditional returns
   const myTeamQuery = useQuery({
     queryKey: ["fantasy", "myTeam"],
-    queryFn: () => actions.fantasy.getMyTeam({}),
+    queryFn: async () => {
+      const result = await actions.fantasy.getMyTeam({});
+      if (result.error) throw result.error;
+      return result.data;
+    },
     enabled: isLoggedIn,
   });
 
-  const hasTeam = !!myTeamQuery.data?.data?.team;
+  const hasTeam = !!myTeamQuery.data?.team;
 
   // If viewing a tab that requires auth and not logged in, redirect
   if (!isLoading && !isLoggedIn && tab !== "leaderboards") {

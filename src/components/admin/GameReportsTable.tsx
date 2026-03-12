@@ -41,20 +41,27 @@ export function GameReportsTable() {
 
   const teamsQuery = useQuery({
     queryKey: ["admin", "playCricketTeams"],
-    queryFn: () => actions.playCricket.getTeams(),
+    queryFn: async () => {
+      const result = await actions.playCricket.getTeams();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   const matchdaysQuery = useQuery({
     queryKey: ["admin", "matchdays", teamFilter],
-    queryFn: () =>
-      actions.matchday.listMatchdays({
+    queryFn: async () => {
+      const result = await actions.matchday.listMatchdays({
         teamId: teamFilter === "all" ? undefined : teamFilter,
         limit: 50,
-      }),
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const teams = teamsQuery.data?.data?.teams ?? [];
-  const matchdays = (matchdaysQuery.data?.data?.matchdays ?? []).filter(
+  const teams = teamsQuery.data?.teams ?? [];
+  const matchdays = (matchdaysQuery.data?.matchdays ?? []).filter(
     (m): m is typeof m & { id: string } => m.id !== null,
   );
 
@@ -158,10 +165,14 @@ function MatchdayReport({
 }) {
   const reportQuery = useQuery({
     queryKey: ["admin", "matchdayReport", matchdayId],
-    queryFn: () => actions.matchday.getMatchdayReport({ matchdayId }),
+    queryFn: async () => {
+      const result = await actions.matchday.getMatchdayReport({ matchdayId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const data = reportQuery.data?.data;
+  const data = reportQuery.data;
 
   return (
     <div className="flex flex-col gap-4">

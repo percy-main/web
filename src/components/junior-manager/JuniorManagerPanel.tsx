@@ -67,7 +67,11 @@ export function JuniorManagerPanel() {
 function TeamsDashboard() {
   const teamsQuery = useQuery({
     queryKey: ["juniorManager", "myTeams"],
-    queryFn: () => actions.juniorManager.listMyTeams(),
+    queryFn: async () => {
+      const result = await actions.juniorManager.listMyTeams();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
   if (teamsQuery.isLoading) {
@@ -78,7 +82,7 @@ function TeamsDashboard() {
     return <p className="text-red-600">Failed to load teams.</p>;
   }
 
-  const teams = teamsQuery.data?.data ?? [];
+  const teams = teamsQuery.data ?? [];
 
   if (teams.length === 0) {
     return (
@@ -127,11 +131,15 @@ function TeamCard({
 
   const playersQuery = useQuery({
     queryKey: ["juniorManager", "players", teamId],
-    queryFn: () => actions.juniorManager.listPlayers({ teamId }),
+    queryFn: async () => {
+      const result = await actions.juniorManager.listPlayers({ teamId });
+      if (result.error) throw result.error;
+      return result.data;
+    },
     enabled: expanded,
   });
 
-  const players: Player[] = playersQuery.data?.data ?? [];
+  const players: Player[] = playersQuery.data ?? [];
 
   return (
     <Card>

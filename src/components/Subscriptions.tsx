@@ -5,10 +5,14 @@ import { formatDate } from "date-fns";
 export const Subscriptions = () => {
   const query = useQuery({
     queryKey: ["subscriptions"],
-    queryFn: actions.subscriptions,
+    queryFn: async () => {
+      const result = await actions.subscriptions();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  if (!query.data?.data) {
+  if (!query.data) {
     return null;
   }
 
@@ -16,10 +20,10 @@ export const Subscriptions = () => {
     <>
       <h2 className="text-h4 mb-0">Your Subscriptions</h2>
       <div className="w-full">
-        {query.data.data.subscriptions.length === 0 && (
+        {query.data.subscriptions.length === 0 && (
           <p>You have no subscriptions.</p>
         )}
-        {query.data.data.subscriptions.map((subscription) => (
+        {query.data.subscriptions.map((subscription) => (
           <>
             <div className="flex flex-wrap items-center gap-y-4">
               <dl className="w-1/2 sm:w-1/4 lg:w-auto lg:flex-1">

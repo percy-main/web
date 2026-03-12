@@ -128,7 +128,7 @@ export const MembersPage = () => {
 function IncompleteDetailsBanner() {
   const query = useMemberDetails();
 
-  if (query.isLoading || query.data?.data?.member) return null;
+  if (query.isLoading || query.data?.member) return null;
 
   return (
     <div className="w-full rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">

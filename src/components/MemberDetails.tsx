@@ -36,7 +36,11 @@ const emptyMember: MemberData = {
 export const useMemberDetails = () =>
   useQuery({
     queryKey: ["memberDetails"],
-    queryFn: actions.getMemberDetails,
+    queryFn: async () => {
+      const result = await actions.getMemberDetails();
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
 const fields: Array<{ key: keyof MemberData; label: string }> = [
@@ -102,12 +106,14 @@ function EditView({
   }, []);
 
   const mutation = useMutation({
-    mutationFn: (data: MemberData) => actions.updateMemberDetails(data),
-    onSuccess: async (result) => {
-      if (!result.error) {
-        await queryClient.invalidateQueries({ queryKey: ["memberDetails"] });
-        onSaved();
-      }
+    mutationFn: async (data: MemberData) => {
+      const result = await actions.updateMemberDetails(data);
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["memberDetails"] });
+      onSaved();
     },
   });
 
@@ -125,9 +131,11 @@ function EditView({
           at the club.
         </div>
       )}
-      {mutation.data?.error && (
+      {mutation.isError && (
         <p className="mb-4 text-sm text-red-600">
-          {mutation.data.error.message}
+          {mutation.error instanceof Error
+            ? mutation.error.message
+            : "Failed to update details. Please try again."}
         </p>
       )}
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -238,7 +246,7 @@ function EditView({
 
 export const MemberDetails: FC = () => {
   const query = useMemberDetails();
-  const member = query.data?.data?.member;
+  const member = query.data?.member;
   const [editing, setEditing] = useState(false);
 
   if (query.isLoading) return null;

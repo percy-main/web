@@ -10,10 +10,14 @@ export function MyHistory() {
 
   const myTeamQuery = useQuery({
     queryKey: ["fantasy", "myTeam"],
-    queryFn: () => actions.fantasy.getMyTeam({}),
+    queryFn: async () => {
+      const result = await actions.fantasy.getMyTeam({});
+      if (result.error) throw result.error;
+      return result.data;
+    },
   });
 
-  const teamData = myTeamQuery.data?.data;
+  const teamData = myTeamQuery.data;
   const team = teamData?.team;
 
   const timelineQuery = useQuery({
