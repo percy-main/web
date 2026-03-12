@@ -1,3 +1,4 @@
+import { ChaosWeekBanner } from "@/components/fantasy/ChaosWeekBanner";
 import { GameweekHighlights } from "@/components/fantasy/GameweekHighlights";
 import { SandwichEfficiency } from "@/components/fantasy/SandwichEfficiency";
 import { Badge } from "@/components/ui/Badge";
@@ -330,6 +331,9 @@ function FantasyHomeContent() {
       <div className="flex items-center justify-between">
         <h1>Fantasy Cricket</h1>
       </div>
+
+      {/* Chaos week banner */}
+      <ChaosWeekBanner />
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Welcome section */}

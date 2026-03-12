@@ -135,6 +135,61 @@ export const ELIGIBLE_TEAM_IDS = new Set<string>([
 ]);
 
 // ---------------------------------------------------------------------------
+// Chaos week rule types
+// ---------------------------------------------------------------------------
+
+/**
+ * Rule types for chaos weeks.
+ *
+ * Each rule type modifies a different aspect of the game for one gameweek:
+ * - no_transfers: No transfers allowed (Lockdown)
+ * - no_captain_change: Captain is locked to current selection (AGM cancelled)
+ * - no_captain_multiplier: Captain gets no 2x bonus (Level 1 offence, one week ban)
+ * - scoring_modifier: Multiplier applied to players matching a condition (Sandwich inflation crisis)
+ * - scoring_threshold: Only score if above a threshold (Go big or go home)
+ */
+export const CHAOS_RULE_TYPES = [
+  "no_transfers",
+  "no_captain_change",
+  "no_captain_multiplier",
+  "scoring_modifier",
+  "scoring_threshold",
+] as const;
+
+export type ChaosRuleType = (typeof CHAOS_RULE_TYPES)[number];
+
+export const CHAOS_RULE_LABELS: Record<ChaosRuleType, string> = {
+  no_transfers: "No Transfers",
+  no_captain_change: "Captain Locked",
+  no_captain_multiplier: "No Captain Bonus",
+  scoring_modifier: "Scoring Modifier",
+  scoring_threshold: "Scoring Threshold",
+};
+
+/**
+ * Config shape per rule type. Stored as JSON text in the DB.
+ *
+ * - no_transfers / no_captain_change / no_captain_multiplier: empty config
+ * - scoring_modifier: { sandwich_cost_min, sandwich_cost_max, multiplier }
+ * - scoring_threshold: { min_runs, min_wickets }
+ */
+export interface ScoringModifierConfig {
+  sandwich_cost_min: number;
+  sandwich_cost_max: number;
+  multiplier: number;
+}
+
+export interface ScoringThresholdConfig {
+  min_runs: number;
+  min_wickets: number;
+}
+
+export type ChaosRuleConfig =
+  | Record<string, never>
+  | ScoringModifierConfig
+  | ScoringThresholdConfig;
+
+// ---------------------------------------------------------------------------
 // Input types
 // ---------------------------------------------------------------------------
 

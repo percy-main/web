@@ -90,6 +90,19 @@ export interface EventSubscriber {
   meta: string;
 }
 
+export interface FantasyChaosWeek {
+  created_at: Generated<string>;
+  description: string;
+  email_sent: Generated<number>;
+  gameweek_id: number;
+  id: Generated<number | null>;
+  name: string;
+  rule_config: Generated<string>;
+  rule_type: string;
+  season: string;
+  send_email: Generated<number>;
+}
+
 export interface FantasyChipUsage {
   chip_type: string;
   created_at: Generated<string>;
@@ -447,6 +460,7 @@ export interface DB {
   contact_submission: ContactSubmission;
   dependent: Dependent;
   event_subscriber: EventSubscriber;
+  fantasy_chaos_week: FantasyChaosWeek;
   fantasy_chip_usage: FantasyChipUsage;
   fantasy_player: FantasyPlayer;
   fantasy_player_score: FantasyPlayerScore;

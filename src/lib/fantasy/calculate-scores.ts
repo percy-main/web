@@ -12,12 +12,14 @@
  */
 
 import { type Kysely } from "kysely";
+import { z } from "zod";
 import type { DB } from "../db/__generated__/db";
 import {
   calculateBattingPoints,
   calculateBowlingPoints,
   calculateFieldingPoints,
   CHIPS,
+  type ChaosRuleType,
   ELIGIBLE_TEAM_IDS,
   LEAGUE_COMPETITION_TYPES,
   SCORING,
@@ -528,6 +530,32 @@ export async function calculateFantasyScores(
     gwSet.add(chip.chip_type);
   }
 
+  // Fetch chaos weeks for the season (for scoring modifiers)
+  const chaosWeeks = await db
+    .selectFrom("fantasy_chaos_week")
+    .where("season", "=", season)
+    .selectAll()
+    .execute();
+
+  const chaosWeekByGw = new Map(
+    chaosWeeks.map((cw) => [cw.gameweek_id, cw]),
+  );
+
+  // Fetch player sandwich costs (needed for scoring_modifier chaos rule)
+  const allFantasyPlayers = await db
+    .selectFrom("fantasy_player")
+    .select(["play_cricket_id", "sandwich_cost"])
+    .execute();
+
+  const sandwichCostMap = new Map(
+    allFantasyPlayers
+      .filter(
+        (p): p is typeof p & { play_cricket_id: string } =>
+          p.play_cricket_id !== null,
+      )
+      .map((p) => [p.play_cricket_id, p.sandwich_cost]),
+  );
+
   // Calculate and upsert team scores
   let teamScoresUpserted = 0;
 
@@ -546,12 +574,42 @@ export async function calculateFantasyScores(
 
       const gwScores = scoresByGwAndPlayer.get(gw) ?? new Map();
 
+      // Check for chaos week rules
+      const chaosWeek = chaosWeekByGw.get(gw);
+      const chaosRuleType = chaosWeek?.rule_type as ChaosRuleType | undefined;
+
+      // Parse and validate chaos config with Zod schemas
+      const scoringModifierSchema = z.object({
+        sandwich_cost_min: z.number(),
+        sandwich_cost_max: z.number(),
+        multiplier: z.number(),
+      });
+      const scoringThresholdSchema = z.object({
+        min_runs: z.number(),
+        min_wickets: z.number(),
+      });
+
+      const parsedModifierConfig =
+        chaosRuleType === "scoring_modifier" && chaosWeek
+          ? scoringModifierSchema.safeParse(JSON.parse(chaosWeek.rule_config))
+          : null;
+      const parsedThresholdConfig =
+        chaosRuleType === "scoring_threshold" && chaosWeek
+          ? scoringThresholdSchema.safeParse(JSON.parse(chaosWeek.rule_config))
+          : null;
+
       // Determine captain multiplier — 3x if triple captain chip is active, else 2x
+      // Chaos: no_captain_multiplier overrides to 1x (no bonus)
       const activeChips = chipsByTeamAndGw.get(teamId)?.get(gw);
       const hasTripleCaptain = activeChips?.has("triple_captain") ?? false;
-      const captainMultiplier = hasTripleCaptain
-        ? CHIPS.triple_captain.captainMultiplier
-        : 2;
+      let captainMultiplier: number;
+      if (chaosRuleType === "no_captain_multiplier") {
+        captainMultiplier = 1;
+      } else if (hasTripleCaptain) {
+        captainMultiplier = CHIPS.triple_captain.captainMultiplier;
+      } else {
+        captainMultiplier = 2;
+      }
 
       // Calculate team total using slot-based scoring with WK adjustment
       let totalPoints = 0;
@@ -559,7 +617,9 @@ export async function calculateFantasyScores(
         const scores = gwScores.get(player.play_cricket_id);
         if (!scores) continue;
 
-        totalPoints += calculateSlotEffectivePoints({
+        // Compute base points (without captain multiplier) first so chaos
+        // modifiers apply to the base score, not the captain-boosted score.
+        const basePoints = calculateSlotEffectivePoints({
           slotType: (player.slot_type ?? "batting") as SlotType,
           isFantasyWk: player.is_wicketkeeper === 1,
           battingPts: scores.battingPts,
@@ -568,9 +628,54 @@ export async function calculateFantasyScores(
           teamPts: scores.teamPts,
           catches: scores.catches,
           isActualKeeper: scores.isActualKeeper,
-          isCaptain: player.is_captain === 1,
-          captainMultiplier,
+          isCaptain: false,
+          captainMultiplier: 1,
         });
+
+        let modifiedBase = basePoints;
+
+        // Apply chaos week scoring modifiers to base points (before captain multiplier)
+        if (parsedModifierConfig?.success) {
+          const config = parsedModifierConfig.data;
+          const cost =
+            sandwichCostMap.get(player.play_cricket_id) ?? 1;
+          if (
+            cost >= config.sandwich_cost_min &&
+            cost <= config.sandwich_cost_max
+          ) {
+            modifiedBase = Math.round(modifiedBase * config.multiplier);
+          }
+        }
+
+        if (parsedThresholdConfig?.success) {
+          const config = parsedThresholdConfig.data;
+          // Zero all points unless batting runs >= min_runs OR bowling wickets >= min_wickets.
+          // This is an all-or-nothing rule: fielding and win bonus are also zeroed.
+          const hasQualifyingBatting = scores.battingPts > 0 &&
+            playerScores.some(
+              (ps) =>
+                ps.playerId === player.play_cricket_id &&
+                ps.gameweek === gw &&
+                (battingByMatch.get(mkKey(ps.playerId, ps.matchId))?.runs ?? 0) >= config.min_runs,
+            );
+          const hasQualifyingBowling = scores.bowlingPts > 0 &&
+            playerScores.some(
+              (ps) =>
+                ps.playerId === player.play_cricket_id &&
+                ps.gameweek === gw &&
+                (bowlingByMatch.get(mkKey(ps.playerId, ps.matchId))?.wickets ?? 0) >= config.min_wickets,
+            );
+
+          if (!hasQualifyingBatting && !hasQualifyingBowling) {
+            modifiedBase = 0;
+          }
+        }
+
+        // Apply captain multiplier after chaos modifiers
+        const isCaptain = player.is_captain === 1;
+        const playerPoints = modifiedBase * (isCaptain ? captainMultiplier : 1);
+
+        totalPoints += playerPoints;
       }
 
       await db

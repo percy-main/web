@@ -14,6 +14,7 @@ import {
   calculateBattingPoints,
   calculateBowlingPoints,
   calculateFieldingPoints,
+  CHAOS_RULE_TYPES,
   CHIPS,
   CHIP_TYPES,
   type ChipType,
@@ -24,9 +25,13 @@ import {
   SLOT_COUNTS,
   type SlotType,
 } from "@/lib/fantasy/scoring";
+import { send } from "@/lib/email/send";
+import { render } from "@react-email/components";
 import { ActionError, defineAction } from "astro:actions";
 import { z } from "astro/zod";
 import { sql } from "kysely";
+import { createElement } from "react";
+import { ChaosWeekAnnouncement } from "../../emails/ChaosWeekAnnouncement";
 
 /**
  * kysely-codegen generates integer PKs as `number | null` for SQLite.
@@ -682,6 +687,8 @@ const getMyTeam = defineAuthAction({
       .selectAll()
       .executeTakeFirst();
 
+    const chaosWeek = await getActiveChaosWeek(currentSeason, gameweek);
+
     if (!team) {
       return {
         team: null,
@@ -690,6 +697,7 @@ const getMyTeam = defineAuthAction({
         gameweek,
         transfersUsed: 0,
         maxTransfers: null, // No team yet = unlimited initial selection
+        chaosWeek,
       };
     }
 
@@ -773,6 +781,7 @@ const getMyTeam = defineAuthAction({
       transfersUsed,
       maxTransfers: unlimitedTransfers ? null : MAX_TRANSFERS_PER_GAMEWEEK,
       budget: SANDWICH_BUDGET,
+      chaosWeek,
     };
   },
 });
@@ -802,6 +811,93 @@ const saveTeam = defineAuthAction({
         message:
           "Team editing is locked during match weekends (Saturday–Sunday). Editing reopens Monday.",
       });
+    }
+
+    const gameweek = getCurrentGameweek(currentSeason);
+
+    // Check for active chaos week restrictions
+    const chaosWeek = await getActiveChaosWeek(currentSeason, gameweek);
+
+    if (chaosWeek?.rule_type === "no_transfers") {
+      // Only block transfers for users who already have a team.
+      // Initial squad creation is always allowed — a new player shouldn't be
+      // locked out of participating during a chaos week.
+      const existingTeam = await client
+        .selectFrom("fantasy_team")
+        .where("user_id", "=", session.user.id)
+        .where("season", "=", currentSeason)
+        .select("id")
+        .executeTakeFirst();
+
+      if (existingTeam) {
+        const currentPlayers = await client
+          .selectFrom("fantasy_team_player")
+          .where("fantasy_team_id", "=", requireId(existingTeam.id))
+          .where("gameweek_added", "<=", gameweek)
+          .where((eb) =>
+            eb.or([
+              eb("gameweek_removed", "is", null),
+              eb("gameweek_removed", ">", gameweek),
+            ]),
+          )
+          .select("play_cricket_id")
+          .execute();
+
+        const currentPlayerIds = new Set(
+          currentPlayers.map((p) => p.play_cricket_id),
+        );
+        const newPlayerIds = new Set(players.map((p) => p.playCricketId));
+
+        const hasTransfer =
+          players.some((p) => !currentPlayerIds.has(p.playCricketId)) ||
+          currentPlayers.some((p) => !newPlayerIds.has(p.play_cricket_id));
+
+        if (hasTransfer) {
+          throw new ActionError({
+            code: "BAD_REQUEST",
+            message: `Chaos week: "${chaosWeek.name}" — no transfers allowed this gameweek! You can still change captain, slots, and wicketkeeper.`,
+          });
+        }
+      }
+    }
+
+    if (chaosWeek?.rule_type === "no_captain_change") {
+      // Check if user already has a team with a captain — if so, captain must stay the same
+      const existingTeam = await client
+        .selectFrom("fantasy_team")
+        .where("user_id", "=", session.user.id)
+        .where("season", "=", currentSeason)
+        .select("id")
+        .executeTakeFirst();
+
+      if (existingTeam) {
+        const currentCaptain = await client
+          .selectFrom("fantasy_team_player")
+          .where("fantasy_team_id", "=", requireId(existingTeam.id))
+          .where("is_captain", "=", 1)
+          .where("gameweek_added", "<=", gameweek)
+          .where((eb) =>
+            eb.or([
+              eb("gameweek_removed", "is", null),
+              eb("gameweek_removed", ">", gameweek),
+            ]),
+          )
+          .select("play_cricket_id")
+          .executeTakeFirst();
+
+        const newCaptain = players.find((p) => p.isCaptain);
+
+        if (
+          currentCaptain &&
+          newCaptain &&
+          currentCaptain.play_cricket_id !== newCaptain.playCricketId
+        ) {
+          throw new ActionError({
+            code: "BAD_REQUEST",
+            message: `Chaos week: "${chaosWeek.name}" — captain cannot be changed this gameweek!`,
+          });
+        }
+      }
     }
 
     // Validate exactly one captain
@@ -885,8 +981,6 @@ const saveTeam = defineAuthAction({
         message: `Team sandwich budget exceeded. Total cost: ${totalCost}, budget: ${SANDWICH_BUDGET}.`,
       });
     }
-
-    const gameweek = getCurrentGameweek(currentSeason);
 
     // Use a transaction to prevent race conditions on transfer limits
     return await client.transaction().execute(async (trx) => {
@@ -2508,6 +2602,260 @@ const getChipStatus = defineAuthAction({
 });
 
 // ---------------------------------------------------------------------------
+// Chaos weeks
+// ---------------------------------------------------------------------------
+
+/**
+ * Get the active chaos week for a given season and gameweek.
+ * Returns null if no chaos week is active.
+ */
+async function getActiveChaosWeek(season: string, gameweek: number) {
+  if (gameweek === 0) return null;
+  return (
+    (await client
+      .selectFrom("fantasy_chaos_week")
+      .where("season", "=", season)
+      .where("gameweek_id", "=", gameweek)
+      .selectAll()
+      .executeTakeFirst()) ?? null
+  );
+}
+
+const getChaosWeekPublic = defineAction({
+  input: z.object({
+    season: z.string().optional(),
+    gameweek: z.number().optional(),
+  }),
+  handler: async ({ season, gameweek }) => {
+    const s = season ?? getCurrentSeason();
+    const gw = gameweek ?? getCurrentGameweek(s);
+    return getActiveChaosWeek(s, gw);
+  },
+});
+
+const listChaosWeeks = defineAuthAction({
+  roles: ["admin"],
+  input: z.object({
+    season: z.string().optional(),
+  }),
+  handler: async ({ season }) => {
+    const s = season ?? getCurrentSeason();
+    const weeks = await client
+      .selectFrom("fantasy_chaos_week")
+      .where("season", "=", s)
+      .orderBy("gameweek_id", "asc")
+      .selectAll()
+      .execute();
+    return { weeks, season: s };
+  },
+});
+
+const createChaosWeek = defineAuthAction({
+  roles: ["admin"],
+  input: z.object({
+    season: z.string().optional(),
+    gameweekId: z.number().min(1),
+    name: z.string().min(1).max(100),
+    description: z.string().min(1).max(500),
+    ruleType: z.enum(CHAOS_RULE_TYPES as unknown as [string, ...string[]]),
+    ruleConfig: z.string().optional(),
+    sendEmail: z.boolean().optional(),
+  }),
+  handler: async ({
+    season,
+    gameweekId,
+    name,
+    description,
+    ruleType,
+    ruleConfig,
+    sendEmail,
+  }) => {
+    const s = season ?? getCurrentSeason();
+
+    // Validate rule config is valid JSON if provided
+    if (ruleConfig) {
+      try {
+        JSON.parse(ruleConfig);
+      } catch {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Rule config must be valid JSON.",
+        });
+      }
+    }
+
+    // Check for existing chaos week in this gameweek
+    const existing = await client
+      .selectFrom("fantasy_chaos_week")
+      .where("season", "=", s)
+      .where("gameweek_id", "=", gameweekId)
+      .select("id")
+      .executeTakeFirst();
+
+    if (existing) {
+      throw new ActionError({
+        code: "CONFLICT",
+        message: `A chaos week already exists for gameweek ${gameweekId}.`,
+      });
+    }
+
+    const result = await client
+      .insertInto("fantasy_chaos_week")
+      .values({
+        season: s,
+        gameweek_id: gameweekId,
+        name,
+        description,
+        rule_type: ruleType,
+        rule_config: ruleConfig ?? "{}",
+        send_email: sendEmail === false ? 0 : 1,
+        email_sent: 0,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+
+    return { id: result.id, season: s, gameweekId };
+  },
+});
+
+const updateChaosWeek = defineAuthAction({
+  roles: ["admin"],
+  input: z.object({
+    id: z.number(),
+    name: z.string().min(1).max(100).optional(),
+    description: z.string().min(1).max(500).optional(),
+    ruleType: z
+      .enum(CHAOS_RULE_TYPES as unknown as [string, ...string[]])
+      .optional(),
+    ruleConfig: z.string().optional(),
+    sendEmail: z.boolean().optional(),
+  }),
+  handler: async ({ id, name, description, ruleType, ruleConfig, sendEmail }) => {
+    if (ruleConfig) {
+      try {
+        JSON.parse(ruleConfig);
+      } catch {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Rule config must be valid JSON.",
+        });
+      }
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (name !== undefined) updates.name = name;
+    if (description !== undefined) updates.description = description;
+    if (ruleType !== undefined) updates.rule_type = ruleType;
+    if (ruleConfig !== undefined) updates.rule_config = ruleConfig;
+    if (sendEmail !== undefined) updates.send_email = sendEmail ? 1 : 0;
+
+    if (Object.keys(updates).length === 0) {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: "No fields to update.",
+      });
+    }
+
+    await client
+      .updateTable("fantasy_chaos_week")
+      .set(updates)
+      .where("id", "=", id)
+      .execute();
+
+    return { success: true };
+  },
+});
+
+const deleteChaosWeek = defineAuthAction({
+  roles: ["admin"],
+  input: z.object({
+    id: z.number(),
+  }),
+  handler: async ({ id }) => {
+    await client
+      .deleteFrom("fantasy_chaos_week")
+      .where("id", "=", id)
+      .execute();
+    return { success: true };
+  },
+});
+
+const sendChaosWeekEmail = defineAuthAction({
+  roles: ["admin"],
+  input: z.object({
+    id: z.number(),
+  }),
+  handler: async ({ id }) => {
+    const chaosWeek = await client
+      .selectFrom("fantasy_chaos_week")
+      .where("id", "=", id)
+      .selectAll()
+      .executeTakeFirst();
+
+    if (!chaosWeek) {
+      throw new ActionError({
+        code: "NOT_FOUND",
+        message: "Chaos week not found.",
+      });
+    }
+
+    if (chaosWeek.email_sent === 1) {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: "Email has already been sent for this chaos week.",
+      });
+    }
+
+    // Get all fantasy team managers for this season
+    const teams = await client
+      .selectFrom("fantasy_team as ft")
+      .innerJoin("user as u", "u.id", "ft.user_id")
+      .where("ft.season", "=", chaosWeek.season)
+      .select(["u.name", "u.email"])
+      .execute();
+
+    const siteUrl =
+      process.env.DEPLOY_PRIME_URL ??
+      process.env.URL ??
+      "https://percymain.org";
+    const imageBaseUrl = `${siteUrl}/images`;
+
+    let sent = 0;
+    for (const team of teams) {
+      try {
+        const html = await render(
+          createElement(ChaosWeekAnnouncement.component, {
+            imageBaseUrl,
+            name: team.name ?? "there",
+            chaosName: chaosWeek.name,
+            chaosDescription: chaosWeek.description,
+            gameweek: chaosWeek.gameweek_id,
+            fantasyUrl: `${siteUrl}/members/fantasy`,
+          }),
+        );
+        await send({
+          to: team.email,
+          subject: ChaosWeekAnnouncement.subject,
+          html,
+        });
+        sent++;
+      } catch (err) {
+        console.error(`Failed to send chaos week email to ${team.email}:`, err);
+      }
+    }
+
+    // Mark as sent
+    await client
+      .updateTable("fantasy_chaos_week")
+      .set({ email_sent: 1 })
+      .where("id", "=", id)
+      .execute();
+
+    return { sent, total: teams.length };
+  },
+});
+
+// ---------------------------------------------------------------------------
 // Export
 // ---------------------------------------------------------------------------
 
@@ -2537,4 +2885,10 @@ export const fantasy = {
   getGameweekHighlights,
   getOwnershipOverview,
   getSandwichEfficiency,
+  getChaosWeekPublic,
+  listChaosWeeks,
+  createChaosWeek,
+  updateChaosWeek,
+  deleteChaosWeek,
+  sendChaosWeekEmail,
 };

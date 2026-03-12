@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-quer
 import { navigate } from "astro:transitions/client";
 import { actions } from "astro:actions";
 import { useState } from "react";
+import { ChaosWeekBanner } from "./ChaosWeekBanner";
 import { Leaderboard } from "./Leaderboard";
 import { MyHistory } from "./MyHistory";
 import { TeamSelector } from "./TeamSelector";
@@ -140,6 +141,9 @@ function FantasyPageContent() {
           </a>
         </div>
       </div>
+
+      {/* Chaos week banner */}
+      <ChaosWeekBanner />
 
       {/* In-app reminder banner */}
       {isLoggedIn && <TransferReminderBanner />}
