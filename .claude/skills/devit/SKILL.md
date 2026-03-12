@@ -70,21 +70,30 @@ Provide options like "Yes, develop all", "Let me pick which ones", and let the u
 
 ### Step 3: Develop issues
 
+**Before creating any branches**, always pull the latest `main` to avoid merge conflicts:
+
+```bash
+git fetch origin main && git merge origin/main --ff-only
+```
+
+This ensures your feature branch starts from the latest code, not a stale local `main`.
+
 For each issue to be developed, follow the **full development workflow from CLAUDE.md** (steps 1–13). This means for each issue:
 
 1. Read the ticket thoroughly (body + all comments)
-2. Create a feature branch and worktree (branch name includes issue number)
-3. Analyse current behaviour
-4. Clarify ambiguities (make pragmatic decisions, note assumptions)
-5. Build a plan
-6. Execute the plan (commit frequently, ensure lint/test/build pass)
-7. Open a PR against `main` (include `Closes #N`)
-8. Review the PR using a code-reviewer agent
-9. Address review comments
-10. Test the deploy preview
-11. Finalise the PR (checks pass, reviews addressed)
-12. Clean up (stop processes, delete worktree)
-13. Report to user with summary and PR link
+2. Create a feature branch and worktree (branch name includes issue number) — **branch from the freshly-updated `main`**
+3. Install dependencies in the worktree (`pnpm install`) and copy `.env` before any build/lint/check commands
+4. Analyse current behaviour
+5. Clarify ambiguities (make pragmatic decisions, note assumptions)
+6. Build a plan
+7. Execute the plan (commit frequently, ensure lint/test/build pass)
+8. Open a PR against `main` (include `Closes #N`)
+9. Review the PR using a code-reviewer agent
+10. Address review comments
+11. Test the deploy preview
+12. Finalise the PR (checks pass, reviews addressed)
+13. Clean up (stop processes, delete worktree)
+14. Report to user with summary and PR link
 
 **Do NOT merge PRs** — only prepare them for the user's review and approval.
 
@@ -121,6 +130,7 @@ Include links to each PR for easy access.
 - Never commit directly to `main` — always use feature branches and PRs
 - Never merge PRs — only the user should merge after review
 - Copy `.env` to each worktree before building
-- Regenerate types (`npm run contentful:types` and `npm run db:types`) if migrations or content types change
+- Run `pnpm install` in each new worktree before any build, lint, or type-check commands
+- Regenerate types (`pnpm run contentful:types` and `pnpm run db:types`) if migrations or content types change
 - Use unique migration timestamps with full millisecond precision
 - Keep the user informed of progress — don't go silent during long operations

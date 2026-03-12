@@ -10,14 +10,14 @@ Two sets of files are auto-generated and checked into the repo. **Never hand-edi
 
 | Files | Generator | Command |
 |-------|-----------|---------|
-| `src/__generated__/*.ts` | cf-content-types-generator (Contentful) | `npm run contentful:types` |
-| `src/lib/db/__generated__/db.ts` | kysely-codegen (DB schema) | `npm run db:types` |
+| `src/__generated__/*.ts` | cf-content-types-generator (Contentful) | `pnpm run contentful:types` |
+| `src/lib/db/__generated__/db.ts` | kysely-codegen (DB schema) | `pnpm run db:types` |
 
 **Before opening a PR**, regenerate both and commit any changes:
 
 ```sh
-npm run contentful:types
-npm run db:types
+pnpm run contentful:types
+pnpm run db:types
 ```
 
 CI runs a `check-generated` workflow that diffs these files — your PR will fail if they're stale.
@@ -29,7 +29,7 @@ CI runs a `check-generated` workflow that diffs these files — your PR will fai
 
 ### DB types
 
-- After creating a new migration, run `npm run db:types` to pick up new tables/columns
+- After creating a new migration, run `pnpm run db:types` to pick up new tables/columns
 - The generator needs a local DB with migrations applied — it introspects the schema from `local.db`
 
 ## Coding Standards
