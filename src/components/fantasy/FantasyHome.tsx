@@ -126,7 +126,7 @@ function OwnershipWidgets() {
 
   if (isLoading) return <p className="text-sm text-gray-500">Loading ownership data...</p>;
 
-  if (!data || data.teamCount === 0 || data.gameweek === 0) return null;
+  if (!data || data.teamCount === 0) return null;
 
   const hasMostOwned = data.mostOwned.length > 0;
   const hasMostCaptained = data.mostCaptained.length > 0;
