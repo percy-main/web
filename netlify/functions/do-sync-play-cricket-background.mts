@@ -34,8 +34,7 @@ export const handler: Handler = async (event) => {
       siteId,
       dbUrl,
       dbToken,
-      // TODO: Remove 2025 once fantasy cricket backfill is complete (see #256)
-      extraSeasons: [2025],
+      extraSeasons: [],
     });
 
     await purgeCache({ tags: ["leaderboard"] });
