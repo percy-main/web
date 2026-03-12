@@ -14,7 +14,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { useSession } from "@/lib/auth/client";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { actions } from "astro:actions";
 import { Leaderboard } from "./Leaderboard";
 import { MyHistory } from "./MyHistory";
@@ -458,12 +458,14 @@ function HomePage({
   );
 }
 
+const AUTH_ONLY_TABS: Tab[] = ["all-teams", "history"];
+
 function FantasyHomeContent() {
   const session = useSession();
   const isLoggedIn = !!session.data;
   const [tab, setTab] = useState<Tab>(getInitialTab);
 
-  const onTabChange = (value: string) => {
+  const onTabChange = useCallback((value: string) => {
     setTab(value as Tab);
     const url = new URL(window.location.href);
     if (value === "home") {
@@ -472,7 +474,14 @@ function FantasyHomeContent() {
       url.searchParams.set("tab", value);
     }
     window.history.replaceState({}, "", url);
-  };
+  }, []);
+
+  // Redirect to home tab if logged-out user lands on an auth-required tab via URL
+  useEffect(() => {
+    if (!session.isPending && !isLoggedIn && AUTH_ONLY_TABS.includes(tab)) {
+      onTabChange("home");
+    }
+  }, [session.isPending, isLoggedIn, tab, onTabChange]);
 
   return (
     <div className="flex flex-col gap-4">
