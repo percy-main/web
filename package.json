@@ -93,6 +93,7 @@
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/better-sqlite3": "^7.6.13",
     "@types/eslint": "^9.6.1",
+    "@types/google.maps": "^3.58.1",
     "@types/html-to-text": "^9.0.4",
     "@types/json-patch": "^0.0.33",
     "@types/lodash": "^4.17.13",
@@ -102,6 +103,7 @@
     "autoprefixer": "^10.4.20",
     "cf-content-types-generator": "^2.15.5",
     "contentful-merge": "^2.6.5",
+    "dotenv": "^17.3.1",
     "dotenv-cli": "^8.0.0",
     "dpdm": "^3.14.0",
     "eslint": "^8.57.1",
@@ -139,6 +141,9 @@
     },
     "patchedDependencies": {
       "add-to-calendar-button@2.13.8": "patches/add-to-calendar-button@2.13.8.patch"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
   }
 }
