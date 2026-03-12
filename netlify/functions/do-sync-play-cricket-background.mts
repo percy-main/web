@@ -34,7 +34,6 @@ export const handler: Handler = async (event) => {
       siteId,
       dbUrl,
       dbToken,
-      extraSeasons: [],
     });
 
     await purgeCache({ tags: ["leaderboard"] });

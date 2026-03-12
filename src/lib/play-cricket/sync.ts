@@ -290,6 +290,17 @@ async function syncMatches(
         continue;
       }
 
+      // Guard against empty or malformed match_date (expected DD/MM/YYYY)
+      if (
+        !match.match_date ||
+        !/^\d{2}\/\d{2}\/\d{4}$/.test(match.match_date)
+      ) {
+        console.warn(
+          `Skipping match ${matchId}: invalid match_date "${match.match_date ?? ""}"`,
+        );
+        continue;
+      }
+
       // Upsert teams discovered from match detail
       const teamEntries = [
         {
@@ -471,14 +482,6 @@ async function syncMatches(
       // For older matches, always write (even with empty result) so they're
       // marked as processed and not re-fetched from the API every sync.
       const matchResult = (detail.result ?? "").trim();
-
-      // Guard against empty or malformed match_date (expected DD/MM/YYYY)
-      if (!match.match_date || !/^\d{2}\/\d{2}\/\d{4}$/.test(match.match_date)) {
-        console.warn(
-          `Skipping result write for match ${matchId}: invalid match_date "${match.match_date ?? ""}"`,
-        );
-        continue;
-      }
 
       const [dd, mm, yyyy] = match.match_date.split("/");
       const matchDate = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd));
