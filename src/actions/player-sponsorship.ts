@@ -57,8 +57,8 @@ export const playerSponsorship = {
 
         const season = currentCricketSeason();
 
-        // Check if player already has an active sponsorship for this season
-        const existing = await client
+        // Check if player already has a paid sponsorship for this season
+        const existingPaid = await client
           .selectFrom("player_sponsorship")
           .where("contentful_entry_id", "=", contentfulEntryId)
           .where("season", "=", season)
@@ -66,11 +66,32 @@ export const playerSponsorship = {
           .select(["id"])
           .executeTakeFirst();
 
-        if (existing) {
+        if (existingPaid) {
           throw new ActionError({
             code: "BAD_REQUEST",
             message:
               "This player already has a sponsor for this season.",
+          });
+        }
+
+        // Check if there's a recent unpaid attempt (within TTL) — prevent duplicates
+        const pendingCutoff = new Date(
+          Date.now() - PENDING_PAYMENT_TTL_HOURS * 60 * 60 * 1000,
+        ).toISOString();
+        const existingPending = await client
+          .selectFrom("player_sponsorship")
+          .where("contentful_entry_id", "=", contentfulEntryId)
+          .where("season", "=", season)
+          .where("paid_at", "is", null)
+          .where("created_at", ">=", pendingCutoff)
+          .select(["id"])
+          .executeTakeFirst();
+
+        if (existingPending) {
+          throw new ActionError({
+            code: "BAD_REQUEST",
+            message:
+              "A sponsorship payment is already in progress for this player. Please try again later.",
           });
         }
 
