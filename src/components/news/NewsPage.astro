@@ -21,6 +21,7 @@ type Props = {
   }>;
   activeTag: string | null;
   totalArticleCount: number;
+  totalTagCount?: number;
   uniqueAuthorCount: number;
   articlesByMonth: Array<{
     month: string;
@@ -36,6 +37,7 @@ const {
   tags,
   activeTag,
   totalArticleCount,
+  totalTagCount,
   uniqueAuthorCount,
   articlesByMonth,
   archiveMonths,
@@ -61,7 +63,7 @@ const displayByMonth = featuredArticle
   <div>
     <h1 class="text-[2rem] mb-1 leading-tight">News</h1>
     <div class="text-sm text-text opacity-60">
-      {totalArticleCount} articles &middot; {tags.length} tags
+      {totalArticleCount} articles &middot; {totalTagCount ?? tags.length} tags
     </div>
   </div>
   {page.lastPage > 1 && (
@@ -108,7 +110,7 @@ const displayByMonth = featuredArticle
 <div class="flex gap-8">
   <NewsSidebar
     totalArticleCount={totalArticleCount}
-    totalTagCount={tags.length}
+    totalTagCount={totalTagCount ?? tags.length}
     uniqueAuthorCount={uniqueAuthorCount}
     archiveMonths={archiveMonths}
   />
