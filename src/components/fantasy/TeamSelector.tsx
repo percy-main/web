@@ -124,8 +124,8 @@ function SortablePlayerRow({
           <SandwichCost cost={player.sandwichCost} />
         </span>
       </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-2">
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-2">
           {player.isCaptain ? (
             <Badge className="bg-amber-100 text-amber-800">C</Badge>
           ) : player.slotType !== "allrounder" ? (
@@ -139,7 +139,7 @@ function SortablePlayerRow({
               C
             </Button>
           ) : (
-            <span className="text-xs text-gray-400" title="All-rounder cannot be captain">
+            <span className="inline-block w-6 text-center text-xs text-gray-400" title="All-rounder cannot be captain">
               -
             </span>
           )}
@@ -156,18 +156,16 @@ function SortablePlayerRow({
               WK
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-red-600 hover:text-red-800"
+            disabled={locked}
+            onClick={() => onRemove(player.playCricketId)}
+          >
+            Remove
+          </Button>
         </div>
-      </TableCell>
-      <TableCell className="text-right">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-red-600 hover:text-red-800"
-          disabled={locked}
-          onClick={() => onRemove(player.playCricketId)}
-        >
-          Remove
-        </Button>
       </TableCell>
     </TableRow>
   );
