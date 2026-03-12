@@ -34,7 +34,7 @@ const Component: FC<Props> = ({
   <Html>
     <Head />
     <Preview>
-      Chaos Week alert: {chaosName} is active for Gameweek {gameweek}!
+      Chaos Week alert: {chaosName} is active for Gameweek {String(gameweek)}!
     </Preview>
     <Body style={styles.main}>
       <Container style={styles.container}>
