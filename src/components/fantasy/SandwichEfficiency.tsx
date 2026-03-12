@@ -47,7 +47,7 @@ export function SandwichEfficiency() {
     );
   }
 
-  const top10 = data.entries.slice(0, 10);
+  const top5 = data.entries.slice(0, 5);
 
   return (
     <div className="flex flex-col gap-3">
@@ -61,7 +61,7 @@ export function SandwichEfficiency() {
           <TableRow>
             <TableHead className="w-10">#</TableHead>
             <TableHead>Player</TableHead>
-            <TableHead className="w-16 text-right">Cost</TableHead>
+            <TableHead className="w-16 text-center">Cost</TableHead>
             <TableHead className="w-16 text-right">Pts</TableHead>
             <TableHead className="w-24 text-right">
               <span aria-hidden="true">Pts/🥪</span>
@@ -70,7 +70,7 @@ export function SandwichEfficiency() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {top10.map((entry) => (
+          {top5.map((entry) => (
             <TableRow key={entry.playCricketId}>
               <TableCell
                 className={`font-medium ${MEDAL_COLORS[entry.rank] ?? ""}`}
@@ -80,8 +80,8 @@ export function SandwichEfficiency() {
               <TableCell className="font-medium">
                 {entry.playerName}
               </TableCell>
-              <TableCell className="text-right">
-                <span aria-label={`${entry.sandwichCost} sandwich${entry.sandwichCost !== 1 ? "es" : ""}`}>
+              <TableCell className="text-center">
+                <span className="inline-flex items-center gap-0.5 whitespace-nowrap text-sm" aria-label={`${entry.sandwichCost} sandwich${entry.sandwichCost !== 1 ? "es" : ""}`}>
                   {"🥪".repeat(entry.sandwichCost)}
                 </span>
               </TableCell>

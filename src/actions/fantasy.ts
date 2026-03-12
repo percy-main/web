@@ -2073,9 +2073,10 @@ const getSandwichEfficiency = defineAction({
       ? (Number(currentSeason) - 1).toString()
       : currentSeason;
 
-    // Get player names and sandwich costs
+    // Get eligible player names and sandwich costs
     const players = await client
       .selectFrom("fantasy_player")
+      .where("eligible", "=", 1)
       .select(["play_cricket_id", "player_name", "sandwich_cost"])
       .execute();
 
@@ -2128,12 +2129,14 @@ const getSandwichEfficiency = defineAction({
     }
 
     const entries = playerPoints
+      .filter((r) => playerMap.has(r.playCricketId))
       .map((r) => {
+        // Safe: filtered to only include players in playerMap above
         const player = playerMap.get(r.playCricketId);
         const cost = player && player.sandwich_cost > 0 ? player.sandwich_cost : 1;
         return {
           playCricketId: r.playCricketId,
-          playerName: player?.player_name ?? "Unknown",
+          playerName: player.player_name,
           sandwichCost: cost,
           totalPoints: r.totalPoints,
           matchesPlayed: r.matchesPlayed,
