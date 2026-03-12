@@ -1652,7 +1652,7 @@ const getGameweekHighlights = defineAction({
       .execute();
 
     // Fetch raw bowling stats for best spell
-    let bestSpellStats: { wickets: number; overs: string; runs: number } | null = null;
+    let bestSpellStats: { wickets: number; runs: number } | null = null;
     if (bestSpellRows[0]) {
       const bowlStats = await client
         .selectFrom("match_performance_bowling as mpb")
@@ -1667,8 +1667,6 @@ const getGameweekHighlights = defineAction({
         .select([
           sql<number>`SUM(mpb.wickets)`.as("wickets"),
           sql<number>`SUM(mpb.runs)`.as("runs"),
-          // For display, show aggregate overs (just total)
-          sql<string>`GROUP_CONCAT(mpb.overs)`.as("overs"),
         ])
         .executeTakeFirst();
 
@@ -1676,7 +1674,6 @@ const getGameweekHighlights = defineAction({
         bestSpellStats = {
           wickets: bowlStats.wickets,
           runs: bowlStats.runs,
-          overs: bowlStats.overs,
         };
       }
     }
@@ -1741,9 +1738,12 @@ const getGameweekHighlights = defineAction({
     let fantasyShock: ShockEntry | null = null;
 
     if (allPlayerScores.length > 0 && teamCount > 0) {
-      // Among high scorers, find the one with lowest ownership
+      // Among high scorers (top half by points), find the one with lowest ownership
+      const topPoints = allPlayerScores[0]?.total_points ?? 0;
+      const threshold = topPoints * 0.5;
       let bestShock: ShockEntry | null = null;
       for (const ps of allPlayerScores) {
+        if (ps.total_points < threshold) break; // sorted desc, stop early
         const owners = ownershipMap.get(ps.play_cricket_id) ?? 0;
         if (
           !bestShock ||
@@ -1755,7 +1755,7 @@ const getGameweekHighlights = defineAction({
             playCricketId: ps.play_cricket_id,
             totalPoints: ps.total_points,
             ownerCount: owners,
-            ownershipPct: teamCount > 0 ? Math.round((owners / teamCount) * 100) : 0,
+            ownershipPct: Math.round((owners / teamCount) * 100),
           };
         }
       }
@@ -1879,7 +1879,6 @@ const getGameweekHighlights = defineAction({
               bowlingPoints: bestSpellRows[0].bowling_points,
               totalPoints: bestSpellRows[0].total_points,
               wickets: bestSpellStats?.wickets ?? null,
-              overs: bestSpellStats?.overs ?? null,
               runsConceded: bestSpellStats?.runs ?? null,
             }
           : null,

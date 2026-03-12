@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 
@@ -33,7 +34,19 @@ export function GameweekHighlights() {
   });
 
   if (isLoading) {
-    return null;
+    return (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-40" />
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Skeleton className="h-24 rounded-lg" />
+            <Skeleton className="h-24 rounded-lg" />
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   if (!data?.highlights) {
@@ -87,7 +100,6 @@ export function GameweekHighlights() {
           {fantasyShock && (
             <HighlightItem
               label="Fantasy Shock"
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- inferred from action return type
               title={fantasyShock.playerName}
               detail={`${fantasyShock.totalPoints} pts — owned by ${fantasyShock.ownershipPct}% of teams`}
               accent="border-red-500"
