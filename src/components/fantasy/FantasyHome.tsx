@@ -12,29 +12,97 @@ import {
 } from "@/components/ui/Table";
 import { useSession } from "@/lib/auth/client";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { actions } from "astro:actions";
 
 const queryClient = new QueryClient();
 
-function Countdown({ daysUntilLock, isPreSeason, locked }: {
+function useCountUp(target: number, duration = 1000) {
+  const [value, setValue] = useState(0);
+  const prevTarget = useRef(target);
+
+  useEffect(() => {
+    if (target === 0) {
+      setValue(0);
+      return;
+    }
+    prevTarget.current = target;
+    const start = performance.now();
+    let raf: number;
+
+    function tick(now: number) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(eased * target));
+      if (progress < 1) {
+        raf = requestAnimationFrame(tick);
+      }
+    }
+
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+
+  return value;
+}
+
+function StatCard({
+  value,
+  label,
+  colorClass,
+}: {
+  value: number;
+  label: string;
+  colorClass: string;
+}) {
+  const displayed = useCountUp(value);
+  return (
+    <Card>
+      <CardContent className="py-6 text-center">
+        <p className={`text-5xl font-bold ${colorClass}`}>{displayed}</p>
+        <p className="mt-1 text-sm text-gray-500">{label}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Countdown({
+  daysUntilLock,
+  isPreSeason,
+  locked,
+  preSeasonStats,
+}: {
   daysUntilLock: number;
   isPreSeason: boolean;
   locked: boolean;
+  preSeasonStats?: { teamCount: number; totalSandwiches: number };
 }) {
   if (isPreSeason) {
     return (
-      <Card>
-        <CardContent className="py-6 text-center">
-          <p className="text-lg font-medium text-gray-700">Season starts in</p>
-          <p className="text-4xl font-bold text-blue-600">{daysUntilLock}</p>
-          <p className="text-sm text-gray-500">
-            {daysUntilLock === 1 ? "day" : "days"}
-          </p>
-          <p className="mt-2 text-sm text-gray-600">
-            Build your squad now — unlimited changes until Gameweek 1.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="md:col-span-2 flex flex-col gap-4">
+        <div className="grid grid-cols-3 gap-4">
+          <StatCard
+            value={daysUntilLock}
+            label={daysUntilLock === 1 ? "day to go" : "days to go"}
+            colorClass="text-blue-600"
+          />
+          <StatCard
+            value={preSeasonStats?.teamCount ?? 0}
+            label="teams registered"
+            colorClass="text-gray-700"
+          />
+          <StatCard
+            value={preSeasonStats?.totalSandwiches ?? 0}
+            label="sandwiches consumed"
+            colorClass="text-amber-600"
+          />
+        </div>
+        <p className="text-center text-sm text-gray-600">
+          Build your squad now — unlimited changes until Gameweek 1.
+        </p>
+      </div>
     );
   }
 
@@ -253,6 +321,16 @@ function FantasyHomeContent() {
 
   const windowInfo = windowQuery.data;
 
+  const preSeasonStatsQuery = useQuery({
+    queryKey: ["fantasy", "preSeasonStats"],
+    queryFn: async () => {
+      const res = await actions.fantasy.getPreSeasonStats({});
+      if (res.error) throw res.error;
+      return res.data;
+    },
+    enabled: !!windowInfo?.isPreSeason,
+  });
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -301,6 +379,7 @@ function FantasyHomeContent() {
             daysUntilLock={windowInfo.daysUntilLock}
             isPreSeason={windowInfo.isPreSeason}
             locked={windowInfo.locked}
+            preSeasonStats={preSeasonStatsQuery.data}
           />
         )}
 
