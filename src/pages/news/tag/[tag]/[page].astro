@@ -29,24 +29,29 @@ export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
     (p) => p.tag,
   );
 
-  const uniqueAuthors = _.uniqBy(
-    allNews.map((n) => n.data.author).filter(Boolean),
-    (a) => a.id,
-  );
-
-  const archiveMonths = _.chain(allNews)
-    .groupBy((n) => format(n.data.when, "MMMM yyyy"))
-    .map((articles, month) => ({ month, count: articles.length }))
-    .sortBy((m) => {
-      const first = allNews.find(
-        (n) => format(n.data.when, "MMMM yyyy") === m.month,
-      );
-      return first ? -first.data.when.getTime() : 0;
-    })
-    .value();
-
   return tags.flatMap((tag) => {
     const news = tagPages[tag.slug];
+
+    const filteredAuthors = _.uniqBy(
+      news.map((n) => n.data.author).filter(Boolean),
+      (a) => a.id,
+    );
+
+    const filteredTagCount = _.uniqBy(
+      news.flatMap((n) => n.data.pages),
+      (p) => p.id,
+    ).length;
+
+    const filteredArchiveMonths = _.chain(news)
+      .groupBy((n) => format(n.data.when, "MMMM yyyy"))
+      .map((articles, month) => ({ month, count: articles.length }))
+      .sortBy((m) => {
+        const first = news.find(
+          (n) => format(n.data.when, "MMMM yyyy") === m.month,
+        );
+        return first ? -first.data.when.getTime() : 0;
+      })
+      .value();
 
     return paginate(news, {
       pageSize: 5,
@@ -60,15 +65,16 @@ export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
           count: tagPages[t.slug]?.length ?? 0,
           isActive: t.slug === tag.slug,
         })),
-        totalArticleCount: allNews.length,
-        uniqueAuthorCount: uniqueAuthors.length,
-        archiveMonths,
+        totalArticleCount: news.length,
+        totalTagCount: filteredTagCount,
+        uniqueAuthorCount: filteredAuthors.length,
+        archiveMonths: filteredArchiveMonths,
       },
     });
   });
 }
 
-const { page, tags, tag, totalArticleCount, uniqueAuthorCount, archiveMonths } =
+const { page, tags, tag, totalArticleCount, totalTagCount, uniqueAuthorCount, archiveMonths } =
   Astro.props;
 
 const articles = page.data.map((article) => ({
@@ -115,6 +121,7 @@ const articlesByMonth = _.chain(articles)
     tags={tags}
     activeTag={tag.slug}
     totalArticleCount={totalArticleCount}
+    totalTagCount={totalTagCount}
     uniqueAuthorCount={uniqueAuthorCount}
     articlesByMonth={articlesByMonth}
     archiveMonths={archiveMonths}
