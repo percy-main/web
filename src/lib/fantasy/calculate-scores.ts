@@ -5,6 +5,10 @@
  * for each gameweek based on match performance data.
  *
  * Designed to be idempotent — safe to re-run at any time.
+ *
+ * Team scoring is slot-based: batting slots only earn batting+fielding+team,
+ * bowling slots only earn bowling+fielding+team, and the all-rounder slot
+ * earns all categories. The wicketkeeper designation adjusts catch rates.
  */
 
 import { type Kysely } from "kysely";
@@ -16,6 +20,7 @@ import {
   ELIGIBLE_TEAM_IDS,
   LEAGUE_COMPETITION_TYPES,
   SCORING,
+  type SlotType,
 } from "./scoring";
 import { getGW1StartDate } from "./gameweek";
 
@@ -52,6 +57,61 @@ function getGameweekForDate(matchDate: Date, season: string): number | null {
   return diffWeeks + 1;
 }
 
+/**
+ * Calculate effective team points for a player based on their slot type,
+ * wicketkeeper designation, and raw per-category scores.
+ *
+ * Slot filtering:
+ *   batting   → batting + fielding + team
+ *   bowling   → bowling + fielding + team
+ *   allrounder → batting + bowling + fielding + team
+ *
+ * WK adjustment: if fantasy WK tag differs from actual keeper status,
+ * adjust fielding points for the catch rate difference.
+ */
+export function calculateSlotEffectivePoints(opts: {
+  slotType: SlotType;
+  isFantasyWk: boolean;
+  battingPts: number;
+  bowlingPts: number;
+  fieldingPts: number;
+  teamPts: number;
+  catches: number;
+  isActualKeeper: boolean;
+  isCaptain: boolean;
+}): number {
+  const { slotType, isFantasyWk, battingPts, bowlingPts, teamPts, catches, isActualKeeper, isCaptain } = opts;
+  let { fieldingPts } = opts;
+
+  // WK adjustment: recalculate fielding based on fantasy WK tag vs actual
+  if (isFantasyWk !== isActualKeeper && catches > 0) {
+    if (isFantasyWk && !isActualKeeper) {
+      // Fantasy WK but not actual keeper: catches were scored at 10pt, should be 5pt
+      fieldingPts += catches * (SCORING.fielding.perCatchKeeper - SCORING.fielding.perCatch);
+    } else if (!isFantasyWk && isActualKeeper) {
+      // Not fantasy WK but is actual keeper: catches were scored at 5pt, should be 10pt
+      fieldingPts += catches * (SCORING.fielding.perCatch - SCORING.fielding.perCatchKeeper);
+    }
+  }
+
+  // Slot filtering
+  let effective = 0;
+  switch (slotType) {
+    case "batting":
+      effective = battingPts + fieldingPts + teamPts;
+      break;
+    case "bowling":
+      effective = bowlingPts + fieldingPts + teamPts;
+      break;
+    case "allrounder":
+      effective = battingPts + bowlingPts + fieldingPts + teamPts;
+      break;
+  }
+
+  // Captain multiplier (allrounder can't be captain, validated at save)
+  return effective * (isCaptain ? 2 : 1);
+}
+
 // ---------------------------------------------------------------------------
 // Main scoring calculation
 // ---------------------------------------------------------------------------
@@ -67,8 +127,8 @@ export interface CalculateScoresResult {
  * For each league match with a result:
  * 1. Maps the match to a gameweek
  * 2. Calculates per-player scores using the scoring engine
- * 3. Upserts into fantasy_player_score
- * 4. Aggregates team scores (captain 2x) into fantasy_team_score
+ * 3. Upserts into fantasy_player_score (with raw catches and keeper status)
+ * 4. Aggregates team scores (slot-based + WK adjustment + captain 2x) into fantasy_team_score
  */
 export async function calculateFantasyScores(
   db: Kysely<DB>,
@@ -234,6 +294,8 @@ export async function calculateFantasyScores(
     fieldingPts: number;
     teamPts: number;
     totalPts: number;
+    catches: number;
+    isActualKeeper: boolean;
   };
 
   const playerScores: PlayerScore[] = [];
@@ -291,6 +353,8 @@ export async function calculateFantasyScores(
       fieldingPts,
       teamPts,
       totalPts,
+      catches: field?.catches ?? 0,
+      isActualKeeper: field?.is_wicketkeeper === 1,
     });
   }
 
@@ -308,6 +372,8 @@ export async function calculateFantasyScores(
         fielding_points: ps.fieldingPts,
         team_points: ps.teamPts,
         total_points: ps.totalPts,
+        catches: ps.catches,
+        is_actual_keeper: ps.isActualKeeper ? 1 : 0,
         season,
       })
       .onConflict((oc) =>
@@ -319,6 +385,8 @@ export async function calculateFantasyScores(
             fielding_points: ps.fieldingPts,
             team_points: ps.teamPts,
             total_points: ps.totalPts,
+            catches: ps.catches,
+            is_actual_keeper: ps.isActualKeeper ? 1 : 0,
           }),
       )
       .execute();
@@ -342,7 +410,7 @@ export async function calculateFantasyScores(
     .map((t) => t.id)
     .filter((id): id is number => id !== null);
 
-  // Fetch all team player assignments in one query
+  // Fetch all team player assignments in one query (including slot and WK info)
   const allTeamPlayers = await db
     .selectFrom("fantasy_team_player")
     .where("fantasy_team_id", "in", teamIds)
@@ -352,6 +420,8 @@ export async function calculateFantasyScores(
       "is_captain",
       "gameweek_added",
       "gameweek_removed",
+      "slot_type",
+      "is_wicketkeeper",
     ])
     .execute();
 
@@ -376,25 +446,61 @@ export async function calculateFantasyScores(
 
   const gameweeks = gameweeksResult.map((r) => r.gameweek_id);
 
-  // Fetch all player scores for the season in one query
-  const allPlayerScores = await db
+  // Fetch all player scores for the season in one query (including per-category breakdowns)
+  const allPlayerScoresForTeams = await db
     .selectFrom("fantasy_player_score")
     .where("season", "=", season)
-    .select(["play_cricket_id", "gameweek_id", "total_points"])
+    .select([
+      "play_cricket_id",
+      "gameweek_id",
+      "batting_points",
+      "bowling_points",
+      "fielding_points",
+      "team_points",
+      "total_points",
+      "catches",
+      "is_actual_keeper",
+    ])
     .execute();
 
-  // Index: gameweek -> playerId -> total points (summed across matches)
-  const scoresByGwAndPlayer = new Map<number, Map<string, number>>();
-  for (const ps of allPlayerScores) {
+  // Index: gameweek -> playerId -> aggregated category scores
+  type PlayerGwScores = {
+    battingPts: number;
+    bowlingPts: number;
+    fieldingPts: number;
+    teamPts: number;
+    totalPts: number;
+    catches: number;
+    isActualKeeper: boolean;
+  };
+  const scoresByGwAndPlayer = new Map<number, Map<string, PlayerGwScores>>();
+  for (const ps of allPlayerScoresForTeams) {
     let gwMap = scoresByGwAndPlayer.get(ps.gameweek_id);
     if (!gwMap) {
       gwMap = new Map();
       scoresByGwAndPlayer.set(ps.gameweek_id, gwMap);
     }
-    gwMap.set(
-      ps.play_cricket_id,
-      (gwMap.get(ps.play_cricket_id) ?? 0) + ps.total_points,
-    );
+    const existing = gwMap.get(ps.play_cricket_id);
+    if (existing) {
+      existing.battingPts += ps.batting_points;
+      existing.bowlingPts += ps.bowling_points;
+      existing.fieldingPts += ps.fielding_points;
+      existing.teamPts += ps.team_points;
+      existing.totalPts += ps.total_points;
+      existing.catches += ps.catches;
+      // If any match they were keeper, treat as actual keeper for the GW
+      if (ps.is_actual_keeper === 1) existing.isActualKeeper = true;
+    } else {
+      gwMap.set(ps.play_cricket_id, {
+        battingPts: ps.batting_points,
+        bowlingPts: ps.bowling_points,
+        fieldingPts: ps.fielding_points,
+        teamPts: ps.team_points,
+        totalPts: ps.total_points,
+        catches: ps.catches,
+        isActualKeeper: ps.is_actual_keeper === 1,
+      });
+    }
   }
 
   // Calculate and upsert team scores
@@ -415,12 +521,23 @@ export async function calculateFantasyScores(
 
       const gwScores = scoresByGwAndPlayer.get(gw) ?? new Map();
 
-      // Calculate team total with captain 2x multiplier
+      // Calculate team total using slot-based scoring with WK adjustment
       let totalPoints = 0;
       for (const player of activePlayers) {
-        const playerPoints = gwScores.get(player.play_cricket_id) ?? 0;
-        const multiplier = player.is_captain === 1 ? 2 : 1;
-        totalPoints += playerPoints * multiplier;
+        const scores = gwScores.get(player.play_cricket_id);
+        if (!scores) continue;
+
+        totalPoints += calculateSlotEffectivePoints({
+          slotType: (player.slot_type ?? "batting") as SlotType,
+          isFantasyWk: player.is_wicketkeeper === 1,
+          battingPts: scores.battingPts,
+          bowlingPts: scores.bowlingPts,
+          fieldingPts: scores.fieldingPts,
+          teamPts: scores.teamPts,
+          catches: scores.catches,
+          isActualKeeper: scores.isActualKeeper,
+          isCaptain: player.is_captain === 1,
+        });
       }
 
       await db

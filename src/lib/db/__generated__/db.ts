@@ -95,15 +95,18 @@ export interface FantasyPlayer {
   eligible: Generated<number>;
   play_cricket_id: string | null;
   player_name: string;
+  sandwich_cost: Generated<number>;
 }
 
 export interface FantasyPlayerScore {
   batting_points: Generated<number>;
   bowling_points: Generated<number>;
+  catches: Generated<number>;
   created_at: Generated<string>;
   fielding_points: Generated<number>;
   gameweek_id: number;
   id: Generated<number | null>;
+  is_actual_keeper: Generated<number>;
   match_id: string;
   play_cricket_id: string;
   season: string;
@@ -124,7 +127,9 @@ export interface FantasyTeamPlayer {
   gameweek_removed: number | null;
   id: Generated<number | null>;
   is_captain: Generated<number>;
+  is_wicketkeeper: Generated<number>;
   play_cricket_id: string;
+  slot_type: Generated<string>;
 }
 
 export interface FantasyTeamScore {

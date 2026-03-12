@@ -37,6 +37,7 @@ export function TeamView({ teamId }: { teamId: number }) {
           <TableHeader>
             <TableRow>
               <TableHead>Player</TableHead>
+              <TableHead className="text-center">Slot</TableHead>
               <TableHead>Role</TableHead>
             </TableRow>
           </TableHeader>
@@ -46,12 +47,24 @@ export function TeamView({ teamId }: { teamId: number }) {
                 <TableCell className="font-medium">
                   {player.playerName}
                 </TableCell>
+                <TableCell className="text-center">
+                  <span className="text-sm">
+                    {player.slotType === "batting"
+                      ? "🏏"
+                      : player.slotType === "bowling"
+                        ? "🎳"
+                        : "🏏🎳"}
+                  </span>
+                </TableCell>
                 <TableCell>
-                  {player.isCaptain && (
-                    <Badge className="bg-amber-100 text-amber-800">
-                      Captain (2x)
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {player.isCaptain && (
+                      <Badge className="bg-amber-100 text-amber-800">C</Badge>
+                    )}
+                    {player.isWicketkeeper && (
+                      <Badge className="bg-blue-100 text-blue-800">WK</Badge>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

@@ -66,6 +66,25 @@ export const SCORING = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Sandwich budget & slot config
+// ---------------------------------------------------------------------------
+
+/** Maximum total sandwich cost across all 11 players */
+export const SANDWICH_BUDGET = 20;
+
+/** Required slot counts for team composition */
+export const SLOT_COUNTS = { batting: 6, bowling: 4, allrounder: 1 } as const;
+
+export type SlotType = "batting" | "bowling" | "allrounder";
+
+/** Valid slot types for validation */
+export const VALID_SLOT_TYPES: readonly SlotType[] = [
+  "batting",
+  "bowling",
+  "allrounder",
+] as const;
+
+// ---------------------------------------------------------------------------
 // League match filter
 // ---------------------------------------------------------------------------
 

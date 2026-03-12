@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
-import { SCORING } from "@/lib/fantasy/scoring";
+import { SANDWICH_BUDGET, SCORING, SLOT_COUNTS } from "@/lib/fantasy/scoring";
 
 function formatPoints(value: number): string {
   return value > 0 ? `+${value}` : String(value);
@@ -155,6 +155,139 @@ function FieldingRules() {
   );
 }
 
+function RoleSlotsRules() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Role Slots</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3 text-sm">
+          <div>
+            <h4 className="font-medium">🏏 Batting slots ({SLOT_COUNTS.batting})</h4>
+            <p className="text-gray-600">
+              Score batting + fielding + team points only. Bowling points are excluded.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-medium">🎳 Bowling slots ({SLOT_COUNTS.bowling})</h4>
+            <p className="text-gray-600">
+              Score bowling + fielding + team points only. Batting points are excluded.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-medium">🏏🎳 All-Rounder slot ({SLOT_COUNTS.allrounder})</h4>
+            <p className="text-gray-600">
+              Scores ALL point categories (batting + bowling + fielding + team).
+              The all-rounder <strong>cannot</strong> be made captain.
+            </p>
+          </div>
+          <p className="text-gray-500">
+            Reassigning players between slots is free and does not count as a transfer.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function SandwichBudgetRules() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Sandwich Budget</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3 text-sm">
+          <p className="text-gray-600">
+            Each player has a sandwich cost (🥪) from 1 to 5, based on their previous season performance.
+            Top performers cost more sandwiches.
+          </p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Cost</TableHead>
+                <TableHead>Player Tier</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell>🥪🥪🥪🥪🥪</TableCell>
+                <TableCell>Top 10% of scorers</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>🥪🥪🥪🥪</TableCell>
+                <TableCell>Top 10-30%</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>🥪🥪🥪</TableCell>
+                <TableCell>Top 30-50%</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>🥪🥪</TableCell>
+                <TableCell>Top 50-70%</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>🥪</TableCell>
+                <TableCell>Bottom 30% / new players</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <p className="text-gray-600">
+            Your total squad cost must not exceed <strong>{SANDWICH_BUDGET} sandwiches</strong>.
+            This ensures team diversity — you can&apos;t just pick all the best players.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function WicketkeeperRules() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Wicketkeeper</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3 text-sm">
+          <p className="text-gray-600">
+            Designate exactly one player in your squad as wicketkeeper (WK).
+            This affects how their catches are scored:
+          </p>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Scenario</TableHead>
+                <TableHead className="w-24 text-right">Per Catch</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell>Your WK is the actual match keeper</TableCell>
+                <TableCell className="text-right font-medium">{formatPoints(SCORING.fielding.perCatchKeeper)}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Your WK is NOT the match keeper</TableCell>
+                <TableCell className="text-right font-medium">{formatPoints(SCORING.fielding.perCatchKeeper)}</TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>Non-WK player (always)</TableCell>
+                <TableCell className="text-right font-medium">{formatPoints(SCORING.fielding.perCatch)}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <p className="text-gray-500">
+            Players tagged as WK always earn the keeper catch rate ({SCORING.fielding.perCatchKeeper}pt/catch)
+            regardless of whether they actually kept wicket in the match.
+            All other players earn the fielder rate ({SCORING.fielding.perCatch}pt/catch).
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function GeneralRules() {
   return (
     <Card>
@@ -181,7 +314,8 @@ function GeneralRules() {
           </TableBody>
         </Table>
         <p className="mt-2 text-sm text-gray-500">
-          Your captain&apos;s points are doubled in your team score. The captain multiplier does not affect the player leaderboard.
+          Your captain&apos;s points are doubled in your team score. The captain cannot be
+          placed in the all-rounder slot. The captain multiplier does not affect the player leaderboard.
         </p>
       </CardContent>
     </Card>
@@ -237,6 +371,9 @@ export function ScoringRules() {
       <p className="text-gray-600">
         Points are awarded based on real match performances in Percy Main 1st XI and 2nd XI league matches.
       </p>
+      <RoleSlotsRules />
+      <SandwichBudgetRules />
+      <WicketkeeperRules />
       <BattingRules />
       <BowlingRules />
       <FieldingRules />
