@@ -47,8 +47,6 @@ export function SandwichEfficiency() {
     );
   }
 
-  const top5 = data.entries.slice(0, 5);
-
   return (
     <div className="flex flex-col gap-3">
       {data.isFromPreviousSeason && (
@@ -70,7 +68,7 @@ export function SandwichEfficiency() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {top5.map((entry) => (
+          {data.entries.map((entry) => (
             <TableRow key={entry.playCricketId}>
               <TableCell
                 className={`font-medium ${MEDAL_COLORS[entry.rank] ?? ""}`}

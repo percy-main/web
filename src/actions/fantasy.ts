@@ -2063,8 +2063,9 @@ const getGameweekHighlights = defineAction({
 const getSandwichEfficiency = defineAction({
   input: z.object({
     season: z.string().optional(),
+    limit: z.number().int().min(1).max(50).default(5),
   }),
-  handler: async ({ season }) => {
+  handler: async ({ season, limit }) => {
     const currentSeason = season ?? getCurrentSeason();
     const preseason = isPreSeason(currentSeason);
 
@@ -2148,7 +2149,7 @@ const getSandwichEfficiency = defineAction({
     return {
       season: effectiveSeason,
       isFromPreviousSeason: preseason,
-      entries: assignRanks(entries, (e) => e.pointsPerSandwich),
+      entries: assignRanks(entries, (e) => e.pointsPerSandwich).slice(0, limit),
     };
   },
 });
