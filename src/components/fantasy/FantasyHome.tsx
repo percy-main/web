@@ -1,3 +1,4 @@
+import { GameweekHighlights } from "@/components/fantasy/GameweekHighlights";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import {
@@ -195,6 +196,9 @@ function FantasyHomeContent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Match report */}
+      <GameweekHighlights />
 
       {/* Top 5 leaderboard */}
       <Card>

@@ -1551,6 +1551,355 @@ const getPlayerHistory = defineAction({
 });
 
 /**
+ * Public gameweek highlights for the fantasy match report.
+ * Returns top scorer, best spell, fantasy shock, top team, and biggest mover
+ * for the most recently completed gameweek (or a specific one).
+ */
+const getGameweekHighlights = defineAction({
+  input: z.object({
+    season: z.string().optional(),
+    gameweek: z.number().optional(),
+  }),
+  handler: async ({ season, gameweek }) => {
+    const currentSeason = season ?? getCurrentSeason();
+
+    // Determine which gameweek to show highlights for
+    let targetGameweek = gameweek;
+    if (targetGameweek === undefined) {
+      const currentGw = getCurrentGameweek(currentSeason);
+      const completedGw = Math.max(0, currentGw - 1);
+
+      if (completedGw > 0) {
+        const hasScores = await client
+          .selectFrom("fantasy_team_score")
+          .where("season", "=", currentSeason)
+          .where("gameweek_id", "=", completedGw)
+          .select("gameweek_id")
+          .limit(1)
+          .executeTakeFirst();
+
+        if (hasScores) {
+          targetGameweek = completedGw;
+        }
+      }
+
+      if (targetGameweek === undefined) {
+        const latestGw = await client
+          .selectFrom("fantasy_team_score")
+          .where("season", "=", currentSeason)
+          .select(sql<number>`MAX(gameweek_id)`.as("max_gw"))
+          .executeTakeFirst();
+        targetGameweek = latestGw?.max_gw ?? 0;
+      }
+    }
+
+    if (targetGameweek === 0) {
+      return { highlights: null, gameweek: 0, season: currentSeason };
+    }
+
+    // --- Top scorer: highest total_points player ---
+    const topScorerRows = await client
+      .selectFrom("fantasy_player_score as fps")
+      .innerJoin("fantasy_player as fp", "fp.play_cricket_id", "fps.play_cricket_id")
+      .where("fps.season", "=", currentSeason)
+      .where("fps.gameweek_id", "=", targetGameweek)
+      .select([
+        "fps.play_cricket_id",
+        "fp.player_name",
+        sql<number>`SUM(fps.total_points)`.as("total_points"),
+        sql<number>`SUM(fps.batting_points)`.as("batting_points"),
+        sql<number>`SUM(fps.bowling_points)`.as("bowling_points"),
+      ])
+      .groupBy("fps.play_cricket_id")
+      .orderBy(sql`SUM(fps.total_points)`, "desc")
+      .limit(1)
+      .execute();
+
+    // Fetch raw batting stats for top scorer
+    let topScorerBattingRuns: number | null = null;
+    if (topScorerRows[0]) {
+      const batStats = await client
+        .selectFrom("match_performance_batting as mpb")
+        .innerJoin("fantasy_player_score as fps", (join) =>
+          join
+            .onRef("fps.play_cricket_id", "=", "mpb.player_id")
+            .onRef("fps.match_id", "=", "mpb.match_id"),
+        )
+        .where("fps.season", "=", currentSeason)
+        .where("fps.gameweek_id", "=", targetGameweek)
+        .where("fps.play_cricket_id", "=", topScorerRows[0].play_cricket_id)
+        .select(sql<number>`SUM(mpb.runs)`.as("runs"))
+        .executeTakeFirst();
+      topScorerBattingRuns = batStats?.runs ?? null;
+    }
+
+    // --- Best spell: highest bowling_points player ---
+    const bestSpellRows = await client
+      .selectFrom("fantasy_player_score as fps")
+      .innerJoin("fantasy_player as fp", "fp.play_cricket_id", "fps.play_cricket_id")
+      .where("fps.season", "=", currentSeason)
+      .where("fps.gameweek_id", "=", targetGameweek)
+      .where("fps.bowling_points", ">", 0)
+      .select([
+        "fps.play_cricket_id",
+        "fp.player_name",
+        sql<number>`SUM(fps.bowling_points)`.as("bowling_points"),
+        sql<number>`SUM(fps.total_points)`.as("total_points"),
+      ])
+      .groupBy("fps.play_cricket_id")
+      .orderBy(sql`SUM(fps.bowling_points)`, "desc")
+      .limit(1)
+      .execute();
+
+    // Fetch raw bowling stats for best spell
+    let bestSpellStats: { wickets: number; runs: number } | null = null;
+    if (bestSpellRows[0]) {
+      const bowlStats = await client
+        .selectFrom("match_performance_bowling as mpb")
+        .innerJoin("fantasy_player_score as fps", (join) =>
+          join
+            .onRef("fps.play_cricket_id", "=", "mpb.player_id")
+            .onRef("fps.match_id", "=", "mpb.match_id"),
+        )
+        .where("fps.season", "=", currentSeason)
+        .where("fps.gameweek_id", "=", targetGameweek)
+        .where("fps.play_cricket_id", "=", bestSpellRows[0].play_cricket_id)
+        .select([
+          sql<number>`SUM(mpb.wickets)`.as("wickets"),
+          sql<number>`SUM(mpb.runs)`.as("runs"),
+        ])
+        .executeTakeFirst();
+
+      if (bowlStats) {
+        bestSpellStats = {
+          wickets: bowlStats.wickets,
+          runs: bowlStats.runs,
+        };
+      }
+    }
+
+    // --- Fantasy shock: highest scoring player with fewest owners ---
+    // Count how many teams own each player for this gameweek
+    const playerOwnership = await client
+      .selectFrom("fantasy_team_player as ftp")
+      .innerJoin("fantasy_team as ft", "ft.id", "ftp.fantasy_team_id")
+      .where("ft.season", "=", currentSeason)
+      .where("ftp.gameweek_added", "<=", targetGameweek)
+      .where((eb) =>
+        eb.or([
+          eb("ftp.gameweek_removed", "is", null),
+          eb("ftp.gameweek_removed", ">", targetGameweek),
+        ]),
+      )
+      .select([
+        "ftp.play_cricket_id",
+        sql<number>`COUNT(DISTINCT ftp.fantasy_team_id)`.as("owner_count"),
+      ])
+      .groupBy("ftp.play_cricket_id")
+      .execute();
+
+    const totalTeams = await client
+      .selectFrom("fantasy_team")
+      .where("season", "=", currentSeason)
+      .select(sql<number>`COUNT(*)`.as("count"))
+      .executeTakeFirst();
+
+    const teamCount = totalTeams?.count ?? 0;
+
+    const ownershipMap = new Map<string, number>();
+    for (const row of playerOwnership) {
+      ownershipMap.set(row.play_cricket_id, row.owner_count);
+    }
+
+    // Get all player scores for the gameweek to find the shock
+    const allPlayerScores = await client
+      .selectFrom("fantasy_player_score as fps")
+      .innerJoin("fantasy_player as fp", "fp.play_cricket_id", "fps.play_cricket_id")
+      .where("fps.season", "=", currentSeason)
+      .where("fps.gameweek_id", "=", targetGameweek)
+      .select([
+        "fps.play_cricket_id",
+        "fp.player_name",
+        sql<number>`SUM(fps.total_points)`.as("total_points"),
+      ])
+      .groupBy("fps.play_cricket_id")
+      .orderBy(sql`SUM(fps.total_points)`, "desc")
+      .execute();
+
+    // Find highest-scoring player with fewest owners
+    // Sort by total_points desc, then owner_count asc
+    type ShockEntry = {
+      playerName: string;
+      playCricketId: string;
+      totalPoints: number;
+      ownerCount: number;
+      ownershipPct: number;
+    };
+    let fantasyShock: ShockEntry | null = null;
+
+    if (allPlayerScores.length > 0 && teamCount > 0) {
+      // Among high scorers (top half by points), find the one with lowest ownership
+      const topPoints = allPlayerScores[0]?.total_points ?? 0;
+      const threshold = topPoints * 0.5;
+      let bestShock: ShockEntry | null = null;
+      for (const ps of allPlayerScores) {
+        if (ps.total_points < threshold) break; // sorted desc, stop early
+        const owners = ownershipMap.get(ps.play_cricket_id) ?? 0;
+        if (
+          !bestShock ||
+          owners < bestShock.ownerCount ||
+          (owners === bestShock.ownerCount && ps.total_points > bestShock.totalPoints)
+        ) {
+          bestShock = {
+            playerName: ps.player_name,
+            playCricketId: ps.play_cricket_id,
+            totalPoints: ps.total_points,
+            ownerCount: owners,
+            ownershipPct: Math.round((owners / teamCount) * 100),
+          };
+        }
+      }
+      // Only show shock if it's different from the top scorer
+      if (bestShock && topScorerRows[0] && bestShock.playCricketId !== topScorerRows[0].play_cricket_id) {
+        fantasyShock = bestShock;
+      }
+    }
+
+    // --- Top team: highest fantasy_team_score for this gameweek ---
+    const topTeamRow = await client
+      .selectFrom("fantasy_team_score as fts")
+      .innerJoin("fantasy_team as ft", "ft.id", "fts.fantasy_team_id")
+      .innerJoin("user as u", "u.id", "ft.user_id")
+      .where("fts.season", "=", currentSeason)
+      .where("fts.gameweek_id", "=", targetGameweek)
+      .select([
+        "fts.fantasy_team_id",
+        "fts.total_points",
+        "u.name as ownerName",
+      ])
+      .orderBy("fts.total_points", "desc")
+      .limit(1)
+      .executeTakeFirst();
+
+    // --- Biggest mover: largest rank improvement from previous gameweek ---
+    let biggestMover: {
+      ownerName: string;
+      teamId: number | null;
+      rankChange: number;
+      currentRank: number;
+      previousRank: number;
+    } | null = null;
+
+    if (targetGameweek > 1) {
+      // Get cumulative scores for current and previous gameweek
+      const currentCumulative = await client
+        .selectFrom("fantasy_team_score as fts")
+        .innerJoin("fantasy_team as ft", "ft.id", "fts.fantasy_team_id")
+        .innerJoin("user as u", "u.id", "ft.user_id")
+        .where("fts.season", "=", currentSeason)
+        .where("fts.gameweek_id", "<=", targetGameweek)
+        .select([
+          "fts.fantasy_team_id",
+          sql<number>`SUM(fts.total_points)`.as("cumulative_points"),
+          "u.name as ownerName",
+        ])
+        .groupBy("fts.fantasy_team_id")
+        .orderBy(sql`SUM(fts.total_points)`, "desc")
+        .execute();
+
+      const previousCumulative = await client
+        .selectFrom("fantasy_team_score as fts")
+        .innerJoin("fantasy_team as ft", "ft.id", "fts.fantasy_team_id")
+        .where("fts.season", "=", currentSeason)
+        .where("fts.gameweek_id", "<=", targetGameweek - 1)
+        .select([
+          "fts.fantasy_team_id",
+          sql<number>`SUM(fts.total_points)`.as("cumulative_points"),
+        ])
+        .groupBy("fts.fantasy_team_id")
+        .orderBy(sql`SUM(fts.total_points)`, "desc")
+        .execute();
+
+      // Assign ranks
+      const currentRanked = assignRanks(
+        currentCumulative.map((e) => ({
+          teamId: e.fantasy_team_id,
+          ownerName: e.ownerName,
+          points: e.cumulative_points,
+        })),
+        (e) => e.points,
+      );
+
+      const previousRanked = assignRanks(
+        previousCumulative.map((e) => ({
+          teamId: e.fantasy_team_id,
+          points: e.cumulative_points,
+        })),
+        (e) => e.points,
+      );
+
+      const prevRankMap = new Map<number | null, number>();
+      for (const entry of previousRanked) {
+        prevRankMap.set(entry.teamId, entry.rank);
+      }
+
+      let bestChange = 0;
+      for (const entry of currentRanked) {
+        const prevRank = prevRankMap.get(entry.teamId);
+        if (prevRank !== undefined) {
+          const change = prevRank - entry.rank;
+          if (change > bestChange) {
+            bestChange = change;
+            biggestMover = {
+              ownerName: entry.ownerName,
+              teamId: entry.teamId,
+              rankChange: change,
+              currentRank: entry.rank,
+              previousRank: prevRank,
+            };
+          }
+        }
+      }
+    }
+
+    return {
+      highlights: {
+        topScorer: topScorerRows[0]
+          ? {
+              playerName: topScorerRows[0].player_name,
+              playCricketId: topScorerRows[0].play_cricket_id,
+              totalPoints: topScorerRows[0].total_points,
+              battingRuns: topScorerBattingRuns,
+            }
+          : null,
+        bestSpell: bestSpellRows[0]
+          ? {
+              playerName: bestSpellRows[0].player_name,
+              playCricketId: bestSpellRows[0].play_cricket_id,
+              bowlingPoints: bestSpellRows[0].bowling_points,
+              totalPoints: bestSpellRows[0].total_points,
+              wickets: bestSpellStats?.wickets ?? null,
+              runsConceded: bestSpellStats?.runs ?? null,
+            }
+          : null,
+        fantasyShock,
+        topTeam: topTeamRow
+          ? {
+              teamId: topTeamRow.fantasy_team_id,
+              ownerName: topTeamRow.ownerName,
+              totalPoints: topTeamRow.total_points,
+            }
+          : null,
+        biggestMover,
+        teamCount,
+      },
+      gameweek: targetGameweek,
+      season: currentSeason,
+    };
+  },
+});
+
+/**
  * Public transfer window info for the fantasy home page.
  */
 const getTransferWindowPublic = defineAction({
@@ -1788,4 +2137,5 @@ export const fantasy = {
   activateChip,
   deactivateChip,
   getChipStatus,
+  getGameweekHighlights,
 };
