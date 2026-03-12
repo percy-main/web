@@ -1,23 +1,10 @@
 import { Alert } from "@/components/ui/Alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { useSession } from "@/lib/auth/client";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
 import { actions } from "astro:actions";
-import { useState } from "react";
 import { ChaosWeekBanner } from "./ChaosWeekBanner";
-import { Leaderboard } from "./Leaderboard";
-import { MyHistory } from "./MyHistory";
 import { TeamSelector } from "./TeamSelector";
-import { TeamsOverview } from "./TeamsOverview";
-
-const TABS = ["my-team", "all-teams", "leaderboards", "history"] as const;
-type Tab = (typeof TABS)[number];
-
-function getInitialTab(): Tab {
-  const param = new URLSearchParams(window.location.search).get("tab");
-  return TABS.includes(param as Tab) ? (param as Tab) : "my-team";
-}
 
 const queryClient = new QueryClient();
 
@@ -71,7 +58,7 @@ function OnboardingBanner() {
           Teams lock on Friday evening and reopen Monday.
         </p>
         <a
-          href="/fantasy/rules"
+          href="/fantasy?tab=rules"
           className="inline-block text-blue-600 underline hover:text-blue-800"
         >
           View full scoring rules
@@ -83,18 +70,6 @@ function OnboardingBanner() {
 
 function FantasyPageContent() {
   const session = useSession();
-  const [tab, setTab] = useState<Tab>(getInitialTab);
-
-  const onTabChange = (value: string) => {
-    setTab(value as Tab);
-    const url = new URL(window.location.href);
-    if (value === "my-team") {
-      url.searchParams.delete("tab");
-    } else {
-      url.searchParams.set("tab", value);
-    }
-    window.history.replaceState({}, "", url);
-  };
 
   const isLoggedIn = !!session.data;
   const isLoading = session.isPending;
@@ -112,20 +87,19 @@ function FantasyPageContent() {
 
   const hasTeam = !!myTeamQuery.data?.team;
 
-  // If viewing a tab that requires auth and not logged in, redirect
-  if (!isLoading && !isLoggedIn && tab !== "leaderboards") {
+  if (!isLoading && !isLoggedIn) {
     void navigate("/auth/login");
     return null;
   }
 
-  if (isLoading && tab !== "leaderboards") {
+  if (isLoading) {
     return <p className="text-gray-500">Loading...</p>;
   }
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1>Fantasy Cricket</h1>
+        <h1>My Fantasy Team</h1>
         <div className="flex gap-2">
           <a
             className="text-dark rounded border border-gray-800 px-4 py-2 text-sm hover:bg-gray-200"
@@ -146,43 +120,12 @@ function FantasyPageContent() {
       <ChaosWeekBanner />
 
       {/* In-app reminder banner */}
-      {isLoggedIn && <TransferReminderBanner />}
+      <TransferReminderBanner />
 
       {/* Onboarding for users without a team */}
-      {isLoggedIn && !myTeamQuery.isLoading && !hasTeam && tab === "my-team" && (
-        <OnboardingBanner />
-      )}
+      {!myTeamQuery.isLoading && !hasTeam && <OnboardingBanner />}
 
-      <Tabs value={tab} onValueChange={onTabChange}>
-        <div className="overflow-x-auto">
-          <TabsList>
-            {isLoggedIn && <TabsTrigger value="my-team">My Team</TabsTrigger>}
-            {isLoggedIn && (
-              <TabsTrigger value="all-teams">All Teams</TabsTrigger>
-            )}
-            <TabsTrigger value="leaderboards">Leaderboards</TabsTrigger>
-            {isLoggedIn && <TabsTrigger value="history">History</TabsTrigger>}
-          </TabsList>
-        </div>
-        {isLoggedIn && (
-          <TabsContent value="my-team">
-            <TeamSelector />
-          </TabsContent>
-        )}
-        {isLoggedIn && (
-          <TabsContent value="all-teams">
-            <TeamsOverview />
-          </TabsContent>
-        )}
-        <TabsContent value="leaderboards">
-          <Leaderboard />
-        </TabsContent>
-        {isLoggedIn && (
-          <TabsContent value="history">
-            <MyHistory />
-          </TabsContent>
-        )}
-      </Tabs>
+      <TeamSelector />
     </div>
   );
 }
