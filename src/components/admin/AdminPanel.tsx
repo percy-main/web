@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { navigate } from "astro:transitions/client";
 import { ChargesTable } from "./ChargesTable";
 import { ContactSubmissionsTable } from "./ContactSubmissionsTable";
+import { ChaosWeeksTable } from "./ChaosWeeksTable";
 import { FantasyPlayersTable } from "./FantasyPlayersTable";
 import { DuplicateMembersTable } from "./DuplicateMembersTable";
 import { JuniorsTable } from "./JuniorsTable";
@@ -90,7 +91,10 @@ export function AdminPanel() {
             <TreasurerDashboard />
           </TabsContent>
           <TabsContent value="fantasy">
-            <FantasyPlayersTable />
+            <div className="flex flex-col gap-6">
+              <FantasyPlayersTable />
+              <ChaosWeeksTable />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
