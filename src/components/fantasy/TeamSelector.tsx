@@ -24,6 +24,7 @@ import {
   useSensor,
   useSensors,
   closestCenter,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -85,15 +86,34 @@ function BudgetTracker({ used, total }: { used: number; total: number }) {
   );
 }
 
+function EmptySlotRow({ slotType, index }: { slotType: SlotType; index: number }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `empty-${slotType}-${index}`,
+  });
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      className={`border-dashed ${isOver ? "bg-blue-50" : ""}`}
+    >
+      <TableCell colSpan={3} className="py-2 text-center text-xs text-gray-400">
+        Empty slot
+      </TableCell>
+    </TableRow>
+  );
+}
+
 function SortablePlayerRow({
   player,
   locked,
+  isOverflow,
   onRemove,
   onSetCaptain,
   onToggleWk,
 }: {
   player: SelectedPlayer;
   locked: boolean;
+  isOverflow: boolean;
   onRemove: (id: string) => void;
   onSetCaptain: (id: string) => void;
   onToggleWk: (id: string) => void;
@@ -114,7 +134,7 @@ function SortablePlayerRow({
   };
 
   return (
-    <TableRow ref={setNodeRef} style={style}>
+    <TableRow ref={setNodeRef} style={style} className={isOverflow ? "bg-red-50" : ""}>
       <TableCell className="w-8 cursor-grab" {...attributes} {...listeners}>
         <span className="text-gray-400">⠿</span>
       </TableCell>
@@ -188,13 +208,18 @@ function SlotSection({
 }) {
   const maxSlots = SLOT_COUNTS[slotType];
   const ids = players.map((p) => p.playCricketId);
+  const isOverfilled = players.length > maxSlots;
+  const emptyCount = Math.max(0, maxSlots - players.length);
 
   return (
-    <div className="rounded-lg border p-3">
+    <div className={`rounded-lg border p-3 ${isOverfilled ? "border-red-300" : ""}`}>
       <div className="mb-2 flex items-center gap-2">
         <span>{SLOT_ICONS[slotType]}</span>
         <h4 className="font-semibold">{SLOT_LABELS[slotType]}</h4>
-        <Badge variant="outline" className="text-xs">
+        <Badge
+          variant="outline"
+          className={`text-xs ${isOverfilled ? "border-red-400 bg-red-50 text-red-700" : ""}`}
+        >
           {players.length}/{maxSlots}
         </Badge>
         <span className="text-xs text-gray-500">
@@ -205,29 +230,26 @@ function SlotSection({
               : "All pts"}
         </span>
       </div>
-      {players.length > 0 && (
-        <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-          <Table>
-            <TableBody>
-              {players.map((player) => (
-                <SortablePlayerRow
-                  key={player.playCricketId}
-                  player={player}
-                  locked={locked}
-                  onRemove={onRemove}
-                  onSetCaptain={onSetCaptain}
-                  onToggleWk={onToggleWk}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </SortableContext>
-      )}
-      {players.length < maxSlots && (
-        <p className="mt-1 text-xs text-gray-400">
-          {maxSlots - players.length} more slot{maxSlots - players.length !== 1 ? "s" : ""} to fill
-        </p>
-      )}
+      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        <Table>
+          <TableBody>
+            {players.map((player, index) => (
+              <SortablePlayerRow
+                key={player.playCricketId}
+                player={player}
+                locked={locked}
+                isOverflow={index >= maxSlots}
+                onRemove={onRemove}
+                onSetCaptain={onSetCaptain}
+                onToggleWk={onToggleWk}
+              />
+            ))}
+            {Array.from({ length: emptyCount }, (_, i) => (
+              <EmptySlotRow key={`empty-${slotType}-${i}`} slotType={slotType} index={i} />
+            ))}
+          </TableBody>
+        </Table>
+      </SortableContext>
     </div>
   );
 }
@@ -444,43 +466,60 @@ export function TeamSelector() {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
+    const overId = over.id as string;
+
+    // Dropping onto an empty slot — change the dragged player's slot type
+    if (overId.startsWith("empty-")) {
+      const targetSlotType = overId.split("-")[1] as SlotType;
+      setSelectedPlayers((prev) => {
+        const result = prev.map((p) => {
+          if (p.playCricketId !== active.id) return p;
+          const updated = { ...p, slotType: targetSlotType };
+          if (targetSlotType === "allrounder" && p.isCaptain) {
+            updated.isCaptain = false;
+          }
+          return updated;
+        });
+        // Ensure there's still a captain
+        if (!result.some((x) => x.isCaptain)) {
+          const first = result.find((x) => x.slotType !== "allrounder");
+          if (first) {
+            return result.map((p) =>
+              p.playCricketId === first.playCricketId ? { ...p, isCaptain: true } : p,
+            );
+          }
+        }
+        return result;
+      });
+      return;
+    }
+
     setSelectedPlayers((prev) => {
       const activePlayer = prev.find((p) => p.playCricketId === active.id);
-      const overPlayer = prev.find((p) => p.playCricketId === over.id);
+      const overPlayer = prev.find((p) => p.playCricketId === overId);
       if (!activePlayer || !overPlayer) return prev;
 
-      // Swap slot types between dragged player and target
+      // Different slot type: move dragged player to the target's section (no swap)
       if (activePlayer.slotType !== overPlayer.slotType) {
-        const newSlotForActive = overPlayer.slotType;
-        const newSlotForOver = activePlayer.slotType;
-
-        return prev.map((p) => {
-          if (p.playCricketId === active.id) {
-            const updated = { ...p, slotType: newSlotForActive };
-            // If moved to allrounder and was captain, remove captain
-            if (newSlotForActive === "allrounder" && p.isCaptain) {
-              updated.isCaptain = false;
-            }
-            return updated;
+        const targetSlotType = overPlayer.slotType;
+        const result = prev.map((p) => {
+          if (p.playCricketId !== active.id) return p;
+          const updated = { ...p, slotType: targetSlotType };
+          if (targetSlotType === "allrounder" && p.isCaptain) {
+            updated.isCaptain = false;
           }
-          if (p.playCricketId === over.id) {
-            const updated = { ...p, slotType: newSlotForOver };
-            if (newSlotForOver === "allrounder" && p.isCaptain) {
-              updated.isCaptain = false;
-            }
-            return updated;
-          }
-          return p;
-        }).map((p, _i, arr) => {
-          // Ensure there's still a captain after the swap
-          if (!arr.some((x) => x.isCaptain)) {
-            const first = arr.find((x) => x.slotType !== "allrounder");
-            if (p.playCricketId === first?.playCricketId) {
-              return { ...p, isCaptain: true };
-            }
-          }
-          return p;
+          return updated;
         });
+        // Ensure there's still a captain
+        if (!result.some((x) => x.isCaptain)) {
+          const first = result.find((x) => x.slotType !== "allrounder");
+          if (first) {
+            return result.map((p) =>
+              p.playCricketId === first.playCricketId ? { ...p, isCaptain: true } : p,
+            );
+          }
+        }
+        return result;
       }
 
       // Same slot type: reorder within the section
@@ -671,9 +710,41 @@ export function TeamSelector() {
 
           {selectedPlayers.length === 11 && (
             <div className="mt-4 flex flex-col gap-2">
+              {!slotsValid && (
+                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+                  <p className="font-medium">Fix slot assignments to save:</p>
+                  <ul className="mt-1 list-inside list-disc">
+                    {(["batting", "bowling", "allrounder"] as const).map((st) => {
+                      const diff = slotCounts[st] - SLOT_COUNTS[st];
+                      if (diff === 0) return null;
+                      return (
+                        <li key={st}>
+                          {SLOT_LABELS[st]} has {slotCounts[st]}/{SLOT_COUNTS[st]}
+                          {" — "}
+                          {diff > 0
+                            ? `move ${diff} player${diff !== 1 ? "s" : ""} out`
+                            : `needs ${Math.abs(diff)} more`}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
               {!budgetValid && (
                 <p className="text-sm text-red-600">
                   Over budget! Remove expensive players or swap for cheaper ones.
+                </p>
+              )}
+              {!captainValid && selectedPlayers.length === 11 && (
+                <p className="text-sm text-red-600">
+                  {selectedPlayers.filter((p) => p.isCaptain).length === 0
+                    ? "You need to select a captain."
+                    : "Captain cannot be an all-rounder."}
+                </p>
+              )}
+              {!wkValid && selectedPlayers.length === 11 && (
+                <p className="text-sm text-red-600">
+                  You need to select a wicketkeeper.
                 </p>
               )}
               <div className="flex items-center gap-3">
@@ -691,7 +762,7 @@ export function TeamSelector() {
                     {saveMutation.error?.message ?? "Failed to save team."}
                   </p>
                 )}
-                {!hasChanges && !saveMutation.isSuccess && (
+                {!hasChanges && !saveMutation.isSuccess && canSave === false && slotsValid && budgetValid && captainValid && wkValid && (
                   <p className="text-sm text-gray-500">No changes to save.</p>
                 )}
               </div>
@@ -885,7 +956,7 @@ export function TeamSelector() {
           <CardContent>
             <p className="mb-3 text-sm text-gray-600">
               Remove a player from your squad above, then add a replacement.
-              Drag players between slots to reassign roles (free, doesn&apos;t
+              Drag players between slots to move them to a different role (free, doesn&apos;t
               count as a transfer).
               {maxTransfers !== null
                 ? ` You have ${maxTransfers - transfersUsed} transfer(s) remaining this gameweek.`
