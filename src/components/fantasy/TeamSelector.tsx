@@ -884,7 +884,7 @@ export function TeamSelector() {
                 : " Unlimited changes allowed."}
             </p>
             <p className="text-xs text-gray-400">
-              Tip: Choose your captain wisely — their points are doubled.
+              Tip: Choose your captain wisely — their points are doubled (or tripled with the Triple Captain chip!).
               All-rounders score all point categories but cannot be captain.{" "}
               <a
                 href="/fantasy/rules"

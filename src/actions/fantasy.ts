@@ -1420,7 +1420,9 @@ const getGameweekDetail = defineAction({
           bowlingPoints: scores?.bowlingPoints ?? 0,
           fieldingPoints: scores?.fieldingPoints ?? 0,
           teamPoints: scores?.teamPoints ?? 0,
-          basePoints: scores?.totalPoints ?? 0,
+          basePoints: isCaptain && effectivePoints > 0
+            ? Math.round(effectivePoints / captainMultiplier)
+            : effectivePoints,
           effectivePoints,
           captainMultiplier: isCaptain ? captainMultiplier : 1,
           matchCount: scores?.matchCount ?? 0,
@@ -1633,11 +1635,14 @@ const activateChip = defineAuthAction({
           season: currentSeason,
         })
         .execute();
-    } catch {
-      throw new ActionError({
-        code: "BAD_REQUEST",
-        message: `${chipType.replace("_", " ")} chip is already active for this gameweek.`,
-      });
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("UNIQUE constraint failed")) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: `${chipType.replace("_", " ")} chip is already active for this gameweek.`,
+        });
+      }
+      throw err;
     }
 
     return { success: true };
@@ -1652,6 +1657,14 @@ const deactivateChip = defineAuthAction({
   }),
   handler: async ({ chipType, season }, session) => {
     const currentSeason = season ?? getCurrentSeason();
+    const gameweek = getCurrentGameweek(currentSeason);
+
+    if (gameweek === 0) {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: "Cannot deactivate chips during pre-season.",
+      });
+    }
 
     if (isGameweekLocked(currentSeason)) {
       throw new ActionError({
@@ -1659,8 +1672,6 @@ const deactivateChip = defineAuthAction({
         message: "Cannot deactivate chips during locked weekends.",
       });
     }
-
-    const gameweek = getCurrentGameweek(currentSeason);
 
     const team = await client
       .selectFrom("fantasy_team")

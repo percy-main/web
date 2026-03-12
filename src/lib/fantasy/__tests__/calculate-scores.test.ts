@@ -657,6 +657,65 @@ describe("calculateFantasyScores", () => {
     expect(teamScores[0]!.total_points).toBe(150);
   });
 
+  it("applies triple captain to bowling-slot captain correctly", async () => {
+    await seedPlayer(db, "p1", "Bowler");
+    await seedBowling(db, {
+      matchId: "m1",
+      playerId: "p1",
+      matchDate: GW1_MATCH_DATE,
+      overs: "10",
+      runs: 30,
+      wickets: 3,
+    });
+    await seedBatting(db, {
+      matchId: "m1",
+      playerId: "p1",
+      matchDate: GW1_MATCH_DATE,
+      runs: 15,
+    });
+    await seedMatchResult(db, "m1", GW1_MATCH_DATE);
+
+    await db
+      .insertInto("fantasy_team")
+      .values({ user_id: "user1", season: "2026" })
+      .execute();
+    await db
+      .insertInto("fantasy_team_player")
+      .values({
+        fantasy_team_id: 1,
+        play_cricket_id: "p1",
+        is_captain: 1,
+        slot_type: "bowling",
+        gameweek_added: 0,
+      })
+      .execute();
+
+    // Activate triple captain chip for GW1
+    await db
+      .insertInto("fantasy_chip_usage")
+      .values({
+        fantasy_team_id: 1,
+        chip_type: "triple_captain",
+        gameweek_id: 1,
+        season: "2026",
+      })
+      .execute();
+
+    await calculateFantasyScores(db, "2026");
+
+    const teamScores = await db
+      .selectFrom("fantasy_team_score")
+      .selectAll()
+      .execute();
+    expect(teamScores).toHaveLength(1);
+
+    // Bowling slot: only bowling + fielding + team points count (not batting)
+    // 3 wickets = 30pts, 3-wicket bonus = 15pts, economy 3.0 RPO bonus = 10pts → bowling = 55
+    // Win bonus = 10pts, fielding = 0
+    // Slot total = 55 + 10 = 65, Captain x3 = 195
+    expect(teamScores[0]!.total_points).toBe(195);
+  });
+
   it("does not apply triple captain to non-activated gameweeks", async () => {
     await seedPlayer(db, "p1", "Captain");
     await seedBatting(db, {
