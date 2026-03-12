@@ -12,21 +12,20 @@ import {
 } from "@/components/ui/Table";
 import { useSession } from "@/lib/auth/client";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { actions } from "astro:actions";
 
 const queryClient = new QueryClient();
 
 function useCountUp(target: number, duration = 1000) {
   const [value, setValue] = useState(0);
-  const prevTarget = useRef(target);
 
   useEffect(() => {
     if (target === 0) {
       setValue(0);
       return;
     }
-    prevTarget.current = target;
+    setValue(0);
     const start = performance.now();
     let raf: number;
 
