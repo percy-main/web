@@ -771,7 +771,7 @@ export function TeamSelector() {
                     {saveMutation.error?.message ?? "Failed to save team."}
                   </p>
                 )}
-                {!hasChanges && !saveMutation.isSuccess && canSave === false && slotsValid && budgetValid && captainValid && wkValid && (
+                {!hasChanges && !saveMutation.isSuccess && slotsValid && budgetValid && captainValid && wkValid && (
                   <p className="text-sm text-gray-500">No changes to save.</p>
                 )}
               </div>
