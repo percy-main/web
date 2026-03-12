@@ -264,11 +264,7 @@ function WicketkeeperRules() {
             </TableHeader>
             <TableBody>
               <TableRow>
-                <TableCell>Your WK is the actual match keeper</TableCell>
-                <TableCell className="text-right font-medium">{formatPoints(SCORING.fielding.perCatchKeeper)}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Your WK is NOT the match keeper</TableCell>
+                <TableCell>Player tagged as WK (always)</TableCell>
                 <TableCell className="text-right font-medium">{formatPoints(SCORING.fielding.perCatchKeeper)}</TableCell>
               </TableRow>
               <TableRow>

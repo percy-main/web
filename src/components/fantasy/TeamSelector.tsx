@@ -369,17 +369,17 @@ export function TeamSelector() {
   const handleRemovePlayer = (playCricketId: string) => {
     setSelectedPlayers((prev) => {
       const updated = prev.filter((p) => p.playCricketId !== playCricketId);
-      const first = updated[0];
-      // If we removed the captain, assign to first non-allrounder
-      if (first && !updated.some((p) => p.isCaptain)) {
-        const newCaptain = updated.find((p) => p.slotType !== "allrounder") ?? first;
-        newCaptain.isCaptain = true;
-      }
-      // If we removed the WK, assign to first player
-      if (first && !updated.some((p) => p.isWicketkeeper)) {
-        first.isWicketkeeper = true;
-      }
-      return [...updated];
+      const needsCaptain = !updated.some((p) => p.isCaptain);
+      const needsWk = !updated.some((p) => p.isWicketkeeper);
+      const newCaptainId = needsCaptain
+        ? (updated.find((p) => p.slotType !== "allrounder") ?? updated[0])?.playCricketId
+        : null;
+      const newWkId = needsWk ? updated[0]?.playCricketId : null;
+      return updated.map((p) => ({
+        ...p,
+        isCaptain: newCaptainId === p.playCricketId ? true : p.isCaptain,
+        isWicketkeeper: newWkId === p.playCricketId ? true : p.isWicketkeeper,
+      }));
     });
   };
 
