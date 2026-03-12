@@ -245,6 +245,32 @@ export function TeamSelector() {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
 
+  const chipStatusQuery = useQuery({
+    queryKey: ["fantasy", "chipStatus"],
+    queryFn: () => actions.fantasy.getChipStatus({}),
+  });
+
+  const chipMutation = useMutation({
+    mutationFn: async ({
+      chipType,
+      active,
+    }: {
+      chipType: string;
+      active: boolean;
+    }) => {
+      const res = active
+        ? await actions.fantasy.activateChip({ chipType: chipType as "triple_captain" })
+        : await actions.fantasy.deactivateChip({ chipType: chipType as "triple_captain" });
+      if (res.error) throw res.error;
+      return res.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["fantasy", "chipStatus"],
+      });
+    },
+  });
+
   useEffect(() => {
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     debounceTimerRef.current = setTimeout(() => {
@@ -666,6 +692,69 @@ export function TeamSelector() {
         </CardContent>
       </Card>
 
+      {/* Chips */}
+      {teamData?.team && !preseason && !locked && (() => {
+        const chipData = chipStatusQuery.data?.data;
+        const tripleCaptain = chipData?.chips?.find(
+          (c) => c.chipType === "triple_captain",
+        );
+        if (!tripleCaptain) return null;
+        const remaining = tripleCaptain.maxPerSeason - tripleCaptain.usedThisSeason;
+        const isActive = tripleCaptain.activeThisGameweek;
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Chips</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Triple Captain</span>
+                    {isActive && (
+                      <Badge className="bg-purple-100 text-purple-800">
+                        Active
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Captain scores 3x instead of 2x.{" "}
+                    {isActive
+                      ? `${remaining} use${remaining !== 1 ? "s" : ""} remaining after this gameweek.`
+                      : `${remaining} use${remaining !== 1 ? "s" : ""} remaining this season.`}
+                  </p>
+                </div>
+                <Button
+                  variant={isActive ? "destructive" : "outline"}
+                  size="sm"
+                  disabled={
+                    chipMutation.isPending ||
+                    (!isActive && remaining <= 0)
+                  }
+                  onClick={() =>
+                    chipMutation.mutate({
+                      chipType: "triple_captain",
+                      active: !isActive,
+                    })
+                  }
+                >
+                  {chipMutation.isPending
+                    ? "..."
+                    : isActive
+                      ? "Deactivate"
+                      : "Activate"}
+                </Button>
+              </div>
+              {chipMutation.isError && (
+                <p className="mt-2 text-sm text-red-600">
+                  {chipMutation.error?.message ?? "Failed to update chip."}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* Player selection */}
       {!locked && selectedPlayers.length < 11 && (
         <Card>
@@ -795,7 +884,7 @@ export function TeamSelector() {
                 : " Unlimited changes allowed."}
             </p>
             <p className="text-xs text-gray-400">
-              Tip: Choose your captain wisely — their points are doubled.
+              Tip: Choose your captain wisely — their points are doubled (or tripled with the Triple Captain chip!).
               All-rounders score all point categories but cannot be captain.{" "}
               <a
                 href="/fantasy/rules"
