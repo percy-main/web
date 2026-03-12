@@ -128,6 +128,7 @@ async function setupSchema(db: Kysely<DB>) {
     .addColumn("team_points", "integer", (col) => col.notNull().defaultTo(0))
     .addColumn("total_points", "integer", (col) => col.notNull().defaultTo(0))
     .addColumn("catches", "integer", (col) => col.notNull().defaultTo(0))
+    .addColumn("stumpings", "integer", (col) => col.notNull().defaultTo(0))
     .addColumn("is_actual_keeper", "integer", (col) => col.notNull().defaultTo(0))
     .addColumn("season", "text", (col) => col.notNull())
     .addColumn("created_at", "text", (col) => col.notNull().defaultTo("now"))
@@ -852,6 +853,7 @@ describe("calculateSlotEffectivePoints", () => {
       fieldingPts: 10,
       teamPts: 10,
       catches: 1,
+      stumpings: 0,
       isActualKeeper: false,
       isCaptain: false,
     });
@@ -868,6 +870,7 @@ describe("calculateSlotEffectivePoints", () => {
       fieldingPts: 10,
       teamPts: 10,
       catches: 1,
+      stumpings: 0,
       isActualKeeper: false,
       isCaptain: false,
     });
@@ -884,6 +887,7 @@ describe("calculateSlotEffectivePoints", () => {
       fieldingPts: 10,
       teamPts: 10,
       catches: 1,
+      stumpings: 0,
       isActualKeeper: false,
       isCaptain: false,
     });
@@ -900,6 +904,7 @@ describe("calculateSlotEffectivePoints", () => {
       fieldingPts: 10,
       teamPts: 10,
       catches: 0,
+      stumpings: 0,
       isActualKeeper: false,
       isCaptain: true,
     });
@@ -907,9 +912,9 @@ describe("calculateSlotEffectivePoints", () => {
     expect(pts).toBe(140);
   });
 
-  it("WK adjustment: fantasy WK but not actual keeper reduces catch pts", () => {
-    // Player is tagged as fantasy WK but wasn't actual keeper
-    // Catches were scored at 10pt (fielder rate), but should be 5pt (keeper rate)
+  it("WK slot with non-keeper: catches adjusted to keeper rate", () => {
+    // Player in WK slot but wasn't actual keeper
+    // Catches were scored at 10pt (fielder rate), adjusted to 5pt (keeper rate)
     // 2 catches at 10pt = 20pts fielding, adjustment = 2 * (5-10) = -10
     const pts = calculateSlotEffectivePoints({
       slotType: "batting",
@@ -919,6 +924,7 @@ describe("calculateSlotEffectivePoints", () => {
       fieldingPts: 20, // 2 catches at 10pt
       teamPts: 10,
       catches: 2,
+      stumpings: 0,
       isActualKeeper: false,
       isCaptain: false,
     });
@@ -926,26 +932,7 @@ describe("calculateSlotEffectivePoints", () => {
     expect(pts).toBe(50);
   });
 
-  it("WK adjustment: not fantasy WK but actual keeper increases catch pts", () => {
-    // Player is actual keeper but not tagged as fantasy WK
-    // Catches were scored at 5pt (keeper rate), but should be 10pt (fielder rate)
-    // 2 catches at 5pt = 10pts fielding, adjustment = 2 * (10-5) = +10
-    const pts = calculateSlotEffectivePoints({
-      slotType: "batting",
-      isFantasyWk: false,
-      battingPts: 30,
-      bowlingPts: 0,
-      fieldingPts: 10, // 2 catches at 5pt
-      teamPts: 10,
-      catches: 2,
-      isActualKeeper: true,
-      isCaptain: false,
-    });
-    // batting(30) + fielding(10 + 10) + team(10) = 60
-    expect(pts).toBe(60);
-  });
-
-  it("no WK adjustment when fantasy WK matches actual keeper", () => {
+  it("WK slot with actual keeper: no adjustment needed", () => {
     const pts = calculateSlotEffectivePoints({
       slotType: "batting",
       isFantasyWk: true,
@@ -954,10 +941,67 @@ describe("calculateSlotEffectivePoints", () => {
       fieldingPts: 10, // 2 catches at 5pt (keeper rate)
       teamPts: 10,
       catches: 2,
+      stumpings: 0,
       isActualKeeper: true,
       isCaptain: false,
     });
     // No adjustment: batting(30) + fielding(10) + team(10) = 50
     expect(pts).toBe(50);
+  });
+
+  it("EXPLOIT PREVENTION: actual keeper NOT in WK slot forfeits catches and stumpings", () => {
+    // The exploit: put the actual keeper in a non-WK slot to get 10pt/catch instead of 5pt
+    // Fix: actual keeper not in WK slot gets 0 for catches and stumpings
+    // 3 catches at 5pt = 15, 1 stumping at 15pt = 15, 1 run out at 15pt = 15
+    // Total fielding = 45, but catches (15) and stumpings (15) are forfeited
+    const pts = calculateSlotEffectivePoints({
+      slotType: "batting",
+      isFantasyWk: false,
+      battingPts: 30,
+      bowlingPts: 0,
+      fieldingPts: 45, // 3 catches(15) + 1 stumping(15) + 1 run out(15)
+      teamPts: 10,
+      catches: 3,
+      stumpings: 1,
+      isActualKeeper: true,
+      isCaptain: false,
+    });
+    // batting(30) + fielding(45 - 15 catches - 15 stumpings = 15 run outs only) + team(10) = 55
+    expect(pts).toBe(55);
+  });
+
+  it("actual keeper in WK slot with stumpings: no forfeiture", () => {
+    // Keeper correctly placed in WK slot — full points for everything
+    const pts = calculateSlotEffectivePoints({
+      slotType: "batting",
+      isFantasyWk: true,
+      battingPts: 30,
+      bowlingPts: 0,
+      fieldingPts: 45, // 3 catches(15) + 1 stumping(15) + 1 run out(15)
+      teamPts: 10,
+      catches: 3,
+      stumpings: 1,
+      isActualKeeper: true,
+      isCaptain: false,
+    });
+    // No adjustment: batting(30) + fielding(45) + team(10) = 85
+    expect(pts).toBe(85);
+  });
+
+  it("non-keeper NOT in WK slot: normal fielder rate, no adjustment", () => {
+    const pts = calculateSlotEffectivePoints({
+      slotType: "batting",
+      isFantasyWk: false,
+      battingPts: 30,
+      bowlingPts: 0,
+      fieldingPts: 20, // 2 catches at 10pt
+      teamPts: 10,
+      catches: 2,
+      stumpings: 0,
+      isActualKeeper: false,
+      isCaptain: false,
+    });
+    // No adjustment: batting(30) + fielding(20) + team(10) = 60
+    expect(pts).toBe(60);
   });
 });

@@ -1681,6 +1681,7 @@ const getGameweekDetail = defineAction({
         "total_points",
         "match_id",
         "catches",
+        "stumpings",
         "is_actual_keeper",
       ])
       .execute();
@@ -1696,6 +1697,7 @@ const getGameweekDetail = defineAction({
         totalPoints: number;
         matchCount: number;
         catches: number;
+        stumpings: number;
         isActualKeeper: boolean;
       }
     >();
@@ -1709,6 +1711,7 @@ const getGameweekDetail = defineAction({
         totalPoints: 0,
         matchCount: 0,
         catches: 0,
+        stumpings: 0,
         isActualKeeper: false,
       };
       existing.battingPoints += score.batting_points;
@@ -1718,6 +1721,7 @@ const getGameweekDetail = defineAction({
       existing.totalPoints += score.total_points;
       existing.matchCount += 1;
       existing.catches += score.catches;
+      existing.stumpings += score.stumpings;
       if (score.is_actual_keeper === 1) existing.isActualKeeper = true;
       scoresByPlayer.set(score.play_cricket_id, existing);
     }
@@ -1761,6 +1765,7 @@ const getGameweekDetail = defineAction({
               fieldingPts: scores.fieldingPoints,
               teamPts: scores.teamPoints,
               catches: scores.catches,
+              stumpings: scores.stumpings,
               isActualKeeper: scores.isActualKeeper,
               isCaptain,
               captainMultiplier,

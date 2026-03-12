@@ -132,6 +132,7 @@ export interface FantasyPlayerScore {
   match_id: string;
   play_cricket_id: string;
   season: string;
+  stumpings: Generated<number>;
   team_points: Generated<number>;
   total_points: Generated<number>;
 }
