@@ -198,6 +198,21 @@ export async function generateTeamImage(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not get canvas context");
 
+  // --- Load images in parallel (before drawing so hero can be used as bg) ---
+  const logoPromise = loadImage("/images/club_logo.png").catch(() => null);
+  const anonPromise = loadImage("/images/anon.jpg").catch(() => null);
+  const heroPromise = loadImage("/images/pitch.png").catch(() => null);
+  const photoPromises = data.players.map((p) =>
+    p.photoUrl ? loadImage(p.photoUrl).catch(() => null) : Promise.resolve(null),
+  );
+
+  const [logo, anonImg, heroImg, ...playerPhotos] = await Promise.all([
+    logoPromise,
+    anonPromise,
+    heroPromise,
+    ...photoPromises,
+  ]);
+
   // --- Background gradient ---
   const gradient = ctx.createLinearGradient(0, 0, 0, SIZE);
   gradient.addColorStop(0, CLUB_GREEN);
@@ -205,24 +220,29 @@ export async function generateTeamImage(
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // Subtle pattern overlay
-  ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
-  for (let i = 0; i < SIZE; i += 40) {
-    ctx.fillRect(0, i, SIZE, 1);
+  // Hero image as faint background overlay
+  if (heroImg) {
+    ctx.globalAlpha = 0.12;
+    // Cover-fit the hero image into the square canvas
+    const imgAspect = heroImg.width / heroImg.height;
+    let drawW = SIZE;
+    let drawH = SIZE;
+    if (imgAspect > 1) {
+      drawH = SIZE;
+      drawW = SIZE * imgAspect;
+    } else {
+      drawW = SIZE;
+      drawH = SIZE / imgAspect;
+    }
+    const drawX = (SIZE - drawW) / 2;
+    const drawY = (SIZE - drawH) / 2;
+    ctx.drawImage(heroImg, drawX, drawY, drawW, drawH);
+    ctx.globalAlpha = 1;
+
+    // Dark overlay to keep text readable
+    ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+    ctx.fillRect(0, 0, SIZE, SIZE);
   }
-
-  // --- Load images in parallel ---
-  const logoPromise = loadImage("/images/club_logo.png").catch(() => null);
-  const anonPromise = loadImage("/images/anon.jpg").catch(() => null);
-  const photoPromises = data.players.map((p) =>
-    p.photoUrl ? loadImage(p.photoUrl).catch(() => null) : Promise.resolve(null),
-  );
-
-  const [logo, anonImg, ...playerPhotos] = await Promise.all([
-    logoPromise,
-    anonPromise,
-    ...photoPromises,
-  ]);
 
   // --- Header ---
   const headerY = 24;
