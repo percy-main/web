@@ -272,7 +272,7 @@ function WicketkeeperRules() {
               <TableRow>
                 <TableCell>Non-keeper in non-WK slot</TableCell>
                 <TableCell className="text-right font-medium">{formatPoints(SCORING.fielding.perCatch)}/catch</TableCell>
-                <TableCell className="text-right font-medium">{formatPoints(SCORING.fielding.perStumping)}/stumping</TableCell>
+                <TableCell className="text-right text-gray-400">N/A</TableCell>
               </TableRow>
               <TableRow>
                 <TableCell className="text-red-600">Actual keeper NOT in WK slot</TableCell>
