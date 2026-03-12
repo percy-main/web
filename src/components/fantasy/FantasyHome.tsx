@@ -1,4 +1,5 @@
 import { GameweekHighlights } from "@/components/fantasy/GameweekHighlights";
+import { SandwichEfficiency } from "@/components/fantasy/SandwichEfficiency";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import {
@@ -312,6 +313,16 @@ function FantasyHomeContent() {
 
       {/* Ownership widgets */}
       <OwnershipWidgets />
+
+      {/* Sandwich efficiency */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Sandwich Efficiency</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SandwichEfficiency />
+        </CardContent>
+      </Card>
 
       {/* Top 5 leaderboard */}
       <Card>

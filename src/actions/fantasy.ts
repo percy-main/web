@@ -2050,6 +2050,107 @@ const getGameweekHighlights = defineAction({
 });
 
 /**
+ * Sandwich Efficiency — Points Per Sandwich (PPS) leaderboard.
+ *
+ * Public action: calculates total_points / sandwich_cost for each player
+ * who has scored in the given season. In pre-season, defaults to the
+ * previous season so there's always something to show.
+ *
+ * Uses fantasy_player_score when available (current season), falling back
+ * to calculateSeasonPoints() from raw match data for previous seasons
+ * where no fantasy scoring rows exist.
+ */
+const getSandwichEfficiency = defineAction({
+  input: z.object({
+    season: z.string().optional(),
+  }),
+  handler: async ({ season }) => {
+    const currentSeason = season ?? getCurrentSeason();
+    const preseason = isPreSeason(currentSeason);
+
+    // In pre-season, show previous season stats
+    const effectiveSeason = preseason
+      ? (Number(currentSeason) - 1).toString()
+      : currentSeason;
+
+    // Get player names and sandwich costs
+    const players = await client
+      .selectFrom("fantasy_player")
+      .select(["play_cricket_id", "player_name", "sandwich_cost"])
+      .execute();
+
+    const playerMap = new Map(
+      players.map((p) => [p.play_cricket_id, p]),
+    );
+
+    // Try fantasy_player_score first (works for current season).
+    // Fall back to calculateSeasonPoints from raw match data (needed
+    // for previous seasons where no fantasy scoring rows exist).
+    const scoreRows = await client
+      .selectFrom("fantasy_player_score")
+      .where("season", "=", effectiveSeason)
+      .groupBy("play_cricket_id")
+      .select([
+        "play_cricket_id",
+        sql<number>`SUM(total_points)`.as("total_points"),
+        sql<number>`COUNT(DISTINCT match_id)`.as("matches_played"),
+      ])
+      .having(sql`SUM(total_points)`, ">", 0)
+      .execute();
+
+    let playerPoints: Array<{
+      playCricketId: string | null;
+      totalPoints: number;
+      matchesPlayed: number;
+    }>;
+
+    if (scoreRows.length > 0) {
+      playerPoints = scoreRows.map((r) => ({
+        playCricketId: r.play_cricket_id,
+        totalPoints: r.total_points,
+        matchesPlayed: r.matches_played,
+      }));
+    } else {
+      // Fall back to raw match performance data
+      const seasonNum = Number(effectiveSeason);
+      const pointsMap = await calculateSeasonPoints([seasonNum]);
+      playerPoints = [];
+      for (const [playerId, seasonMap] of pointsMap) {
+        const sp = seasonMap.get(seasonNum);
+        if (sp && sp.totalPoints > 0) {
+          playerPoints.push({
+            playCricketId: playerId,
+            totalPoints: sp.totalPoints,
+            matchesPlayed: sp.matchesPlayed,
+          });
+        }
+      }
+    }
+
+    const entries = playerPoints
+      .map((r) => {
+        const player = playerMap.get(r.playCricketId);
+        const cost = player && player.sandwich_cost > 0 ? player.sandwich_cost : 1;
+        return {
+          playCricketId: r.playCricketId,
+          playerName: player?.player_name ?? "Unknown",
+          sandwichCost: cost,
+          totalPoints: r.totalPoints,
+          matchesPlayed: r.matchesPlayed,
+          pointsPerSandwich: Math.round((r.totalPoints / cost) * 10) / 10,
+        };
+      })
+      .sort((a, b) => b.pointsPerSandwich - a.pointsPerSandwich);
+
+    return {
+      season: effectiveSeason,
+      isFromPreviousSeason: preseason,
+      entries: assignRanks(entries, (e) => e.pointsPerSandwich),
+    };
+  },
+});
+
+/**
  * Public transfer window info for the fantasy home page.
  */
 const getTransferWindowPublic = defineAction({
@@ -2393,4 +2494,5 @@ export const fantasy = {
   getChipStatus,
   getGameweekHighlights,
   getOwnershipOverview,
+  getSandwichEfficiency,
 };
