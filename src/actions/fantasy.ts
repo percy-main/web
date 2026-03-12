@@ -84,7 +84,7 @@ async function getOwnershipData(
     .select([
       "ftp.play_cricket_id",
       sql<number>`COUNT(DISTINCT ftp.fantasy_team_id)`.as("owner_count"),
-      sql<number>`SUM(CASE WHEN ftp.is_captain = 1 THEN 1 ELSE 0 END)`.as(
+      sql<number>`COUNT(DISTINCT CASE WHEN ftp.is_captain = 1 THEN ftp.fantasy_team_id END)`.as(
         "captain_count",
       ),
     ])
@@ -1813,17 +1813,27 @@ const getGameweekHighlights = defineAction({
     // --- Most captained player ---
     let mostCaptained: { playerName: string; playCricketId: string; captainPct: number } | null = null;
     if (teamCount > 0) {
-      let bestCaptain: { playerName: string; playCricketId: string; captainCount: number; captainPct: number } | null = null;
+      // Find the player with the highest captain count across all owned players
+      let bestCaptainId: string | null = null;
+      let bestCaptainCount = 0;
+      let bestCaptainPct = 0;
       for (const [id, entry] of ownershipMap) {
-        if (!bestCaptain || entry.captainCount > bestCaptain.captainCount) {
-          const player = allPlayerScores.find((p) => p.play_cricket_id === id);
-          if (player) {
-            bestCaptain = { playerName: player.player_name, playCricketId: id, captainCount: entry.captainCount, captainPct: entry.captainPct };
-          }
+        if (entry.captainCount > bestCaptainCount) {
+          bestCaptainId = id;
+          bestCaptainCount = entry.captainCount;
+          bestCaptainPct = entry.captainPct;
         }
       }
-      if (bestCaptain && bestCaptain.captainCount > 0) {
-        mostCaptained = { playerName: bestCaptain.playerName, playCricketId: bestCaptain.playCricketId, captainPct: bestCaptain.captainPct };
+      // Resolve player name independently from scores (captain may have 0 points)
+      if (bestCaptainId && bestCaptainCount > 0) {
+        const captainPlayer = await client
+          .selectFrom("fantasy_player")
+          .where("play_cricket_id", "=", bestCaptainId)
+          .select("player_name")
+          .executeTakeFirst();
+        if (captainPlayer) {
+          mostCaptained = { playerName: captainPlayer.player_name, playCricketId: bestCaptainId, captainPct: bestCaptainPct };
+        }
       }
     }
 

@@ -130,6 +130,7 @@ function OwnershipWidgets() {
 
   const hasMostOwned = data.mostOwned.length > 0;
   const hasMostCaptained = data.mostCaptained.length > 0;
+  const hasDifferentials = data.differentials.length > 0;
 
   if (!hasMostOwned && !hasMostCaptained) return null;
 
@@ -178,6 +179,32 @@ function OwnershipWidgets() {
                   <TableRow key={player.playCricketId}>
                     <TableCell className="font-medium">{player.playerName}</TableCell>
                     <TableCell className="text-right">{player.captainPct}%</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+      {hasDifferentials && (
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>Differential Picks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-3 text-sm text-gray-500">Low-ownership players that could give you an edge</p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Player</TableHead>
+                  <TableHead className="w-20 text-right">Owned</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.differentials.map((player) => (
+                  <TableRow key={player.playCricketId}>
+                    <TableCell className="font-medium">{player.playerName}</TableCell>
+                    <TableCell className="text-right">{player.ownershipPct}%</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
