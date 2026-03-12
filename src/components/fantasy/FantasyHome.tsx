@@ -80,27 +80,22 @@ function Countdown({
 }) {
   if (isPreSeason) {
     return (
-      <div className="md:col-span-2 flex flex-col gap-4">
-        <div className="grid grid-cols-3 gap-4">
-          <StatCard
-            value={daysUntilLock}
-            label={daysUntilLock === 1 ? "day to go" : "days to go"}
-            colorClass="text-blue-600"
-          />
-          <StatCard
-            value={preSeasonStats?.teamCount ?? 0}
-            label="teams registered"
-            colorClass="text-gray-700"
-          />
-          <StatCard
-            value={preSeasonStats?.totalSandwiches ?? 0}
-            label="sandwiches consumed"
-            colorClass="text-amber-600"
-          />
-        </div>
-        <p className="text-center text-sm text-gray-600">
-          Build your squad now — unlimited changes until Gameweek 1.
-        </p>
+      <div className="md:col-span-2 grid grid-cols-3 gap-4">
+        <StatCard
+          value={daysUntilLock}
+          label={daysUntilLock === 1 ? "day to go" : "days to go"}
+          colorClass="text-blue-600"
+        />
+        <StatCard
+          value={preSeasonStats?.teamCount ?? 0}
+          label="teams registered"
+          colorClass="text-gray-700"
+        />
+        <StatCard
+          value={preSeasonStats?.totalSandwiches ?? 0}
+          label="sandwiches consumed"
+          colorClass="text-amber-600"
+        />
       </div>
     );
   }
@@ -383,7 +378,7 @@ function FantasyHomeContent() {
         )}
 
         {/* Quick facts */}
-        <Card>
+        <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>How It Works</CardTitle>
           </CardHeader>
