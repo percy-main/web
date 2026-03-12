@@ -98,6 +98,7 @@ export function GameweekHistory({ teamId, availableGameweeks, initialGameweek, o
                 <TableHeader>
                   <TableRow>
                     <TableHead>Player</TableHead>
+                    <TableHead className="w-16 text-center">Slot</TableHead>
                     <TableHead className="w-16 text-right">Bat</TableHead>
                     <TableHead className="w-16 text-right">Bowl</TableHead>
                     <TableHead className="w-16 text-right">Field</TableHead>
@@ -126,12 +127,24 @@ export function GameweekHistory({ teamId, availableGameweeks, initialGameweek, o
                             {player.isCaptain && (
                               <Badge className="bg-amber-100 text-amber-800">C</Badge>
                             )}
+                            {player.isWicketkeeper && (
+                              <Badge className="bg-blue-100 text-blue-800">WK</Badge>
+                            )}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-center">
+                          <span className="text-xs text-gray-500">
+                            {player.slotType === "batting"
+                              ? "🏏"
+                              : player.slotType === "bowling"
+                                ? "🎳"
+                                : "🏏🎳"}
+                          </span>
+                        </TableCell>
+                        <TableCell className={`text-right ${player.slotType === "bowling" ? "text-gray-300" : ""}`}>
                           {player.matchCount > 0 ? player.battingPoints : "-"}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className={`text-right ${player.slotType === "batting" ? "text-gray-300" : ""}`}>
                           {player.matchCount > 0 ? player.bowlingPoints : "-"}
                         </TableCell>
                         <TableCell className="text-right">

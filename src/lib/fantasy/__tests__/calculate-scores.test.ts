@@ -2,7 +2,8 @@ import { Kysely, SqliteDialect } from "kysely";
 import SQLite from "better-sqlite3";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { DB } from "../../db/__generated__/db";
-import { calculateFantasyScores } from "../calculate-scores";
+import { calculateFantasyScores, calculateSlotEffectivePoints } from "../calculate-scores";
+import type { SlotType } from "../scoring";
 
 function createTestDb(): Kysely<DB> {
   const sqlite = new SQLite(":memory:");
@@ -19,6 +20,7 @@ async function setupSchema(db: Kysely<DB>) {
     .addColumn("play_cricket_id", "text", (col) => col.primaryKey())
     .addColumn("player_name", "text", (col) => col.notNull())
     .addColumn("eligible", "integer", (col) => col.notNull().defaultTo(0))
+    .addColumn("sandwich_cost", "integer", (col) => col.notNull().defaultTo(1))
     .addColumn("created_at", "text", (col) => col.notNull().defaultTo("now"))
     .execute();
 
@@ -38,6 +40,8 @@ async function setupSchema(db: Kysely<DB>) {
     .addColumn("is_captain", "integer", (col) => col.notNull().defaultTo(0))
     .addColumn("gameweek_added", "integer", (col) => col.notNull())
     .addColumn("gameweek_removed", "integer")
+    .addColumn("slot_type", "text", (col) => col.notNull().defaultTo("batting"))
+    .addColumn("is_wicketkeeper", "integer", (col) => col.notNull().defaultTo(0))
     .execute();
 
   await db.schema
@@ -123,6 +127,8 @@ async function setupSchema(db: Kysely<DB>) {
     .addColumn("fielding_points", "integer", (col) => col.notNull().defaultTo(0))
     .addColumn("team_points", "integer", (col) => col.notNull().defaultTo(0))
     .addColumn("total_points", "integer", (col) => col.notNull().defaultTo(0))
+    .addColumn("catches", "integer", (col) => col.notNull().defaultTo(0))
+    .addColumn("is_actual_keeper", "integer", (col) => col.notNull().defaultTo(0))
     .addColumn("season", "text", (col) => col.notNull())
     .addColumn("created_at", "text", (col) => col.notNull().defaultTo("now"))
     .execute();
@@ -200,6 +206,68 @@ async function seedBatting(
     .execute();
 }
 
+async function seedBowling(
+  db: Kysely<DB>,
+  opts: {
+    matchId: string;
+    playerId: string;
+    matchDate: string;
+    overs: string;
+    maidens?: number;
+    runs: number;
+    wickets: number;
+  },
+) {
+  await db
+    .insertInto("match_performance_bowling")
+    .values({
+      id: `bowl-${opts.matchId}-${opts.playerId}`,
+      match_id: opts.matchId,
+      player_id: opts.playerId,
+      player_name: "Player",
+      team_id: TEAM_1ST_XI,
+      competition_type: "League",
+      match_date: opts.matchDate,
+      season: 2026,
+      overs: opts.overs,
+      maidens: opts.maidens ?? 0,
+      runs: opts.runs,
+      wickets: opts.wickets,
+    })
+    .execute();
+}
+
+async function seedFielding(
+  db: Kysely<DB>,
+  opts: {
+    matchId: string;
+    playerId: string;
+    matchDate: string;
+    catches?: number;
+    runOuts?: number;
+    stumpings?: number;
+    isWicketkeeper?: number;
+  },
+) {
+  await db
+    .insertInto("match_performance_fielding")
+    .values({
+      id: `field-${opts.matchId}-${opts.playerId}`,
+      match_id: opts.matchId,
+      player_id: opts.playerId,
+      player_name: "Player",
+      team_id: TEAM_1ST_XI,
+      competition_type: "League",
+      match_date: opts.matchDate,
+      season: 2026,
+      catches: opts.catches ?? 0,
+      run_outs: opts.runOuts ?? 0,
+      stumpings: opts.stumpings ?? 0,
+      is_wicketkeeper: opts.isWicketkeeper ?? 0,
+    })
+    .execute();
+}
+
 async function seedMatchResult(
   db: Kysely<DB>,
   matchId: string,
@@ -261,6 +329,95 @@ describe("calculateFantasyScores", () => {
     expect(scores[0]!.total_points).toBe(55 + 8 + 2 + 20 + 10);
   });
 
+  it("stores catches and is_actual_keeper in player scores", async () => {
+    await seedPlayer(db, "p1", "Keeper");
+    await seedFielding(db, {
+      matchId: "m1",
+      playerId: "p1",
+      matchDate: GW1_MATCH_DATE,
+      catches: 3,
+      isWicketkeeper: 1,
+    });
+    await seedMatchResult(db, "m1", GW1_MATCH_DATE);
+
+    await calculateFantasyScores(db, "2026");
+
+    const scores = await db
+      .selectFrom("fantasy_player_score")
+      .selectAll()
+      .execute();
+    expect(scores).toHaveLength(1);
+    expect(scores[0]!.catches).toBe(3);
+    expect(scores[0]!.is_actual_keeper).toBe(1);
+  });
+
+  it("applies slot-based scoring — batting slot excludes bowling", async () => {
+    await seedPlayer(db, "p1", "Batter");
+    await seedBatting(db, { matchId: "m1", playerId: "p1", matchDate: GW1_MATCH_DATE, runs: 30 });
+    await seedBowling(db, { matchId: "m1", playerId: "p1", matchDate: GW1_MATCH_DATE, overs: "5", runs: 20, wickets: 2 });
+    await seedMatchResult(db, "m1", GW1_MATCH_DATE);
+
+    await db.insertInto("fantasy_team").values({ user_id: "u1", season: "2026" }).execute();
+    await db.insertInto("fantasy_team_player").values({
+      fantasy_team_id: 1,
+      play_cricket_id: "p1",
+      is_captain: 0,
+      gameweek_added: 0,
+      slot_type: "batting",
+    }).execute();
+
+    await calculateFantasyScores(db, "2026");
+
+    const teamScores = await db.selectFrom("fantasy_team_score").selectAll().execute();
+    // Batting slot: batting (30) + team (10) = 40 (bowling excluded)
+    // Bowling was 2 wickets = 20pts, but excluded from batting slot
+    expect(teamScores[0]!.total_points).toBe(40);
+  });
+
+  it("applies slot-based scoring — bowling slot excludes batting", async () => {
+    await seedPlayer(db, "p1", "Bowler");
+    await seedBatting(db, { matchId: "m1", playerId: "p1", matchDate: GW1_MATCH_DATE, runs: 30 });
+    await seedBowling(db, { matchId: "m1", playerId: "p1", matchDate: GW1_MATCH_DATE, overs: "5", runs: 20, wickets: 2 });
+    await seedMatchResult(db, "m1", GW1_MATCH_DATE);
+
+    await db.insertInto("fantasy_team").values({ user_id: "u1", season: "2026" }).execute();
+    await db.insertInto("fantasy_team_player").values({
+      fantasy_team_id: 1,
+      play_cricket_id: "p1",
+      is_captain: 0,
+      gameweek_added: 0,
+      slot_type: "bowling",
+    }).execute();
+
+    await calculateFantasyScores(db, "2026");
+
+    const teamScores = await db.selectFrom("fantasy_team_score").selectAll().execute();
+    // Bowling slot: bowling (20) + team (10) = 30 (batting excluded)
+    expect(teamScores[0]!.total_points).toBe(30);
+  });
+
+  it("allrounder slot includes all categories", async () => {
+    await seedPlayer(db, "p1", "Allrounder");
+    await seedBatting(db, { matchId: "m1", playerId: "p1", matchDate: GW1_MATCH_DATE, runs: 30 });
+    await seedBowling(db, { matchId: "m1", playerId: "p1", matchDate: GW1_MATCH_DATE, overs: "5", runs: 20, wickets: 2 });
+    await seedMatchResult(db, "m1", GW1_MATCH_DATE);
+
+    await db.insertInto("fantasy_team").values({ user_id: "u1", season: "2026" }).execute();
+    await db.insertInto("fantasy_team_player").values({
+      fantasy_team_id: 1,
+      play_cricket_id: "p1",
+      is_captain: 0,
+      gameweek_added: 0,
+      slot_type: "allrounder",
+    }).execute();
+
+    await calculateFantasyScores(db, "2026");
+
+    const teamScores = await db.selectFrom("fantasy_team_score").selectAll().execute();
+    // Allrounder: batting (30) + bowling (20) + team (10) = 60
+    expect(teamScores[0]!.total_points).toBe(60);
+  });
+
   it("applies captain 2x multiplier for team scores", async () => {
     await seedPlayer(db, "p1", "Captain");
     await seedPlayer(db, "p2", "Regular");
@@ -278,7 +435,7 @@ describe("calculateFantasyScores", () => {
     });
     await seedMatchResult(db, "m1", GW1_MATCH_DATE);
 
-    // Create a fantasy team with p1 as captain
+    // Create a fantasy team with p1 as captain (batting slot)
     await db
       .insertInto("fantasy_team")
       .values({ user_id: "user1", season: "2026" })
@@ -291,12 +448,14 @@ describe("calculateFantasyScores", () => {
           play_cricket_id: "p1",
           is_captain: 1,
           gameweek_added: 0,
+          slot_type: "batting",
         },
         {
           fantasy_team_id: 1,
           play_cricket_id: "p2",
           is_captain: 0,
           gameweek_added: 0,
+          slot_type: "batting",
         },
       ])
       .execute();
@@ -309,8 +468,8 @@ describe("calculateFantasyScores", () => {
       .execute();
     expect(teamScores).toHaveLength(1);
 
-    // p1 (captain): 30 runs + 10 win = 40 points, x2 = 80
-    // p2 (regular): 20 runs + 10 win = 30 points, x1 = 30
+    // p1 (captain, batting slot): (30 runs + 10 win) * 2 = 80
+    // p2 (regular, batting slot): 20 runs + 10 win = 30
     // Total = 110
     expect(teamScores[0]!.total_points).toBe(110);
   });
@@ -318,7 +477,6 @@ describe("calculateFantasyScores", () => {
   it("players not playing score 0 (no penalty)", async () => {
     await seedPlayer(db, "p1", "Active");
     await seedPlayer(db, "p2", "Inactive");
-    // Only p1 has match data
     await seedBatting(db, {
       matchId: "m1",
       playerId: "p1",
@@ -327,7 +485,6 @@ describe("calculateFantasyScores", () => {
     });
     await seedMatchResult(db, "m1", GW1_MATCH_DATE);
 
-    // Team with both players
     await db
       .insertInto("fantasy_team")
       .values({ user_id: "user1", season: "2026" })
@@ -340,12 +497,14 @@ describe("calculateFantasyScores", () => {
           play_cricket_id: "p1",
           is_captain: 1,
           gameweek_added: 0,
+          slot_type: "batting",
         },
         {
           fantasy_team_id: 1,
           play_cricket_id: "p2",
           is_captain: 0,
           gameweek_added: 0,
+          slot_type: "batting",
         },
       ])
       .execute();
@@ -358,9 +517,8 @@ describe("calculateFantasyScores", () => {
       .execute();
     expect(teamScores).toHaveLength(1);
 
-    // p1 (captain): 10 runs + 10 win = 20, x2 = 40
+    // p1 (captain): (10 runs + 10 win) * 2 = 40
     // p2 doesn't play = 0
-    // Total = 40
     expect(teamScores[0]!.total_points).toBe(40);
   });
 
@@ -398,7 +556,6 @@ describe("calculateFantasyScores", () => {
       matchDate: GW1_MATCH_DATE,
       runs: 50,
     });
-    // No match result for m1
 
     const result = await calculateFantasyScores(db, "2026");
     expect(result.playerScoresUpserted).toBe(0);
@@ -406,7 +563,6 @@ describe("calculateFantasyScores", () => {
 
   it("skips matches before season start (pre-season)", async () => {
     await seedPlayer(db, "p1", "Alice");
-    // March is before GW1 (April 18)
     await seedBatting(db, {
       matchId: "m1",
       playerId: "p1",
@@ -448,13 +604,15 @@ describe("calculateFantasyScores", () => {
           play_cricket_id: "p1",
           is_captain: 0,
           gameweek_added: 0,
-          gameweek_removed: 2, // Removed before GW2
+          gameweek_removed: 2,
+          slot_type: "batting",
         },
         {
           fantasy_team_id: 1,
           play_cricket_id: "p2",
           is_captain: 1,
           gameweek_added: 0,
+          slot_type: "batting",
         },
       ])
       .execute();
@@ -467,7 +625,127 @@ describe("calculateFantasyScores", () => {
       .execute();
     expect(teamScores).toHaveLength(1);
     // p1 was removed before GW2, so only p2 counts
-    // p2 (captain): 10 runs + 10 win = 20, x2 = 40
+    // p2 (captain): (10 runs + 10 win) * 2 = 40
     expect(teamScores[0]!.total_points).toBe(40);
+  });
+});
+
+describe("calculateSlotEffectivePoints", () => {
+  it("batting slot excludes bowling points", () => {
+    const pts = calculateSlotEffectivePoints({
+      slotType: "batting",
+      isFantasyWk: false,
+      battingPts: 50,
+      bowlingPts: 30,
+      fieldingPts: 10,
+      teamPts: 10,
+      catches: 1,
+      isActualKeeper: false,
+      isCaptain: false,
+    });
+    // batting(50) + fielding(10) + team(10) = 70
+    expect(pts).toBe(70);
+  });
+
+  it("bowling slot excludes batting points", () => {
+    const pts = calculateSlotEffectivePoints({
+      slotType: "bowling",
+      isFantasyWk: false,
+      battingPts: 50,
+      bowlingPts: 30,
+      fieldingPts: 10,
+      teamPts: 10,
+      catches: 1,
+      isActualKeeper: false,
+      isCaptain: false,
+    });
+    // bowling(30) + fielding(10) + team(10) = 50
+    expect(pts).toBe(50);
+  });
+
+  it("allrounder slot includes all", () => {
+    const pts = calculateSlotEffectivePoints({
+      slotType: "allrounder",
+      isFantasyWk: false,
+      battingPts: 50,
+      bowlingPts: 30,
+      fieldingPts: 10,
+      teamPts: 10,
+      catches: 1,
+      isActualKeeper: false,
+      isCaptain: false,
+    });
+    // all = 100
+    expect(pts).toBe(100);
+  });
+
+  it("captain doubles effective points", () => {
+    const pts = calculateSlotEffectivePoints({
+      slotType: "batting",
+      isFantasyWk: false,
+      battingPts: 50,
+      bowlingPts: 0,
+      fieldingPts: 10,
+      teamPts: 10,
+      catches: 0,
+      isActualKeeper: false,
+      isCaptain: true,
+    });
+    // (50 + 10 + 10) * 2 = 140
+    expect(pts).toBe(140);
+  });
+
+  it("WK adjustment: fantasy WK but not actual keeper reduces catch pts", () => {
+    // Player is tagged as fantasy WK but wasn't actual keeper
+    // Catches were scored at 10pt (fielder rate), but should be 5pt (keeper rate)
+    // 2 catches at 10pt = 20pts fielding, adjustment = 2 * (5-10) = -10
+    const pts = calculateSlotEffectivePoints({
+      slotType: "batting",
+      isFantasyWk: true,
+      battingPts: 30,
+      bowlingPts: 0,
+      fieldingPts: 20, // 2 catches at 10pt
+      teamPts: 10,
+      catches: 2,
+      isActualKeeper: false,
+      isCaptain: false,
+    });
+    // batting(30) + fielding(20 - 10) + team(10) = 50
+    expect(pts).toBe(50);
+  });
+
+  it("WK adjustment: not fantasy WK but actual keeper increases catch pts", () => {
+    // Player is actual keeper but not tagged as fantasy WK
+    // Catches were scored at 5pt (keeper rate), but should be 10pt (fielder rate)
+    // 2 catches at 5pt = 10pts fielding, adjustment = 2 * (10-5) = +10
+    const pts = calculateSlotEffectivePoints({
+      slotType: "batting",
+      isFantasyWk: false,
+      battingPts: 30,
+      bowlingPts: 0,
+      fieldingPts: 10, // 2 catches at 5pt
+      teamPts: 10,
+      catches: 2,
+      isActualKeeper: true,
+      isCaptain: false,
+    });
+    // batting(30) + fielding(10 + 10) + team(10) = 60
+    expect(pts).toBe(60);
+  });
+
+  it("no WK adjustment when fantasy WK matches actual keeper", () => {
+    const pts = calculateSlotEffectivePoints({
+      slotType: "batting",
+      isFantasyWk: true,
+      battingPts: 30,
+      bowlingPts: 0,
+      fieldingPts: 10, // 2 catches at 5pt (keeper rate)
+      teamPts: 10,
+      catches: 2,
+      isActualKeeper: true,
+      isCaptain: false,
+    });
+    // No adjustment: batting(30) + fielding(10) + team(10) = 50
+    expect(pts).toBe(50);
   });
 });

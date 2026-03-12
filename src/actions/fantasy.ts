@@ -9,13 +9,17 @@ import {
   isPreSeason,
   MAX_TRANSFERS_PER_GAMEWEEK,
 } from "@/lib/fantasy/gameweek";
+import { calculateSlotEffectivePoints } from "@/lib/fantasy/calculate-scores";
 import {
   calculateBattingPoints,
   calculateBowlingPoints,
   calculateFieldingPoints,
   ELIGIBLE_TEAM_IDS,
   LEAGUE_COMPETITION_TYPES,
+  SANDWICH_BUDGET,
   SCORING,
+  SLOT_COUNTS,
+  type SlotType,
 } from "@/lib/fantasy/scoring";
 import { ActionError, defineAction } from "astro:actions";
 import { z } from "astro/zod";
@@ -145,6 +149,206 @@ const populatePlayers = defineAuthAction({
   },
 });
 
+const calculateSandwichCosts = defineAuthAction({
+  roles: ["admin"],
+  input: z.object({
+    season: z.string().optional(),
+  }),
+  handler: async ({ season }) => {
+    const previousSeason = (Number(season ?? getCurrentSeason()) - 1).toString();
+    const seasonNum = Number(previousSeason);
+
+    const eligibleTeamIds = Array.from(ELIGIBLE_TEAM_IDS);
+    const leagueTypes = Array.from(LEAGUE_COMPETITION_TYPES);
+
+    // Get all eligible players
+    const allEligible = await client
+      .selectFrom("fantasy_player")
+      .where("eligible", "=", 1)
+      .select(["play_cricket_id", "player_name"])
+      .execute();
+
+    // Fetch raw match performance data from previous season
+    const [battingPerfs, bowlingPerfs, fieldingPerfs, matchResults] = await Promise.all([
+      client
+        .selectFrom("match_performance_batting")
+        .where("season", "=", seasonNum)
+        .where("team_id", "in", eligibleTeamIds)
+        .where("competition_type", "in", leagueTypes)
+        .select(["player_id", "match_id", "team_id", "runs", "balls", "fours", "sixes", "not_out"])
+        .execute(),
+      client
+        .selectFrom("match_performance_bowling")
+        .where("season", "=", seasonNum)
+        .where("team_id", "in", eligibleTeamIds)
+        .where("competition_type", "in", leagueTypes)
+        .select(["player_id", "match_id", "team_id", "overs", "maidens", "runs", "wickets"])
+        .execute(),
+      client
+        .selectFrom("match_performance_fielding")
+        .where("season", "=", seasonNum)
+        .where("team_id", "in", eligibleTeamIds)
+        .where("competition_type", "in", leagueTypes)
+        .select(["player_id", "match_id", "team_id", "catches", "run_outs", "stumpings", "is_wicketkeeper"])
+        .execute(),
+      client
+        .selectFrom("match_result")
+        .where("season", "=", seasonNum)
+        .where("competition_type", "in", leagueTypes)
+        .select(["match_id", "result_applied_to"])
+        .execute(),
+    ]);
+
+    // Build match result lookup
+    const winnerByMatch = new Map<string, string>();
+    for (const r of matchResults) {
+      if (r.result_applied_to) winnerByMatch.set(r.match_id, r.result_applied_to);
+    }
+
+    // Index performances by "playerId:matchId"
+    const mkKey = (playerId: string, matchId: string) => `${playerId}:${matchId}`;
+    const battingByMatch = new Map<string, (typeof battingPerfs)[0]>();
+    for (const b of battingPerfs) battingByMatch.set(mkKey(b.player_id, b.match_id), b);
+    const bowlingByMatch = new Map<string, (typeof bowlingPerfs)[0]>();
+    for (const b of bowlingPerfs) bowlingByMatch.set(mkKey(b.player_id, b.match_id), b);
+    const fieldingByMatch = new Map<string, (typeof fieldingPerfs)[0]>();
+    for (const f of fieldingPerfs) fieldingByMatch.set(mkKey(f.player_id, f.match_id), f);
+
+    // Collect all unique match appearances per player
+    type Appearance = { playerId: string; matchId: string; teamId: string };
+    const appearances = new Map<string, Appearance>();
+    for (const b of battingPerfs) {
+      const k = mkKey(b.player_id, b.match_id);
+      if (!appearances.has(k)) appearances.set(k, { playerId: b.player_id, matchId: b.match_id, teamId: b.team_id });
+    }
+    for (const b of bowlingPerfs) {
+      const k = mkKey(b.player_id, b.match_id);
+      if (!appearances.has(k)) appearances.set(k, { playerId: b.player_id, matchId: b.match_id, teamId: b.team_id });
+    }
+    for (const f of fieldingPerfs) {
+      const k = mkKey(f.player_id, f.match_id);
+      if (!appearances.has(k)) appearances.set(k, { playerId: f.player_id, matchId: f.match_id, teamId: f.team_id });
+    }
+
+    // Calculate fantasy points per player from raw match data
+    const playerTotals = new Map<string, number>();
+    for (const [mk, app] of appearances) {
+      const bat = battingByMatch.get(mk);
+      const bowl = bowlingByMatch.get(mk);
+      const field = fieldingByMatch.get(mk);
+
+      let matchPoints = 0;
+      if (bat) {
+        matchPoints += calculateBattingPoints({
+          runs: bat.runs, balls: bat.balls, fours: bat.fours, sixes: bat.sixes, notOut: bat.not_out === 1,
+        }).total;
+      }
+      if (bowl) {
+        matchPoints += calculateBowlingPoints({
+          overs: bowl.overs, maidens: bowl.maidens, runs: bowl.runs, wickets: bowl.wickets,
+        }).total;
+      }
+      if (field) {
+        matchPoints += calculateFieldingPoints({
+          catches: field.catches, runOuts: field.run_outs, stumpings: field.stumpings,
+          isWicketkeeper: field.is_wicketkeeper === 1,
+        }).total;
+      }
+      const winner = winnerByMatch.get(app.matchId);
+      if (winner === app.teamId) matchPoints += SCORING.team.winBonus;
+
+      playerTotals.set(app.playerId, (playerTotals.get(app.playerId) ?? 0) + matchPoints);
+    }
+
+    // Sort eligible players by total points descending
+    const eligibleIds = new Set(
+      allEligible.filter((p) => p.play_cricket_id).map((p) => p.play_cricket_id),
+    );
+    const playerNameMap = new Map(
+      allEligible.filter((p) => p.play_cricket_id).map((p) => [p.play_cricket_id, p.player_name]),
+    );
+
+    const scoredPlayers = [...playerTotals.entries()]
+      .filter(([id]) => eligibleIds.has(id))
+      .sort((a, b) => b[1] - a[1]);
+
+    const scoredPlayerIds = new Set(scoredPlayers.map(([id]) => id));
+    const unscoredPlayers = allEligible.filter(
+      (p) => p.play_cricket_id && !scoredPlayerIds.has(p.play_cricket_id),
+    );
+
+    // Assign costs using weighted percentile buckets
+    const total = scoredPlayers.length;
+    const costAssignments: Array<{
+      playCricketId: string;
+      playerName: string;
+      totalPoints: number;
+      cost: number;
+    }> = [];
+
+    for (let i = 0; i < scoredPlayers.length; i++) {
+      const entry = scoredPlayers[i];
+      if (!entry) continue;
+      const [playerId, totalPoints] = entry;
+      const percentileFromTop = (i / total) * 100;
+      let cost: number;
+      if (percentileFromTop < 10) cost = 5;
+      else if (percentileFromTop < 30) cost = 4;
+      else if (percentileFromTop < 50) cost = 3;
+      else if (percentileFromTop < 70) cost = 2;
+      else cost = 1;
+
+      costAssignments.push({
+        playCricketId: playerId,
+        playerName: playerNameMap.get(playerId) ?? playerId,
+        totalPoints,
+        cost,
+      });
+    }
+
+    // Update sandwich_cost in DB
+    for (const assignment of costAssignments) {
+      await client
+        .updateTable("fantasy_player")
+        .set({ sandwich_cost: assignment.cost })
+        .where("play_cricket_id", "=", assignment.playCricketId)
+        .execute();
+    }
+
+    // Unscored players get cost 1
+    for (const p of unscoredPlayers) {
+      if (p.play_cricket_id) {
+        await client
+          .updateTable("fantasy_player")
+          .set({ sandwich_cost: 1 })
+          .where("play_cricket_id", "=", p.play_cricket_id)
+          .execute();
+      }
+    }
+
+    // Build distribution summary
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    for (const a of costAssignments) {
+      distribution[a.cost as keyof typeof distribution]++;
+    }
+    distribution[1] += unscoredPlayers.length;
+
+    return {
+      totalPlayers: costAssignments.length + unscoredPlayers.length,
+      scoredPlayers: costAssignments.length,
+      unscoredPlayers: unscoredPlayers.length,
+      distribution,
+      budget: SANDWICH_BUDGET,
+      season: previousSeason,
+      topPlayers: costAssignments.slice(0, 10).map((a) => ({
+        name: a.playerName,
+        points: a.totalPoints,
+        cost: a.cost,
+      })),
+    };
+  },
+});
+
 // ---------------------------------------------------------------------------
 // Member actions
 // ---------------------------------------------------------------------------
@@ -252,7 +456,7 @@ const getEligiblePlayers = defineAuthAction({
           fours: bat.fours,
           sixes: bat.sixes,
           notOut: bat.not_out === 1,
-          battingPosition: SCORING.batting.duckPenaltyMaxPosition, // Position unknown, assume eligible for duck penalty
+          // Duck penalty eligibility is determined by slot type (batting/allrounder), not batting position
         }).total;
       }
 
@@ -304,6 +508,7 @@ const getEligiblePlayers = defineAuthAction({
           return {
             playCricketId: p.play_cricket_id,
             playerName: p.player_name,
+            sandwichCost: p.sandwich_cost,
             stats: {
               current: {
                 totalPoints: pts.current.totalPoints,
@@ -324,6 +529,7 @@ const getEligiblePlayers = defineAuthAction({
         }),
       season: currentSeason,
       previousSeason,
+      budget: SANDWICH_BUDGET,
     };
   },
 });
@@ -375,8 +581,11 @@ const getMyTeam = defineAuthAction({
         "ftp.id",
         "ftp.play_cricket_id",
         "fp.player_name",
+        "fp.sandwich_cost",
         "ftp.is_captain",
         "ftp.gameweek_added",
+        "ftp.slot_type",
+        "ftp.is_wicketkeeper",
       ])
       .execute();
 
@@ -421,13 +630,17 @@ const getMyTeam = defineAuthAction({
         id: p.id,
         playCricketId: p.play_cricket_id,
         playerName: p.player_name,
+        sandwichCost: p.sandwich_cost,
         isCaptain: p.is_captain === 1,
         gameweekAdded: p.gameweek_added,
+        slotType: p.slot_type as SlotType,
+        isWicketkeeper: p.is_wicketkeeper === 1,
       })),
       transferWindowInfo: getTransferWindowInfo(currentSeason),
       gameweek,
       transfersUsed,
       maxTransfers: unlimitedTransfers ? null : MAX_TRANSFERS_PER_GAMEWEEK,
+      budget: SANDWICH_BUDGET,
     };
   },
 });
@@ -441,6 +654,8 @@ const saveTeam = defineAuthAction({
         z.object({
           playCricketId: z.string(),
           isCaptain: z.boolean(),
+          slotType: z.enum(["batting", "bowling", "allrounder"]),
+          isWicketkeeper: z.boolean(),
         }),
       )
       .length(11),
@@ -475,18 +690,67 @@ const saveTeam = defineAuthAction({
       });
     }
 
-    // Validate all players are eligible
+    // Validate slot counts
+    const slotCounts = { batting: 0, bowling: 0, allrounder: 0 };
+    for (const p of players) {
+      slotCounts[p.slotType]++;
+    }
+    if (
+      slotCounts.batting !== SLOT_COUNTS.batting ||
+      slotCounts.bowling !== SLOT_COUNTS.bowling ||
+      slotCounts.allrounder !== SLOT_COUNTS.allrounder
+    ) {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: `Team must have exactly ${SLOT_COUNTS.batting} batting, ${SLOT_COUNTS.bowling} bowling, and ${SLOT_COUNTS.allrounder} all-rounder slot(s).`,
+      });
+    }
+
+    // Validate exactly 1 wicketkeeper
+    const wkCount = players.filter((p) => p.isWicketkeeper).length;
+    if (wkCount !== 1) {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: "Exactly one player must be designated as wicketkeeper.",
+      });
+    }
+
+    // Validate captain is NOT in allrounder slot
+    const captain = players.find((p) => p.isCaptain);
+    if (captain?.slotType === "allrounder") {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: "The captain cannot be placed in the all-rounder slot.",
+      });
+    }
+
+    // Validate all players are eligible and get their sandwich costs
     const eligiblePlayers = await client
       .selectFrom("fantasy_player")
       .where("play_cricket_id", "in", Array.from(playerIds))
       .where("eligible", "=", 1)
-      .select("play_cricket_id")
+      .select(["play_cricket_id", "sandwich_cost"])
       .execute();
 
     if (eligiblePlayers.length !== 11) {
       throw new ActionError({
         code: "BAD_REQUEST",
         message: "All selected players must be eligible for fantasy cricket.",
+      });
+    }
+
+    // Validate sandwich budget
+    const costMap = new Map(
+      eligiblePlayers.map((p) => [p.play_cricket_id, p.sandwich_cost]),
+    );
+    let totalCost = 0;
+    for (const p of players) {
+      totalCost += costMap.get(p.playCricketId) ?? 1;
+    }
+    if (totalCost > SANDWICH_BUDGET) {
+      throw new ActionError({
+        code: "BAD_REQUEST",
+        message: `Team sandwich budget exceeded. Total cost: ${totalCost}, budget: ${SANDWICH_BUDGET}.`,
       });
     }
 
@@ -525,6 +789,8 @@ const saveTeam = defineAuthAction({
               play_cricket_id: player.playCricketId,
               is_captain: player.isCaptain ? 1 : 0,
               gameweek_added: gameweek,
+              slot_type: player.slotType,
+              is_wicketkeeper: player.isWicketkeeper ? 1 : 0,
             })
             .execute();
         }
@@ -623,22 +889,33 @@ const saveTeam = defineAuthAction({
             play_cricket_id: player.playCricketId,
             is_captain: player.isCaptain ? 1 : 0,
             gameweek_added: gameweek,
+            slot_type: player.slotType,
+            is_wicketkeeper: player.isWicketkeeper ? 1 : 0,
           })
           .execute();
       }
 
-      // Update captain designation for existing players
+      // Update captain, slot_type, and is_wicketkeeper for existing players
       for (const player of players) {
         if (currentPlayerIds.has(player.playCricketId)) {
           const existing = currentPlayers.find(
             (p) => p.play_cricket_id === player.playCricketId,
           );
-          if (existing && (existing.is_captain === 1) !== player.isCaptain) {
-            await trx
-              .updateTable("fantasy_team_player")
-              .set({ is_captain: player.isCaptain ? 1 : 0 })
-              .where("id", "=", requireId(existing.id))
-              .execute();
+          if (existing) {
+            const captainChanged = (existing.is_captain === 1) !== player.isCaptain;
+            const slotChanged = existing.slot_type !== player.slotType;
+            const wkChanged = (existing.is_wicketkeeper === 1) !== player.isWicketkeeper;
+            if (captainChanged || slotChanged || wkChanged) {
+              await trx
+                .updateTable("fantasy_team_player")
+                .set({
+                  is_captain: player.isCaptain ? 1 : 0,
+                  slot_type: player.slotType,
+                  is_wicketkeeper: player.isWicketkeeper ? 1 : 0,
+                })
+                .where("id", "=", requireId(existing.id))
+                .execute();
+            }
           }
         }
       }
@@ -692,6 +969,8 @@ const getTeam = defineAuthAction({
         "ftp.play_cricket_id",
         "fp.player_name",
         "ftp.is_captain",
+        "ftp.slot_type",
+        "ftp.is_wicketkeeper",
       ])
       .execute();
 
@@ -706,6 +985,8 @@ const getTeam = defineAuthAction({
         playCricketId: p.play_cricket_id,
         playerName: p.player_name,
         isCaptain: p.is_captain === 1,
+        slotType: p.slot_type as SlotType,
+        isWicketkeeper: p.is_wicketkeeper === 1,
       })),
     };
   },
@@ -1016,6 +1297,8 @@ const getGameweekDetail = defineAction({
         "ftp.play_cricket_id",
         "fp.player_name",
         "ftp.is_captain",
+        "ftp.slot_type",
+        "ftp.is_wicketkeeper",
       ])
       .execute();
 
@@ -1037,6 +1320,8 @@ const getGameweekDetail = defineAction({
         "team_points",
         "total_points",
         "match_id",
+        "catches",
+        "is_actual_keeper",
       ])
       .execute();
 
@@ -1050,6 +1335,8 @@ const getGameweekDetail = defineAction({
         teamPoints: number;
         totalPoints: number;
         matchCount: number;
+        catches: number;
+        isActualKeeper: boolean;
       }
     >();
 
@@ -1061,6 +1348,8 @@ const getGameweekDetail = defineAction({
         teamPoints: 0,
         totalPoints: 0,
         matchCount: 0,
+        catches: 0,
+        isActualKeeper: false,
       };
       existing.battingPoints += score.batting_points;
       existing.bowlingPoints += score.bowling_points;
@@ -1068,6 +1357,8 @@ const getGameweekDetail = defineAction({
       existing.teamPoints += score.team_points;
       existing.totalPoints += score.total_points;
       existing.matchCount += 1;
+      existing.catches += score.catches;
+      if (score.is_actual_keeper === 1) existing.isActualKeeper = true;
       scoresByPlayer.set(score.play_cricket_id, existing);
     }
 
@@ -1081,18 +1372,36 @@ const getGameweekDetail = defineAction({
       season: currentSeason,
       players: players.map((p) => {
         const scores = scoresByPlayer.get(p.play_cricket_id);
-        const basePoints = scores?.totalPoints ?? 0;
         const isCaptain = p.is_captain === 1;
+        const slotType = (p.slot_type ?? "batting") as SlotType;
+        const isWicketkeeper = p.is_wicketkeeper === 1;
+
+        const effectivePoints = scores
+          ? calculateSlotEffectivePoints({
+              slotType,
+              isFantasyWk: isWicketkeeper,
+              battingPts: scores.battingPoints,
+              bowlingPts: scores.bowlingPoints,
+              fieldingPts: scores.fieldingPoints,
+              teamPts: scores.teamPoints,
+              catches: scores.catches,
+              isActualKeeper: scores.isActualKeeper,
+              isCaptain,
+            })
+          : 0;
+
         return {
           playCricketId: p.play_cricket_id,
           playerName: p.player_name,
           isCaptain,
+          slotType,
+          isWicketkeeper,
           battingPoints: scores?.battingPoints ?? 0,
           bowlingPoints: scores?.bowlingPoints ?? 0,
           fieldingPoints: scores?.fieldingPoints ?? 0,
           teamPoints: scores?.teamPoints ?? 0,
-          basePoints,
-          effectivePoints: isCaptain ? basePoints * 2 : basePoints,
+          basePoints: scores?.totalPoints ?? 0,
+          effectivePoints,
           matchCount: scores?.matchCount ?? 0,
         };
       }),
@@ -1239,6 +1548,7 @@ export const fantasy = {
   listPlayers,
   toggleEligibility,
   populatePlayers,
+  calculateSandwichCosts,
   calculateScores,
   getEligiblePlayers,
   getMyTeam,

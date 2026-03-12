@@ -57,6 +57,15 @@ export function FantasyPlayersTable() {
     },
   });
 
+  const sandwichCostsMutation = useMutation({
+    mutationFn: () => actions.fantasy.calculateSandwichCosts({}),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["admin", "fantasyPlayers"],
+      });
+    },
+  });
+
   const rawPlayers = playersQuery.data?.data?.players ?? [];
   const players = rawPlayers.filter(
     (p): p is typeof p & { play_cricket_id: string } => p.play_cricket_id !== null,
@@ -70,7 +79,7 @@ export function FantasyPlayersTable() {
           <CardTitle>Fantasy Player Management</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button
               onClick={() => populateMutation.mutate()}
               disabled={populateMutation.isPending}
@@ -78,6 +87,15 @@ export function FantasyPlayersTable() {
               {populateMutation.isPending
                 ? "Refreshing..."
                 : "Refresh from Play Cricket"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => sandwichCostsMutation.mutate()}
+              disabled={sandwichCostsMutation.isPending}
+            >
+              {sandwichCostsMutation.isPending
+                ? "Calculating..."
+                : "Calculate Sandwich Costs"}
             </Button>
             {populateMutation.data?.data && (
               <p className="text-sm text-gray-600">
@@ -91,9 +109,27 @@ export function FantasyPlayersTable() {
               </p>
             )}
           </div>
+          {sandwichCostsMutation.data?.data && (
+            <div className="rounded border border-gray-200 bg-gray-50 p-3 text-sm">
+              <p className="font-medium">Sandwich costs calculated from {sandwichCostsMutation.data.data.season} season data</p>
+              <p className="text-gray-600">
+                {sandwichCostsMutation.data.data.totalPlayers} players ({sandwichCostsMutation.data.data.scoredPlayers} scored, {sandwichCostsMutation.data.data.unscoredPlayers} unscored).
+                Budget: {sandwichCostsMutation.data.data.budget} sandwiches.
+              </p>
+              <p className="text-gray-500">
+                Distribution: {Object.entries(sandwichCostsMutation.data.data.distribution).map(([cost, count]) => `${cost}🥪: ${count}`).join(", ")}
+              </p>
+            </div>
+          )}
+          {sandwichCostsMutation.isError && (
+            <p className="text-sm text-red-600">
+              Failed to calculate sandwich costs.
+            </p>
+          )}
           <p className="text-sm text-gray-600">
             Populate the player list from Play Cricket match data, then toggle
             eligibility for players who should be available in the fantasy game.
+            Use &quot;Calculate Sandwich Costs&quot; to assign costs based on previous season performance.
           </p>
         </CardContent>
       </Card>
@@ -131,6 +167,7 @@ export function FantasyPlayersTable() {
                 <TableRow>
                   <TableHead>Player</TableHead>
                   <TableHead>Play Cricket ID</TableHead>
+                  <TableHead className="text-center">Cost</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead />
                 </TableRow>
@@ -143,6 +180,9 @@ export function FantasyPlayersTable() {
                     </TableCell>
                     <TableCell className="text-gray-500">
                       {player.play_cricket_id}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {"🥪".repeat(player.sandwich_cost)}
                     </TableCell>
                     <TableCell>
                       {player.eligible === 1 ? (

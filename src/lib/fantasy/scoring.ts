@@ -24,10 +24,8 @@ export const SCORING = {
     fiftyBonus: 20,
     /** Bonus for reaching 100 runs */
     hundredBonus: 50,
-    /** Penalty for a duck (0 runs, not-out excluded). Only applies to positions 1–7. */
+    /** Penalty for a duck (0 runs, not-out excluded). Only applies to batting/allrounder slots. */
     duckPenalty: -10,
-    /** Batting positions eligible for duck penalty (1-based). Positions 8+ are not penalised. */
-    duckPenaltyMaxPosition: 7,
   },
   bowling: {
     /** Points per wicket taken */
@@ -64,6 +62,25 @@ export const SCORING = {
     winBonus: 10,
   },
 } as const;
+
+// ---------------------------------------------------------------------------
+// Sandwich budget & slot config
+// ---------------------------------------------------------------------------
+
+/** Maximum total sandwich cost across all 11 players */
+export const SANDWICH_BUDGET = 30;
+
+/** Required slot counts for team composition */
+export const SLOT_COUNTS = { batting: 6, bowling: 4, allrounder: 1 } as const;
+
+export type SlotType = "batting" | "bowling" | "allrounder";
+
+/** Valid slot types for validation */
+export const VALID_SLOT_TYPES: readonly SlotType[] = [
+  "batting",
+  "bowling",
+  "allrounder",
+] as const;
 
 // ---------------------------------------------------------------------------
 // League match filter
@@ -110,8 +127,6 @@ export interface BattingInput {
   fours: number;
   sixes: number;
   notOut: boolean;
-  /** 1-based batting position in the order. Used for duck penalty eligibility. */
-  battingPosition: number;
 }
 
 export interface BowlingInput {
@@ -196,7 +211,7 @@ export function calculateBattingPoints(
   const fiftyBonus = input.runs >= 50 && input.runs < 100 ? s.fiftyBonus : 0;
   const hundredBonus = input.runs >= 100 ? s.hundredBonus : 0;
   const duckPenalty =
-    input.runs === 0 && !input.notOut && input.battingPosition <= s.duckPenaltyMaxPosition
+    input.runs === 0 && !input.notOut
       ? s.duckPenalty
       : 0;
 
