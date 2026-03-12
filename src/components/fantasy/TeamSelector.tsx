@@ -1,3 +1,4 @@
+import { ShareMyTeamButton } from "@/components/fantasy/ShareMyTeamButton";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -665,7 +666,12 @@ export function TeamSelector() {
       {/* Selected squad with slot sections */}
       <Card>
         <CardHeader>
-          <CardTitle>Your Squad</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Your Squad</CardTitle>
+            {selectedPlayers.length === 11 && !hasChanges && teamData?.team && (
+              <ShareMyTeamButton />
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {selectedPlayers.length === 0 ? (

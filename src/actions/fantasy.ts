@@ -4,6 +4,7 @@ import { calculateFantasyScores } from "@/lib/fantasy/calculate-scores";
 import {
   getCurrentGameweek,
   getCurrentSeason,
+  getGW1StartDate,
   getTransferWindowInfo,
   isGameweekLocked,
   isPreSeason,
@@ -1229,13 +1230,16 @@ const getTeam = defineAuthAction({
 const getTeamShareData = defineAuthAction({
   requireVerifiedEmail: true,
   input: z.object({
-    teamId: z.number(),
+    season: z.string().optional(),
   }),
-  handler: async ({ teamId }) => {
+  handler: async (_input, session) => {
+    const season = _input.season ?? getCurrentSeason();
+
     const team = await client
       .selectFrom("fantasy_team as ft")
       .innerJoin("user as u", "u.id", "ft.user_id")
-      .where("ft.id", "=", teamId)
+      .where("ft.user_id", "=", session.user.id)
+      .where("ft.season", "=", season)
       .select([
         "ft.id",
         "ft.season",
@@ -1248,6 +1252,22 @@ const getTeamShareData = defineAuthAction({
     }
 
     const gameweek = getCurrentGameweek(team.season);
+
+    // Build a human-readable gameweek label
+    const gw1 = getGW1StartDate(team.season);
+    let gameweekLabel: string;
+    if (gameweek === 0) {
+      gameweekLabel = "Pre-Season";
+    } else {
+      const gwStartMs = gw1.getTime() + (gameweek - 1) * 7 * 24 * 60 * 60 * 1000;
+      const gwStart = new Date(gwStartMs);
+      const dateStr = gwStart.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      gameweekLabel = `Gameweek ${gameweek}: ${dateStr}`;
+    }
 
     const players = await client
       .selectFrom("fantasy_team_player as ftp")
@@ -1317,6 +1337,7 @@ const getTeamShareData = defineAuthAction({
       ownerName: team.ownerName,
       season: team.season,
       totalSandwichCost,
+      gameweekLabel,
       players: players.map((p) => ({
         playerName: p.player_name,
         sandwichCost: p.sandwich_cost,

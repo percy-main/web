@@ -16,6 +16,7 @@ export interface ShareTeamData {
   ownerName: string;
   season: string;
   totalSandwichCost: number;
+  gameweekLabel: string;
   players: SharePlayer[];
 }
 
@@ -121,8 +122,8 @@ function drawPlayerCard(
   ctx.stroke();
 
   const centerX = x + cardW / 2;
-  const photoRadius = 28;
-  const photoY = y + 16 + photoRadius;
+  const photoRadius = 36;
+  const photoY = y + 14 + photoRadius;
 
   // Player photo or placeholder
   if (photo) {
@@ -224,35 +225,40 @@ export async function generateTeamImage(
   ]);
 
   // --- Header ---
-  const headerY = 30;
+  const headerY = 24;
 
   // Club logo (left side)
   if (logo) {
-    const logoSize = 70;
-    ctx.drawImage(logo, 30, headerY, logoSize, logoSize);
+    const logoSize = 80;
+    ctx.drawImage(logo, 28, headerY, logoSize, logoSize);
   }
 
-  // Team title
+  // Manager name — large and prominent
   ctx.fillStyle = TEXT_WHITE;
   ctx.textAlign = "center";
-  ctx.font = "bold 36px -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillText(`${data.ownerName}'s Team`, SIZE / 2, headerY + 35);
+  ctx.font = "bold 42px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillText(`${data.ownerName}'s XI`, SIZE / 2, headerY + 38);
 
-  // Season subtitle
+  // Season + gameweek subtitle
+  ctx.fillStyle = GOLD_ACCENT;
+  ctx.font = "bold 18px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillText(data.gameweekLabel, SIZE / 2, headerY + 64);
+
+  // Season line
   ctx.fillStyle = TEXT_LIGHT;
-  ctx.font = "18px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.font = "16px -apple-system, BlinkMacSystemFont, sans-serif";
   ctx.fillText(
     `Percy Main Fantasy Cricket ${data.season}`,
     SIZE / 2,
-    headerY + 60,
+    headerY + 86,
   );
 
   // Divider line
   ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(60, headerY + 80);
-  ctx.lineTo(SIZE - 60, headerY + 80);
+  ctx.moveTo(60, headerY + 100);
+  ctx.lineTo(SIZE - 60, headerY + 100);
   ctx.stroke();
 
   // --- Player cards ---
@@ -286,10 +292,10 @@ export async function generateTeamImage(
     indexMap.slice(7, 11),
   ];
 
-  const cardW = 150;
-  const cardH = 155;
-  const startY = headerY + 100;
-  const rowGap = 25;
+  const cardW = 155;
+  const cardH = 175;
+  const startY = headerY + 120;
+  const rowGap = 20;
 
   for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
     const row = rows[rowIdx];
@@ -325,19 +331,19 @@ export async function generateTeamImage(
   ctx.fillText(
     `Total: ${data.totalSandwichCost} 🥪`,
     SIZE / 2,
-    footerY + 35,
+    footerY + 30,
   );
 
-  // Branding
-  ctx.fillStyle = TEXT_LIGHT;
-  ctx.font = "14px -apple-system, BlinkMacSystemFont, sans-serif";
-  ctx.fillText("percymain.org/fantasy", SIZE / 2, footerY + 60);
+  // Web address
+  ctx.fillStyle = TEXT_WHITE;
+  ctx.font = "bold 16px -apple-system, BlinkMacSystemFont, sans-serif";
+  ctx.fillText("percymain.org/fantasy", SIZE / 2, footerY + 58);
 
   // Club logo in bottom-right corner
   if (logo) {
     const smallLogo = 40;
     ctx.globalAlpha = 0.5;
-    ctx.drawImage(logo, SIZE - 30 - smallLogo, footerY + 20, smallLogo, smallLogo);
+    ctx.drawImage(logo, SIZE - 30 - smallLogo, footerY + 18, smallLogo, smallLogo);
     ctx.globalAlpha = 1;
   }
 
