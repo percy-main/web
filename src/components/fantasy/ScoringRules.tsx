@@ -50,7 +50,7 @@ function BattingRules() {
               <TableCell className="text-right font-medium">{formatPoints(s.hundredBonus)}</TableCell>
             </TableRow>
             <TableRow>
-              <TableCell>Duck penalty (0 runs, positions 1-{s.duckPenaltyMaxPosition}, not out excluded)</TableCell>
+              <TableCell>Duck penalty (0 runs, not out excluded)</TableCell>
               <TableCell className="text-right font-medium text-red-600">{formatPoints(s.duckPenalty)}</TableCell>
             </TableRow>
           </TableBody>

@@ -319,7 +319,6 @@ export async function calculateFantasyScores(
           fours: bat.fours,
           sixes: bat.sixes,
           notOut: bat.not_out === 1,
-          battingPosition: SCORING.batting.duckPenaltyMaxPosition,
         }).total
       : 0;
 

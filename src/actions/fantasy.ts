@@ -363,7 +363,7 @@ const getEligiblePlayers = defineAuthAction({
           fours: bat.fours,
           sixes: bat.sixes,
           notOut: bat.not_out === 1,
-          battingPosition: SCORING.batting.duckPenaltyMaxPosition, // Position unknown, assume eligible for duck penalty
+          // Duck penalty eligibility is determined by slot type (batting/allrounder), not batting position
         }).total;
       }
 
