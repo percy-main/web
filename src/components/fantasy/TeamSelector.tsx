@@ -809,6 +809,7 @@ export function TeamSelector() {
                       <TableHead className="text-right">
                         Pts ({previousSeasonYear})
                       </TableHead>
+                      <TableHead className="w-16 text-right">Owned</TableHead>
                       <TableHead />
                     </TableRow>
                   </TableHeader>
@@ -838,6 +839,9 @@ export function TeamSelector() {
                             {player.stats.previous.matchesPlayed > 0
                               ? player.stats.previous.totalPoints
                               : "-"}
+                          </TableCell>
+                          <TableCell className="text-right text-sm text-gray-500">
+                            {player.ownershipPct > 0 ? `${player.ownershipPct}%` : "-"}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button

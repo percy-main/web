@@ -114,6 +114,81 @@ function TopTeams() {
   );
 }
 
+function OwnershipWidgets() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["fantasy", "ownershipOverview"],
+    queryFn: async () => {
+      const res = await actions.fantasy.getOwnershipOverview({});
+      if (res.error) throw res.error;
+      return res.data;
+    },
+  });
+
+  if (isLoading) return <p className="text-sm text-gray-500">Loading ownership data...</p>;
+
+  if (!data || data.teamCount === 0 || data.gameweek === 0) return null;
+
+  const hasMostOwned = data.mostOwned.length > 0;
+  const hasMostCaptained = data.mostCaptained.length > 0;
+
+  if (!hasMostOwned && !hasMostCaptained) return null;
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      {hasMostOwned && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Most Owned</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Player</TableHead>
+                  <TableHead className="w-20 text-right">Owned</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.mostOwned.map((player) => (
+                  <TableRow key={player.playCricketId}>
+                    <TableCell className="font-medium">{player.playerName}</TableCell>
+                    <TableCell className="text-right">{player.ownershipPct}%</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+      {hasMostCaptained && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Most Captained</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Player</TableHead>
+                  <TableHead className="w-20 text-right">Captain</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.mostCaptained.map((player) => (
+                  <TableRow key={player.playCricketId}>
+                    <TableCell className="font-medium">{player.playerName}</TableCell>
+                    <TableCell className="text-right">{player.captainPct}%</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 function FantasyHomeContent() {
   const session = useSession();
   const isLoggedIn = !!session.data;
@@ -199,6 +274,9 @@ function FantasyHomeContent() {
 
       {/* Match report */}
       <GameweekHighlights />
+
+      {/* Ownership widgets */}
+      <OwnershipWidgets />
 
       {/* Top 5 leaderboard */}
       <Card>

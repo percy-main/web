@@ -43,6 +43,7 @@ export function TeamView({ teamId }: { teamId: number }) {
               <TableHead>Player</TableHead>
               <TableHead className="text-center">Slot</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead className="w-16 text-right">Owned</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -69,6 +70,9 @@ export function TeamView({ teamId }: { teamId: number }) {
                       <Badge className="bg-blue-100 text-blue-800">WK</Badge>
                     )}
                   </div>
+                </TableCell>
+                <TableCell className="text-right text-sm text-gray-500">
+                  {player.ownershipPct > 0 ? `${player.ownershipPct}%` : "-"}
                 </TableCell>
               </TableRow>
             ))}
