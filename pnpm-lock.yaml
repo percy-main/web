@@ -201,6 +201,12 @@ importers:
         specifier: ^3.25.0
         version: 3.25.76
     devDependencies:
+      '@babel/preset-react':
+        specifier: ^7.28.5
+        version: 7.28.5(@babel/core@7.29.0)
+      '@babel/preset-typescript':
+        specifier: ^7.28.5
+        version: 7.28.5(@babel/core@7.29.0)
       '@better-auth/cli':
         specifier: ^1.4.21
         version: 1.4.21(@better-fetch/fetch@1.1.21)(@electric-sql/pglite@0.3.15)(@libsql/client@0.14.0)(@opentelemetry/api@1.9.0)(@types/better-sqlite3@7.6.13)(better-call@1.3.2(zod@3.25.76))(jose@6.2.1)(kysely@0.28.11)(mongodb@7.1.0)(mysql2@3.15.3)(nanostores@1.1.1)(next@15.1.2(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.58.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(postgres@3.4.7)(prisma@7.5.0(@types/react@19.2.14)(better-sqlite3@12.6.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@25.4.0)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.2))
@@ -249,9 +255,15 @@ importers:
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.27(postcss@8.5.8)
+      c12:
+        specifier: 4.0.0-beta.3
+        version: 4.0.0-beta.3(chokidar@5.0.0)(dotenv@17.3.1)(giget@2.0.0)(jiti@2.6.1)
       cf-content-types-generator:
         specifier: ^2.15.5
         version: 2.16.1
+      chalk:
+        specifier: ^5.6.2
+        version: 5.6.2
       contentful-merge:
         specifier: ^2.6.5
         version: 2.6.17(typescript@5.9.3)
@@ -306,6 +318,9 @@ importers:
       prettier-plugin-tailwindcss:
         specifier: ^0.6.11
         version: 0.6.14(prettier-plugin-astro@0.14.1)(prettier-plugin-organize-imports@4.3.0(prettier@3.8.1)(typescript@5.9.3))(prettier@3.8.1)
+      prompts:
+        specifier: ^2.4.2
+        version: 2.4.2
       react-compiler-runtime:
         specifier: ^19.0.0-beta-b2e8e9c-20241220
         version: 19.0.0-beta-ebf51a3-20250411(react@19.2.4)
@@ -324,6 +339,9 @@ importers:
       vitest:
         specifier: ^3.0.5
         version: 3.2.4(@types/debug@4.1.12)(@types/node@25.4.0)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.2)
+      yocto-spinner:
+        specifier: ^1.1.0
+        version: 1.1.0
       zx:
         specifier: ^8.3.0
         version: 8.8.5
@@ -3930,6 +3948,26 @@ packages:
     peerDependencies:
       magicast: '*'
     peerDependenciesMeta:
+      magicast:
+        optional: true
+
+  c12@4.0.0-beta.3:
+    resolution: {integrity: sha512-15pHxeM4kKKnF1zPgvXq/ETPhf9DRLGg0Id3GAyQhQqYxt8WkUCbo0NipHjQUUNC5VPP8TQA32pGPDUZmAi/3g==}
+    peerDependencies:
+      chokidar: ^5
+      dotenv: '*'
+      giget: '*'
+      jiti: '*'
+      magicast: '*'
+    peerDependenciesMeta:
+      chokidar:
+        optional: true
+      dotenv:
+        optional: true
+      giget:
+        optional: true
+      jiti:
+        optional: true
       magicast:
         optional: true
 
@@ -7626,6 +7664,9 @@ packages:
   rc9@2.1.2:
     resolution: {integrity: sha512-btXCnMmRIBINM2LDZoEmOogIZU7Qe7zn4BpomSKZ/ykbLObuBdvG+mFq11DL6fjH1DRwHhrlgtYWG96bJiC7Cg==}
 
+  rc9@3.0.0:
+    resolution: {integrity: sha512-MGOue0VqscKWQ104udASX/3GYDcKyPI4j4F8gu/jHHzglpmy9a/anZK3PNe8ug6aZFl+9GxLtdhe3kVZuMaQbA==}
+
   rc@1.2.8:
     resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
     hasBin: true
@@ -9211,6 +9252,10 @@ packages:
 
   yocto-spinner@0.2.3:
     resolution: {integrity: sha512-sqBChb33loEnkoXte1bLg45bEBsOP9N1kzQh5JZNKj/0rik4zAPTNSAVPj3uQAdc6slYJ0Ksc403G2XgxsJQFQ==}
+    engines: {node: '>=18.19'}
+
+  yocto-spinner@1.1.0:
+    resolution: {integrity: sha512-/BY0AUXnS7IKO354uLLA2eRcWiqDifEbd6unXCsOxkFDAkhgUL3PH9X2bFoaU0YchnDXsF+iKleeTLJGckbXfA==}
     engines: {node: '>=18.19'}
 
   yoctocolors@2.1.2:
@@ -13413,6 +13458,20 @@ snapshots:
       pkg-types: 2.3.0
       rc9: 2.1.2
 
+  c12@4.0.0-beta.3(chokidar@5.0.0)(dotenv@17.3.1)(giget@2.0.0)(jiti@2.6.1):
+    dependencies:
+      confbox: 0.2.4
+      defu: 6.1.4
+      exsolve: 1.0.8
+      pathe: 2.0.3
+      pkg-types: 2.3.0
+      rc9: 3.0.0
+    optionalDependencies:
+      chokidar: 5.0.0
+      dotenv: 17.3.1
+      giget: 2.0.0
+      jiti: 2.6.1
+
   cac@6.7.14: {}
 
   call-bind-apply-helpers@1.0.2:
@@ -17294,6 +17353,11 @@ snapshots:
       defu: 6.1.4
       destr: 2.0.5
 
+  rc9@3.0.0:
+    dependencies:
+      defu: 6.1.4
+      destr: 2.0.5
+
   rc@1.2.8:
     dependencies:
       deep-extend: 0.6.0
@@ -19110,6 +19174,10 @@ snapshots:
   yocto-queue@1.2.2: {}
 
   yocto-spinner@0.2.3:
+    dependencies:
+      yoctocolors: 2.1.2
+
+  yocto-spinner@1.1.0:
     dependencies:
       yoctocolors: 2.1.2
 
