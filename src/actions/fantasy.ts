@@ -2155,6 +2155,43 @@ const getSandwichEfficiency = defineAction({
 });
 
 /**
+ * Public pre-season stats for the fantasy home page countdown display.
+ * Returns team count and total sandwich cost across all teams.
+ */
+const getPreSeasonStats = defineAction({
+  input: z.object({
+    season: z.string().optional(),
+  }),
+  handler: async ({ season }) => {
+    const currentSeason = season ?? getCurrentSeason();
+
+    const teamCount = await client
+      .selectFrom("fantasy_team")
+      .where("season", "=", currentSeason)
+      .select(sql<number>`COUNT(*)`.as("count"))
+      .executeTakeFirstOrThrow();
+
+    const sandwichTotal = await client
+      .selectFrom("fantasy_team_player as ftp")
+      .innerJoin("fantasy_team as ft", "ft.id", "ftp.fantasy_team_id")
+      .innerJoin(
+        "fantasy_player as fp",
+        "fp.play_cricket_id",
+        "ftp.play_cricket_id",
+      )
+      .where("ft.season", "=", currentSeason)
+      .where("ftp.gameweek_removed", "is", null)
+      .select(sql<number>`COALESCE(SUM(fp.sandwich_cost), 0)`.as("total"))
+      .executeTakeFirstOrThrow();
+
+    return {
+      teamCount: teamCount.count,
+      totalSandwiches: sandwichTotal.total,
+    };
+  },
+});
+
+/**
  * Public transfer window info for the fantasy home page.
  */
 const getTransferWindowPublic = defineAction({
@@ -2492,6 +2529,7 @@ export const fantasy = {
   getGameweekDetail,
   getSeasonTimeline,
   getPlayerHistory,
+  getPreSeasonStats,
   getTransferWindowPublic,
   activateChip,
   deactivateChip,
