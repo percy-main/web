@@ -131,8 +131,6 @@ function OwnershipWidgets() {
 
   const hasMostOwned = data.mostOwned.length > 0;
   const hasMostCaptained = data.mostCaptained.length > 0;
-  const hasDifferentials = data.differentials.length > 0;
-
   if (!hasMostOwned && !hasMostCaptained) return null;
 
   return (
@@ -187,41 +185,56 @@ function OwnershipWidgets() {
           </CardContent>
         </Card>
       )}
-      {hasDifferentials && (
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Differential Picks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-3 text-sm text-gray-500">Low-ownership players that could give you an edge</p>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="w-16 text-center">Cost</TableHead>
-                  <TableHead className="w-20 text-right">Points</TableHead>
-                  <TableHead className="w-20 text-right">Owned</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.differentials.map((player) => (
-                  <TableRow key={player.playCricketId}>
-                    <TableCell className="font-medium">{player.playerName}</TableCell>
-                    <TableCell className="text-center">
-                      <span className="inline-flex items-center gap-0.5 whitespace-nowrap text-sm">
-                        {"🥪".repeat(player.sandwichCost)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">{player.points}</TableCell>
-                    <TableCell className="text-right">{player.ownershipPct}%</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
     </div>
+  );
+}
+
+function DifferentialPicks() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["fantasy", "ownershipOverview"],
+    queryFn: async () => {
+      const res = await actions.fantasy.getOwnershipOverview({});
+      if (res.error) throw res.error;
+      return res.data;
+    },
+  });
+
+  if (isLoading) return null;
+  if (!data || data.teamCount === 0 || data.differentials.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Differential Picks</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="mb-3 text-sm text-gray-500">Low-ownership players that could give you an edge</p>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Player</TableHead>
+              <TableHead className="w-16 text-center">Cost</TableHead>
+              <TableHead className="w-20 text-right">Points</TableHead>
+              <TableHead className="w-20 text-right">Owned</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.differentials.map((player) => (
+              <TableRow key={player.playCricketId}>
+                <TableCell className="font-medium">{player.playerName}</TableCell>
+                <TableCell className="text-center">
+                  <span className="inline-flex items-center gap-0.5 whitespace-nowrap text-sm">
+                    {"🥪".repeat(player.sandwichCost)}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">{player.points}</TableCell>
+                <TableCell className="text-right">{player.ownershipPct}%</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -311,18 +324,23 @@ function FantasyHomeContent() {
       {/* Match report */}
       <GameweekHighlights />
 
-      {/* Ownership widgets */}
+      {/* Ownership & efficiency widgets */}
       <OwnershipWidgets />
 
-      {/* Sandwich efficiency */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Sandwich Efficiency</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SandwichEfficiency />
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Differential picks (from ownership) */}
+        <DifferentialPicks />
+
+        {/* Sandwich efficiency */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Sandwich Efficiency</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SandwichEfficiency />
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Top 5 leaderboard */}
       <Card>

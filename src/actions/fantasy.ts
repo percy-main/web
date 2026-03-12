@@ -2137,7 +2137,7 @@ const getSandwichEfficiency = defineAction({
         const cost = player && player.sandwich_cost > 0 ? player.sandwich_cost : 1;
         return {
           playCricketId: r.playCricketId,
-          playerName: player.player_name,
+          playerName: player?.player_name ?? "Unknown",
           sandwichCost: cost,
           totalPoints: r.totalPoints,
           matchesPlayed: r.matchesPlayed,
