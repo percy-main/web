@@ -1194,6 +1194,7 @@ const getTeam = defineAuthAction({
       .select([
         "ftp.play_cricket_id",
         "fp.player_name",
+        "fp.sandwich_cost",
         "ftp.is_captain",
         "ftp.slot_type",
         "ftp.is_wicketkeeper",
@@ -1214,12 +1215,111 @@ const getTeam = defineAuthAction({
         return {
           playCricketId: p.play_cricket_id,
           playerName: p.player_name,
+          sandwichCost: p.sandwich_cost,
           isCaptain: p.is_captain === 1,
           slotType: p.slot_type as SlotType,
           isWicketkeeper: p.is_wicketkeeper === 1,
           ownershipPct: ownership?.ownershipPct ?? 0,
         };
       }),
+    };
+  },
+});
+
+const getTeamShareData = defineAuthAction({
+  requireVerifiedEmail: true,
+  input: z.object({
+    teamId: z.number(),
+  }),
+  handler: async ({ teamId }) => {
+    const team = await client
+      .selectFrom("fantasy_team as ft")
+      .innerJoin("user as u", "u.id", "ft.user_id")
+      .where("ft.id", "=", teamId)
+      .select([
+        "ft.id",
+        "ft.season",
+        "u.name as ownerName",
+      ])
+      .executeTakeFirst();
+
+    if (!team) {
+      throw new ActionError({ code: "NOT_FOUND", message: "Team not found." });
+    }
+
+    const gameweek = getCurrentGameweek(team.season);
+
+    const players = await client
+      .selectFrom("fantasy_team_player as ftp")
+      .innerJoin(
+        "fantasy_player as fp",
+        "fp.play_cricket_id",
+        "ftp.play_cricket_id",
+      )
+      .leftJoin("member as m", "m.play_cricket_id", "ftp.play_cricket_id")
+      .where("ftp.fantasy_team_id", "=", requireId(team.id))
+      .where("ftp.gameweek_added", "<=", gameweek)
+      .where((eb) =>
+        eb.or([
+          eb("ftp.gameweek_removed", "is", null),
+          eb("ftp.gameweek_removed", ">", gameweek),
+        ]),
+      )
+      .select([
+        "ftp.play_cricket_id",
+        "fp.player_name",
+        "fp.sandwich_cost",
+        "ftp.is_captain",
+        "ftp.slot_type",
+        "ftp.is_wicketkeeper",
+        "m.contentful_entry_id",
+      ])
+      .execute();
+
+    // Batch-fetch photo URLs from Contentful for players with linked entries
+    const contentfulIds = players
+      .map((p) => p.contentful_entry_id)
+      .filter((id): id is string => id != null);
+
+    const photoMap = new Map<string, string>();
+    if (contentfulIds.length > 0) {
+      const { contentClient } = await import("@/lib/contentful/client");
+      const entries = await contentClient.getEntries({
+        content_type: "trustee",
+        "sys.id[in]": contentfulIds,
+        select: ["sys.id", "fields.photo"],
+        limit: contentfulIds.length,
+      });
+      for (const entry of entries.items) {
+        const photo = entry.fields.photo as
+          | { fields?: { file?: { url?: string } } }
+          | undefined;
+        const url = photo?.fields?.file?.url;
+        if (url) {
+          photoMap.set(entry.sys.id, url.startsWith("//") ? `https:${url}` : url);
+        }
+      }
+    }
+
+    const totalSandwichCost = players.reduce(
+      (sum, p) => sum + p.sandwich_cost,
+      0,
+    );
+
+    return {
+      ownerName: team.ownerName,
+      season: team.season,
+      totalSandwichCost,
+      players: players.map((p) => ({
+        playerName: p.player_name,
+        sandwichCost: p.sandwich_cost,
+        isCaptain: p.is_captain === 1,
+        slotType: p.slot_type as SlotType,
+        isWicketkeeper: p.is_wicketkeeper === 1,
+        photoUrl: p.contentful_entry_id
+          ? photoMap.get(p.contentful_entry_id) ?? null
+          : null,
+      })),
     };
   },
 });
@@ -2869,6 +2969,7 @@ export const fantasy = {
   getMyTeam,
   saveTeam,
   getTeam,
+  getTeamShareData,
   listTeams,
   getTransferWindow,
   getWeeklyLeaderboard,
