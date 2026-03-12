@@ -170,11 +170,11 @@ function drawPlayerCard(
     ctx.fillText(player.playerName, centerX, nameY, cardW - 12);
   }
 
-  // Sandwich cost — use text with single emoji for cross-platform reliability
+  // Sandwich cost
   nameY += 20;
   ctx.font = "15px -apple-system, BlinkMacSystemFont, sans-serif";
   ctx.fillStyle = GOLD_ACCENT;
-  ctx.fillText(`${player.sandwichCost} x 🥪`, centerX, nameY, cardW - 8);
+  ctx.fillText("🥪".repeat(player.sandwichCost), centerX, nameY, cardW - 8);
 
   // Captain / WK badge
   const badgeY = nameY + 18;
