@@ -12,6 +12,7 @@ import { z } from "astro/zod";
 import { randomUUID } from "crypto";
 
 const MAX_LOGO_SIZE_BYTES = 150_000;
+const PENDING_PAYMENT_TTL_HOURS = 24;
 
 export const playerSponsorship = {
   getPrice: defineAction({
@@ -56,8 +57,8 @@ export const playerSponsorship = {
 
         const season = currentCricketSeason();
 
-        // Check if player already has an active sponsorship for this season
-        const existing = await client
+        // Check if player already has a paid sponsorship for this season
+        const existingPaid = await client
           .selectFrom("player_sponsorship")
           .where("contentful_entry_id", "=", contentfulEntryId)
           .where("season", "=", season)
@@ -65,11 +66,32 @@ export const playerSponsorship = {
           .select(["id"])
           .executeTakeFirst();
 
-        if (existing) {
+        if (existingPaid) {
           throw new ActionError({
             code: "BAD_REQUEST",
             message:
               "This player already has a sponsor for this season.",
+          });
+        }
+
+        // Check if there's a recent unpaid attempt (within TTL) — prevent duplicates
+        const pendingCutoff = new Date(
+          Date.now() - PENDING_PAYMENT_TTL_HOURS * 60 * 60 * 1000,
+        ).toISOString();
+        const existingPending = await client
+          .selectFrom("player_sponsorship")
+          .where("contentful_entry_id", "=", contentfulEntryId)
+          .where("season", "=", season)
+          .where("paid_at", "is", null)
+          .where("created_at", ">=", pendingCutoff)
+          .select(["id"])
+          .executeTakeFirst();
+
+        if (existingPending) {
+          throw new ActionError({
+            code: "BAD_REQUEST",
+            message:
+              "A sponsorship payment is already in progress for this player. Please try again later.",
           });
         }
 
@@ -79,21 +101,61 @@ export const playerSponsorship = {
 
         const sponsorshipId = randomUUID();
 
-        await client
-          .insertInto("player_sponsorship")
-          .values({
-            id: sponsorshipId,
-            contentful_entry_id: contentfulEntryId,
-            player_name: playerName,
-            season,
-            sponsor_name: sponsorName,
-            sponsor_email: sponsorEmail,
-            sponsor_website: sponsorWebsite ?? null,
-            sponsor_logo_url: sponsorLogoDataUrl ?? null,
-            sponsor_message: sponsorMessage ?? null,
-            amount_pence: amount,
-          })
+        // Clean up stale unpaid attempts and create new row in a transaction
+        const cutoff = new Date(
+          Date.now() - PENDING_PAYMENT_TTL_HOURS * 60 * 60 * 1000,
+        ).toISOString();
+
+        const staleRows = await client
+          .selectFrom("player_sponsorship")
+          .where("contentful_entry_id", "=", contentfulEntryId)
+          .where("season", "=", season)
+          .where("paid_at", "is", null)
+          .where("created_at", "<", cutoff)
+          .select(["id", "stripe_payment_intent_id"])
           .execute();
+
+        // Cancel orphaned Stripe payment intents before deleting rows
+        for (const row of staleRows) {
+          if (row.stripe_payment_intent_id) {
+            try {
+              await stripe.paymentIntents.cancel(
+                row.stripe_payment_intent_id,
+              );
+            } catch {
+              // Intent may already be cancelled/expired — safe to ignore
+            }
+          }
+        }
+
+        await client.transaction().execute(async (trx) => {
+          if (staleRows.length > 0) {
+            await trx
+              .deleteFrom("player_sponsorship")
+              .where(
+                "id",
+                "in",
+                staleRows.map((r) => r.id),
+              )
+              .execute();
+          }
+
+          await trx
+            .insertInto("player_sponsorship")
+            .values({
+              id: sponsorshipId,
+              contentful_entry_id: contentfulEntryId,
+              player_name: playerName,
+              season,
+              sponsor_name: sponsorName,
+              sponsor_email: sponsorEmail,
+              sponsor_website: sponsorWebsite ?? null,
+              sponsor_logo_url: sponsorLogoDataUrl ?? null,
+              sponsor_message: sponsorMessage ?? null,
+              amount_pence: amount,
+            })
+            .execute();
+        });
 
         const enrichedMetadata: Record<string, string> = {
           type: "sponsorPlayer",
@@ -195,6 +257,9 @@ export const playerSponsorship = {
     }),
     handler: async ({ contentfulEntryId }) => {
       const season = currentCricketSeason();
+      const cutoff = new Date(
+        Date.now() - PENDING_PAYMENT_TTL_HOURS * 60 * 60 * 1000,
+      ).toISOString();
 
       const pending = await client
         .selectFrom("player_sponsorship")
@@ -202,7 +267,12 @@ export const playerSponsorship = {
         .where("season", "=", season)
         .where((eb) =>
           eb.or([
-            eb("paid_at", "is", null),
+            // Unpaid attempts are only "pending" if recent (within TTL)
+            eb.and([
+              eb("paid_at", "is", null),
+              eb("created_at", ">=", cutoff),
+            ]),
+            // Paid but unapproved stays pending indefinitely
             eb.and([eb("paid_at", "is not", null), eb("approved", "=", 0)]),
           ]),
         )
