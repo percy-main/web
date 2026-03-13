@@ -391,12 +391,25 @@ function LinkingDialog({
   onLinked: () => void;
 }) {
   const [userSearch, setUserSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(userSearch);
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [userSearch]);
 
   const suggestedUsersQuery = useQuery({
-    queryKey: ["admin", "searchUsersForLinking", junior.id],
+    queryKey: ["admin", "searchUsersForLinking", junior.id, debouncedSearch],
     queryFn: async () => {
       const result = await actions.admin.searchUsersForLinking({
         dependentId: junior.id,
+        search: debouncedSearch || undefined,
       });
       if (result.error) throw result.error;
       return result.data;
@@ -432,16 +445,7 @@ function LinkingDialog({
     },
   });
 
-  const filteredUsers = useMemo(() => {
-    const users = suggestedUsersQuery.data?.users ?? [];
-    if (!userSearch.trim()) return users;
-    const term = userSearch.toLowerCase().trim();
-    return users.filter(
-      (u) =>
-        u.name.toLowerCase().includes(term) ||
-        u.email.toLowerCase().includes(term),
-    );
-  }, [suggestedUsersQuery.data, userSearch]);
+  const users = suggestedUsersQuery.data?.users ?? [];
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -480,7 +484,7 @@ function LinkingDialog({
         <div className="mt-2">
           <Input
             type="text"
-            placeholder="Filter users..."
+            placeholder="Search by name or email..."
             value={userSearch}
             onChange={(e) => setUserSearch(e.target.value)}
             className="mb-2"
@@ -494,12 +498,12 @@ function LinkingDialog({
           )}
 
           <div className="flex max-h-60 flex-col gap-1 overflow-y-auto">
-            {filteredUsers.length === 0 && !suggestedUsersQuery.isLoading && (
+            {users.length === 0 && !suggestedUsersQuery.isLoading && (
               <p className="py-2 text-center text-sm text-gray-500">
                 No matching users found.
               </p>
             )}
-            {filteredUsers.map((user) => (
+            {users.map((user) => (
               <div
                 key={user.id}
                 className="flex items-center justify-between rounded px-3 py-2 hover:bg-gray-50"

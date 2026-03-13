@@ -961,8 +961,9 @@ export const admin = {
     roles: ["admin"],
     input: z.object({
       dependentId: z.string().min(1),
+      search: z.string().optional(),
     }),
-    handler: async ({ dependentId }) => {
+    handler: async ({ dependentId, search }) => {
       const dep = await client
         .selectFrom("dependent")
         .select("name")
@@ -976,10 +977,22 @@ export const admin = {
         });
       }
 
-      const users = await client
+      let query = client
         .selectFrom("user")
-        .select(["id", "name", "email"])
-        .execute();
+        .select(["id", "name", "email"]);
+
+      // If a search term is provided, pre-filter at the DB level
+      if (search && search.trim().length > 0) {
+        const term = `%${search.trim()}%`;
+        query = query.where((eb) =>
+          eb.or([
+            eb("name", "like", term),
+            eb("email", "like", term),
+          ]),
+        );
+      }
+
+      const users = await query.limit(50).execute();
 
       const scored = users
         .map((u) => ({
@@ -988,7 +1001,6 @@ export const admin = {
           email: u.email,
           score: nameSimilarity(dep.name, u.name),
         }))
-        .filter((u) => u.score > 0)
         .sort((a, b) => b.score - a.score)
         .slice(0, 20);
 
