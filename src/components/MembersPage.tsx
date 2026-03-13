@@ -96,7 +96,6 @@ export const MembersPage = () => {
             </a>
           </div>
         </div>
-        <IncompleteDetailsBanner />
         <Tabs value={tab} onValueChange={onTabChange} className="w-full">
           <TabsList>
             <TabsTrigger value="membership">Membership</TabsTrigger>
@@ -104,6 +103,7 @@ export const MembersPage = () => {
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
           </TabsList>
+          <IncompleteDetailsBanner hidden={tab === "details"} />
           <TabsContent value="membership">
             <div className="flex flex-col gap-4">
               <div>
@@ -192,10 +192,10 @@ function OnboardingModal({ onGoToDetails }: { onGoToDetails: () => void }) {
   );
 }
 
-function IncompleteDetailsBanner() {
+function IncompleteDetailsBanner({ hidden }: { hidden: boolean }) {
   const query = useMemberDetails();
 
-  if (query.isLoading || hasMemberDetails(query.data?.member)) return null;
+  if (hidden || query.isLoading || hasMemberDetails(query.data?.member)) return null;
 
   return (
     <div className="w-full rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
