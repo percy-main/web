@@ -130,8 +130,9 @@ Infrastructure as code is not a separate migration phase — it is the implement
 |----------------|----------------|
 | Phase 1: Foundation & Database | `shared` environment + `production/vpc` + `production/rds` + DNS + SES |
 | Phase 2: Backend Service | `production/ecs-service` + ALB + ECR + monitoring |
-| Phase 3: Frontend Migration | `production/cdn` + S3 buckets |
-| Phase 5: Cutover & Environments | `staging` environment — same modules, smaller values |
+| Phase 3: Data Pipelines | EventBridge rules + ECS scheduled task definitions |
+| Phase 4: Frontend Migration | `production/cdn` + S3 buckets |
+| Phase 6: Cutover & Environments | `staging` environment — same modules, smaller values |
 
 Each phase: write the modules, open a PR, review the plan output, merge to apply. Infrastructure grows incrementally.
 

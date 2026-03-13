@@ -213,7 +213,7 @@ Single-AZ instances are appropriate for our availability requirements. Automated
 
 | Rank | Service | Monthly (2 envs) | % of Total | Notes |
 |------|---------|-----------------|------------|-------|
-| 1 | **NAT Gateway** | $70.80 | 37% | Required for private subnet internet access. One per VPC. |
+| 1 | **NAT Gateway** | $70.80 | 37% | Conscious simplicity trade-off: required for private subnet outbound access. Alternatives (fck-nat, NAT instances) reduce cost but add operational burden. We accept the managed NAT cost to keep networking simple and reliable. One per VPC. |
 | 2 | **ALB** | $39.64 | 21% | Required for ECS service routing and health checks. One per environment. |
 | 3 | **RDS** | $31.60 | 16% | Always-on instances. |
 | 4 | **ECS Fargate** | $24.88 | 13% | Application compute. |
@@ -243,10 +243,10 @@ Infrastructure is provisioned incrementally. Not all costs are incurred from day
 |-------|----------------------|-------------------------|------------------------|
 | **Phase 1: Foundation & Database** | RDS (prod), Route 53, SES, S3, VPC + NAT (prod) | ~$50 | ~$50 |
 | **Phase 2: Backend Service** | ECS Fargate (prod, 2 tasks), ALB (prod), ECR, CloudWatch, WAF | ~$58 | ~$108 |
-| **Phase 3: Frontend Migration** | CloudFront (frontend) — mostly within free tier | ~$1 | ~$109 |
-| **Phase 4: Content Migration** | No new services (uses existing RDS + S3) | $0 | ~$109 |
-| **Phase 5: Staging Environment** | RDS (staging), ECS (staging, 1 task), ALB (staging), NAT (staging), CloudWatch (staging) | ~$83 | ~$192 |
-| **Phase 6: Data Pipelines** | ECS scheduled tasks (on-demand, minimal cost) | ~$1 | ~$193 |
+| **Phase 3: Data Pipelines** | ECS scheduled tasks (on-demand, minimal cost) | ~$1 | ~$109 |
+| **Phase 4: Frontend Migration** | CloudFront (frontend) — mostly within free tier | ~$1 | ~$110 |
+| **Phase 5: Content Migration** | No new services (uses existing RDS + S3) | $0 | ~$110 |
+| **Phase 6: Staging & Cutover** | RDS (staging), ECS (staging, 1 task), ALB (staging), NAT (staging), CloudWatch (staging) | ~$83 | ~$193 |
 
 The initial migration (Phases 1–2) runs on approximately **$108/month**. Full production + staging with all services reaches approximately **$193/month**.
 

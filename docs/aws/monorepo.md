@@ -75,7 +75,7 @@ Each deployable unit has its own pipeline, triggered by path filters:
 | `apps/web/**`, `packages/shared/**` | Frontend Deploy | `build` → `aws s3 sync` → CloudFront invalidation |
 | `apps/api/**`, `packages/shared/**`, `packages/db/**`, `packages/email/**` | API Deploy | `build` → Docker build → ECR push → ECS rolling update |
 | `infra/**` | Terraform | `plan` on PR → `apply` on merge |
-| `packages/db/migrations/**` | DB Migration | Runs automatically on API service startup |
+| `packages/db/migrations/**` | DB Migration | Run as explicit ECS task before API deployment |
 
 Changes to `packages/shared` trigger both frontend and API pipelines, since both depend on it. The build orchestrator handles this automatically — it knows the dependency graph.
 
@@ -93,9 +93,10 @@ PR opened/updated:
 
 Merge to main:
   1. Build affected packages
-  2. Deploy staging (automatic)
-  3. Deploy production (manual approval gate)
-  4. Terraform apply (if infra changed, manual approval for production)
+  2. Terraform apply (if infra changed, manual approval for production)
+  3. Run DB migrations as one-off ECS task (if migrations changed)
+  4. Deploy staging (automatic)
+  5. Deploy production (manual approval gate)
 ```
 
 ---
@@ -108,8 +109,9 @@ The monorepo structure is established incrementally, not all at once:
 |----------------|-----------------|
 | **Phase 1: Foundation** | Add `infra/` and `packages/db/` (extract DB layer from current `src/lib/db/`) |
 | **Phase 2: Backend** | Add `apps/api/` (extract service layer from Astro actions), add `packages/shared/` (extract shared types/schemas) |
-| **Phase 3: Frontend** | Rename/restructure current frontend into `apps/web/` as React + Vite SPA |
-| **Phase 4: Content** | Add content management to `apps/api/`, remove Contentful packages |
+| **Phase 3: Data Pipelines** | Pipeline ECS tasks use the same `apps/api` image and `packages/db` — no new packages needed |
+| **Phase 4: Frontend** | Rename/restructure current frontend into `apps/web/` as React + Vite SPA |
+| **Phase 5: Content** | Add content management to `apps/api/`, remove Contentful packages |
 
 The current Astro app continues to work throughout — it just gradually shrinks as pieces are extracted into their own packages.
 

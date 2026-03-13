@@ -67,6 +67,8 @@ The site currently uses Astro (a static site generator) with React "islands" for
 - Standard tooling — React Router for client-side routing, Vite for builds
 - Simple deployment — static assets on S3, no server-side rendering infrastructure needed
 
+**Trade-off — public content discoverability:** A SPA loses Astro's static-first rendering for public pages (fixtures, results, scorecards, news). If search engine indexing and social media previews of these pages matter, we need to account for this — either through pre-rendering at build time (e.g. `vite-plugin-ssr` or similar), server-side rendering for a subset of public routes, or accepting that the authenticated/interactive nature of most of the app makes this an acceptable trade. This deserves a deliberate decision rather than being an accidental casualty of the migration.
+
 ### Backend: Serverless Functions → Node.js API Service on ECS
 
 Our backend logic (~9,550 lines across 19 handler files) currently runs inside Astro's serverless action system with no service layer separation. We propose extracting this into a standalone **Node.js API service** running on ECS Fargate.
@@ -155,9 +157,9 @@ Separate accounts provide blast radius isolation, independent IAM policies, and 
 |-------|---------|---------------|
 | **1. Foundation & Database** | AWS account setup, VPC, RDS, DNS, SES, S3. Migrate database from SQLite to PostgreSQL. | Production database live on RDS |
 | **2. Backend Service** | Extract API service, deploy to ECS Fargate behind ALB. Migrate webhooks and scheduled jobs. | API service serving production traffic |
-| **3. Frontend Migration** | Migrate from Astro to React/Vite SPA. Deploy to S3 + CloudFront. | Full application live on AWS |
-| **4. Content Migration** | Move editorial content from Contentful to PostgreSQL. Extend admin panel. | Contentful decommissioned |
-| **5. Cutover & Environments** | Staging environment. DNS cutover. Decommission old services. | Migration complete |
-| **6. Data Pipelines** | Decouple external data ingestion into independent ETL stages. | Resilient data pipeline operational |
+| **3. Data Pipelines** | Decouple external data ingestion into independent ETL stages. | Pipeline logic separated from request path |
+| **4. Frontend Migration** | Migrate from Astro to React/Vite SPA. Deploy to S3 + CloudFront. | Full application live on AWS |
+| **5. Content Migration** | Move editorial content from Contentful to PostgreSQL. Extend admin panel. | Contentful decommissioned |
+| **6. Cutover & Environments** | Staging environment. DNS cutover. Decommission old services. | Migration complete |
 
 See [Implementation Plan](./implementation-plan.md) for detailed phase breakdowns and [Cost Breakdown](./cost-breakdown.md) for per-phase cost build-up.
