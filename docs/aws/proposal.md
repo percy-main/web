@@ -135,6 +135,8 @@ Percy Main AWS Organization
 
 Separate accounts provide blast radius isolation, independent IAM policies, and per-environment cost visibility. We currently have no staging environment — deploy previews are our only pre-production testing.
 
+**Why separate accounts rather than a single account with resource-level separation?** A single account with tags and separate VPCs would be simpler to operate day-to-day. However, account-level isolation is the AWS-recommended best practice for environment separation — it provides hard IAM boundaries (a misconfigured staging policy cannot affect production resources), independent service quotas, and clean per-environment cost reporting without relying on tagging discipline. For a project funded by AWS non-profit credits, following AWS's own well-architected guidance is the right call. The additional IAM complexity (cross-account roles for CI/CD) is a one-time setup cost managed through Terraform.
+
 ---
 
 ## Key Benefits

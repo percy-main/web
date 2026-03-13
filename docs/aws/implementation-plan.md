@@ -184,12 +184,13 @@ Content is edited by a single developer. The current workflow already requires a
   - Per-PR PostgreSQL schemas within the staging RDS instance (zero incremental cost)
   - Per-PR S3 prefixes for frontend builds
   - GitHub Actions workflow for preview lifecycle (create on PR open, destroy on close)
-  - **Preview schema hygiene** — this strategy is viable but requires operational discipline:
+  - **Preview schema hygiene** — this strategy requires operational discipline, but the pattern is well-established and has been implemented successfully on previous projects:
     - Deterministic schema naming (e.g. `preview_pr_123`) to avoid collisions
     - Automatic cleanup on PR close (GitHub Actions workflow drops schema)
     - Scheduled cleanup job for abandoned schemas (PRs closed without triggering cleanup)
     - CI-scoped database credentials with permissions limited to the PR's schema
     - Migration isolation — each preview schema runs its own migrations independently
+  - **Why not a managed branching database (e.g. Neon)?** Per-PR schemas within the existing staging RDS instance add zero incremental cost and keep the stack on a single database engine. Introducing a second database provider solely for previews adds a dependency, a billing relationship, and a potential source of dialect divergence between preview and production environments. The operational overhead of schema lifecycle management is modest and well-understood.
 - WAF configuration on production CloudFront and ALB
 - DNS cutover:
   - Lower TTL on current DNS records in advance

@@ -143,6 +143,12 @@ Key considerations:
 
 ---
 
+## Why Define the Structure Upfront
+
+The workspace layout is defined early rather than discovered incrementally. This is a deliberate choice: after six months of active development in this codebase, the domain boundaries (frontend, API, database, shared types, email templates) are well-understood — they reflect how the code is already logically organised within the current Astro monolith. Defining the target structure upfront avoids mid-migration restructuring and gives each phase a clear destination for extracted code. The structure may evolve during implementation, but the starting point is informed by direct experience, not speculation.
+
+---
+
 ## Constraints and Trade-offs
 
 | Trade-off | Notes |

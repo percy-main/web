@@ -145,6 +145,8 @@ Single-AZ instances are appropriate for our availability requirements. Automated
 
 ## WAF
 
+While the application already mitigates common attack vectors at the code level (parameterised queries via Kysely, auto-escaped output via React), WAF provides defence in depth at the infrastructure layer — rate limiting, geo-blocking, and managed rule sets that adapt to emerging threats without code changes. At ~$10/month this is a low-cost layer of protection that aligns with AWS security best practices.
+
 | Item | Count | Unit Price | Monthly |
 |------|-------|-----------|---------|
 | Web ACL | 1 | $5.00/mo | $5.00 |
