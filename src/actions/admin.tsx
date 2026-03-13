@@ -893,7 +893,7 @@ export const admin = {
     handler: async ({ dependentId, userId }) => {
       const dep = await client
         .selectFrom("dependent")
-        .select("id")
+        .select(["id", "user_id"])
         .where("id", "=", dependentId)
         .executeTakeFirst();
 
@@ -901,6 +901,13 @@ export const admin = {
         throw new ActionError({
           code: "BAD_REQUEST",
           message: "Dependent not found",
+        });
+      }
+
+      if (dep.user_id != null) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Dependent is already linked to a user. Unlink first.",
         });
       }
 
@@ -933,11 +940,18 @@ export const admin = {
       dependentId: z.string().min(1),
     }),
     handler: async ({ dependentId }) => {
-      await client
+      const result = await client
         .updateTable("dependent")
         .set({ user_id: null })
         .where("id", "=", dependentId)
         .execute();
+
+      if (result[0]?.numUpdatedRows === 0n) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Dependent not found",
+        });
+      }
 
       return { success: true };
     },
