@@ -2,6 +2,9 @@ import { type Kysely, sql } from "kysely";
 
 export async function up(db: Kysely<unknown>): Promise<void> {
   // SQLite can't ALTER COLUMN nullability, so recreate the table
+  // Disable FK checks to allow DROP TABLE with referencing tables
+  await sql`PRAGMA foreign_keys = OFF`.execute(db);
+
   // Drop leftover temp table if a previous attempt failed partway
   await sql`DROP TABLE IF EXISTS member_new`.execute(db);
 
@@ -38,10 +41,12 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 
   await sql`DROP TABLE member`.execute(db);
   await sql`ALTER TABLE member_new RENAME TO member`.execute(db);
+  await sql`PRAGMA foreign_keys = ON`.execute(db);
 }
 
 export async function down(db: Kysely<unknown>): Promise<void> {
   // Reverse: make fields NOT NULL again (data loss possible for NULL rows)
+  await sql`PRAGMA foreign_keys = OFF`.execute(db);
   await sql`DROP TABLE IF EXISTS member_new`.execute(db);
 
   await sql`
@@ -80,4 +85,5 @@ export async function down(db: Kysely<unknown>): Promise<void> {
 
   await sql`DROP TABLE member`.execute(db);
   await sql`ALTER TABLE member_new RENAME TO member`.execute(db);
+  await sql`PRAGMA foreign_keys = ON`.execute(db);
 }
