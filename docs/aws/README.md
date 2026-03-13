@@ -13,6 +13,8 @@ Our infrastructure is currently spread across several third-party services (Netl
 | [Proposal](./proposal.md) | Architecture overview, services being replaced, key benefits, and broad timeline |
 | [Implementation Plan](./implementation-plan.md) | Detailed phased migration plan with technical specifics |
 | [Cost Breakdown](./cost-breakdown.md) | Line-by-line AWS service costs, phased build-up, and credits request |
+| [Infrastructure as Code](./infrastructure-as-code.md) | Terraform approach: module design, state management, CI/CD, and phasing |
+| [Monorepo Structure](./monorepo.md) | Workspace layout, shared code strategy, tooling options, CI/CD pipelines, and Docker |
 
 ## Summary
 
