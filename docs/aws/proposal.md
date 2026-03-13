@@ -152,7 +152,7 @@ Separate accounts provide blast radius isolation, independent IAM policies, and 
 | **Sustainable funding** | AWS non-profit credits would replace personal trustee funding, securing infrastructure long-term |
 | **Professional monitoring** | CloudWatch metrics, alarms, and dashboards — currently no monitoring capability |
 | **Application security** | WAF, VPC, Security Groups, IAM, encryption at rest |
-| **Automated backups** | RDS automated daily snapshots with 35-day point-in-time recovery |
+| **Automated backups** | RDS automated daily snapshots with 35-day point-in-time recovery; staging environment is periodically seeded from a production snapshot restore, which doubles as a backup verification test |
 | **PostgreSQL** | Full-text search, JSON operators, window functions, CTEs, mature ecosystem |
 | **Environment parity** | Production, staging, and preview environments |
 | **Scalability** | Scale ECS tasks, upgrade RDS instance, or add read replicas as membership grows |
