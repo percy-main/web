@@ -992,7 +992,7 @@ export const matchday = {
           html: await render(
             <ChargeNotification.component
               imageBaseUrl={`${BASE_URL}/images`}
-              name={player.member_name}
+              name={player.member_name ?? "Member"}
               description={player.charge_description}
               amount={amountFormatted}
               chargeDate={formatDate(new Date(player.charge_date), "dd/MM/yyyy")}

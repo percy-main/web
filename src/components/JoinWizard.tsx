@@ -1,5 +1,5 @@
 import { useSession } from "@/lib/auth/client";
-import { Button } from "@/ui/Button";
+import { Button, buttonVariants } from "@/ui/Button";
 import {
   Card,
   CardContent,
@@ -73,11 +73,12 @@ const JoinWizardInner: FC = () => {
         <Button variant="ghost" onClick={() => setStep("details")}>
           Back
         </Button>
-        <Button asChild>
-          <a href={`/membership/pay?email=${encodeURIComponent(email)}`}>
-            Choose Membership
-          </a>
-        </Button>
+        <a
+          href={`/membership/pay?email=${encodeURIComponent(email)}`}
+          className={buttonVariants()}
+        >
+          Choose Membership
+        </a>
       </CardFooter>
     </Card>
   );

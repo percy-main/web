@@ -97,9 +97,9 @@ function DuplicateGroup({
     matchKey: string;
     members: Array<{
       id: string;
-      name: string;
+      name: string | null;
       email: string;
-      title: string;
+      title: string | null;
       stripeCustomerId: string | null;
       membershipCount: number;
       dependentCount: number;
@@ -350,13 +350,13 @@ function MemberCard({
   variant: "green" | "red";
   member: {
     id: string;
-    name: string;
-    title: string;
+    name: string | null;
+    title: string | null;
     email: string;
-    address: string;
-    postcode: string;
-    dob: string;
-    telephone: string;
+    address: string | null;
+    postcode: string | null;
+    dob: string | null;
+    telephone: string | null;
     stripe_customer_id: string | null;
   };
   memberships: Array<{

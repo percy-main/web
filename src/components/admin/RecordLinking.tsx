@@ -81,10 +81,10 @@ type ContentfulPerson = {
 
 type PersonRow = {
   id: string;
-  name: string;
+  name: string | null;
   playCricketId: string | null;
   contentfulEntryId?: string | null;
-  parentName?: string;
+  parentName?: string | null;
   type: "member" | "dependent";
 };
 
@@ -240,7 +240,7 @@ export function RecordLinking() {
 
       if (debouncedSearch.trim().length > 0) {
         const term = debouncedSearch.toLowerCase();
-        const nameMatch = person.name.toLowerCase().includes(term);
+        const nameMatch = person.name?.toLowerCase().includes(term) ?? false;
         const parentMatch =
           person.parentName?.toLowerCase().includes(term) ?? false;
         if (!nameMatch && !parentMatch) return false;
@@ -640,7 +640,7 @@ function DetailModal({
   const suggestedPcPlayers = useMemo(() => {
     if (!pcPlayers || linking !== "play-cricket") return [];
     const query =
-      linkSearch.trim().length > 0 ? linkSearch : person.name;
+      linkSearch.trim().length > 0 ? linkSearch : (person.name ?? "");
     return pcPlayers
       .map((player) => ({
         ...player,
@@ -665,7 +665,7 @@ function DetailModal({
   const suggestedContentful = useMemo(() => {
     if (linking !== "contentful") return [];
     const query =
-      linkSearch.trim().length > 0 ? linkSearch : person.name;
+      linkSearch.trim().length > 0 ? linkSearch : (person.name ?? "");
     return contentfulPersons
       .map((cp) => ({
         ...cp,

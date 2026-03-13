@@ -784,7 +784,7 @@ function MatchdayView({
                               addPlayerMutation.mutate({
                                 matchdayId,
                                 memberId: member.id,
-                                playerName: member.name,
+                                playerName: member.name ?? "Unknown",
                               })
                             }
                           >
