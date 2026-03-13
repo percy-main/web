@@ -44,7 +44,7 @@ We currently run on a mix of third-party services:
 | **Secrets** | SSM Parameter Store + Secrets Manager | Environment variables |
 | **DNS** | Route 53 | Third-party DNS |
 | **Monitoring** | CloudWatch (logs, metrics, alarms) | None (new capability) |
-| **Security** | WAF + VPC + Security Groups | None (new capability) |
+| **Security** | WAF + VPC + Security Groups + CloudTrail | None (new capability) |
 | **Networking** | VPC + NAT Gateway | Managed by Netlify |
 | **Container registry** | ECR | N/A |
 
@@ -67,7 +67,7 @@ This migration is also an opportunity to modernise our application architecture.
 
 The site currently uses Astro (a static site generator) with React "islands" for interactive features. In practice, ~60% of features by complexity are full React applications wrapped in thin Astro shells. We propose migrating to a **React + Vite single-page application** deployed as static files to S3 and served via CloudFront.
 
-Astro's compatibility with AWS hosting (ECS or Amplify) is an open question that would require significant investigation. React + Vite on S3 is a known quantity with a well-understood deployment model, making it the lower-risk choice.
+Astro does support Node.js SSR adapters (deployable to ECS) and static output (deployable to S3+CloudFront), so continuing with Astro on AWS is technically feasible. However, the migration is an opportunity to resolve a growing architectural tension: the application has evolved from a content site into an interactive, authenticated platform where the Astro/React split creates friction — duplicated routing concepts, awkward state sharing between islands, and server/client boundary complexity that adds development overhead without proportionate benefit. A unified React SPA better reflects what the application actually is.
 
 **Benefits:**
 - Single framework — eliminates the Astro/React split and associated complexity
@@ -151,7 +151,7 @@ Separate accounts provide blast radius isolation, independent IAM policies, and 
 |---------|--------|
 | **Sustainable funding** | AWS non-profit credits would replace personal trustee funding, securing infrastructure long-term |
 | **Professional monitoring** | CloudWatch metrics, alarms, and dashboards — currently no monitoring capability |
-| **Application security** | WAF, VPC, Security Groups, IAM, encryption at rest |
+| **Application security** | WAF, VPC, Security Groups, IAM, encryption at rest, CloudTrail audit logging |
 | **Automated backups** | RDS automated daily snapshots with 35-day point-in-time recovery; staging environment is periodically seeded from a production snapshot restore, which doubles as a backup verification test |
 | **PostgreSQL** | Full-text search, JSON operators, window functions, CTEs, mature ecosystem |
 | **Environment parity** | Production, staging, and preview environments |

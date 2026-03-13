@@ -10,6 +10,7 @@ Detailed phased plan for migrating Percy Main CSC infrastructure to AWS. Phases 
 
 **Tasks:**
 - AWS Organization setup (production + staging accounts)
+- CloudTrail enabled (management events — free for one trail per account)
 - VPC configuration with public and private subnets
 - NAT Gateway for private subnet internet access
 - Route 53 DNS for percymain.org

@@ -176,6 +176,15 @@ While the application already mitigates common attack vectors at the code level 
 
 ---
 
+## Audit & Compliance — CloudTrail
+
+| Item | Notes | Monthly |
+|------|-------|---------|
+| Management events trail (1 per account) | Free for first trail per account | $0 |
+| **Subtotal** | | **$0** |
+
+---
+
 ## Cost Summary — Production + Staging
 
 | Category | Monthly Cost |
