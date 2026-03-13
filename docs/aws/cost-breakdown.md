@@ -267,12 +267,22 @@ Costs are conservative estimates based on current usage patterns. Actual costs m
 
 Based on the infrastructure plan above, we are requesting AWS non-profit credits to cover:
 
+### Year 1: Migration + Full Infrastructure
+
 | Item | Annual Cost |
 |------|-----------|
-| **Year 1: Migration + full infrastructure** | ~$2,300 |
-| **Contingency for migration experimentation** (testing configurations, parallel running during cutover, trial services) | ~$700 |
-| **Year 1 total request** | **~$3,000** |
+| **Steady-state infrastructure** (production + staging) | ~$2,300 |
+| **Migration experimentation** (parallel running during cutover, testing instance sizes and configurations) | ~$700 |
+| **Year 1 total** | **~$3,000** |
 
-Year 1 includes one-off migration costs (running old and new infrastructure in parallel during cutover, experimentation with instance sizes and configurations). Subsequent years would be approximately **$2,300/year** for steady-state operations.
+### Year 2+: Steady-State + Growth
 
-A credit allocation of **$5,000/year** would cover our planned infrastructure with room for growth as membership increases and we explore additional AWS services (e.g., larger RDS instances, additional environments, or expanded monitoring).
+| Item | Annual Cost |
+|------|-----------|
+| **Steady-state infrastructure** | ~$2,300 |
+| **Growth headroom** | ~$500 |
+| **Year 2+ total** | **~$2,800** |
+
+Growth headroom accounts for specific scaling triggers: if membership doubles (~400 members), RDS scales to db.t4g.small and ECS adds a third task. Expanded monitoring (additional CloudWatch dashboards, metrics, alarms) also grows modestly with operational maturity.
+
+A credit allocation of **$5,000/year** would cover our planned infrastructure across both the migration year and subsequent steady-state operations, with room for the growth scenarios above.

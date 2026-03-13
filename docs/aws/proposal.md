@@ -61,13 +61,15 @@ This migration is also an opportunity to modernise our application architecture.
 
 The site currently uses Astro (a static site generator) with React "islands" for interactive features. In practice, ~60% of features by complexity are full React applications wrapped in thin Astro shells. We propose migrating to a **React + Vite single-page application** deployed as static files to S3 and served via CloudFront.
 
+Astro's compatibility with AWS hosting (ECS or Amplify) is an open question that would require significant investigation. React + Vite on S3 is a known quantity with a well-understood deployment model, making it the lower-risk choice.
+
 **Benefits:**
 - Single framework — eliminates the Astro/React split and associated complexity
 - Shared application state — auth context, data caching, and query providers work across the entire app
 - Standard tooling — React Router for client-side routing, Vite for builds
 - Simple deployment — static assets on S3, no server-side rendering infrastructure needed
 
-**Trade-off — public content discoverability:** A SPA loses Astro's static-first rendering for public pages (fixtures, results, scorecards, news). If search engine indexing and social media previews of these pages matter, we need to account for this — either through pre-rendering at build time (e.g. `vite-plugin-ssr` or similar), server-side rendering for a subset of public routes, or accepting that the authenticated/interactive nature of most of the app makes this an acceptable trade. This deserves a deliberate decision rather than being an accidental casualty of the migration.
+**Trade-off — public content discoverability:** A SPA loses Astro's static-first rendering for public pages (fixtures, results, scorecards, news). Modern search engines handle SPAs well, and our members navigate directly to the site rather than discovering it via search. The main concern is social sharing — link previews on WhatsApp, Slack, and Facebook require Open Graph meta tags to be present in the initial HTML. We solve this with a lightweight CloudFront Function that serves minimal HTML with OG meta tags for social crawlers, without requiring full SSR infrastructure.
 
 ### Backend: Serverless Functions → Node.js API Service on ECS
 
@@ -80,14 +82,15 @@ Our backend logic (~9,550 lines across 19 handler files) currently runs inside A
 - Framework-agnostic — frontend can evolve without affecting the backend
 - Testable — plain request/response handlers with no framework coupling
 
-### CMS: Contentful → PostgreSQL + Admin Panel
+### CMS: Contentful → Inline Content
 
-Contentful currently manages ~6 content types via 4 API tokens, 6 npm packages, and a type generation pipeline. All dynamic data already lives in our database. We propose moving editorial content into PostgreSQL and managing it through the existing admin panel.
+Contentful currently manages ~6 content types via 4 API tokens, 6 npm packages, and a type generation pipeline. Content is edited by a single developer and already requires a deploy to publish (Astro fetches from Contentful at build time). We propose removing Contentful entirely and inlining editorial content directly as React components.
 
 **Benefits:**
-- Single data source — all content and application data in PostgreSQL
-- Simplified stack — removes external API tokens, packages, and the type generation pipeline
-- Content always fresh — no build-time fetching or cache invalidation
+- Zero regression in publishing workflow — "edit → commit → deploy" is already the process
+- Massively simplified stack — removes external API, 4 tokens, 6 npm packages, and the type generation pipeline
+- Content is version-controlled, type-safe, and requires no runtime fetching
+- No CMS infrastructure to build or maintain
 
 ### Data Pipelines: Monolithic Sync → Decoupled ETL
 
@@ -159,7 +162,7 @@ Separate accounts provide blast radius isolation, independent IAM policies, and 
 | **2. Backend Service** | Extract API service, deploy to ECS Fargate behind ALB. Migrate webhooks and scheduled jobs. | API service serving production traffic |
 | **3. Data Pipelines** | Decouple external data ingestion into independent ETL stages. | Pipeline logic separated from request path |
 | **4. Frontend Migration** | Migrate from Astro to React/Vite SPA. Deploy to S3 + CloudFront. | Full application live on AWS |
-| **5. Content Migration** | Move editorial content from Contentful to PostgreSQL. Extend admin panel. | Contentful decommissioned |
+| **5. Content Migration** | Inline Contentful content as React components. Remove Contentful dependencies. | Contentful decommissioned |
 | **6. Cutover & Environments** | Staging environment. DNS cutover. Decommission old services. | Migration complete |
 
 See [Implementation Plan](./implementation-plan.md) for detailed phase breakdowns and [Cost Breakdown](./cost-breakdown.md) for per-phase cost build-up.

@@ -111,7 +111,7 @@ The monorepo structure is established incrementally, not all at once:
 | **Phase 2: Backend** | Add `apps/api/` (extract service layer from Astro actions), add `packages/shared/` (extract shared types/schemas) |
 | **Phase 3: Data Pipelines** | Pipeline ECS tasks use the same `apps/api` image and `packages/db` — no new packages needed |
 | **Phase 4: Frontend** | Rename/restructure current frontend into `apps/web/` as React + Vite SPA |
-| **Phase 5: Content** | Add content management to `apps/api/`, remove Contentful packages |
+| **Phase 5: Content** | Inline content as React components in `apps/web/`, remove Contentful packages |
 
 The current Astro app continues to work throughout — it just gradually shrinks as pieces are extracted into their own packages.
 

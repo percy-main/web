@@ -131,11 +131,17 @@ By this point, the backend API and data pipelines are already running independen
 - Scaffold React + Vite project
 - Implement React Router for client-side routing
 - Set up root-level providers (auth context, React Query)
-- Migrate page components from Astro wrappers to React Router routes
-  - Most React components move as-is — the Astro layer is primarily routing
-- Replace Astro collections and actions with API calls to the backend service
+- Migrate React island components (~60% by complexity) — these move as-is into React Router routes
+- Migrate Astro-native components (~40%) — these require conversion:
+  - **Astro layouts/slots** (headers, footers, navigation, page shells) → React layout components
+  - **Astro content collections** (`getCollection()` in frontmatter) → React Query hooks calling API endpoints
+  - **Server-side data loading** (DB queries or API calls in frontmatter) → API endpoints + React Query
+  - **File-based routing** (dynamic segments like `[slug].astro`, `[...path].astro`) → React Router route definitions
+  - **Astro middleware** (auth checks, redirects) → client-side route guards or API middleware
+- Replace Astro actions with API calls to the backend service
 - Deploy to S3 with CloudFront distribution:
   - Configure CloudFront custom error response for SPA routing (all paths → index.html)
+  - CloudFront Function for Open Graph meta tags on public routes (link previews for social sharing)
   - HTTPS via ACM certificate
 - CI/CD pipeline: GitHub Actions → `vite build` → S3 sync → CloudFront cache invalidation
 - Configure deploy preview infrastructure (per-PR S3 prefixes or separate CloudFront behaviours)
@@ -146,24 +152,19 @@ By this point, the backend API and data pipelines are already running independen
 
 ## Phase 5: Content Migration
 
-**Goal:** Move editorial content from Contentful to PostgreSQL and the admin panel.
+**Goal:** Remove Contentful and inline editorial content directly as React components.
+
+Content is edited by a single developer. The current workflow already requires a deploy to publish (Astro fetches Contentful at build time), so inlining content as components is zero regression — same "edit → commit → deploy" pipeline, without the external dependency.
 
 **Tasks:**
-- Create PostgreSQL tables for editorial content:
-  - Pages (slug, title, body as Markdown, published status)
-  - News articles (title, body, author, published date)
-  - Events (title, description, date range, location)
-  - People/trustees (name, role, bio, photo URL)
-  - Locations (name, address, coordinates)
-- Extend the existing admin panel with content editing screens
-- Migrate content from Contentful:
-  - Rich text → Markdown conversion
-  - Image assets → S3 (with CloudFront URLs)
-  - Preserve URL slugs for continuity
-- Update frontend to fetch content from the API instead of Contentful
+- Inline existing Contentful content as React components:
+  - Pages, news articles, events, people/trustees, locations
+  - Image assets → S3 (referenced directly from components)
+  - Preserve URL slugs/routes for continuity
 - Remove Contentful dependencies (6 npm packages, 4 API tokens, type generation pipeline)
+- Remove Contentful collection loaders and generated skeleton types
 
-**Estimated effort:** 1 week.
+**Estimated effort:** 2–3 days.
 
 ---
 
@@ -203,6 +204,21 @@ By this point, the backend API and data pipelines are already running independen
   - Contentful (CMS)
 
 **Estimated effort:** 1 week.
+
+---
+
+## Rollback Strategy
+
+The existing Netlify/Turso stack remains the production platform until the final DNS cutover in Phase 6. All earlier phases build and test against AWS infrastructure but do not serve production traffic from it. This means everything before Phase 6 is reversible by simply staying on the current stack.
+
+**Key rollback boundaries:**
+
+| Phase | Rollback | Detail |
+|-------|----------|--------|
+| **Phases 1–5** | Stay on Netlify/Turso | No production traffic hits AWS until DNS cutover. All work is additive. |
+| **Phase 6 (cutover)** | Re-runnable data lift | A Turso→PostgreSQL data lift tool is built in Phase 1 for testing. It is idempotent and re-runnable, so it can be executed again immediately before go-live to capture all interim data. If issues are discovered post-cutover, DNS can be pointed back to Netlify and the existing stack resumes serving traffic. |
+
+**Data lift tool:** Built early in Phase 1 as a scripted export/transform/import from Turso to RDS. Used repeatedly throughout the migration for testing with realistic data. Run one final time during the cutover window to ensure data consistency.
 
 ---
 
