@@ -83,15 +83,18 @@ function DisplayView({
 
 function EditView({
   member,
+  defaultName,
   onCancel,
   onSaved,
 }: {
   member: MemberData | null;
+  defaultName?: string | null;
   onCancel: () => void;
   onSaved: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<MemberData>(member ?? emptyMember);
+  const initial = member ?? { ...emptyMember, name: defaultName ?? null };
+  const [form, setForm] = useState<MemberData>(initial);
 
   const update = (field: keyof MemberData, value: string) => {
     setForm({ ...form, [field]: value || null });
@@ -248,14 +251,15 @@ function EditView({
 export const MemberDetails: FC = () => {
   const query = useMemberDetails();
   const member = query.data?.member;
+  const userName = query.data?.userName;
   const [editing, setEditing] = useState(false);
 
   if (query.isLoading) return null;
 
-  // No details yet — go straight to edit mode
+  // No details yet — go straight to edit mode, pre-fill name from session
   if (!member) {
     return (
-      <EditView member={null} onCancel={() => undefined} onSaved={() => undefined} />
+      <EditView member={null} defaultName={userName ?? null} onCancel={() => undefined} onSaved={() => undefined} />
     );
   }
 
@@ -263,6 +267,7 @@ export const MemberDetails: FC = () => {
     return (
       <EditView
         member={member}
+        defaultName={member.name ? undefined : userName}
         onCancel={() => setEditing(false)}
         onSaved={() => setEditing(false)}
       />

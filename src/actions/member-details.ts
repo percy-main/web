@@ -23,7 +23,7 @@ export const getMemberDetails = defineAuthAction({
       ])
       .executeTakeFirst();
 
-    return { member: member ?? null };
+    return { member: member ?? null, userName: user.name };
   },
 });
 
