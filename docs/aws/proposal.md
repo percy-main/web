@@ -23,33 +23,7 @@ We currently run on a mix of third-party services:
 
 ## Proposed AWS Architecture
 
-```
-                         ┌─────────────────────────────────────────┐
-                         │              CloudFront                  │
-                         │         (CDN + SPA routing)              │
-                         └──────┬──────────────┬───────────────────┘
-                                │              │
-                    ┌───────────▼──┐    ┌──────▼──────────┐
-                    │  S3 Bucket   │    │  ALB            │
-                    │  (React SPA) │    │  (API routing)  │
-                    └──────────────┘    └──────┬──────────┘
-                                               │
-                                    ┌──────────▼──────────┐
-                                    │  ECS Fargate        │
-                                    │  (API Service)      │
-                                    │  2 tasks, ARM-based │
-                                    └──────────┬──────────┘
-                                               │
-                              ┌────────────────┼────────────────┐
-                              │                │                │
-                    ┌─────────▼───┐  ┌─────────▼───┐  ┌────────▼────┐
-                    │  RDS        │  │  S3          │  │  SES        │
-                    │  PostgreSQL │  │  (Assets)    │  │  (Email)    │
-                    └─────────────┘  └─────────────┘  └─────────────┘
-
-        EventBridge ──────▶ ECS (scheduled tasks: data sync, reminders)
-        Stripe ────────────▶ ECS (webhook endpoint)
-```
+![Proposed AWS Architecture](./architecture.png)
 
 ### Services Replaced
 
