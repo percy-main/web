@@ -32,9 +32,9 @@ interface Junior {
   sex: string;
   dob: string;
   registeredAt: string;
-  parentName: string;
+  parentName: string | null;
   parentEmail: string;
-  parentTelephone: string;
+  parentTelephone: string | null;
   paidUntil: string | null;
   ageGroup: AgeGroup | null;
   teamName: string | null;

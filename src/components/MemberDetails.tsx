@@ -12,25 +12,25 @@ import { actions } from "astro:actions";
 import { useCallback, useState, type FC } from "react";
 
 type MemberData = {
-  title: string;
-  name: string;
-  address: string;
-  postcode: string;
-  dob: string;
-  telephone: string;
-  emergency_contact_name: string;
-  emergency_contact_telephone: string;
+  title: string | null;
+  name: string | null;
+  address: string | null;
+  postcode: string | null;
+  dob: string | null;
+  telephone: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_telephone: string | null;
 };
 
 const emptyMember: MemberData = {
-  title: "",
-  name: "",
-  address: "",
-  postcode: "",
-  dob: "",
-  telephone: "",
-  emergency_contact_name: "",
-  emergency_contact_telephone: "",
+  title: null,
+  name: null,
+  address: null,
+  postcode: null,
+  dob: null,
+  telephone: null,
+  emergency_contact_name: null,
+  emergency_contact_telephone: null,
 };
 
 export const useMemberDetails = () =>
@@ -73,7 +73,7 @@ function DisplayView({
         {fields.map(({ key, label }) => (
           <div key={key} className="contents">
             <dt className="text-muted-foreground font-medium">{label}</dt>
-            <dd>{member[key] || "-"}</dd>
+            <dd>{member[key] ?? "-"}</dd>
           </div>
         ))}
       </dl>
@@ -83,18 +83,21 @@ function DisplayView({
 
 function EditView({
   member,
+  defaultName,
   onCancel,
   onSaved,
 }: {
   member: MemberData | null;
+  defaultName?: string | null;
   onCancel: () => void;
   onSaved: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState<MemberData>(member ?? emptyMember);
+  const initial = member ?? { ...emptyMember, name: defaultName ?? null };
+  const [form, setForm] = useState<MemberData>(initial);
 
   const update = (field: keyof MemberData, value: string) => {
-    setForm({ ...form, [field]: value });
+    setForm({ ...form, [field]: value || null });
   };
 
   const handleAddressChange = useCallback((value: AddressValue) => {
@@ -107,7 +110,14 @@ function EditView({
 
   const mutation = useMutation({
     mutationFn: async (data: MemberData) => {
-      const result = await actions.updateMemberDetails(data);
+      // Only send non-null fields to the action
+      const payload: Record<string, string> = {};
+      for (const [key, value] of Object.entries(data)) {
+        if (value !== null) {
+          payload[key] = value;
+        }
+      }
+      const result = await actions.updateMemberDetails(payload);
       if (result.error) throw result.error;
       return result.data;
     },
@@ -145,25 +155,23 @@ function EditView({
             <Label htmlFor="title">Title</Label>
             <Input
               id="title"
-              value={form.title}
+              value={form.title ?? ""}
               onChange={(e) => update("title", e.currentTarget.value)}
-              required
             />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="detail-name">Name</Label>
             <Input
               id="detail-name"
-              value={form.name}
+              value={form.name ?? ""}
               onChange={(e) => update("name", e.currentTarget.value)}
-              required
             />
           </div>
           <APIProvider apiKey={MAPS_API_KEY}>
             <AddressLookupInner
               onChange={handleAddressChange}
-              defaultAddress={member?.address}
-              defaultPostcode={member?.postcode}
+              defaultAddress={member?.address ?? undefined}
+              defaultPostcode={member?.postcode ?? undefined}
             />
           </APIProvider>
           <div className="grid gap-2">
@@ -171,9 +179,8 @@ function EditView({
             <Input
               id="dob"
               type="date"
-              value={form.dob}
+              value={form.dob ?? ""}
               onChange={(e) => update("dob", e.currentTarget.value)}
-              required
             />
           </div>
         </section>
@@ -185,9 +192,8 @@ function EditView({
             <Input
               id="telephone"
               type="tel"
-              value={form.telephone}
+              value={form.telephone ?? ""}
               onChange={(e) => update("telephone", e.currentTarget.value)}
-              required
             />
           </div>
         </section>
@@ -202,11 +208,10 @@ function EditView({
             <Label htmlFor="emergency_contact_name">Contact Name</Label>
             <Input
               id="emergency_contact_name"
-              value={form.emergency_contact_name}
+              value={form.emergency_contact_name ?? ""}
               onChange={(e) =>
                 update("emergency_contact_name", e.currentTarget.value)
               }
-              required
             />
           </div>
           <div className="grid gap-2">
@@ -216,11 +221,10 @@ function EditView({
             <Input
               id="emergency_contact_telephone"
               type="tel"
-              value={form.emergency_contact_telephone}
+              value={form.emergency_contact_telephone ?? ""}
               onChange={(e) =>
                 update("emergency_contact_telephone", e.currentTarget.value)
               }
-              required
             />
           </div>
         </section>
@@ -247,14 +251,15 @@ function EditView({
 export const MemberDetails: FC = () => {
   const query = useMemberDetails();
   const member = query.data?.member;
+  const userName = query.data?.userName;
   const [editing, setEditing] = useState(false);
 
   if (query.isLoading) return null;
 
-  // No details yet — go straight to edit mode
+  // No details yet — go straight to edit mode, pre-fill name from session
   if (!member) {
     return (
-      <EditView member={null} onCancel={() => undefined} onSaved={() => undefined} />
+      <EditView member={null} defaultName={userName ?? null} onCancel={() => undefined} onSaved={() => undefined} />
     );
   }
 
@@ -262,6 +267,7 @@ export const MemberDetails: FC = () => {
     return (
       <EditView
         member={member}
+        defaultName={member.name ? undefined : userName}
         onCancel={() => setEditing(false)}
         onSaved={() => setEditing(false)}
       />

@@ -718,7 +718,7 @@ export const admin = {
         html: await render(
           <ChargeNotification.component
             imageBaseUrl={`${BASE_URL}/images`}
-            name={member.name}
+            name={member.name ?? "Member"}
             description={description}
             amount={amountFormatted}
             chargeDate={formatDate(chargeDate, "dd/MM/yyyy")}
@@ -1103,7 +1103,7 @@ export const admin = {
         html: await render(
           <PaymentReminder.component
             imageBaseUrl={`${BASE_URL}/images`}
-            name={charge.memberName}
+            name={charge.memberName ?? "Member"}
             description={charge.description}
             amount={amountFormatted}
             chargeDate={formatDate(charge.charge_date, "dd/MM/yyyy")}
@@ -1223,6 +1223,7 @@ export const admin = {
       // Pre-bucket by normalised surname to avoid O(n²) comparisons
       const surnameBuckets = new Map<string, typeof allMembers>();
       for (const m of allMembers) {
+        if (!m.name) continue;
         const normalized = normalizeName(m.name);
         const tokens = normalized.split(" ");
         const surname = tokens[tokens.length - 1] ?? "";
@@ -1244,7 +1245,7 @@ export const admin = {
             const pairKey = [a.id, b.id].sort().join(":");
             if (emailLinked.has(pairKey)) continue;
 
-            const sim = nameSimilarity(a.name, b.name);
+            const sim = nameSimilarity(a.name ?? "", b.name ?? "");
             if (sim >= NAME_SIMILARITY_THRESHOLD) {
               // Create a group keyed by the pair (not transitive)
               const existing = nameGroupMap.get(a.id) ?? new Set<string>();

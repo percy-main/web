@@ -4,11 +4,7 @@ import { formatDate } from "date-fns";
 import type { FC } from "react";
 import { match } from "ts-pattern";
 
-type Props = {
-  email: string;
-};
-
-export const Membership: FC<Props> = ({ email }) => {
+export const Membership: FC = () => {
   const query = useQuery({
     queryKey: ["membership"],
     queryFn: async () => {
@@ -63,7 +59,7 @@ export const Membership: FC<Props> = ({ email }) => {
             <div className="mb-2 font-semibold">No Membership</div>
             <a
               className="hover:underline"
-              href={`/membership/pay?email=${encodeURIComponent(email)}`}
+              href="/membership/join"
             >
               Join Now
             </a>

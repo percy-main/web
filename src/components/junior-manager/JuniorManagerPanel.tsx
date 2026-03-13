@@ -111,13 +111,13 @@ interface Player {
   sex: string;
   dob: string;
   registeredAt: string;
-  parentName: string;
+  parentName: string | null;
   parentEmail: string;
-  parentTelephone: string;
-  parentAddress: string;
-  parentPostcode: string;
-  emergencyContactName: string;
-  emergencyContactTelephone: string;
+  parentTelephone: string | null;
+  parentAddress: string | null;
+  parentPostcode: string | null;
+  emergencyContactName: string | null;
+  emergencyContactTelephone: string | null;
 }
 
 function TeamCard({

@@ -69,7 +69,7 @@ const SubscriptionCheckoutInner: FC<Props> = ({ price }) => {
         <CardContent>
           <p>
             An email address is required to set up a subscription. Please{" "}
-            <a href="/membership/join" className="text-blue-600 underline">
+            <a href="/auth/register" className="text-blue-600 underline">
               join the club
             </a>{" "}
             first.

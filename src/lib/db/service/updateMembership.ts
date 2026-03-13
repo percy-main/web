@@ -2,7 +2,6 @@ import * as db from "@/lib/db/client";
 import { defaultCategoryForMembershipType } from "@/lib/member/categories";
 import { randomUUID } from "crypto";
 import { add, type Duration } from "date-fns";
-import { NoMemberWithEmailError } from "./errors";
 
 export const updateMembership = async ({
   membershipType,
@@ -48,7 +47,45 @@ export const updateMembership = async ({
     .executeTakeFirst();
 
   if (!member) {
-    throw new NoMemberWithEmailError({ email });
+    // Create a minimal member record with just email so payment can proceed
+    const newMemberId = randomUUID();
+    await db.client
+      .insertInto("member")
+      .values({
+        id: newMemberId,
+        email,
+      })
+      .execute();
+
+    const paid_until = explicitPaidUntil
+      ? explicitPaidUntil.toISOString()
+      : add(paidAt, addedDuration).toISOString();
+
+    const membership = await db.client
+      .insertInto("membership")
+      .values({
+        id: randomUUID(),
+        type: membershipType,
+        member_id: newMemberId,
+        paid_until,
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+
+    const category = defaultCategoryForMembershipType(membershipType);
+    if (category) {
+      await db.client
+        .updateTable("member")
+        .set({ member_category: category })
+        .where("id", "=", newMemberId)
+        .execute();
+    }
+
+    return {
+      ...membership,
+      name: null,
+      isNew: true,
+    };
   }
 
   console.log("Adding membership duration", addedDuration);

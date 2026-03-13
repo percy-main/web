@@ -4,7 +4,6 @@ import { fantasy } from "./fantasy";
 import { createContactSubmission } from "./create-contact-submission";
 import { createEventSubscriber } from "./create-event-subscriber";
 import { gameScore } from "./game-score";
-import { join } from "./join";
 import { addDependents, dependents } from "./junior";
 import { juniorManager } from "./junior-manager";
 import { leaderboard } from "./leaderboard";
@@ -26,7 +25,6 @@ export const server = {
   fantasy,
   createContactSubmission,
   getMemberDetails,
-  join,
   addDependents,
   dependents,
   juniorManager,

@@ -321,23 +321,23 @@ export interface MatchResult {
 }
 
 export interface Member {
-  address: string;
+  address: string | null;
   contentful_entry_id: string | null;
   deleted_at: string | null;
   deleted_by: string | null;
   deleted_reason: string | null;
-  dob: string;
+  dob: string | null;
   email: string;
-  emergency_contact_name: string;
-  emergency_contact_telephone: string;
+  emergency_contact_name: string | null;
+  emergency_contact_telephone: string | null;
   id: string;
   member_category: string | null;
-  name: string;
+  name: string | null;
   play_cricket_id: string | null;
-  postcode: string;
+  postcode: string | null;
   stripe_customer_id: string | null;
-  telephone: string;
-  title: string;
+  telephone: string | null;
+  title: string | null;
 }
 
 export interface Membership {
