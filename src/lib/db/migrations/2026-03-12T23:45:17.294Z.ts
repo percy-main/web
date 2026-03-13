@@ -2,6 +2,9 @@ import { type Kysely, sql } from "kysely";
 
 export async function up(db: Kysely<unknown>): Promise<void> {
   // SQLite can't ALTER COLUMN nullability, so recreate the table
+  // Drop leftover temp table if a previous attempt failed partway
+  await sql`DROP TABLE IF EXISTS member_new`.execute(db);
+
   await sql`
     CREATE TABLE member_new (
       id TEXT PRIMARY KEY NOT NULL,
@@ -39,6 +42,8 @@ export async function up(db: Kysely<unknown>): Promise<void> {
 
 export async function down(db: Kysely<unknown>): Promise<void> {
   // Reverse: make fields NOT NULL again (data loss possible for NULL rows)
+  await sql`DROP TABLE IF EXISTS member_new`.execute(db);
+
   await sql`
     CREATE TABLE member_new (
       id TEXT PRIMARY KEY NOT NULL,
