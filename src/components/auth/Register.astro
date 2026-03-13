@@ -75,6 +75,21 @@ import { SimpleInput } from "../form/SimpleInput";
           <div id="register-generic-error" class="hidden rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-800">
             <p>Something went wrong. Please try again.</p>
           </div>
+          <div class="flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="age-confirmed"
+              name="age_confirmed"
+              class="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              required
+            />
+            <label for="age-confirmed" class="text-sm text-gray-700 dark:text-gray-300">
+              I confirm I am aged 13 or over
+            </label>
+          </div>
+          <div id="age-error" class="hidden rounded-lg bg-red-50 border border-red-200 p-4 text-sm text-red-800">
+            <p>You must confirm you are aged 13 or over to create an account.</p>
+          </div>
           <div class="flex items-center justify-between">
             <button
               type="submit"
@@ -116,6 +131,13 @@ import { SimpleInput } from "../form/SimpleInput";
 
   // Google sign-up
   document.getElementById("google-signin")?.addEventListener("click", () => {
+    const ageErrorEl = document.getElementById("age-error")!;
+    const ageConfirmed = (document.getElementById("age-confirmed") as HTMLInputElement)?.checked;
+    if (!ageConfirmed) {
+      ageErrorEl.classList.remove("hidden");
+      return;
+    }
+    ageErrorEl.classList.add("hidden");
     void authClient.signIn.social({
       provider: "google",
       callbackURL: "/members",
@@ -129,10 +151,18 @@ import { SimpleInput } from "../form/SimpleInput";
 
     const errorEl = document.getElementById("register-error")!;
     const genericErrorEl = document.getElementById("register-generic-error")!;
+    const ageErrorEl = document.getElementById("age-error")!;
     errorEl.classList.add("hidden");
     genericErrorEl.classList.add("hidden");
+    ageErrorEl.classList.add("hidden");
 
     const data = new FormData(event.target as HTMLFormElement);
+
+    const ageConfirmed = (document.getElementById("age-confirmed") as HTMLInputElement)?.checked;
+    if (!ageConfirmed) {
+      ageErrorEl.classList.remove("hidden");
+      return;
+    }
 
     const name = data.get("name")?.toString() ?? "";
     const email = data.get("email")?.toString() ?? "";

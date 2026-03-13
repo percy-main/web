@@ -2,6 +2,12 @@ import { AGE_GROUPS, type AgeGroup } from "@/lib/util/ageGroup";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -18,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { actions } from "astro:actions";
 import { formatDate } from "date-fns";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -38,6 +44,8 @@ interface Junior {
   paidUntil: string | null;
   ageGroup: AgeGroup | null;
   teamName: string | null;
+  hasOwnAccount: boolean;
+  linkedUserEmail: string | null;
 }
 
 function isMembershipActive(paidUntil: string | null): boolean {
@@ -54,6 +62,7 @@ const TEAM_ORDER = AGE_GROUPS.flatMap((group) => [
 const PAGE_SIZE = 100;
 
 export function JuniorsTable() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [ageGroupFilter, setAgeGroupFilter] = useState<AgeGroup | "all">(
@@ -63,6 +72,7 @@ export function JuniorsTable() {
   const [membershipFilter, setMembershipFilter] =
     useState<MembershipFilter>("all");
   const [page, setPage] = useState(1);
+  const [selectedJunior, setSelectedJunior] = useState<Junior | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -222,7 +232,12 @@ export function JuniorsTable() {
             </p>
           )}
           {Array.from(grouped.entries()).map(([teamName, members]) => (
-            <TeamCard key={teamName} teamName={teamName} members={members} />
+            <TeamCard
+              key={teamName}
+              teamName={teamName}
+              members={members}
+              onJuniorClick={setSelectedJunior}
+            />
           ))}
         </div>
       )}
@@ -251,6 +266,19 @@ export function JuniorsTable() {
           </Button>
         </div>
       )}
+
+      {/* Linking dialog */}
+      {selectedJunior && (
+        <LinkingDialog
+          junior={selectedJunior}
+          onClose={() => setSelectedJunior(null)}
+          onLinked={() => {
+            void queryClient.invalidateQueries({
+              queryKey: ["admin", "listJuniors"],
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -258,9 +286,11 @@ export function JuniorsTable() {
 function TeamCard({
   teamName,
   members,
+  onJuniorClick,
 }: {
   teamName: string;
   members: Junior[];
+  onJuniorClick: (junior: Junior) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
 
@@ -289,6 +319,7 @@ function TeamCard({
                 <TableHead>DOB</TableHead>
                 <TableHead>Parent</TableHead>
                 <TableHead>Contact</TableHead>
+                <TableHead>Account</TableHead>
                 <TableHead>Membership</TableHead>
               </TableRow>
             </TableHeader>
@@ -296,7 +327,11 @@ function TeamCard({
               {members.map((junior) => {
                 const paid = isMembershipActive(junior.paidUntil);
                 return (
-                  <TableRow key={junior.id}>
+                  <TableRow
+                    key={junior.id}
+                    className="cursor-pointer"
+                    onClick={() => onJuniorClick(junior)}
+                  >
                     <TableCell className="font-medium">
                       {junior.name}
                     </TableCell>
@@ -309,11 +344,21 @@ function TeamCard({
                         <a
                           href={`mailto:${junior.parentEmail}`}
                           className="text-blue-600 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {junior.parentEmail}
                         </a>
                         <span>{junior.parentTelephone}</span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {junior.hasOwnAccount ? (
+                        <Badge variant="outline" className="border-blue-300 text-blue-700">
+                          Linked
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-gray-400">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={paid ? "success" : "destructive"}>
@@ -333,5 +378,158 @@ function TeamCard({
         </CardContent>
       )}
     </Card>
+  );
+}
+
+function LinkingDialog({
+  junior,
+  onClose,
+  onLinked,
+}: {
+  junior: Junior;
+  onClose: () => void;
+  onLinked: () => void;
+}) {
+  const [userSearch, setUserSearch] = useState("");
+
+  const suggestedUsersQuery = useQuery({
+    queryKey: ["admin", "searchUsersForLinking", junior.id],
+    queryFn: async () => {
+      const result = await actions.admin.searchUsersForLinking({
+        dependentId: junior.id,
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
+  });
+
+  const linkMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const result = await actions.admin.linkDependentToUser({
+        dependentId: junior.id,
+        userId,
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    onSuccess: () => {
+      onLinked();
+      onClose();
+    },
+  });
+
+  const unlinkMutation = useMutation({
+    mutationFn: async () => {
+      const result = await actions.admin.unlinkDependentUser({
+        dependentId: junior.id,
+      });
+      if (result.error) throw result.error;
+      return result.data;
+    },
+    onSuccess: () => {
+      onLinked();
+      onClose();
+    },
+  });
+
+  const filteredUsers = useMemo(() => {
+    const users = suggestedUsersQuery.data?.users ?? [];
+    if (!userSearch.trim()) return users;
+    const term = userSearch.toLowerCase().trim();
+    return users.filter(
+      (u) =>
+        u.name.toLowerCase().includes(term) ||
+        u.email.toLowerCase().includes(term),
+    );
+  }, [suggestedUsersQuery.data, userSearch]);
+
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Link Account - {junior.name}</DialogTitle>
+        </DialogHeader>
+
+        {/* Current status */}
+        <div className="rounded border border-gray-200 p-3">
+          <p className="text-sm text-gray-600">
+            <span className="font-medium">Parent:</span> {junior.parentName} ({junior.parentEmail})
+          </p>
+          {junior.hasOwnAccount ? (
+            <div className="mt-2 flex items-center justify-between">
+              <p className="text-sm">
+                <span className="font-medium">Linked to:</span>{" "}
+                <span className="text-blue-700">{junior.linkedUserEmail}</span>
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => unlinkMutation.mutate()}
+                disabled={unlinkMutation.isPending}
+                className="border-red-300 text-red-700 hover:bg-red-50"
+              >
+                Unlink
+              </Button>
+            </div>
+          ) : (
+            <p className="mt-1 text-sm text-gray-400">No linked account</p>
+          )}
+        </div>
+
+        {/* Search & suggested users */}
+        <div className="mt-2">
+          <Input
+            type="text"
+            placeholder="Filter users..."
+            value={userSearch}
+            onChange={(e) => setUserSearch(e.target.value)}
+            className="mb-2"
+          />
+
+          {suggestedUsersQuery.isLoading && (
+            <p className="text-sm text-gray-500">Searching for matching users...</p>
+          )}
+          {suggestedUsersQuery.error && (
+            <p className="text-sm text-red-600">Failed to search users.</p>
+          )}
+
+          <div className="flex max-h-60 flex-col gap-1 overflow-y-auto">
+            {filteredUsers.length === 0 && !suggestedUsersQuery.isLoading && (
+              <p className="py-2 text-center text-sm text-gray-500">
+                No matching users found.
+              </p>
+            )}
+            {filteredUsers.map((user) => (
+              <div
+                key={user.id}
+                className="flex items-center justify-between rounded px-3 py-2 hover:bg-gray-50"
+              >
+                <div>
+                  <span className="font-medium">{user.name}</span>
+                  <span className="ml-2 text-xs text-gray-500">{user.email}</span>
+                  {user.score >= 0.7 && (
+                    <Badge variant="outline" className="ml-2 border-green-300 text-green-700">
+                      Strong match
+                    </Badge>
+                  )}
+                  {user.score >= 0.4 && user.score < 0.7 && (
+                    <Badge variant="outline" className="ml-2 border-yellow-300 text-yellow-700">
+                      Possible match
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => linkMutation.mutate(user.id)}
+                  disabled={linkMutation.isPending}
+                >
+                  Link
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

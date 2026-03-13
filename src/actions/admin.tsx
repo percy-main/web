@@ -802,6 +802,7 @@ export const admin = {
               .onRef("membership.dependent_id", "=", "dependent.id")
               .on("membership.type", "=", "junior"),
           )
+          .leftJoin("user", "user.id", "dependent.user_id")
           .where("member.deleted_at", "is", null);
 
         // sex filter at SQL level
@@ -835,6 +836,8 @@ export const admin = {
           "member.email as parentEmail",
           "member.telephone as parentTelephone",
           "membership.paid_until as paidUntil",
+          "dependent.user_id as linkedUserId",
+          "user.email as linkedUserEmail",
         ])
         .orderBy("dependent.name", "asc")
         .execute();
@@ -871,11 +874,111 @@ export const admin = {
           paidUntil: row.paidUntil,
           ageGroup: getAgeGroup(row.dob),
           teamName: getTeamName(row.dob, row.sex),
+          hasOwnAccount: row.linkedUserId != null,
+          linkedUserEmail: row.linkedUserEmail ?? null,
         })),
         total,
         page,
         pageSize,
       };
+    },
+  }),
+
+  linkDependentToUser: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      dependentId: z.string().min(1),
+      userId: z.string().min(1),
+    }),
+    handler: async ({ dependentId, userId }) => {
+      const dep = await client
+        .selectFrom("dependent")
+        .select("id")
+        .where("id", "=", dependentId)
+        .executeTakeFirst();
+
+      if (!dep) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Dependent not found",
+        });
+      }
+
+      const user = await client
+        .selectFrom("user")
+        .select("id")
+        .where("id", "=", userId)
+        .executeTakeFirst();
+
+      if (!user) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "User not found",
+        });
+      }
+
+      await client
+        .updateTable("dependent")
+        .set({ user_id: userId })
+        .where("id", "=", dependentId)
+        .execute();
+
+      return { success: true };
+    },
+  }),
+
+  unlinkDependentUser: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      dependentId: z.string().min(1),
+    }),
+    handler: async ({ dependentId }) => {
+      await client
+        .updateTable("dependent")
+        .set({ user_id: null })
+        .where("id", "=", dependentId)
+        .execute();
+
+      return { success: true };
+    },
+  }),
+
+  searchUsersForLinking: defineAuthAction({
+    roles: ["admin"],
+    input: z.object({
+      dependentId: z.string().min(1),
+    }),
+    handler: async ({ dependentId }) => {
+      const dep = await client
+        .selectFrom("dependent")
+        .select("name")
+        .where("id", "=", dependentId)
+        .executeTakeFirst();
+
+      if (!dep) {
+        throw new ActionError({
+          code: "BAD_REQUEST",
+          message: "Dependent not found",
+        });
+      }
+
+      const users = await client
+        .selectFrom("user")
+        .select(["id", "name", "email"])
+        .execute();
+
+      const scored = users
+        .map((u) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          score: nameSimilarity(dep.name, u.name),
+        }))
+        .filter((u) => u.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 20);
+
+      return { dependentName: dep.name, users: scored };
     },
   }),
 
