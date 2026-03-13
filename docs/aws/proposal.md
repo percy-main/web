@@ -1,5 +1,11 @@
 # AWS Migration Proposal
 
+## Community Impact
+
+Percy Main CSC serves as grassroots sports infrastructure for North Tyneside — the web application is not just a club website but the operational backbone for youth participation, volunteer coordination, and community engagement. It manages junior and senior membership subscriptions, coordinates match-day logistics across multiple teams, runs a fantasy cricket league that keeps members engaged between fixtures, and provides trustees with the administrative tools to run the club without relying on spreadsheets or manual processes. Investing in reliable, professional infrastructure directly supports the club's ability to grow youth programmes, retain volunteers, and sustain the kind of local sporting community that depends on accessible, well-run digital services.
+
+---
+
 ## Current Architecture
 
 We currently run on a mix of third-party services:
