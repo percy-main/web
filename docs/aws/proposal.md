@@ -69,7 +69,7 @@ Astro's compatibility with AWS hosting (ECS or Amplify) is an open question that
 - Standard tooling — React Router for client-side routing, Vite for builds
 - Simple deployment — static assets on S3, no server-side rendering infrastructure needed
 
-**Trade-off — public content discoverability:** A SPA loses Astro's static-first rendering for public pages (fixtures, results, scorecards, news). Modern search engines handle SPAs well, and our members navigate directly to the site rather than discovering it via search. The main concern is social sharing — link previews on WhatsApp, Slack, and Facebook require Open Graph meta tags to be present in the initial HTML. We solve this with a lightweight CloudFront Function that serves minimal HTML with OG meta tags for social crawlers, without requiring full SSR infrastructure.
+**Trade-off — public content discoverability:** A SPA loses Astro's static-first rendering for public pages (fixtures, results, scorecards, news). Modern search engines handle SPAs well, and our members navigate directly to the site rather than discovering it via search. Social sharing link previews (WhatsApp, Facebook, etc.) will show generic site metadata rather than page-specific content — an acceptable trade-off given the authenticated, interactive nature of most of the application.
 
 ### Backend: Serverless Functions → Node.js API Service on ECS
 

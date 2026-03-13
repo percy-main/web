@@ -141,7 +141,6 @@ By this point, the backend API and data pipelines are already running independen
 - Replace Astro actions with API calls to the backend service
 - Deploy to S3 with CloudFront distribution:
   - Configure CloudFront custom error response for SPA routing (all paths → index.html)
-  - CloudFront Function for Open Graph meta tags on public routes (link previews for social sharing)
   - HTTPS via ACM certificate
 - CI/CD pipeline: GitHub Actions → `vite build` → S3 sync → CloudFront cache invalidation
 - Configure deploy preview infrastructure (per-PR S3 prefixes or separate CloudFront behaviours)
