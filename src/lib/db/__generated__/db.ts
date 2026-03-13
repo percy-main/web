@@ -81,6 +81,7 @@ export interface Dependent {
   previous_cricket: string | null;
   school_year: string | null;
   sex: string;
+  user_id: string | null;
   whatsapp_consent: number | null;
 }
 

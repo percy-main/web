@@ -220,6 +220,7 @@ export const dependents = defineAuthAction({
         "dependent.medical_info",
         "dependent.has_disability",
         "dependent.disability_type",
+        "dependent.user_id",
         "membership.paid_until",
         "membership.id as membership_id",
       ])
@@ -230,6 +231,12 @@ export const dependents = defineAuthAction({
       (d) => d.created_at >= currentYearStart(),
     ).length;
 
-    return { dependents: deps, currentYearCount };
+    return {
+      dependents: deps.map((d) => ({
+        ...d,
+        hasOwnAccount: d.user_id != null,
+      })),
+      currentYearCount,
+    };
   },
 });
